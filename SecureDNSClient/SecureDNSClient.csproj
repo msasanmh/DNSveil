@@ -1,0 +1,118 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Copyright>MSasanMH</Copyright>
+    <Product>Secure DNS Client</Product>
+    <Version>$(VersionPrefix)2.0.5</Version>
+    <PackageIcon>SecureDNSClient.png</PackageIcon>
+    <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="DNS-Servers.txt" />
+    <None Remove="DoH-Servers.txt" />
+    <None Remove="HostToCompany.txt" />
+    <None Remove="Library\Ae.Dns.AppMetrics.dll" />
+    <None Remove="Library\Ae.Dns.AppMetrics.xml" />
+    <None Remove="Library\Ae.Dns.Client.dll" />
+    <None Remove="Library\Ae.Dns.Client.xml" />
+    <None Remove="Library\Ae.Dns.Protocol.dll" />
+    <None Remove="Library\Ae.Dns.Protocol.xml" />
+    <None Remove="Library\Ae.Dns.Server.dll" />
+    <None Remove="Library\Ae.Dns.Server.Http.dll" />
+    <None Remove="Library\Ae.Dns.Server.Http.xml" />
+    <None Remove="Library\Ae.Dns.Server.xml" />
+    <None Remove="Library\ARSoft.Tools.Net.dll" />
+    <None Remove="Library\ARSoft.Tools.Net.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="SecureDNSClientMulti.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="DNS-Servers.txt" />
+    <EmbeddedResource Include="HostToCompany.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\SecureDNSClient.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Ae.Dns.AppMetrics">
+      <HintPath>Library\Ae.Dns.AppMetrics.dll</HintPath>
+    </Reference>
+    <Reference Include="Ae.Dns.Client">
+      <HintPath>Library\Ae.Dns.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="Ae.Dns.Protocol">
+      <HintPath>Library\Ae.Dns.Protocol.dll</HintPath>
+    </Reference>
+    <Reference Include="Ae.Dns.Server">
+      <HintPath>Library\Ae.Dns.Server.dll</HintPath>
+    </Reference>
+    <Reference Include="Ae.Dns.Server.Http">
+      <HintPath>Library\Ae.Dns.Server.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="ARSoft.Tools.Net">
+      <HintPath>Library\ARSoft.Tools.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="Crc32.NET">
+      <HintPath>Library\Crc32.NET.dll</HintPath>
+    </Reference>
+    <Reference Include="libse">
+      <HintPath>Library\libse.dll</HintPath>
+    </Reference>
+    <Reference Include="UtfUnknown">
+      <HintPath>Library\UtfUnknown.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Audio\Resource1.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resource1.resx</DependentUpon>
+    </Compile>
+    <Compile Update="NecessaryFiles\Resource1.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resource1.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Audio\Resource1.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource1.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="NecessaryFiles\Resource1.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource1.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

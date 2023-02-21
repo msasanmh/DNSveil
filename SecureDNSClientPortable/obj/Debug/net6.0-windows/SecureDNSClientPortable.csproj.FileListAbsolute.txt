@@ -1,0 +1,17 @@
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\bin\Debug\net6.0-windows\SecureDNSClientPortable.exe
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\bin\Debug\net6.0-windows\SecureDNSClientPortable.deps.json
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\bin\Debug\net6.0-windows\SecureDNSClientPortable.runtimeconfig.json
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\bin\Debug\net6.0-windows\SecureDNSClientPortable.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\bin\Debug\net6.0-windows\ref\SecureDNSClientPortable.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\bin\Debug\net6.0-windows\SecureDNSClientPortable.pdb
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.csproj.AssemblyReference.cache
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.FormMain.resources
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.csproj.GenerateResource.cache
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.AssemblyInfoInputs.cache
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.AssemblyInfo.cs
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.csproj.CoreCompileInputs.cache
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\ref\SecureDNSClientPortable.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.pdb
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Debug\net6.0-windows\SecureDNSClientPortable.genruntimeconfig.cache

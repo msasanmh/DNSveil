@@ -1,0 +1,348 @@
+
+##############################################
+#                                            #
+#        dnscrypt-proxy configuration        #
+#                                            #
+##############################################
+
+## This is an example configuration file.
+## You should adjust it to your needs, and save it as "dnscrypt-proxy.toml"
+##
+## Online documentation is available here: https://dnscrypt.info/doc
+
+
+
+##################################
+#         Global settings        #
+##################################
+
+## List of local addresses and ports to listen to. Can be IPv4 and/or IPv6.
+## Example with both IPv4 and IPv6:
+## listen_addresses = ['127.0.0.1:53', '[::1]:53']
+##
+## To listen to all IPv4 addresses, use `listen_addresses = ['0.0.0.0:53']`
+## To listen to all IPv4+IPv6 addresses, use `listen_addresses = ['[::]:53']`
+
+listen_addresses = ['0.0.0.0:53']
+
+
+## Maximum number of simultaneous client connections to accept
+
+max_clients = 250
+
+
+## Require servers (from remote sources) to satisfy specific properties
+
+# Use servers reachable over IPv4
+ipv4_servers = true
+
+# Use servers reachable over IPv6 -- Do not enable if you don't have IPv6 connectivity
+ipv6_servers = false
+
+# Use servers implementing the DNSCrypt protocol
+dnscrypt_servers = false
+
+# Use servers implementing the DNS-over-HTTPS protocol
+doh_servers = false
+
+# Use servers implementing the Oblivious DoH protocol
+odoh_servers = false
+
+
+## Require servers defined by remote sources to satisfy specific properties
+
+# Server must support DNS security extensions (DNSSEC)
+require_dnssec = false
+
+# Server must not log user queries (declarative)
+require_nolog = false
+
+# Server must not enforce its own blocklist (for parental control, ads blocking...)
+require_nofilter = true
+
+# Server names to avoid even if they match all criteria
+disabled_server_names = []
+
+
+## Always use TCP to connect to upstream servers.
+## This can be useful if you need to route everything through Tor.
+## Otherwise, leave this to `false`, as it doesn't improve security
+## (dnscrypt-proxy will always encrypt everything even using UDP), and can
+## only increase latency.
+
+force_tcp = false
+
+
+## Enable support for HTTP/3 (DoH3, HTTP over QUIC)
+## Note that, like DNSCrypt but unlike other HTTP versions, this uses
+## UDP and (usually) port 443 instead of TCP.
+
+http3 = false
+
+
+## SOCKS proxy
+## Uncomment the following line to route all TCP connections to a local Tor node
+## Tor doesn't support UDP, so set `force_tcp` to `true` as well.
+
+# proxy = 'socks5://127.0.0.1:10808'
+
+
+## HTTP/HTTPS proxy
+## Only for DoH servers
+
+http_proxy = 'https://ca.epicbrowser.net:8888'
+
+
+## How long a DNS query will wait for a response, in milliseconds.
+## If you have a network with *a lot* of latency, you may need to
+## increase this. Startup may be slower if you do so.
+## Don't increase it too much. 10000 is the highest reasonable value.
+
+timeout = 5000
+
+
+## Keepalive for HTTP (HTTPS, HTTP/2) queries, in seconds
+
+keepalive = 30
+
+
+## Add EDNS-client-subnet information to outgoing queries
+##
+## Multiple networks can be listed; they will be randomly chosen.
+## These networks don't have to match your actual networks.
+
+# edns_client_subnet = ['0.0.0.0/0', '2001:db8::/32']
+
+
+## Delay, in minutes, after which certificates are reloaded
+
+cert_refresh_delay = 240
+
+
+## Bootstrap resolvers
+##
+## People in China may want to use 114.114.114.114:53 here.
+## Other popular options include 8.8.8.8, 9.9.9.9 and 1.1.1.1.
+##
+## If more than one resolver is specified, they will be tried in sequence.
+##
+## TL;DR: put valid standard resolver addresses here. Your actual queries will
+## not be sent there. If you're using DNSCrypt or Anonymized DNS and your
+## lists are up to date, these resolvers will not even be used.
+
+bootstrap_resolvers = ['8.8.8.8:53', '1.1.1.1:53']
+
+
+## Always use the bootstrap resolver before the system DNS settings.
+
+ignore_system_dns = true
+
+
+## Maximum time (in seconds) to wait for network connectivity before
+## initializing the proxy.
+## Useful if the proxy is automatically started at boot, and network
+## connectivity is not guaranteed to be immediately available.
+## Use 0 to not test for connectivity at all (not recommended),
+## and -1 to wait as much as possible.
+
+netprobe_timeout = 60
+
+## Address and port to try initializing a connection to, just to check
+## if the network is up. It can be any address and any port, even if
+## there is nothing answering these on the other side. Just don't use
+## a local address, as the goal is to check for Internet connectivity.
+## On Windows, a datagram with a single, nul byte will be sent, only
+## when the system starts.
+## On other operating systems, the connection will be initialized
+## but nothing will be sent at all.
+
+netprobe_address = '8.8.8.8:53'
+
+
+## Automatic log files rotation
+
+# Maximum log files size in MB - Set to 0 for unlimited.
+log_files_max_size = 10
+
+# How long to keep backup files, in days
+log_files_max_age = 7
+
+# Maximum log files backups to keep (or 0 to keep all backups)
+log_files_max_backups = 1
+
+
+
+#########################
+#        Filters        #
+#########################
+
+## Note: if you are using dnsmasq, disable the `dnssec` option in dnsmasq if you
+## configure dnscrypt-proxy to do any kind of filtering (including the filters
+## below and blocklists).
+## You can still choose resolvers that do DNSSEC validation.
+
+
+## Immediately respond to IPv6-related queries with an empty response
+## This makes things faster when there is no IPv6 connectivity, but can
+## also cause reliability issues with some stub resolvers.
+
+block_ipv6 = false
+
+
+## Immediately respond to A and AAAA queries for host names without a domain name
+
+block_unqualified = true
+
+
+## Immediately respond to queries for local zones instead of leaking them to
+## upstream resolvers (always causing errors or timeouts).
+
+block_undelegated = true
+
+
+## TTL for synthetic responses sent when a request has been blocked (due to
+## IPv6 or blocklists).
+
+reject_ttl = 10
+
+
+###########################
+#        DNS cache        #
+###########################
+
+## Enable a DNS cache to reduce latency and outgoing traffic
+
+cache = true
+
+
+## Cache size
+
+cache_size = 4096
+
+
+## Minimum TTL for cached entries
+
+cache_min_ttl = 2400
+
+
+## Maximum TTL for cached entries
+
+cache_max_ttl = 86400
+
+
+## Minimum TTL for negatively cached entries
+
+cache_neg_min_ttl = 60
+
+
+## Maximum TTL for negatively cached entries
+
+cache_neg_max_ttl = 600
+
+
+
+##################################
+#        Local DoH server        #
+##################################
+
+[local_doh]
+
+## dnscrypt-proxy can act as a local DoH server. By doing so, web browsers
+## requiring a direct connection to a DoH server in order to enable some
+## features will enable these, without bypassing your DNS proxy.
+
+## Addresses that the local DoH server should listen to
+
+#listen_addresses = ['0.0.0.0:443']
+
+
+## Path of the DoH URL. This is not a file, but the part after the hostname
+## in the URL. By convention, `/dns-query` is frequently chosen.
+## For each `listen_address` the complete URL to access the server will be:
+## `https://<listen_address><path>` (ex: `https://127.0.0.1/dns-query`)
+
+path = '/dns-query'
+
+
+## Certificate file and key - Note that the certificate has to be trusted.
+## See the documentation (wiki) for more information.
+
+cert_file = 'C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\bin\Debug\net6.0-windows\certificate\localhost.crt'
+cert_key_file = 'C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\bin\Debug\net6.0-windows\certificate\localhost.key'
+
+
+#########################################
+#        Servers with known bugs        #
+#########################################
+
+[broken_implementations]
+
+## Cisco servers currently cannot handle queries larger than 1472 bytes, and don't
+## truncate responses larger than questions as expected by the DNSCrypt protocol.
+## This prevents large responses from being received over UDP and over relays.
+##
+## Older versions of the `dnsdist` server software had a bug with queries larger
+## than 1500 bytes. This is fixed since `dnsdist` version 1.5.0, but
+## some server may still run an outdated version.
+##
+## The list below enables workarounds to make non-relayed usage more reliable
+## until the servers are fixed.
+
+fragments_blocked = ['cisco', 'cisco-ipv6', 'cisco-familyshield', 'cisco-familyshield-ipv6', 'cleanbrowsing-adult', 'cleanbrowsing-adult-ipv6', 'cleanbrowsing-family', 'cleanbrowsing-family-ipv6', 'cleanbrowsing-security', 'cleanbrowsing-security-ipv6']
+
+
+###############################
+#            DNS64            #
+###############################
+
+## DNS64 is a mechanism for synthesizing AAAA records from A records.
+## It is used with an IPv6/IPv4 translator to enable client-server
+## communication between an IPv6-only client and an IPv4-only server,
+## without requiring any changes to either the IPv6 or the IPv4 node,
+## for the class of applications that work through NATs.
+##
+## There are two options to synthesize such records:
+## Option 1: Using a set of static IPv6 prefixes;
+## Option 2: By discovering the IPv6 prefix from DNS64-enabled resolver.
+##
+## If both options are configured - only static prefixes are used.
+## (Ref. RFC6147, RFC6052, RFC7050)
+##
+## Do not enable unless you know what DNS64 is and why you need it, or else
+## you won't be able to connect to anything at all.
+
+[dns64]
+
+## Static prefix(es) as Pref64::/n CIDRs
+
+# prefix = ['64:ff9b::/96']
+
+## DNS64-enabled resolver(s) to discover Pref64::/n CIDRs
+## These resolvers are used to query for Well-Known IPv4-only Name (WKN) "ipv4only.arpa." to discover only.
+## Set with your ISP's resolvers in case of custom prefixes (other than Well-Known Prefix 64:ff9b::/96).
+## IMPORTANT: Default resolvers listed below support Well-Known Prefix 64:ff9b::/96 only.
+
+# resolver = ['[2606:4700:4700::64]:53', '[2001:4860:4860::64]:53']
+
+
+########################################
+#            Static entries            #
+########################################
+
+## Optional, local, static list of additional servers
+## Mostly useful for testing your own servers.
+
+[static]
+
+[static.Cloudflare]
+stamp = 'sdns://AgcAAAAAAAAABzEuMC4wLjEAEmRucy5jbG91ZGZsYXJlLmNvbQovZG5zLXF1ZXJ5'
+[static.Google]
+stamp = 'sdns://AgUAAAAAAAAABzguOC44LjigHvYkz_9ea9O63fP92_3qVlRn43cpncfuZnUWbzAMwbmgdoAkR6AZkxo_AEMExT_cbBssN43Evo9zs5_ZyWnftEUgalBisNF41VbxY7E7Gw8ZQ10CWIKRzHVYnf7m6xHI1cMKZG5zLmdvb2dsZQovZG5zLXF1ZXJ5'
+[static.Cisco]
+stamp = 'sdns://AgAAAAAAAAAADDE0Ni4xMTIuNDEuMiCYZO337qhZZ1J0sPrfvSaTZamrnrp3PahnSUxalKQ33w9kb2gub3BlbmRucy5jb20KL2Rucy1xdWVyeQ'
+[static.Controld-Uncensored]
+stamp = 'sdns://AgcAAAAAAAAACjc2Ljc2LjIuMTEAFGZyZWVkbnMuY29udHJvbGQuY29tCy91bmNlbnNvcmVk'
+[static.Controld]
+stamp = 'sdns://AgcAAAAAAAAACjc2Ljc2LjIuMTEAFGZyZWVkbnMuY29udHJvbGQuY29tAy9wMA'
+[static.NextDNS]
+stamp = 'sdns://AgcAAAAAAAAACjQ1LjkwLjMwLjAgmjo09yfeubylEAPZzpw5-PJ92cUkKQHCurGkTmNaAhkWYW55Y2FzdC5kbnMubmV4dGRucy5pbwovZG5zLXF1ZXJ5'

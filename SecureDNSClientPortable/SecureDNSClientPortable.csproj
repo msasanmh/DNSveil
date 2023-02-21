@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
+    <Version>$(VersionPrefix)2.0.5</Version>
+    <Copyright>MSasanMH</Copyright>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="SecureDNSClientMulti.ico" />
+  </ItemGroup>
+
+</Project>

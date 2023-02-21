@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "GugVJ3HOhmCmmPUhT3FJfdYLI9BLaq6DYb0rMgqsiAWbuYqE6zEqqu0JOFKqwgR+jH+KLUxdJFzmzzzLiUkeYQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\MSMH\\Documents\\Visual Studio 2022\\Projects\\SecureDNSClient\\SecureDNSClient\\SecureDNSClient.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\MSMH\\.nuget\\packages\\system.codedom\\7.0.0\\system.codedom.7.0.0.nupkg.sha512",
+    "C:\\Users\\MSMH\\.nuget\\packages\\system.management\\7.0.0\\system.management.7.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
