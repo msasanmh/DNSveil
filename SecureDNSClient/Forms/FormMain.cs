@@ -39,12 +39,13 @@ namespace SecureDNSClient
         private HTTPProxyServer? HTTPProxy;
         private bool AudioAlertOnline = true;
         private bool AudioAlertOffline = false;
+        private readonly Stopwatch CheckDPIWorksStopWatch = new();
 
         public FormMain()
         {
             InitializeComponent();
             CustomStatusStrip1.SizingGrip = false;
-            
+
             // Rightclick on NotifyIcon
             ToolStripMenuItemIcon.Text = "Exit";
             ToolStripMenuItemIcon.Click += ToolStripMenuItemIcon_Click;
@@ -205,6 +206,7 @@ namespace SecureDNSClient
             CustomTextBoxBootstrapDNS.Text = "8.8.8.8";
             CustomCheckBoxDontAskCertificate.Checked = false;
             CustomCheckBoxSettingDisableAudioAlert.Checked = false;
+            CustomTextBoxCheckDPIHost.Text = "youtube.com";
         }
 
         //============================== Methods
@@ -629,7 +631,7 @@ namespace SecureDNSClient
                     if (StopChecking) return;
 
                     // Write status to log
-                    string status = dnsOK ? "OK" : "Faild";
+                    string status = dnsOK ? "OK" : "Failed";
                     Color color = dnsOK ? Color.MediumSeaGreen : Color.IndianRed;
                     object resultStatus = "[" + status + "]";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultStatus.ToString().IsNotNull(), color));
@@ -1036,7 +1038,7 @@ namespace SecureDNSClient
         }
 
         //============================== DPI
-        private void DPIBasic()
+        private async void DPIBasic()
         {
             // Write Connect first to log
             if (!IsConnected)
@@ -1131,12 +1133,18 @@ namespace SecureDNSClient
                 // Update Groupbox Status
                 UpdateStatus();
 
+                // Set DPI Active true
+                IsDPIActive = true;
+
                 // Go to SetDNS Tab if it's not already set
                 if (ConnectAllClicked && !IsDNSSet)
                 {
                     this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
                     this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 3);
                 }
+
+                // Check DPI works
+                await CheckDPIWorks(CustomTextBoxCheckDPIHost.Text);
             }
             else
             {
@@ -1146,7 +1154,7 @@ namespace SecureDNSClient
             }
         }
 
-        private void DPIAdvanced()
+        private async void DPIAdvanced()
         {
             // Write Connect first to log
             if (!IsConnected)
@@ -1322,12 +1330,18 @@ namespace SecureDNSClient
                 // Update Groupbox Status
                 UpdateStatus();
 
+                // Set DPI Active true
+                IsDPIActive = true;
+
                 // Go to SetDNS Tab if it's not already set
                 if (ConnectAllClicked && !IsDNSSet)
                 {
                     this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
                     this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 3);
                 }
+
+                // Check DPI works
+                await CheckDPIWorks(CustomTextBoxCheckDPIHost.Text);
             }
             else
             {
@@ -1352,9 +1366,91 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
             }
         }
+        
+        private async Task CheckDPIWorks(string host, int timeoutSec = 20)
+        {
+            if (string.IsNullOrWhiteSpace(host)) return;
+
+            // If user changing DPI mode fast, return.
+            if (CheckDPIWorksStopWatch.IsRunning)
+                return;
+
+            // Start StopWatch
+            CheckDPIWorksStopWatch.Start();
+
+            // Write start DPI checking to log
+            string msgDPI = $"Checking DPI Bypass ({host})...{Environment.NewLine}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI, Color.LightGray));
+
+            if (IsDNSSet)
+            {
+                if (IsDPIActive)
+                {
+                    try
+                    {
+                        string url = $"https://{host}";
+                        Uri uri = new(url);
+                        using HttpClient httpClient = new();
+                        httpClient.Timeout = new TimeSpan(0, 0, timeoutSec);
+                        HttpResponseMessage checkingResponse = await httpClient.GetAsync(uri);
+                        if (checkingResponse.IsSuccessStatusCode)
+                        {
+                            // Write Success to log
+                            var elapsedTime = Math.Round((double)CheckDPIWorksStopWatch.ElapsedMilliseconds / 1000);
+                            string msgDPI1 = $"DPI Check: ";
+                            string msgDPI2 = $"Successfully opened {host} in {elapsedTime} seconds.{Environment.NewLine}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.MediumSeaGreen));
+                        }
+                        else
+                        {
+                            // Write Failed to log
+                            string msgDPI1 = $"DPI Check: ";
+                            string msgDPI2 = $"Faild to open {host}. Change DPI mode.{Environment.NewLine}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
+                        }
+                        CheckDPIWorksStopWatch.Stop();
+                        CheckDPIWorksStopWatch.Reset();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Write Failed to log
+                        string msgDPI1 = $"DPI Check: ";
+                        string msgDPI2 = $"Faild to open {host}. Change DPI mode.{Environment.NewLine}";
+                        string msgDPI3 = $"({ex.Message}){Environment.NewLine}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
+                        //this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI3, Color.IndianRed)); // No need to write this message
+                        CheckDPIWorksStopWatch.Stop();
+                        CheckDPIWorksStopWatch.Reset();
+                    }
+                }
+                else
+                {
+                    // Write activate DPI first to log
+                    string msgDPI1 = $"DPI Check: ";
+                    string msgDPI2 = $"Activate DPI first.{Environment.NewLine}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
+                    CheckDPIWorksStopWatch.Stop();
+                    CheckDPIWorksStopWatch.Reset();
+                }
+            }
+            else
+            {
+                // Write set DNS first to log
+                string msgDPI1 = $"DPI Check: ";
+                string msgDPI2 = $"Set DNS first.{Environment.NewLine}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
+                CheckDPIWorksStopWatch.Stop();
+                CheckDPIWorksStopWatch.Reset();
+            }
+        }
 
         //============================== DNS
-        private void SetDNS()
+        private async void SetDNS()
         {
             string? nicName = CustomComboBoxNICs.SelectedItem as string;
             // Check if NIC Name is empty
@@ -1391,6 +1487,7 @@ namespace SecureDNSClient
                 // Set DNS
                 Network.SetDNS(nic, dnss);
                 IsDNSSet = true;
+
                 // Save NIC name to file
                 FileDirectory.CreateEmptyFile(SecureDNS.NicNamePath);
                 File.WriteAllText(SecureDNS.NicNamePath, nicName);
@@ -1408,7 +1505,6 @@ namespace SecureDNSClient
                 CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
                 CustomRichTextBoxLog.AppendText(msg4 + Environment.NewLine, Color.DodgerBlue);
 
-                
                 // Go to Check Tab
                 if (ConnectAllClicked && IsConnected)
                 {
@@ -1416,6 +1512,9 @@ namespace SecureDNSClient
                     this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 0);
                     ConnectAllClicked = false;
                 }
+
+                // Check DPI works
+                await CheckDPIWorks(CustomTextBoxCheckDPIHost.Text);
             }
             else
             {

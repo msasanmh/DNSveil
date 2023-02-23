@@ -1,3 +1,5 @@
+using MsmhTools;
+
 namespace SecureDNSClient
 {
     internal static class Program
@@ -11,6 +13,18 @@ namespace SecureDNSClient
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+
+            // Prevent multiple instances
+            using Mutex mutex = new(false, Info.InfoExecutingAssembly.ProductName);
+            if (!mutex.WaitOne(0, true))
+            {
+                MessageBox.Show($"{Info.InfoExecutingAssembly.ProductName} is already running.");
+                Environment.Exit(0);
+                Application.Exit();
+                return;
+            }
+            GC.KeepAlive(mutex);
+
             Application.Run(new FormMain());
         }
     }

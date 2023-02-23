@@ -19,6 +19,14 @@ namespace MsmhTools
         public static FileVersionInfo InfoCallingAssembly => FileVersionInfo.GetVersionInfo(Assembly.GetCallingAssembly().Location);
         public static FileVersionInfo InfoEntryAssembly => FileVersionInfo.GetVersionInfo(Assembly.GetEntryAssembly().Location);
         public static FileVersionInfo InfoExecutingAssembly => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location);
+
+        public static string GetAppGUID()
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            GuidAttribute attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
+            return attribute.Value;
+        }
+
         public static bool IsRunningOnWindows
         {
             get

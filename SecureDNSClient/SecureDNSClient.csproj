@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Copyright>MSasanMH</Copyright>
     <Product>Secure DNS Client</Product>
-    <Version>$(VersionPrefix)2.0.5</Version>
+    <Version>$(VersionPrefix)2.0.6</Version>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
   </PropertyGroup>

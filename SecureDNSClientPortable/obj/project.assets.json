@@ -12,7 +12,7 @@
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
-    "version": "2.0.5",
+    "version": "2.0.6",
     "restore": {
       "projectUniqueName": "C:\\Users\\MSMH\\Documents\\Visual Studio 2022\\Projects\\SecureDNSClient\\SecureDNSClientPortable\\SecureDNSClientPortable.csproj",
       "projectName": "SecureDNSClientPortable",
