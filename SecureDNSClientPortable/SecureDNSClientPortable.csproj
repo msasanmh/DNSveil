@@ -7,7 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
-    <Version>$(VersionPrefix)2.0.6</Version>
+    <Version>$(VersionPrefix)2.0.7</Version>
     <Copyright>MSasanMH</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>

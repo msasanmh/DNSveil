@@ -110,6 +110,8 @@
             this.CustomLabelSetDNSInfo = new CustomControls.CustomLabel();
             this.CustomComboBoxNICs = new CustomControls.CustomComboBox();
             this.TabPageSettings = new System.Windows.Forms.TabPage();
+            this.CustomTextBoxCheckDPIHost = new CustomControls.CustomTextBox();
+            this.CustomLabelCheckDPIInfo = new CustomControls.CustomLabel();
             this.CustomCheckBoxSettingDisableAudioAlert = new CustomControls.CustomCheckBox();
             this.CustomCheckBoxDontAskCertificate = new CustomControls.CustomCheckBox();
             this.CustomTextBoxBootstrapDNS = new CustomControls.CustomTextBox();
@@ -140,8 +142,6 @@
             this.CustomRichTextBoxStatusIsDPIActive = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsConnected = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusWorkingServers = new CustomControls.CustomRichTextBox();
-            this.CustomLabelCheckDPIInfo = new CustomControls.CustomLabel();
-            this.CustomTextBoxCheckDPIHost = new CustomControls.CustomTextBox();
             this.CustomGroupBoxLog.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSSLFragment)).BeginInit();
             this.CustomTabControlMain.SuspendLayout();
@@ -1545,6 +1545,48 @@
             this.TabPageSettings.Tag = 1;
             this.TabPageSettings.Text = "Settings";
             // 
+            // CustomTextBoxCheckDPIHost
+            // 
+            this.CustomTextBoxCheckDPIHost.AcceptsReturn = false;
+            this.CustomTextBoxCheckDPIHost.AcceptsTab = false;
+            this.CustomTextBoxCheckDPIHost.BackColor = System.Drawing.Color.DimGray;
+            this.CustomTextBoxCheckDPIHost.Border = true;
+            this.CustomTextBoxCheckDPIHost.BorderColor = System.Drawing.Color.Blue;
+            this.CustomTextBoxCheckDPIHost.BorderSize = 1;
+            this.CustomTextBoxCheckDPIHost.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
+            this.CustomTextBoxCheckDPIHost.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomTextBoxCheckDPIHost.ForeColor = System.Drawing.Color.White;
+            this.CustomTextBoxCheckDPIHost.HideSelection = true;
+            this.CustomTextBoxCheckDPIHost.Location = new System.Drawing.Point(290, 203);
+            this.CustomTextBoxCheckDPIHost.MaxLength = 32767;
+            this.CustomTextBoxCheckDPIHost.Multiline = false;
+            this.CustomTextBoxCheckDPIHost.Name = "CustomTextBoxCheckDPIHost";
+            this.CustomTextBoxCheckDPIHost.ReadOnly = false;
+            this.CustomTextBoxCheckDPIHost.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomTextBoxCheckDPIHost.ShortcutsEnabled = true;
+            this.CustomTextBoxCheckDPIHost.Size = new System.Drawing.Size(150, 23);
+            this.CustomTextBoxCheckDPIHost.TabIndex = 0;
+            this.CustomTextBoxCheckDPIHost.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            this.CustomTextBoxCheckDPIHost.Texts = "www.youtube.com";
+            this.CustomTextBoxCheckDPIHost.UnderlinedStyle = false;
+            this.CustomTextBoxCheckDPIHost.UsePasswordChar = false;
+            this.CustomTextBoxCheckDPIHost.WordWrap = true;
+            // 
+            // CustomLabelCheckDPIInfo
+            // 
+            this.CustomLabelCheckDPIInfo.AutoSize = true;
+            this.CustomLabelCheckDPIInfo.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelCheckDPIInfo.Border = false;
+            this.CustomLabelCheckDPIInfo.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelCheckDPIInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelCheckDPIInfo.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelCheckDPIInfo.Location = new System.Drawing.Point(25, 205);
+            this.CustomLabelCheckDPIInfo.Name = "CustomLabelCheckDPIInfo";
+            this.CustomLabelCheckDPIInfo.RoundedCorners = 0;
+            this.CustomLabelCheckDPIInfo.Size = new System.Drawing.Size(259, 17);
+            this.CustomLabelCheckDPIInfo.TabIndex = 8;
+            this.CustomLabelCheckDPIInfo.Text = "A DNS based blocked website to check. https://";
+            // 
             // CustomCheckBoxSettingDisableAudioAlert
             // 
             this.CustomCheckBoxSettingDisableAudioAlert.BackColor = System.Drawing.Color.DimGray;
@@ -2064,48 +2106,6 @@
             this.CustomRichTextBoxStatusWorkingServers.UnderlinedStyle = false;
             this.CustomRichTextBoxStatusWorkingServers.WordWrap = false;
             this.CustomRichTextBoxStatusWorkingServers.ZoomFactor = 1F;
-            // 
-            // CustomLabelCheckDPIInfo
-            // 
-            this.CustomLabelCheckDPIInfo.AutoSize = true;
-            this.CustomLabelCheckDPIInfo.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelCheckDPIInfo.Border = false;
-            this.CustomLabelCheckDPIInfo.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelCheckDPIInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelCheckDPIInfo.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelCheckDPIInfo.Location = new System.Drawing.Point(25, 205);
-            this.CustomLabelCheckDPIInfo.Name = "CustomLabelCheckDPIInfo";
-            this.CustomLabelCheckDPIInfo.RoundedCorners = 0;
-            this.CustomLabelCheckDPIInfo.Size = new System.Drawing.Size(259, 17);
-            this.CustomLabelCheckDPIInfo.TabIndex = 8;
-            this.CustomLabelCheckDPIInfo.Text = "A DNS based blocked website to check. https://";
-            // 
-            // CustomTextBoxCheckDPIHost
-            // 
-            this.CustomTextBoxCheckDPIHost.AcceptsReturn = false;
-            this.CustomTextBoxCheckDPIHost.AcceptsTab = false;
-            this.CustomTextBoxCheckDPIHost.BackColor = System.Drawing.Color.DimGray;
-            this.CustomTextBoxCheckDPIHost.Border = true;
-            this.CustomTextBoxCheckDPIHost.BorderColor = System.Drawing.Color.Blue;
-            this.CustomTextBoxCheckDPIHost.BorderSize = 1;
-            this.CustomTextBoxCheckDPIHost.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
-            this.CustomTextBoxCheckDPIHost.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.CustomTextBoxCheckDPIHost.ForeColor = System.Drawing.Color.White;
-            this.CustomTextBoxCheckDPIHost.HideSelection = true;
-            this.CustomTextBoxCheckDPIHost.Location = new System.Drawing.Point(290, 203);
-            this.CustomTextBoxCheckDPIHost.MaxLength = 32767;
-            this.CustomTextBoxCheckDPIHost.Multiline = false;
-            this.CustomTextBoxCheckDPIHost.Name = "CustomTextBoxCheckDPIHost";
-            this.CustomTextBoxCheckDPIHost.ReadOnly = false;
-            this.CustomTextBoxCheckDPIHost.ScrollBars = System.Windows.Forms.ScrollBars.None;
-            this.CustomTextBoxCheckDPIHost.ShortcutsEnabled = true;
-            this.CustomTextBoxCheckDPIHost.Size = new System.Drawing.Size(100, 23);
-            this.CustomTextBoxCheckDPIHost.TabIndex = 0;
-            this.CustomTextBoxCheckDPIHost.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            this.CustomTextBoxCheckDPIHost.Texts = "youtube.com";
-            this.CustomTextBoxCheckDPIHost.UnderlinedStyle = false;
-            this.CustomTextBoxCheckDPIHost.UsePasswordChar = false;
-            this.CustomTextBoxCheckDPIHost.WordWrap = true;
             // 
             // FormMain
             // 

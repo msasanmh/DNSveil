@@ -10,7 +10,6 @@ C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSCli
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\bin\Debug\net6.0-windows\Crc32.NET.dll
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\bin\Debug\net6.0-windows\libse.dll
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\bin\Debug\net6.0-windows\UtfUnknown.dll
-C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\obj\Debug\net6.0-windows\SecureDNSClient.csproj.AssemblyReference.cache
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\obj\Debug\net6.0-windows\SecureDNSClient.Audio.Resource1.resources
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\obj\Debug\net6.0-windows\CustomControls.CustomInputBox.resources
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\obj\Debug\net6.0-windows\CustomControls.CustomMessageBox.resources
@@ -30,3 +29,4 @@ C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSCli
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\obj\Debug\net6.0-windows\SecureDNSClient.pdb
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\obj\Debug\net6.0-windows\SecureDNSClient.genruntimeconfig.cache
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\obj\Debug\net6.0-windows\SecureDNSClient.NecessaryFiles.Resource1.resources
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\obj\Debug\net6.0-windows\SecureDNSClient.csproj.AssemblyReference.cache

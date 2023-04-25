@@ -14,3 +14,4 @@ C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSCli
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Release\net6.0-windows\win-x86\ref\SecureDNSClientPortable.dll
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Release\net6.0-windows\win-x86\SecureDNSClientPortable.pdb
 C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Release\net6.0-windows\win-x86\SecureDNSClientPortable.genruntimeconfig.cache
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClientPortable\obj\Release\net6.0-windows\win-x86\SecureDNSClientPortable.csproj.AssemblyReference.cache

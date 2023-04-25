@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "SecureDNSClientPortable/2.0.2": {
+        "runtime": {
+          "SecureDNSClientPortable.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "SecureDNSClientPortable/2.0.2": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

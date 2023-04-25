@@ -206,7 +206,7 @@ namespace SecureDNSClient
             CustomTextBoxBootstrapDNS.Text = "8.8.8.8";
             CustomCheckBoxDontAskCertificate.Checked = false;
             CustomCheckBoxSettingDisableAudioAlert.Checked = false;
-            CustomTextBoxCheckDPIHost.Text = "youtube.com";
+            CustomTextBoxCheckDPIHost.Text = "www.youtube.com";
         }
 
         //============================== Methods
@@ -1367,7 +1367,7 @@ namespace SecureDNSClient
             }
         }
         
-        private async Task CheckDPIWorks(string host, int timeoutSec = 20)
+        private async Task CheckDPIWorks(string host, int timeoutSec = 20) //Default timeout: 100 sec
         {
             if (string.IsNullOrWhiteSpace(host)) return;
 
@@ -1388,11 +1388,12 @@ namespace SecureDNSClient
                 {
                     try
                     {
-                        string url = $"https://{host}";
-                        Uri uri = new(url);
+                        string url = $"https://{host}/";
+                        Uri uri = new(url, UriKind.Absolute);
                         using HttpClient httpClient = new();
                         httpClient.Timeout = new TimeSpan(0, 0, timeoutSec);
                         HttpResponseMessage checkingResponse = await httpClient.GetAsync(uri);
+
                         if (checkingResponse.IsSuccessStatusCode)
                         {
                             // Write Success to log
@@ -1404,12 +1405,13 @@ namespace SecureDNSClient
                         }
                         else
                         {
-                            // Write Failed to log
+                            // Write Status to log
                             string msgDPI1 = $"DPI Check: ";
-                            string msgDPI2 = $"Faild to open {host}. Change DPI mode.{Environment.NewLine}";
+                            string msgDPI2 = $"Status {checkingResponse.StatusCode}: {checkingResponse.ReasonPhrase}.{Environment.NewLine}";
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.DodgerBlue));
                         }
+
                         CheckDPIWorksStopWatch.Stop();
                         CheckDPIWorksStopWatch.Reset();
                     }
@@ -1417,11 +1419,11 @@ namespace SecureDNSClient
                     {
                         // Write Failed to log
                         string msgDPI1 = $"DPI Check: ";
-                        string msgDPI2 = $"Faild to open {host}. Change DPI mode.{Environment.NewLine}";
-                        string msgDPI3 = $"({ex.Message}){Environment.NewLine}";
+                        string msgDPI2 = $"{ex.Message}{Environment.NewLine}";
+                        string msgDPI3 = $"Unable to check. Try open {host} in your browser.{Environment.NewLine}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
-                        //this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI3, Color.IndianRed)); // No need to write this message
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI3, Color.IndianRed));
                         CheckDPIWorksStopWatch.Stop();
                         CheckDPIWorksStopWatch.Reset();
                     }
@@ -1955,7 +1957,7 @@ namespace SecureDNSClient
         //============================== About
         private void CustomLabelAboutThis_Click(object sender, EventArgs e)
         {
-            OpenLinks.OpenUrl("https://github.com/msasanmh/msasanmh.github.io");
+            OpenLinks.OpenUrl("https://github.com/msasanmh/SecureDNSClient/");
         }
 
         private void LinkLabelDNSLookup_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

@@ -1,0 +1,11 @@
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\SecureDNSClient.exe
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\SecureDNSClient.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\SecureDNSClient.deps.json
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\SecureDNSClient.runtimeconfig.json
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\SecureDNSClient.pdb
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\System.CodeDom.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\System.Management.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\runtimes\win\lib\net6.0\System.Management.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\Crc32.NET.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\libse.dll
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClient\UtfUnknown.dll

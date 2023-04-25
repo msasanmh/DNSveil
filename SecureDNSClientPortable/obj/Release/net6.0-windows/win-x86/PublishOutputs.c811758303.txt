@@ -1,0 +1,2 @@
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClientPortable.pdb
+C:\Users\MSMH\Documents\Visual Studio 2022\Projects\PublishSDC\SecureDNSClient\SecureDNSClientPortable.exe
