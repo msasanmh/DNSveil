@@ -111,6 +111,18 @@ namespace SecureDNSClient.NecessaryFiles {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to dnscrypt-proxy 2.1.4
+        ///dnslookup 1.9.1
+        ///dnsproxy 0.49.1
+        ///goodbyedpi 0.2.2.
+        /// </summary>
+        internal static string versions {
+            get {
+                return ResourceManager.GetString("versions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         internal static byte[] WinDivert {

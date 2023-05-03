@@ -27,6 +27,24 @@ namespace MsmhTools
             return attribute.Value;
         }
 
+        /// <returns>
+        /// 1 if newVersion &gt; oldVersion.
+        /// <br>0 if newVersion = oldVersion.</br>
+        /// <br>-1 if newVersion &lt; oldVersion</br>
+        /// </returns>
+        public static int VersionCompare(string newVersion, string oldVersion)
+        {
+            var versionNew = new Version(newVersion);
+            var versionOld = new Version(oldVersion);
+            var result = versionNew.CompareTo(versionOld);
+            if (result > 0)
+                return 1; // versionNew is greater
+            else if (result < 0)
+                return -1; // versionOld is greater
+            else
+                return 0; // versions are equal
+        }
+
         public static bool IsRunningOnWindows
         {
             get

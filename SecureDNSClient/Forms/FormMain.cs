@@ -40,11 +40,16 @@ namespace SecureDNSClient
         private bool AudioAlertOnline = true;
         private bool AudioAlertOffline = false;
         private readonly Stopwatch CheckDPIWorksStopWatch = new();
+        private string TheDll = string.Empty;
 
         public FormMain()
         {
             InitializeComponent();
             CustomStatusStrip1.SizingGrip = false;
+
+            // Fix Screen DPI
+            ScreenDPI.ScaleForm(this, true, false);
+            FixScreenDPI(this);
 
             // Rightclick on NotifyIcon
             ToolStripMenuItemIcon.Text = "Exit";
@@ -61,6 +66,9 @@ namespace SecureDNSClient
             NotifyIconMain.Text = Text;
 
             // Add Tooltips
+            string viewCustomServers = "View working custom servers";
+            CustomButtonViewWorkingServers.SetToolTip("Info", viewCustomServers);
+
             string msgHTTPProxy = "To share DPI + DNS over network (experimental).";
             CustomCheckBoxHTTPProxy.SetToolTip("Info", msgHTTPProxy);
 
@@ -112,6 +120,7 @@ namespace SecureDNSClient
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
+
             // Add colors and texts to About page
             CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
             CustomLabelAboutVersion.Text = " v" + Info.InfoExecutingAssembly.ProductVersion;
@@ -141,7 +150,7 @@ namespace SecureDNSClient
 
         private async void FormMain_Shown(object? sender, EventArgs e)
         {
-            // Write binaries if not exist
+            // Write binaries if not exist or needs update
             await WriteNecessaryFilesToDisk();
         }
 
@@ -152,11 +161,13 @@ namespace SecureDNSClient
             CustomRadioButtonBuiltIn.Checked = true;
             CustomRadioButtonCustom.Checked = false;
             CustomCheckBoxInsecure.Checked = false;
+
             // Connect
             CustomCheckBoxDNSCrypt.Checked = false;
             CustomTextBoxHTTPProxy.Text = string.Empty;
             CustomCheckBoxHTTPProxy.Checked = false;
             CustomNumericUpDownHTTPProxyPort.Value = (decimal)8080;
+
             // DPI Basic
             CustomRadioButtonDPIMode1.Checked = false;
             CustomRadioButtonDPIMode2.Checked = false;
@@ -169,6 +180,7 @@ namespace SecureDNSClient
             CustomRadioButtonDPIModeHigh.Checked = false;
             CustomRadioButtonDPIModeExtreme.Checked = false;
             CustomNumericUpDownSSLFragment.Value = (decimal)40;
+
             // DPI Advanced
             CustomCheckBoxDPIAdvP.Checked = true;
             CustomCheckBoxDPIAdvR.Checked = true;
@@ -201,7 +213,19 @@ namespace SecureDNSClient
             CustomCheckBoxDPIAdvMaxPayload.Checked = true;
             CustomNumericUpDownDPIAdvMaxPayload.Value = (decimal)1200;
 
-            // Settings
+            // Settings Working Mode
+            CustomRadioButtonWorkingModeDNS.Checked = true;
+            CustomRadioButtonWorkingModeDNSandDoH.Checked = false;
+            CustomNumericUpDownMaxServers.Value = (decimal)5;
+
+            // Settings CPU
+            CustomRadioButtonCPUHigh.Checked = false;
+            CustomRadioButtonCPUAboveNormal.Checked = false;
+            CustomRadioButtonCPUNormal.Checked = true;
+            CustomRadioButtonCPUBelowNormal.Checked = false;
+            CustomRadioButtonCPULow.Checked = false;
+
+            // Settings Others
             CustomNumericUpDownCheckTimeout.Value = (decimal)5;
             CustomTextBoxBootstrapDNS.Text = "8.8.8.8";
             CustomCheckBoxDontAskCertificate.Checked = false;
@@ -210,6 +234,40 @@ namespace SecureDNSClient
         }
 
         //============================== Methods
+
+        private void FixScreenDPI(Form form)
+        {
+            using Graphics g = form.CreateGraphics();
+
+            int x1 = 90; int x2 = 120;
+            int y1 = 21; int y2 = 207;
+
+            if (form.AutoScaleDimensions == form.CurrentAutoScaleDimensions)
+            {
+                // 96 = 100%
+                // 120 = 125%
+                // 144 = 150%
+                if (g.DpiX == 120) // 125%
+                {
+                    setSize(x1 + 15, y1 + 10, x2 + 30, y2 + ((25 * y2) / 100));
+                }
+                else if (g.DpiX == 144) // 150%
+                {
+                    setSize(x1 + 65, y1 + 20, x2 + 60, y2 + ((50 * y2) / 100));
+                }
+                
+                void setSize(int x1, int y1, int x2, int y2)
+                {
+                    CustomTabControlMain.ItemSize = new Size(x1, y1);
+                    CustomTabControlSecureDNS.ItemSize = new Size(x1, y1);
+                    CustomTabControlDPIBasicAdvanced.ItemSize = new Size(x1, y1);
+                    CustomTabControlSettings.ItemSize = new Size(y1 + 9, x1);
+                    CustomGroupBoxLog.Height = y2;
+                    ToolStripStatusLabelDNS.Width = x2;
+                    ToolStripStatusLabelDoH.Width = x2;
+                }
+            }
+        }
 
         private bool IsInternetAlive()
         {
@@ -230,10 +288,7 @@ namespace SecureDNSClient
             updateBoolsTimer.Elapsed += (s, e) =>
             {
                 // Update bool IsConnected
-                if (!CustomCheckBoxDNSCrypt.Checked)
-                    IsConnected = ProcessManager.FindProcessByName("dnsproxy");
-                else
-                    IsConnected = ProcessManager.FindProcessByName("dnscrypt-proxy");
+                IsConnected = ProcessManager.FindProcessByName("dnsproxy") || ProcessManager.FindProcessByName("dnscrypt-proxy");
 
                 // Update bool IsDPIActive
                 IsDPIActive = ProcessManager.FindProcessByName("goodbyedpi");
@@ -262,10 +317,23 @@ namespace SecureDNSClient
             LiveStatusDNSResult.Clear();
             
             // Update bool IsDoHConnected
-            string dohArgs = "google.com https://" + IPAddress.Loopback.ToString() + "/dns-query";
-            process(dohArgs, LiveStatusDoHResult);
-            IsDoHConnected = LiveStatusDoHResult.ToString().Contains("ANSWER SECTION");
-            LiveStatusDoHResult.Clear();
+            if (CustomRadioButtonWorkingModeDNSandDoH.Checked)
+            {
+                string dohArgs = "google.com https://" + IPAddress.Loopback.ToString() + "/dns-query";
+                process(dohArgs, LiveStatusDoHResult);
+                IsDoHConnected = LiveStatusDoHResult.ToString().Contains("ANSWER SECTION");
+                LiveStatusDoHResult.Clear();
+            }
+
+            try
+            {
+                if (!string.IsNullOrEmpty(TheDll))
+                    if (File.Exists(TheDll) && (IsDNSConnected || IsDoHConnected)) File.Delete(TheDll);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
 
             void process(string args, StringBuilder stringBuilder)
             {
@@ -339,7 +407,7 @@ namespace SecureDNSClient
                 ToolStripStatusLabelDNS.Text = IsDNSConnected ? "DNS status: Online." : "DNS status: Offline.";
                 ToolStripStatusLabelDoH.Text = IsDoHConnected ? "DoH status: Online." : "DoH status: Offline.";
                 
-                if (!CustomCheckBoxSettingDisableAudioAlert.Checked)
+                if (!CustomCheckBoxSettingDisableAudioAlert.Checked && !CheckingStarted)
                     PlayAudioAlert();
             };
             timer.Start();
@@ -400,17 +468,20 @@ namespace SecureDNSClient
 
         private void PlayAudioAlert()
         {
-            if (IsDNSConnected && AudioAlertOnline)
+            if ((IsDNSConnected || IsDoHConnected) && AudioAlertOnline)
             {
                 AudioAlertOnline = false;
                 AudioAlertOffline = true;
 
-                SoundPlayer soundPlayer = new(Audio.Resource1.DNS_Online);
-                soundPlayer.Play();
-                soundPlayer.Dispose();
+                Task.Run(() =>
+                {
+                    SoundPlayer soundPlayer = new(Audio.Resource1.DNS_Online);
+                    soundPlayer.PlaySync();
+                    soundPlayer.Dispose();
+                });
             }
 
-            if (!IsDNSConnected && AudioAlertOffline)
+            if (!IsDNSConnected && !IsDoHConnected && AudioAlertOffline)
             {
                 AudioAlertOffline = false;
                 AudioAlertOnline = true;
@@ -422,12 +493,15 @@ namespace SecureDNSClient
                 if (softEtherPID != -1)
                     ProcessManager.SuspendProcess(softEtherPID); // On net disconnect SoftEther cause noise to audio.
 
-                Task.Delay(1000).Wait();
-                SoundPlayer soundPlayer = new(Audio.Resource1.DNS_Offline);
-                soundPlayer.Play();
-                soundPlayer.Dispose();
-                Task.Delay(5000).Wait();
-
+                Task.Run(() =>
+                {
+                    Task.Delay(1000).Wait();
+                    SoundPlayer soundPlayer = new(Audio.Resource1.DNS_Offline);
+                    soundPlayer.PlaySync();
+                    soundPlayer.Dispose();
+                    Task.Delay(5000).Wait();
+                });
+                
                 if (softEtherPID != -1)
                     ProcessManager.ResumeProcess(softEtherPID);
             }
@@ -473,6 +547,22 @@ namespace SecureDNSClient
             }
         }
 
+        private ProcessPriorityClass GetCPUPriority()
+        {
+            if (CustomRadioButtonCPUHigh.Checked)
+                return ProcessPriorityClass.High;
+            else if (CustomRadioButtonCPUAboveNormal.Checked)
+                return ProcessPriorityClass.AboveNormal;
+            else if (CustomRadioButtonCPUNormal.Checked)
+                return ProcessPriorityClass.Normal;
+            else if (CustomRadioButtonCPUBelowNormal.Checked)
+                return ProcessPriorityClass.BelowNormal;
+            else if (CustomRadioButtonCPULow.Checked)
+                return ProcessPriorityClass.Idle;
+            else
+                return ProcessPriorityClass.Normal;
+        }
+
         private bool CheckNecessaryFiles(bool showMessage = true)
         {
             if (!File.Exists(SecureDNS.DnsLookup) || !File.Exists(SecureDNS.DnsProxy) || !File.Exists(SecureDNS.DNSCrypt) ||
@@ -492,29 +582,64 @@ namespace SecureDNSClient
 
         private async Task WriteNecessaryFilesToDisk()
         {
-            if (!CheckNecessaryFiles(false))
+            // Get New Versions
+            string dnslookupNewVer = SecureDNS.GetBinariesVersionFromResource("dnslookup");
+            string dnsproxyNewVer = SecureDNS.GetBinariesVersionFromResource("dnsproxy");
+            string dnscryptNewVer = SecureDNS.GetBinariesVersionFromResource("dnscrypt-proxy");
+            string goodbyedpiNewVer = SecureDNS.GetBinariesVersionFromResource("goodbyedpi");
+
+            // Get Old Versions
+            string dnslookupOldVer = SecureDNS.GetBinariesVersion("dnslookup");
+            string dnsproxyOldVer = SecureDNS.GetBinariesVersion("dnsproxy");
+            string dnscryptOldVer = SecureDNS.GetBinariesVersion("dnscrypt-proxy");
+            string goodbyedpiOldVer = SecureDNS.GetBinariesVersion("goodbyedpi");
+
+            // Get Version Result
+            int dnslookupResult = Info.VersionCompare(dnslookupNewVer, dnslookupOldVer);
+            int dnsproxyResult = Info.VersionCompare(dnsproxyNewVer, dnsproxyOldVer);
+            int dnscryptResult = Info.VersionCompare(dnscryptNewVer, dnscryptOldVer);
+            int goodbyedpiResult = Info.VersionCompare(goodbyedpiNewVer, goodbyedpiOldVer);
+
+            // Check Missing/Update Binaries
+            if (!CheckNecessaryFiles(false) || dnslookupResult == 1 || dnsproxyResult == 1 || dnscryptResult == 1 || goodbyedpiResult == 1)
             {
-                string msg1 = "Creating binaries. Please Wait..." + Environment.NewLine;
+                string msg1 = "Creating/Updating binaries. Please Wait..." + Environment.NewLine;
                 CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
 
+                await writeBinariesAsync();
+            }
+
+            async Task writeBinariesAsync()
+            {
                 if (!Directory.Exists(SecureDNS.BinaryDirPath))
                     Directory.CreateDirectory(SecureDNS.BinaryDirPath);
-                if (!File.Exists(SecureDNS.DnsLookup))
+
+                if (!File.Exists(SecureDNS.DnsLookup) || dnslookupResult == 1)
                     await Resource.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnslookup, SecureDNS.DnsLookup);
-                if (!File.Exists(SecureDNS.DnsProxy))
+
+                if (!File.Exists(SecureDNS.DnsProxy) || dnsproxyResult == 1)
                     await Resource.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnsproxy, SecureDNS.DnsProxy);
-                if (!File.Exists(SecureDNS.DNSCrypt))
+
+                if (!File.Exists(SecureDNS.DNSCrypt) || dnscryptResult == 1)
                     await Resource.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxyEXE, SecureDNS.DNSCrypt);
+
                 if (!File.Exists(SecureDNS.DNSCryptConfigPath))
                     await Resource.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxyTOML, SecureDNS.DNSCryptConfigPath);
-                if (!File.Exists(SecureDNS.GoodbyeDpi))
+
+                if (!File.Exists(SecureDNS.GoodbyeDpi) || goodbyedpiResult == 1)
                     await Resource.WriteResourceToFileAsync(NecessaryFiles.Resource1.goodbyedpi, SecureDNS.GoodbyeDpi);
+
                 if (!File.Exists(SecureDNS.WinDivert))
                     await Resource.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert, SecureDNS.WinDivert);
+
                 if (!File.Exists(SecureDNS.WinDivert32))
                     await Resource.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert32, SecureDNS.WinDivert32);
+
                 if (!File.Exists(SecureDNS.WinDivert64))
                     await Resource.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert64, SecureDNS.WinDivert64);
+
+                // Update old version numbers
+                await File.WriteAllTextAsync(SecureDNS.BinariesVersionPath, NecessaryFiles.Resource1.versions);
 
                 string msg2 = $"{Info.InfoExecutingAssembly.ProductName} is ready.{Environment.NewLine}";
                 CustomRichTextBoxLog.AppendText(msg2, Color.LightGray);
@@ -560,12 +685,39 @@ namespace SecureDNSClient
         //============================== Check
         private async Task CheckServers()
         {
+            // Get and check blocked domain is valid
+            bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
+            if (!isBlockedDomainValid) return;
+
+            // strip www. from blocked domain
+            if (blockedDomain.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
+                blockedDomain = blockedDomain[4..];
+
+            // Warn users to deactivate DPI before checking servers
+            if (IsDPIActive)
+            {
+                string msg = "It's better to not check servers while DPI is active.\nStart checking servers?";
+                var resume = CustomMessageBox.Show(msg, "DPI is active", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (resume == DialogResult.No) return;
+            }
+
+            // Warn users to Unset DNS before checking servers
+            if (IsDNSSet)
+            {
+                string msg = "It's better to not check servers while DNS is set.\nStart checking servers?";
+                var resume = CustomMessageBox.Show(msg, "DNS is set", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (resume == DialogResult.No) return;
+            }
+
             // Check servers comment
             string checkingServers = "Checking servers:" + Environment.NewLine + Environment.NewLine;
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(checkingServers, Color.MediumSeaGreen));
 
             // Built-in or Custom
             bool builtInMode = CustomRadioButtonBuiltIn.Checked;
+
+            // Clear working list to file on new check
+            WorkingDnsListToFile.Clear();
 
             string? fileContent = string.Empty;
             if (builtInMode)
@@ -576,7 +728,7 @@ namespace SecureDNSClient
                 fileContent = await File.ReadAllTextAsync(SecureDNS.CustomServersPath);
 
                 // Load saved working servers
-                WorkingDnsListToFile.LoadFromFile(SecureDNS.WorkingServersPath);
+                WorkingDnsListToFile.LoadFromFile(SecureDNS.WorkingServersPath, true, true);
             }
 
             // Check if servers exist 1
@@ -586,9 +738,6 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
                 return;
             }
-
-            // Clear working list on new check
-            WorkingDnsList.Clear();
 
             // Add Servers to list
             List<string> dnsList = fileContent.SplitToLines();
@@ -602,6 +751,12 @@ namespace SecureDNSClient
                 return;
             }
 
+            // Flush DNS before checking
+            FlushDNS();
+
+            // Clear temp working list on new check
+            WorkingDnsList.Clear();
+
             for (int n = 0; n < dnsCount; n++)
             {
                 if (StopChecking) return;
@@ -610,9 +765,9 @@ namespace SecureDNSClient
                 int persent = n * 100 / dnsCount;
                 this.InvokeIt(() => ToolStripStatusLabelPercent.Text = persent.ToString() + "%");
 
-                string dns = dnsList[n];
+                string dns = dnsList[n].Trim();
 
-                if (!string.IsNullOrEmpty(dns) && !string.IsNullOrWhiteSpace(dns) && dns.Contains("//"))
+                if (!string.IsNullOrEmpty(dns) && !string.IsNullOrWhiteSpace(dns) && dns.Contains("//")) // Ignore legacy DNS servers
                 {
                     // Get Check timeout value
                     int timeout = int.Parse(CustomNumericUpDownCheckTimeout.Value.ToString());
@@ -622,9 +777,9 @@ namespace SecureDNSClient
                     stopwatch.Start();
                     bool dnsOK = false;
                     if (!CustomCheckBoxInsecure.Checked)
-                        dnsOK = SecureDNS.CheckDoH("facebook.com", dns, timeout);
+                        dnsOK = SecureDNS.CheckDoH(blockedDomain, dns, timeout, GetCPUPriority());
                     else
-                        dnsOK = SecureDNS.CheckDoHInsecure("facebook.com", dns, timeout, CustomTextBoxBootstrapDNS);
+                        dnsOK = SecureDNS.CheckDoHInsecure(blockedDomain, dns, timeout, CustomTextBoxBootstrapDNS, GetCPUPriority());
                     stopwatch.Stop();
                     var latency = stopwatch.ElapsedMilliseconds;
 
@@ -739,14 +894,18 @@ namespace SecureDNSClient
             bool port443 = Network.IsPortOpen(IPAddress.Loopback.ToString(), 443, 3);
             if (port53)
             {
-                string msg = "Port 53 is occupied. Is SecureDNS already running?!" + Environment.NewLine;
+                string existingProcessName = ProcessManager.GetProcessNameByListeningPort(53);
+                existingProcessName = existingProcessName == string.Empty ? "Unknown" : existingProcessName;
+                string msg = $"Port 53 is occupied by \"{existingProcessName}\". You need to resolve the conflict." + Environment.NewLine;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
                 IsConnecting = false;
                 return;
             }
             if (port443)
             {
-                string msg = "Port 443 is occupied. Is SecureDNS already running?!" + Environment.NewLine;
+                string existingProcessName = ProcessManager.GetProcessNameByListeningPort(443);
+                existingProcessName = existingProcessName == string.Empty ? "Unknown" : existingProcessName;
+                string msg = $"Port 443 is occupied by \"{existingProcessName}\". You need to resolve the conflict." + Environment.NewLine;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
                 IsConnecting = false;
                 return;
@@ -754,10 +913,13 @@ namespace SecureDNSClient
 
             if (startHTTPProxy)
             {
-                bool portHTTPProxy = Network.IsPortOpen(IPAddress.Loopback.ToString(), SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort), 3);
+                int httpProxyPort = SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort);
+                bool portHTTPProxy = Network.IsPortOpen(IPAddress.Loopback.ToString(), httpProxyPort, 3);
                 if (portHTTPProxy)
                 {
-                    string msg = "Port " + SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort) + " is occupied. Change the port from Connect tab." + Environment.NewLine;
+                    string existingProcessName = ProcessManager.GetProcessNameByListeningPort(httpProxyPort);
+                    existingProcessName = existingProcessName == string.Empty ? "Unknown" : existingProcessName;
+                    string msg = $"Port {httpProxyPort} is occupied by \"{existingProcessName}\". Change the port from Connect tab.{Environment.NewLine}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
                     IsConnecting = false;
                     return;
@@ -767,8 +929,9 @@ namespace SecureDNSClient
             // Flush DNS
             FlushDNS();
 
-            // Generate Certificate
-            GenerateCertificate();
+            // Generate Certificate for DoH
+            if (CustomRadioButtonWorkingModeDNSandDoH.Checked)
+                GenerateCertificate();
 
             // Connect DNSProxy or DNSCryptProxy
             if (CustomCheckBoxDNSCrypt.Checked)
@@ -797,7 +960,7 @@ namespace SecureDNSClient
                     internalConnect();
 
                     // Write Connected message to log
-                    ConnectMessage();
+                    connectMessage();
                 }
                 else
                 {
@@ -868,7 +1031,7 @@ namespace SecureDNSClient
                 }
             }
 
-            void ConnectMessage()
+            void connectMessage()
             {
                 // Update Local IP
                 LocalIP = Network.GetLocalIPv4();
@@ -886,13 +1049,16 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDNS2, Color.DodgerBlue));
 
                 // Write local DoH addresses to log
-                string msgLocalDoH1 = "Local DNS Over HTTPS:";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH1, Color.LightGray));
-                string msgLocalDoH2 = Environment.NewLine + "https://" + loopbackIP.ToString() + "/dns-query";
-                if (LocalIP != null)
-                    msgLocalDoH2 += Environment.NewLine + "https://" + LocalIP.ToString() + "/dns-query";
-                msgLocalDoH2 += Environment.NewLine;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH2, Color.DodgerBlue));
+                if (CustomRadioButtonWorkingModeDNSandDoH.Checked)
+                {
+                    string msgLocalDoH1 = "Local DNS Over HTTPS:";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH1, Color.LightGray));
+                    string msgLocalDoH2 = Environment.NewLine + "https://" + loopbackIP.ToString() + "/dns-query";
+                    if (LocalIP != null)
+                        msgLocalDoH2 += Environment.NewLine + "https://" + LocalIP.ToString() + "/dns-query";
+                    msgLocalDoH2 += Environment.NewLine;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH2, Color.DodgerBlue));
+                }
             }
         }
 
@@ -914,6 +1080,12 @@ namespace SecureDNSClient
             if (WorkingDnsList.Count > 1)
                 WorkingDnsList = WorkingDnsList.OrderByDescending(t => t.Item1).ToList();
 
+            // Get number of max servers
+            int maxServers = decimal.ToInt32(CustomNumericUpDownMaxServers.Value);
+
+            TheDll = new SecureDNS().DnsProxyDll;
+            using StreamWriter theDll = new(TheDll, false);
+
             // Find fastest servers, max 10
             for (int n = 0; n < WorkingDnsList.Count; n++)
             {
@@ -922,40 +1094,56 @@ namespace SecureDNSClient
                 string host = latencyHost.Item2;
 
                 hosts += " -u " + host;
+                theDll.WriteLine(host);
 
                 countUsingServers = n + 1;
-                if (n >= 9) break;
+                if (n >= maxServers - 1) break;
             }
 
             // Start dnsproxy
-            string dnsproxyArgs = "-l 0.0.0.0 -p 53";
+            string dnsproxyArgs = "-l 0.0.0.0";
+
+            // Add Legacy DNS args
+            dnsproxyArgs += " -p 53";
 
             // Add DoH args
-            if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath) && !CustomCheckBoxDontAskCertificate.Checked)
-                dnsproxyArgs += " --https-port=443 --tls-crt=\"" + SecureDNS.CertPath + "\" --tls-key=\"" + SecureDNS.KeyPath + "\"";
-
+            if (CustomRadioButtonWorkingModeDNSandDoH.Checked)
+            {
+                if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
+                    dnsproxyArgs += " --https-port=443 --tls-crt=\"" + SecureDNS.CertPath + "\" --tls-key=\"" + SecureDNS.KeyPath + "\"";
+            }
+            
             // Add Insecure
             if (CustomCheckBoxInsecure.Checked)
                 dnsproxyArgs += " --insecure";
 
             // Add hosts
-            dnsproxyArgs += hosts;
+            //dnsproxyArgs += hosts;
+            dnsproxyArgs += $" -u \"{TheDll}\"";
             if (countUsingServers > 1)
                 dnsproxyArgs += " --all-servers -b " + bootstrap + ":53";
             else
                 dnsproxyArgs += " -b " + bootstrap + ":53";
 
             // Execute DnsProxy
-            ConnectPID = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, false, Info.CurrentPath, ProcessPriorityClass.AboveNormal);
+            ConnectPID = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, false, Info.CurrentPath, GetCPUPriority());
 
             // Write dnsproxy message to log
-            object MsgDnsProxy = string.Empty;
-            if (countUsingServers > 1)
-                MsgDnsProxy = "Local DNS Server started using " + countUsingServers + " fastest servers in parallel." + Environment.NewLine;
+            object msgDnsProxy = string.Empty;
+            if (ConnectPID != -1)
+            {
+                if (countUsingServers > 1)
+                    msgDnsProxy = "Local DNS Server started using " + countUsingServers + " fastest servers in parallel." + Environment.NewLine;
+                else
+                    msgDnsProxy = "Local DNS Server started using " + countUsingServers + " server." + Environment.NewLine;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy.ToString().IsNotNull(), Color.MediumSeaGreen));
+            }
             else
-                MsgDnsProxy = "Local DNS Server started using " + countUsingServers + " server." + Environment.NewLine;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(MsgDnsProxy.ToString().IsNotNull(), Color.MediumSeaGreen));
-
+            {
+                msgDnsProxy = "Error: Couldn't start DNSProxy!";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy.ToString().IsNotNull(), Color.IndianRed));
+            }
+            
         }
 
         private async void ConnectDNSCrypt()
@@ -985,21 +1173,32 @@ namespace SecureDNSClient
             DNSCryptConfigEditor dnsCryptConfig = new(SecureDNS.DNSCryptConfigPath);
             dnsCryptConfig.EditHTTPProxy(proxyScheme);
             dnsCryptConfig.EditBootstrapDNS(bootstrap);
-            if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath) && !CustomCheckBoxDontAskCertificate.Checked)
+
+            // Edit DNSCrypt Config File: Enable DoH
+            if (CustomRadioButtonWorkingModeDNSandDoH.Checked)
             {
-                dnsCryptConfig.EnableDoH();
-                dnsCryptConfig.EditCertKeyPath(SecureDNS.KeyPath);
-                dnsCryptConfig.EditCertPath(SecureDNS.CertPath);
+                if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
+                {
+                    dnsCryptConfig.EnableDoH();
+                    dnsCryptConfig.EditCertKeyPath(SecureDNS.KeyPath);
+                    dnsCryptConfig.EditCertPath(SecureDNS.CertPath);
+                }
+                else
+                {
+                    dnsCryptConfig.DisableDoH();
+                }
             }
             else
             {
                 dnsCryptConfig.DisableDoH();
             }
-                
+
+            // Save DNSCrypt Config File
             await dnsCryptConfig.WriteAsync();
 
             // Execute DNSCrypt
             Process process = new();
+            process.PriorityClass = GetCPUPriority();
             process.StartInfo.FileName = SecureDNS.DNSCrypt;
             process.StartInfo.Arguments = SecureDNS.DNSCryptConfigPath;
             process.StartInfo.CreateNoWindow = true;
@@ -1041,7 +1240,7 @@ namespace SecureDNSClient
         private async void DPIBasic()
         {
             // Write Connect first to log
-            if (!IsConnected)
+            if (!IsDNSConnected && !IsDoHConnected)
             {
                 string msgConnect = "Connect first." + Environment.NewLine;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
@@ -1050,6 +1249,10 @@ namespace SecureDNSClient
 
             // Check Internet Connectivity
             if (!IsInternetAlive()) return;
+
+            // Get and check blocked domain is valid
+            bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
+            if (!isBlockedDomainValid) return;
 
             // Kill GoodbyeDPI
             if (ProcessManager.FindProcessByName("goodbyedpi"))
@@ -1121,7 +1324,7 @@ namespace SecureDNSClient
             }
 
             // Execute GoodByeDPI
-            ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary")), ProcessPriorityClass.High);
+            ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary")), GetCPUPriority());
 
             if (ProcessManager.FindProcessByName("goodbyedpi"))
             {
@@ -1144,7 +1347,7 @@ namespace SecureDNSClient
                 }
 
                 // Check DPI works
-                await CheckDPIWorks(CustomTextBoxCheckDPIHost.Text);
+                await CheckDPIWorks(blockedDomain);
             }
             else
             {
@@ -1157,7 +1360,7 @@ namespace SecureDNSClient
         private async void DPIAdvanced()
         {
             // Write Connect first to log
-            if (!IsConnected)
+            if (!IsDNSConnected && !IsDoHConnected)
             {
                 string msgConnect = "Connect first." + Environment.NewLine;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
@@ -1166,6 +1369,10 @@ namespace SecureDNSClient
 
             // Check Internet Connectivity
             if (!IsInternetAlive()) return;
+
+            // Get and check blocked domain is valid
+            bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
+            if (!isBlockedDomainValid) return;
 
             // Write IP Error to log
             if (CustomCheckBoxDPIAdvIpId.Checked)
@@ -1318,7 +1525,7 @@ namespace SecureDNSClient
             string text = "Advanced";
 
             // Execute GoodByeDPI
-            ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary")), ProcessPriorityClass.High);
+            ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary")), GetCPUPriority());
 
             if (ProcessManager.FindProcessByName("goodbyedpi"))
             {
@@ -1341,7 +1548,7 @@ namespace SecureDNSClient
                 }
 
                 // Check DPI works
-                await CheckDPIWorks(CustomTextBoxCheckDPIHost.Text);
+                await CheckDPIWorks(blockedDomain);
             }
             else
             {
@@ -1443,7 +1650,7 @@ namespace SecureDNSClient
             {
                 // Write set DNS first to log
                 string msgDPI1 = $"DPI Check: ";
-                string msgDPI2 = $"Set DNS first.{Environment.NewLine}";
+                string msgDPI2 = $"Set DNS to check.{Environment.NewLine}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
                 CheckDPIWorksStopWatch.Stop();
@@ -1454,7 +1661,9 @@ namespace SecureDNSClient
         //============================== DNS
         private async void SetDNS()
         {
+            // Get NIC Name
             string? nicName = CustomComboBoxNICs.SelectedItem as string;
+
             // Check if NIC Name is empty
             if (string.IsNullOrEmpty(nicName))
             {
@@ -1476,15 +1685,23 @@ namespace SecureDNSClient
             {
                 // Set DNS
                 // Write Connect first to log
-                if (!IsConnected)
+                if (!IsDNSConnected)
                 {
-                    string msgConnect = "Connect first." + Environment.NewLine;
+                    string msgConnect = string.Empty;
+                    if (!IsDoHConnected)
+                        msgConnect = "Connect first." + Environment.NewLine;
+                    else
+                        msgConnect = "Activate legacy DNS first." + Environment.NewLine;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
                     return;
                 }
 
                 // Check Internet Connectivity
                 if (!IsInternetAlive()) return;
+
+                // Get and check blocked domain is valid
+                bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
+                if (!isBlockedDomainValid) return;
 
                 // Set DNS
                 Network.SetDNS(nic, dnss);
@@ -1516,7 +1733,7 @@ namespace SecureDNSClient
                 }
 
                 // Check DPI works
-                await CheckDPIWorks(CustomTextBoxCheckDPIHost.Text);
+                await CheckDPIWorks(blockedDomain);
             }
             else
             {
@@ -1546,13 +1763,23 @@ namespace SecureDNSClient
         private void CustomButtonEditCustomServers_Click(object sender, EventArgs e)
         {
             FileDirectory.CreateEmptyFile(SecureDNS.CustomServersPath);
-            ProcessManager.ExecuteOnly("notepad", SecureDNS.CustomServersPath, false, false, Info.CurrentPath);
+            int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.CustomServersPath, false, false, Info.CurrentPath);
+            if (notepad == -1)
+            {
+                string msg = "Notepad is not installed on your system.";
+                CustomRichTextBoxLog.AppendText(msg + Environment.NewLine, Color.IndianRed);
+            }
         }
 
         private void CustomButtonViewWorkingServers_Click(object sender, EventArgs e)
         {
             FileDirectory.CreateEmptyFile(SecureDNS.WorkingServersPath);
-            ProcessManager.ExecuteOnly("notepad", SecureDNS.WorkingServersPath, false, false, Info.CurrentPath);
+            int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.WorkingServersPath, false, false, Info.CurrentPath);
+            if (notepad == -1)
+            {
+                string msg = "Notepad is not installed on your system.";
+                CustomRichTextBoxLog.AppendText(msg + Environment.NewLine, Color.IndianRed);
+            }
         }
 
         private void CustomButtonCheck_Click(object? sender, EventArgs? e)
@@ -1815,7 +2042,12 @@ namespace SecureDNSClient
         private void CustomButtonDPIAdvBlacklist_Click(object sender, EventArgs e)
         {
             FileDirectory.CreateEmptyFile(SecureDNS.DPIBlacklistPath);
-            ProcessManager.ExecuteOnly("notepad", SecureDNS.DPIBlacklistPath, false, false, Info.CurrentPath);
+            int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.DPIBlacklistPath, false, false, Info.CurrentPath);
+            if (notepad == -1)
+            {
+                string msg = "Notepad is not installed on your system.";
+                CustomRichTextBoxLog.AppendText(msg + Environment.NewLine, Color.IndianRed);
+            }
         }
 
         private void CustomButtonDPIAdvActivate_Click(object sender, EventArgs e)
@@ -1887,6 +2119,12 @@ namespace SecureDNSClient
                 AppSettings.AddSetting(CustomCheckBoxDNSCrypt, nameof(CustomCheckBoxDNSCrypt.Checked), CustomCheckBoxDNSCrypt.Checked);
                 AppSettings.AddSetting(CustomTextBoxHTTPProxy, nameof(CustomTextBoxHTTPProxy.Text), CustomTextBoxHTTPProxy.Text);
             }
+
+            if (sender is CustomRadioButton crbWorkingModeDNS && crbWorkingModeDNS.Name == CustomRadioButtonWorkingModeDNS.Name)
+            {
+                AppSettings.AddSetting(CustomRadioButtonWorkingModeDNS, nameof(CustomRadioButtonWorkingModeDNS.Checked), CustomRadioButtonWorkingModeDNS.Checked);
+                AppSettings.AddSetting(CustomRadioButtonWorkingModeDNSandDoH, nameof(CustomRadioButtonWorkingModeDNSandDoH.Checked), CustomRadioButtonWorkingModeDNSandDoH.Checked);
+            }
         }
 
         //============================== Closing
@@ -1941,6 +2179,7 @@ namespace SecureDNSClient
             AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomNumericUpDown), "Value");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
 
             // Add Settings to save

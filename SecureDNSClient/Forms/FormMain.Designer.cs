@@ -110,15 +110,29 @@
             this.CustomLabelSetDNSInfo = new CustomControls.CustomLabel();
             this.CustomComboBoxNICs = new CustomControls.CustomComboBox();
             this.TabPageSettings = new System.Windows.Forms.TabPage();
+            this.CustomTabControlSettings = new CustomControls.CustomTabControl();
+            this.TabPageSettingsWorkingMode = new System.Windows.Forms.TabPage();
+            this.CustomLabelSettingsInfoWorkingMode2 = new CustomControls.CustomLabel();
+            this.CustomRadioButtonWorkingModeDNSandDoH = new CustomControls.CustomRadioButton();
+            this.CustomRadioButtonWorkingModeDNS = new CustomControls.CustomRadioButton();
+            this.CustomLabelSettingsInfoWorkingMode1 = new CustomControls.CustomLabel();
+            this.TabPageSettingsCPU = new System.Windows.Forms.TabPage();
+            this.CustomRadioButtonCPULow = new CustomControls.CustomRadioButton();
+            this.CustomRadioButtonCPUBelowNormal = new CustomControls.CustomRadioButton();
+            this.CustomRadioButtonCPUNormal = new CustomControls.CustomRadioButton();
+            this.CustomRadioButtonCPUAboveNormal = new CustomControls.CustomRadioButton();
+            this.CustomRadioButtonCPUHigh = new CustomControls.CustomRadioButton();
+            this.CustomLabelSettingsInfoCPU = new CustomControls.CustomLabel();
+            this.TabPageSettingsOthers = new System.Windows.Forms.TabPage();
+            this.CustomLabelCheckTimeout = new CustomControls.CustomLabel();
             this.CustomTextBoxCheckDPIHost = new CustomControls.CustomTextBox();
+            this.CustomNumericUpDownCheckTimeout = new CustomControls.CustomNumericUpDown();
             this.CustomLabelCheckDPIInfo = new CustomControls.CustomLabel();
+            this.CustomButtonRestoreDefault = new CustomControls.CustomButton();
             this.CustomCheckBoxSettingDisableAudioAlert = new CustomControls.CustomCheckBox();
+            this.CustomLabelBootstrapDNS = new CustomControls.CustomLabel();
             this.CustomCheckBoxDontAskCertificate = new CustomControls.CustomCheckBox();
             this.CustomTextBoxBootstrapDNS = new CustomControls.CustomTextBox();
-            this.CustomLabelBootstrapDNS = new CustomControls.CustomLabel();
-            this.CustomButtonRestoreDefault = new CustomControls.CustomButton();
-            this.CustomNumericUpDownCheckTimeout = new CustomControls.CustomNumericUpDown();
-            this.CustomLabelCheckTimeout = new CustomControls.CustomLabel();
             this.TabPageAbout = new System.Windows.Forms.TabPage();
             this.CustomLabelAboutUsing = new CustomControls.CustomLabel();
             this.CustomLabelAboutVersion = new CustomControls.CustomLabel();
@@ -142,6 +156,8 @@
             this.CustomRichTextBoxStatusIsDPIActive = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsConnected = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusWorkingServers = new CustomControls.CustomRichTextBox();
+            this.CustomLabelMaxServers = new CustomControls.CustomLabel();
+            this.CustomNumericUpDownMaxServers = new CustomControls.CustomNumericUpDown();
             this.CustomGroupBoxLog.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSSLFragment)).BeginInit();
             this.CustomTabControlMain.SuspendLayout();
@@ -163,11 +179,16 @@
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvF)).BeginInit();
             this.TabPageSetDNS.SuspendLayout();
             this.TabPageSettings.SuspendLayout();
+            this.CustomTabControlSettings.SuspendLayout();
+            this.TabPageSettingsWorkingMode.SuspendLayout();
+            this.TabPageSettingsCPU.SuspendLayout();
+            this.TabPageSettingsOthers.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownCheckTimeout)).BeginInit();
             this.TabPageAbout.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBoxAbout)).BeginInit();
             this.CustomStatusStrip1.SuspendLayout();
             this.CustomGroupBoxStatus.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownMaxServers)).BeginInit();
             this.SuspendLayout();
             // 
             // CustomRichTextBoxLog
@@ -200,7 +221,7 @@
             this.CustomRichTextBoxLog.SelectionLength = 0;
             this.CustomRichTextBoxLog.SelectionStart = 0;
             this.CustomRichTextBoxLog.ShortcutsEnabled = true;
-            this.CustomRichTextBoxLog.Size = new System.Drawing.Size(696, 187);
+            this.CustomRichTextBoxLog.Size = new System.Drawing.Size(694, 185);
             this.CustomRichTextBoxLog.TabIndex = 0;
             this.CustomRichTextBoxLog.Texts = "";
             this.CustomRichTextBoxLog.UnderlinedStyle = false;
@@ -223,7 +244,8 @@
             // 
             // CustomGroupBoxLog
             // 
-            this.CustomGroupBoxLog.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.CustomGroupBoxLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.CustomGroupBoxLog.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.CustomGroupBoxLog.BorderColor = System.Drawing.Color.Blue;
@@ -231,7 +253,7 @@
             this.CustomGroupBoxLog.Location = new System.Drawing.Point(1, 356);
             this.CustomGroupBoxLog.Margin = new System.Windows.Forms.Padding(1);
             this.CustomGroupBoxLog.Name = "CustomGroupBoxLog";
-            this.CustomGroupBoxLog.Size = new System.Drawing.Size(702, 209);
+            this.CustomGroupBoxLog.Size = new System.Drawing.Size(700, 207);
             this.CustomGroupBoxLog.TabIndex = 3;
             this.CustomGroupBoxLog.TabStop = false;
             this.CustomGroupBoxLog.Text = "Log";
@@ -503,11 +525,13 @@
             this.CustomTabControlMain.Controls.Add(this.TabPageSettings);
             this.CustomTabControlMain.Controls.Add(this.TabPageAbout);
             this.CustomTabControlMain.HideTabHeader = false;
+            this.CustomTabControlMain.ItemSize = new System.Drawing.Size(90, 21);
             this.CustomTabControlMain.Location = new System.Drawing.Point(1, 1);
             this.CustomTabControlMain.Margin = new System.Windows.Forms.Padding(0);
             this.CustomTabControlMain.Name = "CustomTabControlMain";
             this.CustomTabControlMain.SelectedIndex = 0;
-            this.CustomTabControlMain.Size = new System.Drawing.Size(702, 313);
+            this.CustomTabControlMain.Size = new System.Drawing.Size(700, 313);
+            this.CustomTabControlMain.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             this.CustomTabControlMain.TabIndex = 6;
             this.CustomTabControlMain.Tag = 1;
             // 
@@ -518,7 +542,7 @@
             this.TabPageSecureDNS.Location = new System.Drawing.Point(4, 25);
             this.TabPageSecureDNS.Name = "TabPageSecureDNS";
             this.TabPageSecureDNS.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSecureDNS.Size = new System.Drawing.Size(694, 284);
+            this.TabPageSecureDNS.Size = new System.Drawing.Size(692, 284);
             this.TabPageSecureDNS.TabIndex = 0;
             this.TabPageSecureDNS.Tag = 0;
             this.TabPageSecureDNS.Text = "Secure DNS";
@@ -532,10 +556,12 @@
             this.CustomTabControlSecureDNS.Controls.Add(this.TabPageSetDNS);
             this.CustomTabControlSecureDNS.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CustomTabControlSecureDNS.HideTabHeader = false;
+            this.CustomTabControlSecureDNS.ItemSize = new System.Drawing.Size(90, 21);
             this.CustomTabControlSecureDNS.Location = new System.Drawing.Point(3, 3);
             this.CustomTabControlSecureDNS.Name = "CustomTabControlSecureDNS";
             this.CustomTabControlSecureDNS.SelectedIndex = 0;
-            this.CustomTabControlSecureDNS.Size = new System.Drawing.Size(688, 278);
+            this.CustomTabControlSecureDNS.Size = new System.Drawing.Size(686, 278);
+            this.CustomTabControlSecureDNS.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             this.CustomTabControlSecureDNS.TabIndex = 0;
             this.CustomTabControlSecureDNS.Tag = 0;
             // 
@@ -553,7 +579,7 @@
             this.TabPageCheck.Location = new System.Drawing.Point(4, 25);
             this.TabPageCheck.Name = "TabPageCheck";
             this.TabPageCheck.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageCheck.Size = new System.Drawing.Size(680, 249);
+            this.TabPageCheck.Size = new System.Drawing.Size(678, 249);
             this.TabPageCheck.TabIndex = 0;
             this.TabPageCheck.Tag = 0;
             this.TabPageCheck.Text = "1. Check";
@@ -597,7 +623,7 @@
             this.TabPageConnect.Location = new System.Drawing.Point(4, 25);
             this.TabPageConnect.Name = "TabPageConnect";
             this.TabPageConnect.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageConnect.Size = new System.Drawing.Size(680, 249);
+            this.TabPageConnect.Size = new System.Drawing.Size(678, 249);
             this.TabPageConnect.TabIndex = 1;
             this.TabPageConnect.Tag = 1;
             this.TabPageConnect.Text = "2. Connect";
@@ -648,7 +674,7 @@
             this.TabPageDPI.Location = new System.Drawing.Point(4, 25);
             this.TabPageDPI.Name = "TabPageDPI";
             this.TabPageDPI.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageDPI.Size = new System.Drawing.Size(680, 249);
+            this.TabPageDPI.Size = new System.Drawing.Size(678, 249);
             this.TabPageDPI.TabIndex = 2;
             this.TabPageDPI.Tag = 2;
             this.TabPageDPI.Text = "3. Bypass DPI";
@@ -660,12 +686,14 @@
             this.CustomTabControlDPIBasicAdvanced.Controls.Add(this.TabPageDPIAdvanced);
             this.CustomTabControlDPIBasicAdvanced.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CustomTabControlDPIBasicAdvanced.HideTabHeader = false;
+            this.CustomTabControlDPIBasicAdvanced.ItemSize = new System.Drawing.Size(90, 21);
             this.CustomTabControlDPIBasicAdvanced.Location = new System.Drawing.Point(3, 3);
             this.CustomTabControlDPIBasicAdvanced.Name = "CustomTabControlDPIBasicAdvanced";
             this.CustomTabControlDPIBasicAdvanced.SelectedIndex = 0;
-            this.CustomTabControlDPIBasicAdvanced.Size = new System.Drawing.Size(674, 243);
+            this.CustomTabControlDPIBasicAdvanced.Size = new System.Drawing.Size(672, 243);
+            this.CustomTabControlDPIBasicAdvanced.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             this.CustomTabControlDPIBasicAdvanced.TabIndex = 13;
-            this.CustomTabControlDPIBasicAdvanced.Tag = 1;
+            this.CustomTabControlDPIBasicAdvanced.Tag = 0;
             // 
             // TabPageDPIBasic
             // 
@@ -689,7 +717,7 @@
             this.TabPageDPIBasic.Location = new System.Drawing.Point(4, 25);
             this.TabPageDPIBasic.Name = "TabPageDPIBasic";
             this.TabPageDPIBasic.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageDPIBasic.Size = new System.Drawing.Size(666, 214);
+            this.TabPageDPIBasic.Size = new System.Drawing.Size(664, 214);
             this.TabPageDPIBasic.TabIndex = 0;
             this.TabPageDPIBasic.Tag = 0;
             this.TabPageDPIBasic.Text = "Basic";
@@ -867,7 +895,7 @@
             this.TabPageDPIAdvanced.Location = new System.Drawing.Point(4, 25);
             this.TabPageDPIAdvanced.Name = "TabPageDPIAdvanced";
             this.TabPageDPIAdvanced.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageDPIAdvanced.Size = new System.Drawing.Size(666, 214);
+            this.TabPageDPIAdvanced.Size = new System.Drawing.Size(664, 214);
             this.TabPageDPIAdvanced.TabIndex = 1;
             this.TabPageDPIAdvanced.Tag = 1;
             this.TabPageDPIAdvanced.Text = "Advanced";
@@ -1461,7 +1489,7 @@
             this.TabPageSetDNS.Location = new System.Drawing.Point(4, 25);
             this.TabPageSetDNS.Name = "TabPageSetDNS";
             this.TabPageSetDNS.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSetDNS.Size = new System.Drawing.Size(680, 249);
+            this.TabPageSetDNS.Size = new System.Drawing.Size(678, 249);
             this.TabPageSetDNS.TabIndex = 3;
             this.TabPageSetDNS.Tag = 3;
             this.TabPageSetDNS.Text = "4. Set DNS";
@@ -1528,22 +1556,252 @@
             // TabPageSettings
             // 
             this.TabPageSettings.BackColor = System.Drawing.Color.Transparent;
-            this.TabPageSettings.Controls.Add(this.CustomTextBoxCheckDPIHost);
-            this.TabPageSettings.Controls.Add(this.CustomLabelCheckDPIInfo);
-            this.TabPageSettings.Controls.Add(this.CustomCheckBoxSettingDisableAudioAlert);
-            this.TabPageSettings.Controls.Add(this.CustomCheckBoxDontAskCertificate);
-            this.TabPageSettings.Controls.Add(this.CustomTextBoxBootstrapDNS);
-            this.TabPageSettings.Controls.Add(this.CustomLabelBootstrapDNS);
-            this.TabPageSettings.Controls.Add(this.CustomButtonRestoreDefault);
-            this.TabPageSettings.Controls.Add(this.CustomNumericUpDownCheckTimeout);
-            this.TabPageSettings.Controls.Add(this.CustomLabelCheckTimeout);
+            this.TabPageSettings.Controls.Add(this.CustomTabControlSettings);
             this.TabPageSettings.Location = new System.Drawing.Point(4, 25);
             this.TabPageSettings.Name = "TabPageSettings";
             this.TabPageSettings.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSettings.Size = new System.Drawing.Size(694, 284);
+            this.TabPageSettings.Size = new System.Drawing.Size(692, 284);
             this.TabPageSettings.TabIndex = 1;
             this.TabPageSettings.Tag = 1;
             this.TabPageSettings.Text = "Settings";
+            // 
+            // CustomTabControlSettings
+            // 
+            this.CustomTabControlSettings.Alignment = System.Windows.Forms.TabAlignment.Left;
+            this.CustomTabControlSettings.BorderColor = System.Drawing.Color.Blue;
+            this.CustomTabControlSettings.Controls.Add(this.TabPageSettingsWorkingMode);
+            this.CustomTabControlSettings.Controls.Add(this.TabPageSettingsCPU);
+            this.CustomTabControlSettings.Controls.Add(this.TabPageSettingsOthers);
+            this.CustomTabControlSettings.HideTabHeader = false;
+            this.CustomTabControlSettings.ItemSize = new System.Drawing.Size(30, 90);
+            this.CustomTabControlSettings.Location = new System.Drawing.Point(3, 3);
+            this.CustomTabControlSettings.Margin = new System.Windows.Forms.Padding(0);
+            this.CustomTabControlSettings.Multiline = true;
+            this.CustomTabControlSettings.Name = "CustomTabControlSettings";
+            this.CustomTabControlSettings.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.CustomTabControlSettings.SelectedIndex = 0;
+            this.CustomTabControlSettings.Size = new System.Drawing.Size(688, 278);
+            this.CustomTabControlSettings.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
+            this.CustomTabControlSettings.TabIndex = 10;
+            this.CustomTabControlSettings.Tag = 0;
+            // 
+            // TabPageSettingsWorkingMode
+            // 
+            this.TabPageSettingsWorkingMode.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageSettingsWorkingMode.Controls.Add(this.CustomNumericUpDownMaxServers);
+            this.TabPageSettingsWorkingMode.Controls.Add(this.CustomLabelMaxServers);
+            this.TabPageSettingsWorkingMode.Controls.Add(this.CustomLabelSettingsInfoWorkingMode2);
+            this.TabPageSettingsWorkingMode.Controls.Add(this.CustomRadioButtonWorkingModeDNSandDoH);
+            this.TabPageSettingsWorkingMode.Controls.Add(this.CustomRadioButtonWorkingModeDNS);
+            this.TabPageSettingsWorkingMode.Controls.Add(this.CustomLabelSettingsInfoWorkingMode1);
+            this.TabPageSettingsWorkingMode.Location = new System.Drawing.Point(94, 4);
+            this.TabPageSettingsWorkingMode.Name = "TabPageSettingsWorkingMode";
+            this.TabPageSettingsWorkingMode.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageSettingsWorkingMode.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsWorkingMode.TabIndex = 0;
+            this.TabPageSettingsWorkingMode.Tag = 0;
+            this.TabPageSettingsWorkingMode.Text = "Working mode";
+            // 
+            // CustomLabelSettingsInfoWorkingMode2
+            // 
+            this.CustomLabelSettingsInfoWorkingMode2.AutoSize = true;
+            this.CustomLabelSettingsInfoWorkingMode2.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSettingsInfoWorkingMode2.Border = false;
+            this.CustomLabelSettingsInfoWorkingMode2.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSettingsInfoWorkingMode2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSettingsInfoWorkingMode2.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSettingsInfoWorkingMode2.Location = new System.Drawing.Point(50, 250);
+            this.CustomLabelSettingsInfoWorkingMode2.Name = "CustomLabelSettingsInfoWorkingMode2";
+            this.CustomLabelSettingsInfoWorkingMode2.RoundedCorners = 0;
+            this.CustomLabelSettingsInfoWorkingMode2.Size = new System.Drawing.Size(264, 17);
+            this.CustomLabelSettingsInfoWorkingMode2.TabIndex = 3;
+            this.CustomLabelSettingsInfoWorkingMode2.Text = "* Reconnect is require for changes to take effect.";
+            // 
+            // CustomRadioButtonWorkingModeDNSandDoH
+            // 
+            this.CustomRadioButtonWorkingModeDNSandDoH.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRadioButtonWorkingModeDNSandDoH.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonWorkingModeDNSandDoH.CheckColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonWorkingModeDNSandDoH.ForeColor = System.Drawing.Color.White;
+            this.CustomRadioButtonWorkingModeDNSandDoH.Location = new System.Drawing.Point(50, 130);
+            this.CustomRadioButtonWorkingModeDNSandDoH.Name = "CustomRadioButtonWorkingModeDNSandDoH";
+            this.CustomRadioButtonWorkingModeDNSandDoH.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomRadioButtonWorkingModeDNSandDoH.Size = new System.Drawing.Size(234, 17);
+            this.CustomRadioButtonWorkingModeDNSandDoH.TabIndex = 2;
+            this.CustomRadioButtonWorkingModeDNSandDoH.Text = "Legacy DNS + DNS-Over-HTTPS Server";
+            this.CustomRadioButtonWorkingModeDNSandDoH.UseVisualStyleBackColor = false;
+            // 
+            // CustomRadioButtonWorkingModeDNS
+            // 
+            this.CustomRadioButtonWorkingModeDNS.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRadioButtonWorkingModeDNS.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonWorkingModeDNS.CheckColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonWorkingModeDNS.Checked = true;
+            this.CustomRadioButtonWorkingModeDNS.ForeColor = System.Drawing.Color.White;
+            this.CustomRadioButtonWorkingModeDNS.Location = new System.Drawing.Point(50, 90);
+            this.CustomRadioButtonWorkingModeDNS.Name = "CustomRadioButtonWorkingModeDNS";
+            this.CustomRadioButtonWorkingModeDNS.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomRadioButtonWorkingModeDNS.Size = new System.Drawing.Size(123, 17);
+            this.CustomRadioButtonWorkingModeDNS.TabIndex = 1;
+            this.CustomRadioButtonWorkingModeDNS.TabStop = true;
+            this.CustomRadioButtonWorkingModeDNS.Text = "Legacy DNS Server";
+            this.CustomRadioButtonWorkingModeDNS.UseVisualStyleBackColor = false;
+            this.CustomRadioButtonWorkingModeDNS.CheckedChanged += new System.EventHandler(this.SecureDNSClient_CheckedChanged);
+            // 
+            // CustomLabelSettingsInfoWorkingMode1
+            // 
+            this.CustomLabelSettingsInfoWorkingMode1.AutoSize = true;
+            this.CustomLabelSettingsInfoWorkingMode1.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSettingsInfoWorkingMode1.Border = false;
+            this.CustomLabelSettingsInfoWorkingMode1.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSettingsInfoWorkingMode1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSettingsInfoWorkingMode1.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSettingsInfoWorkingMode1.Location = new System.Drawing.Point(50, 30);
+            this.CustomLabelSettingsInfoWorkingMode1.Name = "CustomLabelSettingsInfoWorkingMode1";
+            this.CustomLabelSettingsInfoWorkingMode1.RoundedCorners = 0;
+            this.CustomLabelSettingsInfoWorkingMode1.Size = new System.Drawing.Size(396, 32);
+            this.CustomLabelSettingsInfoWorkingMode1.TabIndex = 0;
+            this.CustomLabelSettingsInfoWorkingMode1.Text = "Legacy DNS Server: You can set and unset DNS easily.\r\nDNS Over HTTPS Server: You " +
+    "need to install certificate and set it manually.";
+            // 
+            // TabPageSettingsCPU
+            // 
+            this.TabPageSettingsCPU.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageSettingsCPU.Controls.Add(this.CustomRadioButtonCPULow);
+            this.TabPageSettingsCPU.Controls.Add(this.CustomRadioButtonCPUBelowNormal);
+            this.TabPageSettingsCPU.Controls.Add(this.CustomRadioButtonCPUNormal);
+            this.TabPageSettingsCPU.Controls.Add(this.CustomRadioButtonCPUAboveNormal);
+            this.TabPageSettingsCPU.Controls.Add(this.CustomRadioButtonCPUHigh);
+            this.TabPageSettingsCPU.Controls.Add(this.CustomLabelSettingsInfoCPU);
+            this.TabPageSettingsCPU.Location = new System.Drawing.Point(94, 4);
+            this.TabPageSettingsCPU.Name = "TabPageSettingsCPU";
+            this.TabPageSettingsCPU.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageSettingsCPU.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsCPU.TabIndex = 1;
+            this.TabPageSettingsCPU.Tag = 1;
+            this.TabPageSettingsCPU.Text = "CPU";
+            // 
+            // CustomRadioButtonCPULow
+            // 
+            this.CustomRadioButtonCPULow.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRadioButtonCPULow.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPULow.CheckColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPULow.ForeColor = System.Drawing.Color.White;
+            this.CustomRadioButtonCPULow.Location = new System.Drawing.Point(50, 170);
+            this.CustomRadioButtonCPULow.Name = "CustomRadioButtonCPULow";
+            this.CustomRadioButtonCPULow.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomRadioButtonCPULow.Size = new System.Drawing.Size(42, 17);
+            this.CustomRadioButtonCPULow.TabIndex = 5;
+            this.CustomRadioButtonCPULow.Text = "Low";
+            this.CustomRadioButtonCPULow.UseVisualStyleBackColor = false;
+            // 
+            // CustomRadioButtonCPUBelowNormal
+            // 
+            this.CustomRadioButtonCPUBelowNormal.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRadioButtonCPUBelowNormal.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPUBelowNormal.CheckColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPUBelowNormal.ForeColor = System.Drawing.Color.White;
+            this.CustomRadioButtonCPUBelowNormal.Location = new System.Drawing.Point(50, 145);
+            this.CustomRadioButtonCPUBelowNormal.Name = "CustomRadioButtonCPUBelowNormal";
+            this.CustomRadioButtonCPUBelowNormal.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomRadioButtonCPUBelowNormal.Size = new System.Drawing.Size(95, 17);
+            this.CustomRadioButtonCPUBelowNormal.TabIndex = 4;
+            this.CustomRadioButtonCPUBelowNormal.Text = "Below normal";
+            this.CustomRadioButtonCPUBelowNormal.UseVisualStyleBackColor = false;
+            // 
+            // CustomRadioButtonCPUNormal
+            // 
+            this.CustomRadioButtonCPUNormal.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRadioButtonCPUNormal.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPUNormal.CheckColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPUNormal.Checked = true;
+            this.CustomRadioButtonCPUNormal.ForeColor = System.Drawing.Color.White;
+            this.CustomRadioButtonCPUNormal.Location = new System.Drawing.Point(50, 120);
+            this.CustomRadioButtonCPUNormal.Name = "CustomRadioButtonCPUNormal";
+            this.CustomRadioButtonCPUNormal.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomRadioButtonCPUNormal.Size = new System.Drawing.Size(61, 17);
+            this.CustomRadioButtonCPUNormal.TabIndex = 3;
+            this.CustomRadioButtonCPUNormal.TabStop = true;
+            this.CustomRadioButtonCPUNormal.Text = "Normal";
+            this.CustomRadioButtonCPUNormal.UseVisualStyleBackColor = false;
+            // 
+            // CustomRadioButtonCPUAboveNormal
+            // 
+            this.CustomRadioButtonCPUAboveNormal.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRadioButtonCPUAboveNormal.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPUAboveNormal.CheckColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPUAboveNormal.ForeColor = System.Drawing.Color.White;
+            this.CustomRadioButtonCPUAboveNormal.Location = new System.Drawing.Point(50, 95);
+            this.CustomRadioButtonCPUAboveNormal.Name = "CustomRadioButtonCPUAboveNormal";
+            this.CustomRadioButtonCPUAboveNormal.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomRadioButtonCPUAboveNormal.Size = new System.Drawing.Size(97, 17);
+            this.CustomRadioButtonCPUAboveNormal.TabIndex = 2;
+            this.CustomRadioButtonCPUAboveNormal.Text = "Above normal";
+            this.CustomRadioButtonCPUAboveNormal.UseVisualStyleBackColor = false;
+            // 
+            // CustomRadioButtonCPUHigh
+            // 
+            this.CustomRadioButtonCPUHigh.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRadioButtonCPUHigh.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPUHigh.CheckColor = System.Drawing.Color.Blue;
+            this.CustomRadioButtonCPUHigh.ForeColor = System.Drawing.Color.White;
+            this.CustomRadioButtonCPUHigh.Location = new System.Drawing.Point(50, 70);
+            this.CustomRadioButtonCPUHigh.Name = "CustomRadioButtonCPUHigh";
+            this.CustomRadioButtonCPUHigh.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomRadioButtonCPUHigh.Size = new System.Drawing.Size(47, 17);
+            this.CustomRadioButtonCPUHigh.TabIndex = 1;
+            this.CustomRadioButtonCPUHigh.Text = "High";
+            this.CustomRadioButtonCPUHigh.UseVisualStyleBackColor = false;
+            // 
+            // CustomLabelSettingsInfoCPU
+            // 
+            this.CustomLabelSettingsInfoCPU.AutoSize = true;
+            this.CustomLabelSettingsInfoCPU.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSettingsInfoCPU.Border = false;
+            this.CustomLabelSettingsInfoCPU.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSettingsInfoCPU.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSettingsInfoCPU.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSettingsInfoCPU.Location = new System.Drawing.Point(50, 30);
+            this.CustomLabelSettingsInfoCPU.Name = "CustomLabelSettingsInfoCPU";
+            this.CustomLabelSettingsInfoCPU.RoundedCorners = 0;
+            this.CustomLabelSettingsInfoCPU.Size = new System.Drawing.Size(132, 15);
+            this.CustomLabelSettingsInfoCPU.TabIndex = 0;
+            this.CustomLabelSettingsInfoCPU.Text = "Set processing priorities";
+            // 
+            // TabPageSettingsOthers
+            // 
+            this.TabPageSettingsOthers.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageSettingsOthers.Controls.Add(this.CustomLabelCheckTimeout);
+            this.TabPageSettingsOthers.Controls.Add(this.CustomTextBoxCheckDPIHost);
+            this.TabPageSettingsOthers.Controls.Add(this.CustomNumericUpDownCheckTimeout);
+            this.TabPageSettingsOthers.Controls.Add(this.CustomLabelCheckDPIInfo);
+            this.TabPageSettingsOthers.Controls.Add(this.CustomButtonRestoreDefault);
+            this.TabPageSettingsOthers.Controls.Add(this.CustomCheckBoxSettingDisableAudioAlert);
+            this.TabPageSettingsOthers.Controls.Add(this.CustomLabelBootstrapDNS);
+            this.TabPageSettingsOthers.Controls.Add(this.CustomCheckBoxDontAskCertificate);
+            this.TabPageSettingsOthers.Controls.Add(this.CustomTextBoxBootstrapDNS);
+            this.TabPageSettingsOthers.Location = new System.Drawing.Point(94, 4);
+            this.TabPageSettingsOthers.Name = "TabPageSettingsOthers";
+            this.TabPageSettingsOthers.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageSettingsOthers.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsOthers.TabIndex = 2;
+            this.TabPageSettingsOthers.Tag = 2;
+            this.TabPageSettingsOthers.Text = "Others";
+            // 
+            // CustomLabelCheckTimeout
+            // 
+            this.CustomLabelCheckTimeout.AutoSize = true;
+            this.CustomLabelCheckTimeout.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelCheckTimeout.Border = false;
+            this.CustomLabelCheckTimeout.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelCheckTimeout.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelCheckTimeout.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelCheckTimeout.Location = new System.Drawing.Point(15, 10);
+            this.CustomLabelCheckTimeout.Name = "CustomLabelCheckTimeout";
+            this.CustomLabelCheckTimeout.RoundedCorners = 0;
+            this.CustomLabelCheckTimeout.Size = new System.Drawing.Size(144, 17);
+            this.CustomLabelCheckTimeout.TabIndex = 0;
+            this.CustomLabelCheckTimeout.Text = "Check timeout (seconds):";
             // 
             // CustomTextBoxCheckDPIHost
             // 
@@ -1557,7 +1815,7 @@
             this.CustomTextBoxCheckDPIHost.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxCheckDPIHost.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxCheckDPIHost.HideSelection = true;
-            this.CustomTextBoxCheckDPIHost.Location = new System.Drawing.Point(290, 203);
+            this.CustomTextBoxCheckDPIHost.Location = new System.Drawing.Point(280, 188);
             this.CustomTextBoxCheckDPIHost.MaxLength = 32767;
             this.CustomTextBoxCheckDPIHost.Multiline = false;
             this.CustomTextBoxCheckDPIHost.Name = "CustomTextBoxCheckDPIHost";
@@ -1572,111 +1830,12 @@
             this.CustomTextBoxCheckDPIHost.UsePasswordChar = false;
             this.CustomTextBoxCheckDPIHost.WordWrap = true;
             // 
-            // CustomLabelCheckDPIInfo
-            // 
-            this.CustomLabelCheckDPIInfo.AutoSize = true;
-            this.CustomLabelCheckDPIInfo.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelCheckDPIInfo.Border = false;
-            this.CustomLabelCheckDPIInfo.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelCheckDPIInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelCheckDPIInfo.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelCheckDPIInfo.Location = new System.Drawing.Point(25, 205);
-            this.CustomLabelCheckDPIInfo.Name = "CustomLabelCheckDPIInfo";
-            this.CustomLabelCheckDPIInfo.RoundedCorners = 0;
-            this.CustomLabelCheckDPIInfo.Size = new System.Drawing.Size(259, 17);
-            this.CustomLabelCheckDPIInfo.TabIndex = 8;
-            this.CustomLabelCheckDPIInfo.Text = "A DNS based blocked website to check. https://";
-            // 
-            // CustomCheckBoxSettingDisableAudioAlert
-            // 
-            this.CustomCheckBoxSettingDisableAudioAlert.BackColor = System.Drawing.Color.DimGray;
-            this.CustomCheckBoxSettingDisableAudioAlert.BorderColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingDisableAudioAlert.CheckColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingDisableAudioAlert.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingDisableAudioAlert.Location = new System.Drawing.Point(25, 160);
-            this.CustomCheckBoxSettingDisableAudioAlert.Name = "CustomCheckBoxSettingDisableAudioAlert";
-            this.CustomCheckBoxSettingDisableAudioAlert.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomCheckBoxSettingDisableAudioAlert.Size = new System.Drawing.Size(125, 17);
-            this.CustomCheckBoxSettingDisableAudioAlert.TabIndex = 6;
-            this.CustomCheckBoxSettingDisableAudioAlert.Text = "Disable audio alert.";
-            this.CustomCheckBoxSettingDisableAudioAlert.UseVisualStyleBackColor = false;
-            // 
-            // CustomCheckBoxDontAskCertificate
-            // 
-            this.CustomCheckBoxDontAskCertificate.BackColor = System.Drawing.Color.DimGray;
-            this.CustomCheckBoxDontAskCertificate.BorderColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxDontAskCertificate.CheckColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxDontAskCertificate.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDontAskCertificate.Location = new System.Drawing.Point(25, 115);
-            this.CustomCheckBoxDontAskCertificate.Name = "CustomCheckBoxDontAskCertificate";
-            this.CustomCheckBoxDontAskCertificate.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomCheckBoxDontAskCertificate.Size = new System.Drawing.Size(210, 17);
-            this.CustomCheckBoxDontAskCertificate.TabIndex = 4;
-            this.CustomCheckBoxDontAskCertificate.Text = "Don\'t ask for certificate every time.";
-            this.CustomCheckBoxDontAskCertificate.UseVisualStyleBackColor = false;
-            // 
-            // CustomTextBoxBootstrapDNS
-            // 
-            this.CustomTextBoxBootstrapDNS.AcceptsReturn = false;
-            this.CustomTextBoxBootstrapDNS.AcceptsTab = false;
-            this.CustomTextBoxBootstrapDNS.BackColor = System.Drawing.Color.DimGray;
-            this.CustomTextBoxBootstrapDNS.Border = true;
-            this.CustomTextBoxBootstrapDNS.BorderColor = System.Drawing.Color.Blue;
-            this.CustomTextBoxBootstrapDNS.BorderSize = 1;
-            this.CustomTextBoxBootstrapDNS.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
-            this.CustomTextBoxBootstrapDNS.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.CustomTextBoxBootstrapDNS.ForeColor = System.Drawing.Color.White;
-            this.CustomTextBoxBootstrapDNS.HideSelection = true;
-            this.CustomTextBoxBootstrapDNS.Location = new System.Drawing.Point(125, 68);
-            this.CustomTextBoxBootstrapDNS.MaxLength = 32767;
-            this.CustomTextBoxBootstrapDNS.Multiline = false;
-            this.CustomTextBoxBootstrapDNS.Name = "CustomTextBoxBootstrapDNS";
-            this.CustomTextBoxBootstrapDNS.ReadOnly = false;
-            this.CustomTextBoxBootstrapDNS.ScrollBars = System.Windows.Forms.ScrollBars.None;
-            this.CustomTextBoxBootstrapDNS.ShortcutsEnabled = true;
-            this.CustomTextBoxBootstrapDNS.Size = new System.Drawing.Size(100, 23);
-            this.CustomTextBoxBootstrapDNS.TabIndex = 0;
-            this.CustomTextBoxBootstrapDNS.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            this.CustomTextBoxBootstrapDNS.Texts = "8.8.8.8";
-            this.CustomTextBoxBootstrapDNS.UnderlinedStyle = false;
-            this.CustomTextBoxBootstrapDNS.UsePasswordChar = false;
-            this.CustomTextBoxBootstrapDNS.WordWrap = true;
-            // 
-            // CustomLabelBootstrapDNS
-            // 
-            this.CustomLabelBootstrapDNS.AutoSize = true;
-            this.CustomLabelBootstrapDNS.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelBootstrapDNS.Border = false;
-            this.CustomLabelBootstrapDNS.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelBootstrapDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelBootstrapDNS.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelBootstrapDNS.Location = new System.Drawing.Point(25, 70);
-            this.CustomLabelBootstrapDNS.Name = "CustomLabelBootstrapDNS";
-            this.CustomLabelBootstrapDNS.RoundedCorners = 0;
-            this.CustomLabelBootstrapDNS.Size = new System.Drawing.Size(89, 17);
-            this.CustomLabelBootstrapDNS.TabIndex = 3;
-            this.CustomLabelBootstrapDNS.Text = "Bootstrap DNS:";
-            // 
-            // CustomButtonRestoreDefault
-            // 
-            this.CustomButtonRestoreDefault.BorderColor = System.Drawing.Color.Blue;
-            this.CustomButtonRestoreDefault.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonRestoreDefault.Location = new System.Drawing.Point(50, 255);
-            this.CustomButtonRestoreDefault.Name = "CustomButtonRestoreDefault";
-            this.CustomButtonRestoreDefault.RoundedCorners = 0;
-            this.CustomButtonRestoreDefault.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonRestoreDefault.Size = new System.Drawing.Size(160, 23);
-            this.CustomButtonRestoreDefault.TabIndex = 2;
-            this.CustomButtonRestoreDefault.Text = "Restore all settings to default";
-            this.CustomButtonRestoreDefault.UseVisualStyleBackColor = true;
-            this.CustomButtonRestoreDefault.Click += new System.EventHandler(this.CustomButtonRestoreDefault_Click);
-            // 
             // CustomNumericUpDownCheckTimeout
             // 
             this.CustomNumericUpDownCheckTimeout.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownCheckTimeout.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownCheckTimeout.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownCheckTimeout.Location = new System.Drawing.Point(175, 23);
+            this.CustomNumericUpDownCheckTimeout.Location = new System.Drawing.Point(165, 8);
             this.CustomNumericUpDownCheckTimeout.Maximum = new decimal(new int[] {
             10,
             0,
@@ -1696,20 +1855,104 @@
             0,
             0});
             // 
-            // CustomLabelCheckTimeout
+            // CustomLabelCheckDPIInfo
             // 
-            this.CustomLabelCheckTimeout.AutoSize = true;
-            this.CustomLabelCheckTimeout.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelCheckTimeout.Border = false;
-            this.CustomLabelCheckTimeout.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelCheckTimeout.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelCheckTimeout.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelCheckTimeout.Location = new System.Drawing.Point(25, 25);
-            this.CustomLabelCheckTimeout.Name = "CustomLabelCheckTimeout";
-            this.CustomLabelCheckTimeout.RoundedCorners = 0;
-            this.CustomLabelCheckTimeout.Size = new System.Drawing.Size(144, 17);
-            this.CustomLabelCheckTimeout.TabIndex = 0;
-            this.CustomLabelCheckTimeout.Text = "Check timeout (seconds):";
+            this.CustomLabelCheckDPIInfo.AutoSize = true;
+            this.CustomLabelCheckDPIInfo.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelCheckDPIInfo.Border = false;
+            this.CustomLabelCheckDPIInfo.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelCheckDPIInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelCheckDPIInfo.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelCheckDPIInfo.Location = new System.Drawing.Point(15, 190);
+            this.CustomLabelCheckDPIInfo.Name = "CustomLabelCheckDPIInfo";
+            this.CustomLabelCheckDPIInfo.RoundedCorners = 0;
+            this.CustomLabelCheckDPIInfo.Size = new System.Drawing.Size(259, 17);
+            this.CustomLabelCheckDPIInfo.TabIndex = 8;
+            this.CustomLabelCheckDPIInfo.Text = "A DNS based blocked website to check. https://";
+            // 
+            // CustomButtonRestoreDefault
+            // 
+            this.CustomButtonRestoreDefault.BorderColor = System.Drawing.Color.Blue;
+            this.CustomButtonRestoreDefault.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomButtonRestoreDefault.Location = new System.Drawing.Point(40, 235);
+            this.CustomButtonRestoreDefault.Name = "CustomButtonRestoreDefault";
+            this.CustomButtonRestoreDefault.RoundedCorners = 0;
+            this.CustomButtonRestoreDefault.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomButtonRestoreDefault.Size = new System.Drawing.Size(160, 23);
+            this.CustomButtonRestoreDefault.TabIndex = 2;
+            this.CustomButtonRestoreDefault.Text = "Restore all settings to default";
+            this.CustomButtonRestoreDefault.UseVisualStyleBackColor = true;
+            this.CustomButtonRestoreDefault.Click += new System.EventHandler(this.CustomButtonRestoreDefault_Click);
+            // 
+            // CustomCheckBoxSettingDisableAudioAlert
+            // 
+            this.CustomCheckBoxSettingDisableAudioAlert.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxSettingDisableAudioAlert.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingDisableAudioAlert.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingDisableAudioAlert.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxSettingDisableAudioAlert.Location = new System.Drawing.Point(15, 145);
+            this.CustomCheckBoxSettingDisableAudioAlert.Name = "CustomCheckBoxSettingDisableAudioAlert";
+            this.CustomCheckBoxSettingDisableAudioAlert.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxSettingDisableAudioAlert.Size = new System.Drawing.Size(125, 17);
+            this.CustomCheckBoxSettingDisableAudioAlert.TabIndex = 6;
+            this.CustomCheckBoxSettingDisableAudioAlert.Text = "Disable audio alert.";
+            this.CustomCheckBoxSettingDisableAudioAlert.UseVisualStyleBackColor = false;
+            // 
+            // CustomLabelBootstrapDNS
+            // 
+            this.CustomLabelBootstrapDNS.AutoSize = true;
+            this.CustomLabelBootstrapDNS.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelBootstrapDNS.Border = false;
+            this.CustomLabelBootstrapDNS.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelBootstrapDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelBootstrapDNS.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelBootstrapDNS.Location = new System.Drawing.Point(15, 55);
+            this.CustomLabelBootstrapDNS.Name = "CustomLabelBootstrapDNS";
+            this.CustomLabelBootstrapDNS.RoundedCorners = 0;
+            this.CustomLabelBootstrapDNS.Size = new System.Drawing.Size(89, 17);
+            this.CustomLabelBootstrapDNS.TabIndex = 3;
+            this.CustomLabelBootstrapDNS.Text = "Bootstrap DNS:";
+            // 
+            // CustomCheckBoxDontAskCertificate
+            // 
+            this.CustomCheckBoxDontAskCertificate.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxDontAskCertificate.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxDontAskCertificate.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxDontAskCertificate.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxDontAskCertificate.Location = new System.Drawing.Point(15, 100);
+            this.CustomCheckBoxDontAskCertificate.Name = "CustomCheckBoxDontAskCertificate";
+            this.CustomCheckBoxDontAskCertificate.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxDontAskCertificate.Size = new System.Drawing.Size(210, 17);
+            this.CustomCheckBoxDontAskCertificate.TabIndex = 4;
+            this.CustomCheckBoxDontAskCertificate.Text = "Don\'t ask for certificate every time.";
+            this.CustomCheckBoxDontAskCertificate.UseVisualStyleBackColor = false;
+            // 
+            // CustomTextBoxBootstrapDNS
+            // 
+            this.CustomTextBoxBootstrapDNS.AcceptsReturn = false;
+            this.CustomTextBoxBootstrapDNS.AcceptsTab = false;
+            this.CustomTextBoxBootstrapDNS.BackColor = System.Drawing.Color.DimGray;
+            this.CustomTextBoxBootstrapDNS.Border = true;
+            this.CustomTextBoxBootstrapDNS.BorderColor = System.Drawing.Color.Blue;
+            this.CustomTextBoxBootstrapDNS.BorderSize = 1;
+            this.CustomTextBoxBootstrapDNS.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
+            this.CustomTextBoxBootstrapDNS.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomTextBoxBootstrapDNS.ForeColor = System.Drawing.Color.White;
+            this.CustomTextBoxBootstrapDNS.HideSelection = true;
+            this.CustomTextBoxBootstrapDNS.Location = new System.Drawing.Point(115, 53);
+            this.CustomTextBoxBootstrapDNS.MaxLength = 32767;
+            this.CustomTextBoxBootstrapDNS.Multiline = false;
+            this.CustomTextBoxBootstrapDNS.Name = "CustomTextBoxBootstrapDNS";
+            this.CustomTextBoxBootstrapDNS.ReadOnly = false;
+            this.CustomTextBoxBootstrapDNS.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomTextBoxBootstrapDNS.ShortcutsEnabled = true;
+            this.CustomTextBoxBootstrapDNS.Size = new System.Drawing.Size(100, 23);
+            this.CustomTextBoxBootstrapDNS.TabIndex = 0;
+            this.CustomTextBoxBootstrapDNS.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            this.CustomTextBoxBootstrapDNS.Texts = "8.8.8.8";
+            this.CustomTextBoxBootstrapDNS.UnderlinedStyle = false;
+            this.CustomTextBoxBootstrapDNS.UsePasswordChar = false;
+            this.CustomTextBoxBootstrapDNS.WordWrap = true;
             // 
             // TabPageAbout
             // 
@@ -1726,7 +1969,7 @@
             this.TabPageAbout.Location = new System.Drawing.Point(4, 25);
             this.TabPageAbout.Name = "TabPageAbout";
             this.TabPageAbout.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageAbout.Size = new System.Drawing.Size(694, 284);
+            this.TabPageAbout.Size = new System.Drawing.Size(692, 284);
             this.TabPageAbout.TabIndex = 2;
             this.TabPageAbout.Tag = 2;
             this.TabPageAbout.Text = "About";
@@ -1857,12 +2100,13 @@
             this.CustomStatusStrip1.Border = false;
             this.CustomStatusStrip1.BorderColor = System.Drawing.Color.Blue;
             this.CustomStatusStrip1.ForeColor = System.Drawing.Color.White;
+            this.CustomStatusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.CustomStatusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.ToolStripStatusLabelDNS,
             this.ToolStripStatusLabelDoH,
             this.ToolStripStatusLabelSpace,
             this.ToolStripStatusLabelPercent});
-            this.CustomStatusStrip1.Location = new System.Drawing.Point(0, 566);
+            this.CustomStatusStrip1.Location = new System.Drawing.Point(0, 564);
             this.CustomStatusStrip1.Name = "CustomStatusStrip1";
             this.CustomStatusStrip1.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomStatusStrip1.Size = new System.Drawing.Size(704, 22);
@@ -1873,7 +2117,7 @@
             // 
             this.ToolStripStatusLabelDNS.AutoSize = false;
             this.ToolStripStatusLabelDNS.Name = "ToolStripStatusLabelDNS";
-            this.ToolStripStatusLabelDNS.Size = new System.Drawing.Size(110, 17);
+            this.ToolStripStatusLabelDNS.Size = new System.Drawing.Size(120, 17);
             this.ToolStripStatusLabelDNS.Text = "DNS status: Offline.";
             this.ToolStripStatusLabelDNS.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
@@ -1881,21 +2125,21 @@
             // 
             this.ToolStripStatusLabelDoH.AutoSize = false;
             this.ToolStripStatusLabelDoH.Name = "ToolStripStatusLabelDoH";
-            this.ToolStripStatusLabelDoH.Size = new System.Drawing.Size(110, 17);
+            this.ToolStripStatusLabelDoH.Size = new System.Drawing.Size(120, 17);
             this.ToolStripStatusLabelDoH.Text = "DoH status: Offline.";
             this.ToolStripStatusLabelDoH.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // ToolStripStatusLabelSpace
             // 
             this.ToolStripStatusLabelSpace.Name = "ToolStripStatusLabelSpace";
-            this.ToolStripStatusLabelSpace.Size = new System.Drawing.Size(434, 17);
+            this.ToolStripStatusLabelSpace.Size = new System.Drawing.Size(394, 17);
             this.ToolStripStatusLabelSpace.Spring = true;
             // 
             // ToolStripStatusLabelPercent
             // 
             this.ToolStripStatusLabelPercent.AutoSize = false;
             this.ToolStripStatusLabelPercent.Name = "ToolStripStatusLabelPercent";
-            this.ToolStripStatusLabelPercent.Size = new System.Drawing.Size(35, 17);
+            this.ToolStripStatusLabelPercent.Size = new System.Drawing.Size(55, 17);
             this.ToolStripStatusLabelPercent.Text = "0%";
             this.ToolStripStatusLabelPercent.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
@@ -1911,6 +2155,7 @@
             this.CustomContextMenuStripIcon.BackColor = System.Drawing.Color.DimGray;
             this.CustomContextMenuStripIcon.BorderColor = System.Drawing.Color.Blue;
             this.CustomContextMenuStripIcon.ForeColor = System.Drawing.Color.White;
+            this.CustomContextMenuStripIcon.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.CustomContextMenuStripIcon.Name = "CustomContextMenuStripIcon";
             this.CustomContextMenuStripIcon.SameColorForSubItems = true;
             this.CustomContextMenuStripIcon.SelectionColor = System.Drawing.Color.LightBlue;
@@ -1927,7 +2172,7 @@
             this.CustomGroupBoxStatus.Location = new System.Drawing.Point(1, 315);
             this.CustomGroupBoxStatus.Margin = new System.Windows.Forms.Padding(1);
             this.CustomGroupBoxStatus.Name = "CustomGroupBoxStatus";
-            this.CustomGroupBoxStatus.Size = new System.Drawing.Size(702, 40);
+            this.CustomGroupBoxStatus.Size = new System.Drawing.Size(700, 40);
             this.CustomGroupBoxStatus.TabIndex = 8;
             this.CustomGroupBoxStatus.TabStop = false;
             this.CustomGroupBoxStatus.Text = "Status";
@@ -1949,7 +2194,7 @@
             this.CustomRichTextBoxStatusIsProxyServerRunning.HideSelection = true;
             this.CustomRichTextBoxStatusIsProxyServerRunning.Location = new System.Drawing.Point(530, 13);
             this.CustomRichTextBoxStatusIsProxyServerRunning.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsProxyServerRunning.MinimumSize = new System.Drawing.Size(0, 23);
+            this.CustomRichTextBoxStatusIsProxyServerRunning.MinimumSize = new System.Drawing.Size(0, 17);
             this.CustomRichTextBoxStatusIsProxyServerRunning.Multiline = false;
             this.CustomRichTextBoxStatusIsProxyServerRunning.Name = "CustomRichTextBoxStatusIsProxyServerRunning";
             this.CustomRichTextBoxStatusIsProxyServerRunning.ReadOnly = true;
@@ -1984,7 +2229,7 @@
             this.CustomRichTextBoxStatusIsDNSSet.HideSelection = true;
             this.CustomRichTextBoxStatusIsDNSSet.Location = new System.Drawing.Point(415, 13);
             this.CustomRichTextBoxStatusIsDNSSet.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsDNSSet.MinimumSize = new System.Drawing.Size(0, 23);
+            this.CustomRichTextBoxStatusIsDNSSet.MinimumSize = new System.Drawing.Size(0, 17);
             this.CustomRichTextBoxStatusIsDNSSet.Multiline = false;
             this.CustomRichTextBoxStatusIsDNSSet.Name = "CustomRichTextBoxStatusIsDNSSet";
             this.CustomRichTextBoxStatusIsDNSSet.ReadOnly = true;
@@ -2019,7 +2264,7 @@
             this.CustomRichTextBoxStatusIsDPIActive.HideSelection = true;
             this.CustomRichTextBoxStatusIsDPIActive.Location = new System.Drawing.Point(285, 13);
             this.CustomRichTextBoxStatusIsDPIActive.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsDPIActive.MinimumSize = new System.Drawing.Size(0, 23);
+            this.CustomRichTextBoxStatusIsDPIActive.MinimumSize = new System.Drawing.Size(0, 17);
             this.CustomRichTextBoxStatusIsDPIActive.Multiline = false;
             this.CustomRichTextBoxStatusIsDPIActive.Name = "CustomRichTextBoxStatusIsDPIActive";
             this.CustomRichTextBoxStatusIsDPIActive.ReadOnly = true;
@@ -2054,7 +2299,7 @@
             this.CustomRichTextBoxStatusIsConnected.HideSelection = true;
             this.CustomRichTextBoxStatusIsConnected.Location = new System.Drawing.Point(150, 13);
             this.CustomRichTextBoxStatusIsConnected.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsConnected.MinimumSize = new System.Drawing.Size(0, 23);
+            this.CustomRichTextBoxStatusIsConnected.MinimumSize = new System.Drawing.Size(0, 17);
             this.CustomRichTextBoxStatusIsConnected.Multiline = false;
             this.CustomRichTextBoxStatusIsConnected.Name = "CustomRichTextBoxStatusIsConnected";
             this.CustomRichTextBoxStatusIsConnected.ReadOnly = true;
@@ -2089,7 +2334,7 @@
             this.CustomRichTextBoxStatusWorkingServers.HideSelection = true;
             this.CustomRichTextBoxStatusWorkingServers.Location = new System.Drawing.Point(15, 13);
             this.CustomRichTextBoxStatusWorkingServers.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusWorkingServers.MinimumSize = new System.Drawing.Size(0, 23);
+            this.CustomRichTextBoxStatusWorkingServers.MinimumSize = new System.Drawing.Size(0, 17);
             this.CustomRichTextBoxStatusWorkingServers.Multiline = false;
             this.CustomRichTextBoxStatusWorkingServers.Name = "CustomRichTextBoxStatusWorkingServers";
             this.CustomRichTextBoxStatusWorkingServers.ReadOnly = true;
@@ -2107,12 +2352,52 @@
             this.CustomRichTextBoxStatusWorkingServers.WordWrap = false;
             this.CustomRichTextBoxStatusWorkingServers.ZoomFactor = 1F;
             // 
+            // CustomLabelMaxServers
+            // 
+            this.CustomLabelMaxServers.AutoSize = true;
+            this.CustomLabelMaxServers.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelMaxServers.Border = false;
+            this.CustomLabelMaxServers.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelMaxServers.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelMaxServers.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelMaxServers.Location = new System.Drawing.Point(49, 180);
+            this.CustomLabelMaxServers.Name = "CustomLabelMaxServers";
+            this.CustomLabelMaxServers.RoundedCorners = 0;
+            this.CustomLabelMaxServers.Size = new System.Drawing.Size(225, 17);
+            this.CustomLabelMaxServers.TabIndex = 4;
+            this.CustomLabelMaxServers.Text = "Maximum number of servers to connect:";
+            // 
+            // CustomNumericUpDownMaxServers
+            // 
+            this.CustomNumericUpDownMaxServers.BackColor = System.Drawing.Color.DimGray;
+            this.CustomNumericUpDownMaxServers.BorderColor = System.Drawing.Color.Blue;
+            this.CustomNumericUpDownMaxServers.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CustomNumericUpDownMaxServers.Location = new System.Drawing.Point(284, 178);
+            this.CustomNumericUpDownMaxServers.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownMaxServers.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownMaxServers.Name = "CustomNumericUpDownMaxServers";
+            this.CustomNumericUpDownMaxServers.Size = new System.Drawing.Size(50, 23);
+            this.CustomNumericUpDownMaxServers.TabIndex = 5;
+            this.CustomNumericUpDownMaxServers.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            // 
             // FormMain
             // 
             this.AcceptButton = this.CustomButtonCheck;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(704, 588);
+            this.ClientSize = new System.Drawing.Size(704, 586);
             this.Controls.Add(this.CustomGroupBoxStatus);
             this.Controls.Add(this.CustomStatusStrip1);
             this.Controls.Add(this.CustomTabControlMain);
@@ -2120,9 +2405,9 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(720, 627);
+            this.MaximumSize = new System.Drawing.Size(720, 625);
             this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(720, 627);
+            this.MinimumSize = new System.Drawing.Size(720, 625);
             this.Name = "FormMain";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "SecureDNSClient";
@@ -2151,7 +2436,13 @@
             this.TabPageSetDNS.ResumeLayout(false);
             this.TabPageSetDNS.PerformLayout();
             this.TabPageSettings.ResumeLayout(false);
-            this.TabPageSettings.PerformLayout();
+            this.CustomTabControlSettings.ResumeLayout(false);
+            this.TabPageSettingsWorkingMode.ResumeLayout(false);
+            this.TabPageSettingsWorkingMode.PerformLayout();
+            this.TabPageSettingsCPU.ResumeLayout(false);
+            this.TabPageSettingsCPU.PerformLayout();
+            this.TabPageSettingsOthers.ResumeLayout(false);
+            this.TabPageSettingsOthers.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownCheckTimeout)).EndInit();
             this.TabPageAbout.ResumeLayout(false);
             this.TabPageAbout.PerformLayout();
@@ -2159,6 +2450,7 @@
             this.CustomStatusStrip1.ResumeLayout(false);
             this.CustomStatusStrip1.PerformLayout();
             this.CustomGroupBoxStatus.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownMaxServers)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -2277,5 +2569,21 @@
         private CustomControls.CustomCheckBox CustomCheckBoxSettingDisableAudioAlert;
         private CustomControls.CustomLabel CustomLabelCheckDPIInfo;
         private CustomControls.CustomTextBox CustomTextBoxCheckDPIHost;
+        private CustomControls.CustomTabControl CustomTabControlSettings;
+        private TabPage TabPageSettingsWorkingMode;
+        private TabPage TabPageSettingsCPU;
+        private TabPage TabPageSettingsOthers;
+        private CustomControls.CustomLabel CustomLabelSettingsInfoWorkingMode1;
+        private CustomControls.CustomRadioButton CustomRadioButtonWorkingModeDNSandDoH;
+        private CustomControls.CustomRadioButton CustomRadioButtonWorkingModeDNS;
+        private CustomControls.CustomRadioButton CustomRadioButtonCPUAboveNormal;
+        private CustomControls.CustomRadioButton CustomRadioButtonCPUHigh;
+        private CustomControls.CustomLabel CustomLabelSettingsInfoCPU;
+        private CustomControls.CustomRadioButton CustomRadioButtonCPULow;
+        private CustomControls.CustomRadioButton CustomRadioButtonCPUBelowNormal;
+        private CustomControls.CustomRadioButton CustomRadioButtonCPUNormal;
+        private CustomControls.CustomLabel CustomLabelSettingsInfoWorkingMode2;
+        private CustomControls.CustomLabel CustomLabelMaxServers;
+        private CustomControls.CustomNumericUpDown CustomNumericUpDownMaxServers;
     }
 }

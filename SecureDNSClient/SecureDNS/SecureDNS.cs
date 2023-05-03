@@ -22,12 +22,17 @@ namespace SecureDNSClient
         public static readonly string BinaryDirPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary"));
         public static readonly string DnsLookup = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary", "dnslookup.exe"));
         public static readonly string DnsProxy = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary", "dnsproxy.exe"));
+        public string DnsProxyDll = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
         public static readonly string DNSCrypt = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary", "dnscrypt-proxy.exe"));
         public static readonly string GoodbyeDpi = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary", "goodbyedpi.exe"));
         public static readonly string WinDivert = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary", "WinDivert.dll"));
         public static readonly string WinDivert32 = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary", "WinDivert32.sys"));
         public static readonly string WinDivert64 = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary", "WinDivert64.sys"));
 
+        // Binaries file version path
+        public static readonly string BinariesVersionPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "binary", "versions.txt"));
+
+        // Others
         public static readonly string DNSCryptConfigPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "dnscrypt-proxy.toml"));
         public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "CustomServers.txt"));
         public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "CustomServers_Working.txt"));
@@ -42,12 +47,13 @@ namespace SecureDNSClient
         public static readonly string IssuerCertPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate", "rootCA.crt"));
         public static readonly string KeyPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate", "localhost.key"));
         public static readonly string CertPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate", "localhost.crt"));
-        public static bool CheckDoH(string domain, string doHServer, int timeoutSeconds)
+
+        public static bool CheckDoH(string domain, string doHServer, int timeoutSeconds, ProcessPriorityClass processPriorityClass)
         {
             var task = Task.Run(() =>
             {
                 string args = domain + " " + doHServer;
-                string? result = ProcessManager.Execute(DnsLookup, args, true, false, Info.CurrentPath);
+                string? result = ProcessManager.Execute(DnsLookup, args, true, false, Info.CurrentPath, processPriorityClass);
 
                 if (!string.IsNullOrEmpty(result))
                 {
@@ -63,17 +69,17 @@ namespace SecureDNSClient
                 return false;
         }
 
-        public static bool CheckDoHInsecure(string domain, string doHServer, int timeoutSeconds, CustomTextBox bootstrapDNS)
+        public static bool CheckDoHInsecure(string domain, string doHServer, int timeoutSeconds, CustomTextBox bootstrapDNS, ProcessPriorityClass processPriorityClass)
         {
             var task = Task.Run(() =>
             {
                 // Start local server
                 string bootstrap = SettingsWindow.GetBootstrapDNS(bootstrapDNS).ToString();
                 string dnsProxyArgs = "-l " + IPAddress.Loopback.ToString() + " -p 53 --insecure -u " + doHServer + " -b " + bootstrap + ":53";
-                int localServerPID = ProcessManager.ExecuteOnly(DnsProxy, dnsProxyArgs, true, false, Info.CurrentPath);
+                int localServerPID = ProcessManager.ExecuteOnly(DnsProxy, dnsProxyArgs, true, false, Info.CurrentPath, processPriorityClass);
                 Task.Delay(500).Wait();
                 string args = domain + " " + IPAddress.Loopback.ToString();
-                string? result = ProcessManager.Execute(DnsLookup, args, true, false, Info.CurrentPath);
+                string? result = ProcessManager.Execute(DnsLookup, args, true, false, Info.CurrentPath, processPriorityClass);
 
                 if (!string.IsNullOrEmpty(result))
                 {
@@ -89,6 +95,78 @@ namespace SecureDNSClient
                 return task.Result;
             else
                 return false;
+        }
+
+        public static bool IsDomainValid(string domain)
+        {
+            if (domain.StartsWith("http:", StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (domain.StartsWith("https:", StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (domain.Contains('/', StringComparison.OrdinalIgnoreCase))
+                return false;
+            return true;
+        }
+
+        public static bool IsBlockedDomainValid(CustomTextBox customTextBox, CustomRichTextBox customRichTextBox, out string blockedDomain)
+        {
+            // Get DNS based blocked domain to check
+            string domain = customTextBox.Text;
+
+            // Check blocked domain is valid
+            bool isBlockedDomainValid = IsDomainValid(domain);
+            if (!isBlockedDomainValid)
+            {
+                string blockedDomainIsNotValid = $"{domain} is not valid. Fix it in Settings section.{Environment.NewLine}";
+                customRichTextBox.InvokeIt(() => customRichTextBox.AppendText(blockedDomainIsNotValid, Color.IndianRed));
+                blockedDomain = string.Empty;
+                return false;
+            }
+            else
+            {
+                blockedDomain = domain;
+                return true;
+            }
+        }
+
+        public static string GetBinariesVersion(string binaryName)
+        {
+            if (File.Exists(BinariesVersionPath))
+            {
+                string content = File.ReadAllText(BinariesVersionPath);
+                List<string> lines = content.SplitToLines();
+                for (int n = 0; n < lines.Count; n++)
+                {
+                    string line = lines[n];
+                    if (line.StartsWith(binaryName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string[] split = line.Split(" ");
+                        if (split[1].Length > 0)
+                            return split[1];
+                    }
+                }
+            }
+            return "0.0.0";
+        }
+
+        public static string GetBinariesVersionFromResource(string binaryName)
+        {
+            string? content = NecessaryFiles.Resource1.versions;
+            if (!string.IsNullOrWhiteSpace(content))
+            {
+                List<string> lines = content.SplitToLines();
+                for (int n = 0; n < lines.Count; n++)
+                {
+                    string line = lines[n];
+                    if (line.StartsWith(binaryName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string[] split = line.Split(" ");
+                        if (split[1].Length > 0)
+                            return split[1];
+                    }
+                }
+            }
+            return "0.0.0";
         }
 
         public static async Task<string> UrlToCompanyOffline(string url)

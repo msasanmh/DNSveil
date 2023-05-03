@@ -1,4 +1,5 @@
 ﻿using MsmhTools;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 /*
  * Copyright MSasanMH, April 14, 2022.
@@ -18,9 +19,11 @@ namespace CustomControls
         private static extern bool ReleaseCapture();
 
         static DialogResult dialogResult;
+        public static Form? SetParent { get; set; }
         public new static Color BackColor { get; set; }
         public new static Color ForeColor { get; set; }
         public static Color BorderColor { get; set; }
+
         private static int ImageBox(int iconOffset, Icon icon, Panel textPanel)
         {
             PictureBox pb = new();
@@ -34,7 +37,7 @@ namespace CustomControls
         {
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
-            StartPosition = FormStartPosition.CenterParent;
+
             int iconOffset = 5;
             int buttonOffset = 5;
             int testLabelOffset = iconOffset;
@@ -441,6 +444,28 @@ namespace CustomControls
 
                 AcceptButton = btn1;
                 CancelButton = btn3;
+            }
+
+            // Workaround CenterParent
+            if (SetParent != null)
+            {
+                int x = SetParent.Location.X + (SetParent.Width / 2) - (Width / 2);
+                int y = SetParent.Location.Y + (SetParent.Height / 2) - (Height / 2);
+                if (x > 0 && y > 0)
+                {
+                    StartPosition = FormStartPosition.Manual;
+                    Location = new Point(x, y);
+                    Debug.WriteLine(SetParent.Location.X + SetParent.Width / 2);
+                    Debug.WriteLine("X: " + x + " Y: " + y);
+                }
+                else
+                {
+                    StartPosition = FormStartPosition.CenterScreen;
+                }
+            }
+            else
+            {
+                StartPosition = FormStartPosition.CenterScreen;
             }
 
             // Set CustomButton Colors

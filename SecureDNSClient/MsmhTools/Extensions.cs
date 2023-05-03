@@ -465,12 +465,11 @@ namespace MsmhTools
             for (int n = 0; n < list.Count; n++)
                 if (list[n] != null)
                 {
-                    if (n == 0) file.Write(list[n]); // to prevent an empty line at the start of the file.
-                    else file.WriteLine(list[n]);
+                    file.WriteLine(list[n]);
                 }
         }
         //-----------------------------------------------------------------------------------
-        public static void LoadFromFile(this List<string> list, string filePath)
+        public static void LoadFromFile(this List<string> list, string filePath, bool ignoreEmptyLines, bool trimLines)
         {
             if (!File.Exists(filePath)) return;
             string content = File.ReadAllText(filePath);
@@ -478,7 +477,23 @@ namespace MsmhTools
             for (int n = 0; n < lines.Count; n++)
             {
                 string line = lines[n];
-                list.Add(line);
+                if (ignoreEmptyLines)
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        if (trimLines)
+                            list.Add(line.Trim());
+                        else
+                            list.Add(line);
+                    }
+                }
+                else
+                {
+                    if (trimLines)
+                        list.Add(line.Trim());
+                    else
+                        list.Add(line);
+                }
             }
         }
         //-----------------------------------------------------------------------------------

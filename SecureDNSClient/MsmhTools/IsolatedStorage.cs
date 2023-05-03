@@ -3,16 +3,18 @@ using System.IO.IsolatedStorage;
 using System.Text;
 using System.Security.Cryptography;
 using Force.Crc32;
+using System.Diagnostics;
 
 namespace MsmhTools
 {
     public class IsolatedStorage
     {
         //-----------------------------------------------------------------------------------
-        public static IDictionary<string, string> DicLineByLine(string fileName)
+        public static IDictionary<string, string>? DicLineByLine(string fileName)
         {
-            string read = ReadIsolatedTextFile(fileName);
-            var split1 = read.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            string? read = ReadIsolatedTextFile(fileName);
+            if (read == null) return null;
+            string[] split1 = read.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             IDictionary<string, string> Dic = new Dictionary<string, string>();
             int a = 0;
             int b = 1;
@@ -24,10 +26,11 @@ namespace MsmhTools
             return Dic;
         }
         //-----------------------------------------------------------------------------------
-        public static List<string> ListLineByLine(string fileName)
+        public static List<string>? ListLineByLine(string fileName)
         {
-            string read = ReadIsolatedTextFile(fileName);
-            var split1 = read.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            string? read = ReadIsolatedTextFile(fileName);
+            if (read == null) return null;
+            string[] split1 = read.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             List<string> list = new();
             foreach (var line in split1)
                 list.Add(line);
@@ -79,7 +82,7 @@ namespace MsmhTools
                 return true;
             }
             isoStore.Close();
-            Console.WriteLine("File Not Exist: " + fileName);
+            Debug.WriteLine("File Not Exist: " + fileName);
             return false;
         }
         public static bool IsDirectoryExist(string directoryName)
@@ -88,11 +91,11 @@ namespace MsmhTools
             if (isoStore.DirectoryExists(directoryName))
             {
                 isoStore.Close();
-                Console.WriteLine("Directory Exist: " + directoryName);
+                Debug.WriteLine("Directory Exist: " + directoryName);
                 return true;
             }
             isoStore.Close();
-            Console.WriteLine("Directory Not Exist: " + directoryName);
+            Debug.WriteLine("Directory Not Exist: " + directoryName);
             return false;
         }
         //-----------------------------------------------------------------------------------
@@ -183,7 +186,7 @@ namespace MsmhTools
             }
             else
             {
-                Console.WriteLine("Isolated Storage File Does Not Exist.");
+                Debug.WriteLine("Isolated Storage File Does Not Exist.");
                 isoStore.Close();
                 return null;
             }
@@ -195,12 +198,11 @@ namespace MsmhTools
             try
             {
                 isoStore.Remove();
-                Console.WriteLine("Isolated Storage removed.");
+                Debug.WriteLine("Isolated Storage removed.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
-                MessageBox.Show("Error: " + ex.Message, "Message", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Debug.WriteLine("Error: " + ex.Message);
             }
             isoStore.Close();
             isoStore.Dispose();
@@ -217,12 +219,11 @@ namespace MsmhTools
                     if (isoStore.FileExists(file))
                         isoStore.DeleteFile(file);
                     if (!isoStore.FileExists(file))
-                        Console.WriteLine("File Deleted: " + file);
+                        Debug.WriteLine("File Deleted: " + file);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error: " + ex.Message);
-                    MessageBox.Show("Error: " + ex.Message, "Message", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Debug.WriteLine("Error: " + ex.Message);
                 }
             }
         }

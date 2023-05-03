@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Management;
+using System.Security;
 
 namespace MsmhTools
 {
@@ -16,7 +17,7 @@ namespace MsmhTools
             // Create process
             Process process = new();
             process.StartInfo.FileName = processName;
-
+            
             if (args != null)
                 process.StartInfo.Arguments = args;
 
@@ -84,7 +85,7 @@ namespace MsmhTools
         /// </summary>
         public static int ExecuteOnly(string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
         {
-            int pid = -1;
+            int pid;
             // Create process
             Process process = new();
             process.StartInfo.FileName = processName;
@@ -127,6 +128,7 @@ namespace MsmhTools
             }
             catch (Exception ex)
             {
+                pid = -1;
                 Debug.WriteLine(ex.Message);
             }
             return pid;
@@ -183,6 +185,54 @@ namespace MsmhTools
             for (int n = processes.Length - 1; n >= 0; n--)
                 pid = processes[n].Id;
             return pid;
+        }
+        //-----------------------------------------------------------------------------------
+        /// <summary>
+        /// Returns process PID, if faild returns -1
+        /// </summary>
+        public static int GetProcessPidByListeningPort(int port)
+        {
+            string netstatArgs = "-a -n -o";
+            string? stdout = ProcessManager.Execute("netstat", netstatArgs);
+            if (!string.IsNullOrWhiteSpace(stdout))
+            {
+                List<string> lines = stdout.SplitToLines();
+                for (int n = 0; n < lines.Count; n++)
+                {
+                    string line = lines[n];
+                    if (!string.IsNullOrWhiteSpace(line) && line.Contains("LISTENING") && line.Contains($":{port} "))
+                    {
+                        string[] split1 = line.Split("LISTENING", StringSplitOptions.TrimEntries);
+                        bool isBool = int.TryParse(split1[1], out int pid);
+                        if (isBool)
+                        {
+                            return pid;
+                        }
+                    }
+                }
+            }
+            return -1;
+        }
+        //-----------------------------------------------------------------------------------
+        /// <summary>
+        /// Returns process name, if faild returns string.empty
+        /// </summary>
+        public static string GetProcessNameByListeningPort(int port)
+        {
+            int pid = GetProcessPidByListeningPort(port);
+            if (pid != -1)
+            {
+                try
+                {
+                    return Process.GetProcessById(pid).ProcessName;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Get Process Name By Listening Port:");
+                    Debug.WriteLine(ex.Message);
+                }
+            }
+            return string.Empty;
         }
         //-----------------------------------------------------------------------------------
         public static string GetArguments(this Process process)

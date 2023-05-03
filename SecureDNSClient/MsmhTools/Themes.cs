@@ -43,6 +43,9 @@ namespace MsmhTools.Themes
                 }
                 SetColorsByType(form);
             }
+
+            // Set Static CustomMessageBox Parent
+            CustomMessageBox.SetParent = form;
         }
         //=======================================================================================
         private static void SetColorsByType(Form form)
@@ -279,10 +282,11 @@ namespace MsmhTools.Themes
             private static void CC()
             {
                 // MessageBox
+                //CustomMessageBox
                 CustomMessageBox.BackColor = BackColor;
                 CustomMessageBox.ForeColor = ForeColor;
                 CustomMessageBox.BorderColor = Border;
-
+                
                 // InputBox
                 CustomInputBox.BackColor = BackColor;
                 CustomInputBox.ForeColor = ForeColor;

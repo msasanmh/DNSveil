@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Copyright>MSasanMH</Copyright>
     <Product>Secure DNS Client</Product>
-    <Version>$(VersionPrefix)2.0.7</Version>
+    <Version>$(VersionPrefix)2.0.8</Version>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
   </PropertyGroup>
@@ -30,6 +30,15 @@
     <None Remove="Library\Ae.Dns.Server.xml" />
     <None Remove="Library\ARSoft.Tools.Net.dll" />
     <None Remove="Library\ARSoft.Tools.Net.xml" />
+    <None Remove="NecessaryFiles\dnscrypt-proxy.exe" />
+    <None Remove="NecessaryFiles\dnscrypt-proxy.toml" />
+    <None Remove="NecessaryFiles\dnslookup.exe" />
+    <None Remove="NecessaryFiles\dnsproxy.exe" />
+    <None Remove="NecessaryFiles\goodbyedpi.exe" />
+    <None Remove="NecessaryFiles\versions.txt" />
+    <None Remove="NecessaryFiles\WinDivert.dll" />
+    <None Remove="NecessaryFiles\WinDivert32.sys" />
+    <None Remove="NecessaryFiles\WinDivert64.sys" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,6 +48,15 @@
   <ItemGroup>
     <EmbeddedResource Include="DNS-Servers.txt" />
     <EmbeddedResource Include="HostToCompany.txt" />
+    <EmbeddedResource Include="NecessaryFiles\dnscrypt-proxy.exe" />
+    <EmbeddedResource Include="NecessaryFiles\dnscrypt-proxy.toml" />
+    <EmbeddedResource Include="NecessaryFiles\dnslookup.exe" />
+    <EmbeddedResource Include="NecessaryFiles\dnsproxy.exe" />
+    <EmbeddedResource Include="NecessaryFiles\goodbyedpi.exe" />
+    <EmbeddedResource Include="NecessaryFiles\versions.txt" />
+    <EmbeddedResource Include="NecessaryFiles\WinDivert.dll" />
+    <EmbeddedResource Include="NecessaryFiles\WinDivert32.sys" />
+    <EmbeddedResource Include="NecessaryFiles\WinDivert64.sys" />
   </ItemGroup>
 
   <ItemGroup>

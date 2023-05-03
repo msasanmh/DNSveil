@@ -36,6 +36,12 @@ namespace MsmhTools
                 Debug.WriteLine("WriteResourceToFile: Copy to disk faild, resource was null.");
         }
 
+        /// <summary>
+        /// Only binaries not text files.
+        /// </summary>
+        /// <param name="resource"></param>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
         public static async Task WriteResourceToFileAsync(byte[] resource, string filePath)
         {
             await File.WriteAllBytesAsync(filePath, resource);
@@ -48,7 +54,7 @@ namespace MsmhTools
                 Assembly assembly = Assembly.GetExecutingAssembly();
                 // Format: "{Namespace}.{Folder}.{filename}.{Extension}"
                 resourcePath = assembly.GetManifestResourceNames().Single(str => str.EndsWith(resourcePath));
-                Stream? stream = assembly.GetManifestResourceStream(resourcePath);
+                using Stream? stream = assembly.GetManifestResourceStream(resourcePath);
                 if (stream != null)
                 {
                     using StreamReader reader = new(stream);
@@ -68,12 +74,12 @@ namespace MsmhTools
 
         public static async Task<string?> GetResourceTextFileAsync(string path)
         {
-            if (ResourceExists(path) == true)
+            if (ResourceExists(path))
             {
                 var assembly = Assembly.GetExecutingAssembly();
                 // Format: "{Namespace}.{Folder}.{filename}.{Extension}"
                 path = assembly.GetManifestResourceNames().Single(str => str.EndsWith(path));
-                Stream? stream = assembly.GetManifestResourceStream(path);
+                using Stream? stream = assembly.GetManifestResourceStream(path);
                 if (stream != null)
                 {
                     using StreamReader reader = new(stream);
