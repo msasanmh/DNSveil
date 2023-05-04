@@ -1892,7 +1892,7 @@ namespace SecureDNSClient
                     CustomButtonConnect_Click(null, null);
                     Task taskWait2 = await Task.Run(async () =>
                     {
-                        while (!IsConnected)
+                        while (!IsDNSConnected && !IsDoHConnected)
                         {
                             if (NumberOfWorkingServers < 1)
                                 return Task.CompletedTask;
@@ -1901,7 +1901,7 @@ namespace SecureDNSClient
                         return Task.CompletedTask;
                     });
                     await Task.Delay(1000);
-                    if (IsConnected)
+                    if (IsDNSConnected || IsDoHConnected)
                     {
                         UpdateStatus();
                         if (!ProcessManager.FindProcessByName("goodbyedpi"))
