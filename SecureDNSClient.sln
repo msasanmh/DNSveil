@@ -4,8 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.0.32002.185
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureDNSClient", "SecureDNSClient\SecureDNSClient.csproj", "{08CA0243-CDF3-46F1-ACBD-1B4F9585C460}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5C28D441-E382-4DB3-A45C-0A34FA0ABC79} = {5C28D441-E382-4DB3-A45C-0A34FA0ABC79}
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecureDNSClientPortable", "SecureDNSClientPortable\SecureDNSClientPortable.csproj", "{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureDNSClientPortable", "SecureDNSClientPortable\SecureDNSClientPortable.csproj", "{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

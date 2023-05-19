@@ -25,20 +25,23 @@ namespace SecureDNSClient.DPIBasic
     {
         public string Args { get; }
         public string Text { get; }
+        private readonly string AutoTTL = "1-4-10";
+        private readonly int MinTTL = 3;
 
-        public DPIBasicBypass(DPIBasicBypassMode dpiBasicBypassMode, decimal sslFragment, string fallbackDNS)
+        public DPIBasicBypass(DPIBasicBypassMode dpiBasicBypassMode, decimal sslFragment, string fallbackDNS, int fallbackDNSPort)
         {
-            string fallbackDNSIPv6 = SecureDNS.BootstrapDNSIPv6.ToString();
-            string Mode1Args = "-1 --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string Mode2Args = "-2 --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string Mode3Args = "-3 --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string Mode4Args = "-4 --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string Mode5Args = "-5 --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string Mode6Args = "-6 --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string LightArgs = "-p -r -s -m -e " + sslFragment.ToString() + " -w --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string MediumArgs = "-p -r -s -m -f 2 -e " + sslFragment.ToString() + " -w --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string HighArgs = "-p -r -s -m -f 2 -e " + sslFragment.ToString() + " -w --wrong-chksum --wrong-seq --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
-            string ExtremeArgs = "-p -r -s -m -f 2 -e " + sslFragment.ToString() + " -w --allow-no-sni --auto-ttl --wrong-chksum --wrong-seq --max-payload --dns-addr " + fallbackDNS + " --dns-port 53 --dnsv6-addr " + fallbackDNSIPv6 + " --dnsv6-port 53";
+            string fallbackDnsIPv6 = SecureDNS.BootstrapDnsIPv6.ToString();
+            int fallbackDnsIPv6Port = SecureDNS.BootstrapDnsPort;
+            string Mode1Args = $"-1 --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string Mode2Args = $"-2 --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string Mode3Args = $"-3 --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string Mode4Args = $"-4 --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string Mode5Args = $"-5 --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string Mode6Args = $"-6 --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string LightArgs = $"-p -r -s -m -e {sslFragment} -w --native-frag --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string MediumArgs = $"-p -r -s -m -e {sslFragment} -w --auto-ttl {AutoTTL} --min-ttl {MinTTL} --native-frag --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string HighArgs = $"-p -r -s -m -e {sslFragment} -w --auto-ttl {AutoTTL} --min-ttl {MinTTL} --native-frag --wrong-seq --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
+            string ExtremeArgs = $"-p -r -s -m -f 2 -e {sslFragment} -w --auto-ttl {AutoTTL} --min-ttl {MinTTL} --native-frag --wrong-chksum --wrong-seq --max-payload --dns-addr {fallbackDNS} --dns-port {fallbackDNSPort} --dnsv6-addr {fallbackDnsIPv6} --dnsv6-port {fallbackDnsIPv6Port}";
             
             switch (dpiBasicBypassMode)
             {

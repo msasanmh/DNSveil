@@ -12,7 +12,7 @@ namespace MsmhTools
         /// <summary>
         /// Returns stdout or errour after process finished.
         /// </summary>
-        public static string? Execute(string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
+        public static string Execute(string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
         {
             // Create process
             Process process = new();
@@ -76,7 +76,7 @@ namespace MsmhTools
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
-                return null;
+                return string.Empty;
             }
         }
         //-----------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ namespace MsmhTools
             catch (Exception ex)
             {
                 pid = -1;
-                Debug.WriteLine(ex.Message);
+                Debug.WriteLine($"ExecuteOnly: {ex.Message}");
             }
             return pid;
         }
@@ -215,7 +215,7 @@ namespace MsmhTools
         }
         //-----------------------------------------------------------------------------------
         /// <summary>
-        /// Returns process name, if faild returns string.empty
+        /// Returns process name, if failed returns string.empty
         /// </summary>
         public static string GetProcessNameByListeningPort(int port)
         {

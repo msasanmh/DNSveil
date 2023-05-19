@@ -1,316 +1,468 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+using RestWrapper;
+using WatsonWebserver;
 using System.Text;
-using System.Timers;
+using System.Diagnostics;
 
 namespace MsmhTools.HTTPProxyServer
 {
-    public class HTTPProxyServer : IDisposable
+    public class HTTPProxyServer
     {
-        private bool Disposed = false;
-        private Socket Server;
-        private IPAddress IpAddress;
-        private int Port;
-        private int PCLimit;
-        private List<Socket> ClientList = new();
-        private bool IsStopping = false;
-        public bool IsRunning { get; private set; } = false;
-        private System.Timers.Timer TimerAutoClean = new();
-        public bool AutoClean { get; set; } = false;
+        private static ProxySettings _Settings = new();
+
+        private static TunnelManager? _Tunnels;
+        private static TcpListener? _TcpListener;
+
+        private static CancellationTokenSource? _CancelTokenSource;
+        private static CancellationToken _CancelToken;
+        private static int _ActiveThreads = 0;
+
+        public bool IsRunning = false;
+        public static bool Cancel = false;
+
+        public static readonly int MaxDataSize = 65536;
+        private DPIBypass.Mode DpiBypassMode = DPIBypass.Mode.Disable;
+        private int FirstPartOfDataLength = 100;
+        private int ProgramFragmentSize = 1;
+        private int DivideBy = 100;
+        private int FragmentLength = 7;
+        private int FragmentDelay = 0;
+
         public event EventHandler<EventArgs>? OnRequestReceived;
         public event EventHandler<EventArgs>? OnErrorOccurred;
+        public event EventHandler<EventArgs>? OnDebugInfoReceived;
+        private static readonly EventWaitHandle Terminator = new(false, EventResetMode.ManualReset);
 
-        struct ReadObj
+        public HTTPProxyServer()
         {
-            public Socket Socket;
-            public byte[] Buffer;
-            public Request Request;
+            
         }
 
-        public HTTPProxyServer(IPAddress ipAddress, int portNumber, int pendingConnectionLimit, bool ipv6Server = false)
+        public void Start(IPAddress ipAddress, int port, int maxThreads, bool ssl)
         {
-            if (ipv6Server)
+            Task.Run(() =>
             {
-                Server = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-                Server.SetSocketOption(SocketOptionLevel.IPv6, (SocketOptionName)27, false); // (SocketOptionName)27 Microsoft suggestion
-            }
-            else
-                Server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                if (IsRunning) return;
+                IsRunning = true;
+                
+                _Settings = new ProxySettings();
+                _Settings.Proxy.ListenerIpAddress = ipAddress;
+                _Settings.Proxy.ListenerPort = port;
+                _Settings.Proxy.MaxThreads = maxThreads;
+                _Settings.Proxy.Ssl = ssl;
 
-            IpAddress = ipAddress;
-            Port = portNumber;
-            PCLimit = pendingConnectionLimit;
+                Welcome();
 
-            if (AutoClean)
-            {
-                TimerAutoClean.Elapsed += TimerAutoClean_Elapsed;
-                TimerAutoClean.Interval = TimeSpan.FromMinutes(5).TotalMilliseconds;
-                TimerAutoClean.Start();
-            }
-        }
+                _Tunnels = new TunnelManager();
 
-        private void TimerAutoClean_Elapsed(object? sender, ElapsedEventArgs e)
-        {
-            CleanSockets();
-        }
+                _CancelTokenSource = new CancellationTokenSource();
+                _CancelToken = _CancelTokenSource.Token;
 
-        public void Start()
-        {
-            IPEndPoint iPEndPoint = new(IpAddress, Port);
-            byte[] buffer = new byte[1024];
+                Cancel = false;
+                Task.Run(() => AcceptConnections(), _CancelToken);
 
-            try
-            {
-                Server.Bind(iPEndPoint);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
-
-            try
-            {
-                Server.Listen(PCLimit);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
-
-            try
-            {
-                Server.BeginAccept(new AsyncCallback(AcceptClient), null);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
-
-            IsRunning = true;
+                Terminator.Reset();
+                Terminator.WaitOne();
+            });
         }
 
         public void Stop()
         {
-            IsStopping = true;
-
-            foreach (Socket s in ClientList)
+            if (IsRunning && _TcpListener != null && _CancelTokenSource != null)
             {
-                KillSocket(s, false);
+                IsRunning = false;
+                Terminator.Set();
+                _CancelTokenSource.Cancel(true);
+                Cancel = true;
+                _TcpListener.Stop();
+                IsRunning = _TcpListener.Server.IsBound;
+                Goodbye();
             }
-
-            Debug.WriteLine("Client shutdown ok");
-
-            ClientList.Clear();
-
-            if (IsRunning)
-            {
-                if (Server.Connected)
-                    Server.Shutdown(SocketShutdown.Both);
-                Server.Close();
-                Server.Dispose();
-            }
-
-            Debug.WriteLine("Server Stopped.");
-
-            IsStopping = false;
-            IsRunning = false;
         }
 
-        private void AcceptClient(IAsyncResult ar)
+        public int ListeningPort
         {
-            Socket? client = null;
-            try
-            {
-                client = Server.EndAccept(ar);
-            }
-            catch (Exception)
-            {
-                return;
-            }
-
-            if (client != null)
-            {
-                IPEndPoint? client_ep = (IPEndPoint?)client.RemoteEndPoint;
-                if (client_ep != null)
-                {
-                    string remoteAddress = client_ep.Address.ToString();
-                    string remotePort = client_ep.Port.ToString();
-                    Debug.WriteLine($"A client added: {remoteAddress}:{remotePort}");
-                }
-
-                ClientList.Add(client);
-
-                ReadObj obj = new()
-                {
-                    Buffer = new byte[1024],
-                    Socket = client
-                };
-
-                client.BeginReceive(obj.Buffer, 0, obj.Buffer.Length, SocketFlags.None, new AsyncCallback(ReadPackets), obj);
-            }
-
-            if (!IsStopping)
-                Server.BeginAccept(new AsyncCallback(AcceptClient), null);
+            get => _Settings.Proxy.ListenerPort;
         }
 
-        private void ReadPackets(IAsyncResult ar)
+        public Dictionary<int, Tunnel> GetCurrentConnectTunnels()
         {
-            var asyncState = ar.AsyncState;
-            if (asyncState == null) return;
+            return _Tunnels != null ? _Tunnels.GetMetadata() : new Dictionary<int, Tunnel>();
+        }
 
-            ReadObj obj = (ReadObj)asyncState;
-            Socket client = obj.Socket;
-            byte[] buffer = obj.Buffer;
-            int read = -1;
+        #region Setup-Methods
 
+        private void Welcome()
+        {
+            // Event
+            string msgEvent = $"HTTP Proxy Server starting on {_Settings.Proxy.ListenerIpAddress}:{_Settings.Proxy.ListenerPort}";
+            OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+            OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+        }
+
+        private void Goodbye()
+        {
+            // Event
+            string msgEvent = "HTTP Proxy Server stopped.";
+            OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+            OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+        }
+
+        public void EnableDpiBypassProgram(DPIBypass.Mode mode, int firstPartOfDataLength, int programFragmentSize, int divideBy, int fragmentDelay = 0)
+        {
+            DpiBypassMode = mode;
+            FirstPartOfDataLength = firstPartOfDataLength;
+            ProgramFragmentSize = programFragmentSize;
+            DivideBy = divideBy;
+            FragmentDelay = fragmentDelay;
+        }
+        
+        public void EnableDpiBypassRandom(DPIBypass.Mode mode, int fragmentLength, int fragmentDelay = 0)
+        {
+            DpiBypassMode = mode;
+            FragmentLength = fragmentLength;
+            FragmentDelay = fragmentDelay;
+        }
+
+        #endregion
+
+        #region Connection-Handler
+
+        private void AcceptConnections()
+        {
             try
             {
-                read = client.EndReceive(ar);
-            }
-            catch (Exception)
-            {
-                KillSocket(client, !IsStopping);
-                Debug.WriteLine("Client Disconnected.");
-                return;
-            }
+                _TcpListener = new TcpListener(_Settings.Proxy.ListenerIpAddress, _Settings.Proxy.ListenerPort);
 
-            if (read < 0) return;
-            else if (read == 0)
-            {
-                KillSocket(client, !IsStopping);
-                Debug.WriteLine("Client aborted session.");
-                return;
-            }
+                _TcpListener.Start();
+                Task.Delay(200).Wait();
 
-            string text = Encoding.ASCII.GetString(buffer, 0, read);
-            Request r;
-
-            if (obj.Request != null)
-            {
-                if (obj.Request.NotEnded)
+                if (_TcpListener != null)
                 {
-                    string? des = obj.Request.Full;
-                    if (!string.IsNullOrEmpty(des))
+                    IsRunning = _TcpListener.Server.IsBound;
+
+                    while (!Cancel)
                     {
-                        des += text;
-                        r = new Request(des);
+                        TcpClient client = _TcpListener.AcceptTcpClient();
+                        Task.Run(() => ProcessConnection(client), _CancelToken);
+                        if (_CancelToken.IsCancellationRequested || Cancel)
+                            break;
                     }
-                    else r = new Request(text);
                 }
-                else r = new Request(text);
-            }
-            else r = new Request(text);
-
-            if (!r.NotEnded && !r.Deception)
-            {
-                OnRequestReceived?.Invoke(r, EventArgs.Empty);
-
-                try
+                else
                 {
-                    Tunnel tunnel = new(r, client, OnErrorOccurred);
-                    tunnel.SendData();
+                    IsRunning = false;
+                }
+            }
+            catch (Exception eOuter)
+            {
+                // Event Error
+                string msgEventErr = $"Accept Connections: {eOuter.Message}";
+                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+            }
+        }
+        
+        private async Task ProcessConnection(TcpClient client)
+        {
+            string clientIp = string.Empty;
+            int clientPort = 0;
+            int connectionId = Environment.CurrentManagedThreadId;
+            _ActiveThreads++;
+            Debug.WriteLine($"Active Requests: {_ActiveThreads}");
+
+            try
+            {
+                // Check-if-Max-Exceeded
+                if (_ActiveThreads >= _Settings.Proxy.MaxThreads)
+                {
+                    // Event
+                    string msgEventErr = $"AcceptConnections connection count {_ActiveThreads} exceeds configured max {_Settings.Proxy.MaxThreads}, waiting";
+                    OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+
+                    while (_ActiveThreads >= _Settings.Proxy.MaxThreads)
+                    {
+                        Task.Delay(100).Wait();
+                    }
+                }
+
+                IPEndPoint? clientIpEndpoint = client.Client.RemoteEndPoint as IPEndPoint;
+                IPEndPoint? serverIpEndpoint = client.Client.LocalEndPoint as IPEndPoint;
+
+                string clientEndpoint = clientIpEndpoint != null ? clientIpEndpoint.ToString() : string.Empty;
+                string serverEndpoint = serverIpEndpoint != null ? serverIpEndpoint.ToString() : string.Empty;
+
+                clientIp = clientIpEndpoint != null ? clientIpEndpoint.Address.ToString() : string.Empty;
+                clientPort = clientIpEndpoint != null ? clientIpEndpoint.Port : 0;
+
+                string serverIp = serverIpEndpoint != null ? serverIpEndpoint.Address.ToString() : string.Empty;
+                int serverPort = serverIpEndpoint != null ? serverIpEndpoint.Port : 0;
+
+                HttpRequest req = HttpRequest.FromTcpClient(client);
+                if (req == null)
+                {
+                    // Event Error
+                    string msgEventErr = $"{clientEndpoint} unable to build HTTP request.";
+                    OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                    _ActiveThreads--;
                     return;
                 }
-                catch (Exception ex)
+
+                req.SourceIp = clientIp;
+                req.SourcePort = clientPort;
+                req.DestIp = serverIp;
+                req.DestPort = serverPort;
+
+                // Event
+                string msgEvent = $"{req.DestHostname}:{req.DestHostPort}";
+                OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+
+                if (req.Method == WatsonWebserver.HttpMethod.CONNECT)
                 {
-                    string msgError = $"Error on creating tunnel: {ex.Message}";
-                    OnErrorOccurred?.Invoke(msgError, EventArgs.Empty);
+                    // Event
+                    msgEvent = $"{clientEndpoint} proxying request via CONNECT to {req.FullUrl}";
+                    OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+
+                    ConnectRequest(connectionId, client, req);
                 }
+                else
+                {
+                    // Event
+                    msgEvent = $"{clientEndpoint} proxying request to {req.FullUrl}";
+                    OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+
+                    RestResponse? resp = ProxyRequest(req).Result;
+                    if (resp != null)
+                    {
+                        NetworkStream ns = client.GetStream();
+                        await SendRestResponse(resp, ns);
+                        await ns.FlushAsync();
+                        ns.Close();
+                    }
+                }
+
+                client.Close();
+                _ActiveThreads--;
             }
-            else if (r.NotEnded)
-                obj.Request = r;
-
-            Array.Clear(buffer, 0, buffer.Length);
-
-            KillSocket(client, !IsStopping);
-            Debug.WriteLine("Client aborted session.");
+            catch (IOException)
+            {
+                // Do nothing
+            }
+            catch (Exception eInner)
+            {
+                // Event Error
+                string msgEventErr = $"Accept Connections: {eInner.Message}";
+                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+            }
         }
 
-        private void CleanSockets()
+        private async Task<RestResponse?> ProxyRequest(HttpRequest request)
         {
-            List<Socket> copy = ListCopy(ClientList);
-            bool result = true;
-            foreach (Socket socket in copy)
+            try
             {
-                try
+                if (request.Headers != null)
                 {
-                    KillSocket(socket);
+                    string foundVal = string.Empty;
+
+                    foreach (KeyValuePair<string, string> currKvp in request.Headers)
+                    {
+                        if (string.IsNullOrEmpty(currKvp.Key)) continue;
+                        if (currKvp.Key.ToLower().Equals("expect"))
+                        {
+                            foundVal = currKvp.Key;
+                            break;
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(foundVal)) request.Headers.Remove(foundVal);
                 }
-                catch (Exception ex)
+
+                RestRequest req = new(
+                    request.FullUrl,
+                    (RestWrapper.HttpMethod)(Enum.Parse(typeof(RestWrapper.HttpMethod), request.Method.ToString())),
+                    request.Headers,
+                    request.ContentType);
+
+                if (request.ContentLength > 0)
                 {
-                    Debug.WriteLine($"Clean Sockets failed: {ex.Message}");
-                    result = false;
+                    return await req.SendAsync(request.ContentLength, request.Data);
+                }
+                else
+                {
+                    return await req.SendAsync();
                 }
             }
-
-            if (result)
+            catch (Exception e)
             {
-                Debug.WriteLine("All clients disconnected.");
+                // Evemt Error
+                string msgEventErr = $"{e.Message}";
+                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                return null;
             }
-            else
-            {
-                Debug.WriteLine("Some clients failed to disconnect.");
-            }
-
-            Array.Clear(copy.ToArray(), 0, copy.Count);
         }
 
-        public static List<Socket> ListCopy(List<Socket> input)
+        private void ConnectRequest(int connectionId, TcpClient client, HttpRequest req)
         {
-            List<Socket> result = new();
-            foreach (Socket item in input)
-                result.Add(item);
-            return result;
-        }
-
-        private void KillSocket(Socket client, bool autoRemove = true)
-        {
-            if (autoRemove && ClientList != null)
-                ClientList.Remove(client);
+            Tunnel? currTunnel = null;
+            TcpClient? server = null;
 
             try
             {
-                client.Shutdown(SocketShutdown.Both);
-                client.Disconnect(false);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Killsocket failed: {ex.Message}");
-            }
-            client.Close();
-            client.Dispose();
-        }
+                client.NoDelay = true;
+                client.Client.NoDelay = true;
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+                server = new TcpClient();
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (Disposed) return;
-            if (disposing)
-            {
-                if (IsRunning)
+                try
                 {
-                    Stop();
-                    Server.Dispose();
+                    server.Connect(req.DestHostname, req.DestHostPort);
+                }
+                catch (Exception)
+                {
+                    // Event Error
+                    string msgEventErr = $"Connect Request failed to {req.DestHostname}:{req.DestHostPort}";
+                    OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                    return;
                 }
 
-                if (TimerAutoClean != null)
+                server.NoDelay = true;
+                server.Client.NoDelay = true;
+
+                byte[] connectResponse = ConnectResponse();
+                client.Client.Send(connectResponse);
+
+                currTunnel = new Tunnel(
+                    req.SourceIp,
+                    req.SourcePort,
+                    req.DestIp,
+                    req.DestPort,
+                    req.DestHostname,
+                    req.DestHostPort,
+                    client,
+                    server);
+
+                // Pass the events
+                currTunnel.PassTheEvents(OnRequestReceived, OnErrorOccurred);
+
+                // Pass DPI bypass
+                if (DpiBypassMode == DPIBypass.Mode.Program)
+                    currTunnel.EnableDpiBypassProgram(DPIBypass.Mode.Program, FirstPartOfDataLength, ProgramFragmentSize, DivideBy, FragmentDelay);
+                else if (DpiBypassMode == DPIBypass.Mode.Random)
+                    currTunnel.EnableDpiBypassRandom(DPIBypass.Mode.Random, FragmentLength, FragmentDelay);
+
+                if (_Tunnels != null)
+                    _Tunnels.Add(connectionId, currTunnel);
+
+                while (currTunnel.IsActive())
                 {
-                    TimerAutoClean.Stop();
-                    TimerAutoClean.Dispose();
+                    Task.Delay(100).Wait();
+                }
+            }
+            catch (SocketException)
+            {
+                // do nothing
+            }
+            catch (Exception e)
+            {
+                // Event Error
+                string msgEventErr = $"Connect Request: {e.Message}";
+                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+            }
+            finally
+            {
+                if (_Tunnels != null)
+                    _Tunnels.Remove(connectionId);
+
+                if (client != null)
+                {
+                    client.Dispose();
                 }
 
-                IpAddress = IPAddress.None;
-                ClientList.Clear();
+                if (server != null)
+                {
+                    server.Dispose();
+                }
             }
-
-            Disposed = true;
         }
+
+        private static byte[] ConnectResponse()
+        {
+            string resp = "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
+            return Encoding.UTF8.GetBytes(resp);
+        }
+
+        private async Task SendRestResponse(RestResponse resp, NetworkStream ns)
+        {
+            try
+            {
+                byte[]? ret = null;
+                string statusLine = resp.ProtocolVersion + " " + resp.StatusCode + " " + resp.StatusDescription + "\r\n";
+                ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(statusLine));
+
+                if (!string.IsNullOrEmpty(resp.ContentType))
+                {
+                    string contentTypeLine = "Content-Type: " + resp.ContentType + "\r\n";
+                    ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(contentTypeLine));
+                }
+
+                if (resp.ContentLength > 0)
+                {
+                    string contentLenLine = "Content-Length: " + resp.ContentLength + "\r\n";
+                    ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(contentLenLine));
+                }
+
+                if (resp.Headers != null && resp.Headers.Count > 0)
+                {
+                    foreach (KeyValuePair<string, string> currHeader in resp.Headers)
+                    {
+                        if (string.IsNullOrEmpty(currHeader.Key)) continue;
+                        if (currHeader.Key.ToLower().Trim().Equals("content-type")) continue;
+                        if (currHeader.Key.ToLower().Trim().Equals("content-length")) continue;
+
+                        string headerLine = currHeader.Key + ": " + currHeader.Value + "\r\n";
+                        ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(headerLine));
+                    }
+                }
+
+                ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes("\r\n"));
+
+                await ns.WriteAsync(ret);
+                await ns.FlushAsync();
+
+                if (resp.Data != null && resp.ContentLength > 0)
+                {
+                    long bytesRemaining = resp.ContentLength;
+                    byte[] buffer = new byte[65536];
+
+                    while (bytesRemaining > 0)
+                    {
+                        int bytesRead = await resp.Data.ReadAsync(buffer);
+                        if (bytesRead > 0)
+                        {
+                            bytesRemaining -= bytesRead;
+                            await ns.WriteAsync(buffer.AsMemory(0, bytesRead));
+                            await ns.FlushAsync();
+                        }
+                    }
+                }
+
+                return;
+            }
+            catch (Exception e)
+            {
+                // Event Error
+                string msgEventErr = $"Send Rest Response: {e.Message}";
+                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                return;
+            }
+        }
+
+        #endregion
     }
 }

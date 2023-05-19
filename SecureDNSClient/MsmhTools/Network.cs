@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -630,7 +631,7 @@ namespace MsmhTools
                     url ??= CultureInfo.InstalledUICulture switch
                     {
                         { Name: var n } when n.StartsWith("fa") => // Iran
-                            "http://www.aparat.com",
+                            "http://www.google.com",
                         { Name: var n } when n.StartsWith("zh") => // China
                             "http://www.baidu.com",
                         _ =>
@@ -657,7 +658,7 @@ namespace MsmhTools
                 url ??= CultureInfo.InstalledUICulture switch
                 {
                     { Name: var n } when n.StartsWith("fa") => // Iran
-                        "http://www.aparat.com",
+                        "http://www.google.com",
                     { Name: var n } when n.StartsWith("zh") => // China
                         "http://www.baidu.com",
                     _ =>
@@ -672,6 +673,119 @@ namespace MsmhTools
             catch
             {
                 return false;
+            }
+        }
+
+        public static bool IsProxySet(out string httpProxy, out string httpsProxy, out string ftpProxy, out string socksProxy)
+        {
+            bool isProxyEnable = false;
+            httpProxy = httpsProxy = ftpProxy = socksProxy = string.Empty;
+            RegistryKey? registry = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", false);
+            if (registry != null)
+            {
+                // ProxyServer
+                object? proxyServerObj = registry.GetValue("ProxyServer");
+                if (proxyServerObj != null)
+                {
+                    string? proxyServers = proxyServerObj.ToString();
+                    if (proxyServers != null)
+                    {
+                        if (proxyServers.Contains(';'))
+                        {
+                            string[] split = proxyServers.Split(';');
+                            for (int n = 0; n < split.Length; n++)
+                            {
+                                string server = split[n];
+                                if (server.StartsWith("http=")) httpProxy = server[5..];
+                                else if (server.StartsWith("https=")) httpsProxy = server[6..];
+                                else if (server.StartsWith("ftp=")) ftpProxy = server[4..];
+                                else if (server.StartsWith("socks=")) socksProxy = server[6..];
+                            }
+                        }
+                        else if (proxyServers.Contains('='))
+                        {
+                            string[] split = proxyServers.Split('=');
+                            if (split[0] == "http") httpProxy = split[1];
+                            else if (split[0] == "https") httpsProxy = split[1];
+                            else if (split[0] == "ftp") ftpProxy = split[1];
+                            else if (split[0] == "socks") socksProxy = split[1];
+                        }
+                        else if (proxyServers.Contains("://"))
+                        {
+                            string[] split = proxyServers.Split("://");
+                            if (split[0] == "http") httpProxy = split[1];
+                            else if (split[0] == "https") httpsProxy = split[1];
+                            else if (split[0] == "ftp") ftpProxy = split[1];
+                            else if (split[0] == "socks") socksProxy = split[1];
+                        }
+                        else if (!string.IsNullOrEmpty(proxyServers)) httpProxy = proxyServers;
+                    }
+                }
+
+                // ProxyEnable
+                object? proxyEnableObj = registry.GetValue("ProxyEnable");
+                if (proxyEnableObj != null)
+                {
+                    string? proxyEnable = proxyEnableObj.ToString();
+                    if (proxyEnable != null)
+                    {
+                        bool isInt = int.TryParse(proxyEnable, out int value);
+                        if (isInt)
+                            isProxyEnable = value == 1;
+                    }
+                }
+
+            }
+            return isProxyEnable;
+        }
+
+        [DllImport("wininet.dll")]
+        private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
+        private const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
+        private const int INTERNET_OPTION_REFRESH = 37;
+        static bool settingsReturn, refreshReturn;
+        public static void SetHttpProxy(string ip, int port)
+        {
+            RegistryKey? registry = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", true);
+            if (registry != null)
+            {
+                string proxyServer = $"{ip}:{port}";
+
+                try
+                {
+                    registry.SetValue("ProxyEnable", 1, RegistryValueKind.DWord);
+                    registry.SetValue("ProxyServer", proxyServer, RegistryValueKind.String);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Set Http Proxy: {ex.Message}");
+                }
+
+                // They cause the OS to refresh the settings, causing IP to realy update
+                settingsReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
+                refreshReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+            }
+        }
+
+        public static void UnsetProxy(bool clearIpPort)
+        {
+            RegistryKey? registry = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", true);
+            if (registry != null)
+            {
+                try
+                {
+                    registry.SetValue("ProxyEnable", 0, RegistryValueKind.DWord);
+                    if (clearIpPort)
+                        registry.SetValue("ProxyServer", "", RegistryValueKind.String);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Unset Proxy: {ex.Message}");
+                }
+
+                // They cause the OS to refresh the settings, causing IP to realy update
+                settingsReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
+                refreshReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
             }
         }
 

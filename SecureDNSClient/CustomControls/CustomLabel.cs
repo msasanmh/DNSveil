@@ -78,7 +78,6 @@ namespace CustomControls
 
             // Default
             FlatStyle = FlatStyle.Flat;
-            AutoSize = true;
             BackColor = Color.DimGray;
             ForeColor = Color.White;
 

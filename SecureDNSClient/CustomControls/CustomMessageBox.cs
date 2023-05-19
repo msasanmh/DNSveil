@@ -37,6 +37,7 @@ namespace CustomControls
         {
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
+            TopMost = true;
 
             int iconOffset = 5;
             int buttonOffset = 5;

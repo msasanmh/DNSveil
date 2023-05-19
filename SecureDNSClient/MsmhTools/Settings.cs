@@ -17,6 +17,9 @@ namespace MsmhTools
     {
         private XDocument XDoc = new();
         private List<Setting> SettingList = new();
+
+        private readonly string Whitespace = @"\u0020";
+        private readonly char WhiteSpaceChar = '\u0020';
         class Setting
         {
             public string? ControlName { get; set; }
@@ -43,12 +46,12 @@ namespace MsmhTools
         }
 
         private readonly char Delimiter = '|';
-        public Settings(string? xmlFilePath = null)
+        public Settings(Control form, string? xmlFilePath = null)
         {
             if (xmlFilePath != null)
             {
                 if (Xml.IsValidXMLFile(xmlFilePath))
-                    LoadFromXMLFile(xmlFilePath);
+                    LoadFromXMLFile(form, xmlFilePath);
                 else
                     CustomMessageBox.Show("XML file is not valid.");
             }
@@ -65,7 +68,7 @@ namespace MsmhTools
                 XDoc = XDocument.Parse(xmlString);
         }
 
-        public void LoadFromXMLFile(string xmlFilePath)
+        public void LoadFromXMLFile(Control form, string xmlFilePath)
         {
             if (xmlFilePath != null && Xml.IsValidXMLFile(xmlFilePath))
             {
@@ -90,12 +93,12 @@ namespace MsmhTools
                     XElement? setting0 = XDoc.Element("Settings");
                     if (setting0 != null)
                     {
-                        var controls = setting0.Elements();
+                        var controls = setting0.Elements().ToArray();
                         bool controlExist = controls.Any();
                         if (controlExist)
                         {
                             // Control Exist
-                            for (int n1 = 0; n1 < controls.Count(); n1++)
+                            for (int n1 = 0; n1 < controls.Length; n1++)
                             {
                                 XElement? control0 = controls.ToArray()[n1];
                                 if (control0 != null)
@@ -110,10 +113,75 @@ namespace MsmhTools
                                             XElement? controlProperty0 = controlProperties.ToArray()[n2];
                                             if (controlProperty0 != null)
                                             {
-                                                AddSettingToList(control0.Name.LocalName, controlProperty0.Name.LocalName, controlProperty0.Value);
+                                                if (IsControlExistInForm(form, control0.Name.LocalName))
+                                                    AddSettingToList(control0.Name.LocalName, controlProperty0.Name.LocalName, controlProperty0.Value);
+                                                else
+                                                {
+                                                    // Remove old controls settings
+                                                    XElement? elementToRemove = setting0.Element(control0.Name.LocalName);
+                                                    if (elementToRemove != null)
+                                                        elementToRemove.Remove();
+                                                }
                                             }
                                         }
                                     }
+                                }
+                            }
+                            LoadAllSettings(form);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static bool IsControlExistInForm(Control form, string controlName)
+        {
+            List<Control> controls = Controllers.GetAllControls(form);
+            for (int n = 0; n < controls.Count; n++)
+            {
+                Control control = controls[n];
+                if (control.Name == controlName)
+                    return true;
+            }
+            return false;
+        }
+
+        public void LoadAllSettings(Control form)
+        {
+            List<Control> controls = Controllers.GetAllControls(form);
+            for (int n1 = 0; n1 < controls.Count; n1++)
+            {
+                Control control = controls[n1];
+                PropertyInfo[] properties = control.GetType().GetProperties();
+                for (int n2 = 0; n2 < properties.Length; n2++)
+                {
+                    PropertyInfo property = properties[n2];
+                    List<Setting> settingList = SettingList.ToList(); // ToList: Fix: Collection was modified; enumeration operation may not execute.
+                    for (int n3 = 0; n3 < settingList.Count; n3++)
+                    {
+                        Setting setting = settingList[n3];
+                        if (control.Name == setting.ControlName && property.Name == setting.PropertyName && setting.PropertyValue != null)
+                        {
+                            try
+                            {
+                                TypeConverter typeConverter = TypeDescriptor.GetConverter(property.PropertyType);
+                                if (typeConverter.CanConvertFrom(typeof(string)))
+                                {
+                                    property.SetValue(control, typeConverter.ConvertFrom(setting.PropertyValue), null);
+                                    break;
+                                }
+                            }
+                            catch (Exception ex1)
+                            {
+                                Debug.WriteLine(property.Name + ": " + ex1.Message);
+                                try
+                                {
+                                    property.SetValue(control, Convert.ChangeType(setting.PropertyValue, property.PropertyType), null);
+                                    break;
+                                }
+                                catch (Exception ex2)
+                                {
+                                    Debug.WriteLine(property.Name + ": " + ex2.Message);
                                 }
                             }
                         }
@@ -155,50 +223,6 @@ namespace MsmhTools
                 {
                     object line = setting.ControlName + Delimiter + setting.PropertyName + Delimiter + setting.PropertyValue;
                     streamWriter.WriteLine(line.ToString());
-                }
-            }
-        }
-
-        public void LoadAllSettings(Form form)
-        {
-            List<Control> controls = Controllers.GetAllControls(form);
-            for (int n1 = 0; n1 < controls.Count; n1++)
-            {
-                Control control = controls[n1];
-                PropertyInfo[] properties = control.GetType().GetProperties();
-                for (int n2 = 0; n2 < properties.Length; n2++)
-                {
-                    PropertyInfo property = properties[n2];
-                    List<Setting> settingList = SettingList.ToList(); // ToList: Fix: Collection was modified; enumeration operation may not execute.
-                    for (int n3 = 0; n3 < settingList.Count; n3++)
-                    {
-                        Setting setting = settingList[n3];
-                        if (control.Name == setting.ControlName && property.Name == setting.PropertyName && setting.PropertyValue != null)
-                        {
-                            try
-                            {
-                                TypeConverter typeConverter = TypeDescriptor.GetConverter(property.PropertyType);
-                                if (typeConverter.CanConvertFrom(typeof(string)))
-                                {
-                                    property.SetValue(control, typeConverter.ConvertFrom(setting.PropertyValue), null);
-                                    break;
-                                }
-                            }
-                            catch (Exception ex1)
-                            {
-                                Debug.WriteLine(property.Name + ": " + ex1.Message);
-                                try
-                                {
-                                    property.SetValue(control, Convert.ChangeType(setting.PropertyValue, property.PropertyType), null);
-                                    break;
-                                }
-                                catch (Exception ex2)
-                                {
-                                    Debug.WriteLine(property.Name + ": " + ex2.Message);
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -313,7 +337,20 @@ namespace MsmhTools
         public void AddSelectedControlAndProperty(Type controlType, string propertyName)
         {
             ControlsAndProperties controlsAndProperties = new(controlType, propertyName);
-            ControlsAndPropertiesList.Add(controlsAndProperties);
+            bool alreadyExist = false;
+
+            for (int n = 0; n < ControlsAndPropertiesList.Count; n++)
+            {
+                ControlsAndProperties cap = ControlsAndPropertiesList[n];
+                if (controlsAndProperties == cap)
+                {
+                    alreadyExist = true;
+                    break;
+                }
+            }
+
+            if (!alreadyExist)
+                ControlsAndPropertiesList.Add(controlsAndProperties);
         }
 
         /// <summary>
@@ -378,10 +415,26 @@ namespace MsmhTools
             if (propertyValue == null) return;
 
             string? value = propertyValue.ToString();
-            if (string.IsNullOrEmpty(value)) return;
+            if (value == null) return;
 
             Setting setting = new(controlName, propertyName, value);
-            SettingList.Add(setting);
+
+            // Begin Check
+            bool alreadyExist = false;
+            for (int n = 0; n < SettingList.Count; n++)
+            {
+                Setting s = SettingList[n];
+                if (controlName.Equals(s.ControlName) && propertyName.Equals(s.PropertyName))
+                {
+                    // Control Property Exist
+                    s.PropertyValue = value;
+                    alreadyExist = true;
+                    break;
+                }
+            }
+
+            if (!alreadyExist)
+                SettingList.Add(setting);
         }
 
         private void AddSettingToXDoc(string controlName, string propertyName, object propertyValue)
@@ -391,7 +444,7 @@ namespace MsmhTools
             if (propertyValue == null) return;
 
             string? value = propertyValue.ToString();
-            if (string.IsNullOrEmpty(value)) return;
+            if (value == null) return;
 
             // Create Control Property
             XElement xControlProperty = new(propertyName);

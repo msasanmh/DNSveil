@@ -50,7 +50,7 @@ namespace DNSCrypt
             }
         }
 
-        public void EditBootstrapDNS(IPAddress bootstrapDNS)
+        public void EditBootstrapDNS(IPAddress bootstrapDNS, int bootstrapPort)
         {
             if (bootstrapDNS == null) return;
             for (int n = 0; n < ConfigList.Count; n++)
@@ -59,7 +59,7 @@ namespace DNSCrypt
                 if (line.Contains("bootstrap_resolvers"))
                 {
                     // e.g. bootstrap_resolvers = ['9.9.9.11:53', '1.1.1.1:53']
-                    ConfigList[n] = "bootstrap_resolvers = ['" + bootstrapDNS.ToString() + ":53', '1.1.1.1:53']";
+                    ConfigList[n] = $"bootstrap_resolvers = ['{bootstrapDNS}:{bootstrapPort}', '1.1.1.1:53']";
                     break;
                 }
             }
