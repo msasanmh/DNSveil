@@ -58,6 +58,26 @@
             this.CustomRadioButtonConnectCloudflare = new CustomControls.CustomRadioButton();
             this.CustomRadioButtonConnectCheckedServers = new CustomControls.CustomRadioButton();
             this.CustomRadioButtonConnectDNSCrypt = new CustomControls.CustomRadioButton();
+            this.TabPageSetDNS = new System.Windows.Forms.TabPage();
+            this.CustomButtonSetDNS = new CustomControls.CustomButton();
+            this.CustomLabelSelectNIC = new CustomControls.CustomLabel();
+            this.CustomLabelSetDNSInfo = new CustomControls.CustomLabel();
+            this.CustomComboBoxNICs = new CustomControls.CustomComboBox();
+            this.TabPageShare = new System.Windows.Forms.TabPage();
+            this.CustomButtonSetProxy = new CustomControls.CustomButton();
+            this.CustomNumericUpDownHTTPProxyDataLength = new CustomControls.CustomNumericUpDown();
+            this.CustomLabelHTTPProxyDpiInfo1 = new CustomControls.CustomLabel();
+            this.CustomNumericUpDownHTTPProxyFragmentSize = new CustomControls.CustomNumericUpDown();
+            this.CustomLabelHTTPProxyDpiInfo2 = new CustomControls.CustomLabel();
+            this.CustomLabelShareSeparator1 = new CustomControls.CustomLabel();
+            this.CustomCheckBoxHTTPProxyEventShowRequest = new CustomControls.CustomCheckBox();
+            this.CustomNumericUpDownHTTPProxyDivideBy = new CustomControls.CustomNumericUpDown();
+            this.CustomLabelHTTPProxyDpiInfo3 = new CustomControls.CustomLabel();
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass = new CustomControls.CustomCheckBox();
+            this.CustomButtonShare = new CustomControls.CustomButton();
+            this.CustomLabelHTTPProxyPort = new CustomControls.CustomLabel();
+            this.CustomLabelShareInfo = new CustomControls.CustomLabel();
+            this.CustomNumericUpDownHTTPProxyPort = new CustomControls.CustomNumericUpDown();
             this.TabPageDPI = new System.Windows.Forms.TabPage();
             this.CustomTabControlDPIBasicAdvanced = new CustomControls.CustomTabControl();
             this.TabPageDPIBasic = new System.Windows.Forms.TabPage();
@@ -106,26 +126,6 @@
             this.CustomCheckBoxDPIAdvS = new CustomControls.CustomCheckBox();
             this.CustomCheckBoxDPIAdvR = new CustomControls.CustomCheckBox();
             this.CustomCheckBoxDPIAdvP = new CustomControls.CustomCheckBox();
-            this.TabPageSetDNS = new System.Windows.Forms.TabPage();
-            this.CustomButtonSetDNS = new CustomControls.CustomButton();
-            this.CustomLabelSelectNIC = new CustomControls.CustomLabel();
-            this.CustomLabelSetDNSInfo = new CustomControls.CustomLabel();
-            this.CustomComboBoxNICs = new CustomControls.CustomComboBox();
-            this.TabPageShare = new System.Windows.Forms.TabPage();
-            this.CustomButtonSetProxy = new CustomControls.CustomButton();
-            this.CustomNumericUpDownHTTPProxyDataLength = new CustomControls.CustomNumericUpDown();
-            this.CustomLabelHTTPProxyDpiInfo1 = new CustomControls.CustomLabel();
-            this.CustomNumericUpDownHTTPProxyFragmentSize = new CustomControls.CustomNumericUpDown();
-            this.CustomLabelHTTPProxyDpiInfo2 = new CustomControls.CustomLabel();
-            this.CustomLabelShareSeparator1 = new CustomControls.CustomLabel();
-            this.CustomCheckBoxHTTPProxyEventShowRequest = new CustomControls.CustomCheckBox();
-            this.CustomNumericUpDownHTTPProxyDivideBy = new CustomControls.CustomNumericUpDown();
-            this.CustomLabelHTTPProxyDpiInfo3 = new CustomControls.CustomLabel();
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass = new CustomControls.CustomCheckBox();
-            this.CustomButtonShare = new CustomControls.CustomButton();
-            this.CustomLabelHTTPProxyPort = new CustomControls.CustomLabel();
-            this.CustomLabelShareInfo = new CustomControls.CustomLabel();
-            this.CustomNumericUpDownHTTPProxyPort = new CustomControls.CustomNumericUpDown();
             this.TabPageSettings = new System.Windows.Forms.TabPage();
             this.CustomTabControlSettings = new CustomControls.CustomTabControl();
             this.TabPageSettingsWorkingMode = new System.Windows.Forms.TabPage();
@@ -182,6 +182,7 @@
             this.CustomStatusStrip1 = new CustomControls.CustomStatusStrip();
             this.ToolStripStatusLabelDNS = new System.Windows.Forms.ToolStripStatusLabel();
             this.ToolStripStatusLabelDoH = new System.Windows.Forms.ToolStripStatusLabel();
+            this.ToolStripStatusLabelDnsLatency = new System.Windows.Forms.ToolStripStatusLabel();
             this.ToolStripStatusLabelSpace = new System.Windows.Forms.ToolStripStatusLabel();
             this.ToolStripStatusLabelPercent = new System.Windows.Forms.ToolStripStatusLabel();
             this.NotifyIconMain = new System.Windows.Forms.NotifyIcon(this.components);
@@ -193,6 +194,7 @@
             this.CustomRichTextBoxStatusIsDPIActive = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsConnected = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusWorkingServers = new CustomControls.CustomRichTextBox();
+            this.ToolStripStatusLabelDohLatency = new System.Windows.Forms.ToolStripStatusLabel();
             this.CustomGroupBoxLog.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSSLFragmentSize)).BeginInit();
             this.CustomTabControlMain.SuspendLayout();
@@ -200,6 +202,12 @@
             this.CustomTabControlSecureDNS.SuspendLayout();
             this.TabPageCheck.SuspendLayout();
             this.TabPageConnect.SuspendLayout();
+            this.TabPageSetDNS.SuspendLayout();
+            this.TabPageShare.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyDataLength)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyFragmentSize)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyDivideBy)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyPort)).BeginInit();
             this.TabPageDPI.SuspendLayout();
             this.CustomTabControlDPIBasicAdvanced.SuspendLayout();
             this.TabPageDPIBasic.SuspendLayout();
@@ -211,12 +219,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvE)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvK)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvF)).BeginInit();
-            this.TabPageSetDNS.SuspendLayout();
-            this.TabPageShare.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyDataLength)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyFragmentSize)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyDivideBy)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyPort)).BeginInit();
             this.TabPageSettings.SuspendLayout();
             this.CustomTabControlSettings.SuspendLayout();
             this.TabPageSettingsWorkingMode.SuspendLayout();
@@ -577,9 +579,9 @@
             this.CustomTabControlSecureDNS.BorderColor = System.Drawing.Color.Blue;
             this.CustomTabControlSecureDNS.Controls.Add(this.TabPageCheck);
             this.CustomTabControlSecureDNS.Controls.Add(this.TabPageConnect);
-            this.CustomTabControlSecureDNS.Controls.Add(this.TabPageDPI);
             this.CustomTabControlSecureDNS.Controls.Add(this.TabPageSetDNS);
             this.CustomTabControlSecureDNS.Controls.Add(this.TabPageShare);
+            this.CustomTabControlSecureDNS.Controls.Add(this.TabPageDPI);
             this.CustomTabControlSecureDNS.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CustomTabControlSecureDNS.HideTabHeader = false;
             this.CustomTabControlSecureDNS.ItemSize = new System.Drawing.Size(90, 21);
@@ -587,9 +589,8 @@
             this.CustomTabControlSecureDNS.Name = "CustomTabControlSecureDNS";
             this.CustomTabControlSecureDNS.SelectedIndex = 0;
             this.CustomTabControlSecureDNS.Size = new System.Drawing.Size(686, 278);
-            this.CustomTabControlSecureDNS.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             this.CustomTabControlSecureDNS.TabIndex = 0;
-            this.CustomTabControlSecureDNS.Tag = 4;
+            this.CustomTabControlSecureDNS.Tag = 0;
             // 
             // TabPageCheck
             // 
@@ -714,6 +715,352 @@
             this.CustomRadioButtonConnectDNSCrypt.UseVisualStyleBackColor = false;
             this.CustomRadioButtonConnectDNSCrypt.CheckedChanged += new System.EventHandler(this.SecureDNSClient_CheckedChanged);
             // 
+            // TabPageSetDNS
+            // 
+            this.TabPageSetDNS.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageSetDNS.Controls.Add(this.CustomButtonSetDNS);
+            this.TabPageSetDNS.Controls.Add(this.CustomLabelSelectNIC);
+            this.TabPageSetDNS.Controls.Add(this.CustomLabelSetDNSInfo);
+            this.TabPageSetDNS.Controls.Add(this.CustomComboBoxNICs);
+            this.TabPageSetDNS.Location = new System.Drawing.Point(4, 25);
+            this.TabPageSetDNS.Name = "TabPageSetDNS";
+            this.TabPageSetDNS.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageSetDNS.Size = new System.Drawing.Size(678, 249);
+            this.TabPageSetDNS.TabIndex = 3;
+            this.TabPageSetDNS.Tag = 2;
+            this.TabPageSetDNS.Text = "3. Set DNS";
+            // 
+            // CustomButtonSetDNS
+            // 
+            this.CustomButtonSetDNS.BorderColor = System.Drawing.Color.Blue;
+            this.CustomButtonSetDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomButtonSetDNS.Location = new System.Drawing.Point(50, 220);
+            this.CustomButtonSetDNS.Name = "CustomButtonSetDNS";
+            this.CustomButtonSetDNS.RoundedCorners = 0;
+            this.CustomButtonSetDNS.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomButtonSetDNS.Size = new System.Drawing.Size(75, 23);
+            this.CustomButtonSetDNS.TabIndex = 3;
+            this.CustomButtonSetDNS.Text = "Set/Unset";
+            this.CustomButtonSetDNS.UseVisualStyleBackColor = true;
+            this.CustomButtonSetDNS.Click += new System.EventHandler(this.CustomButtonSetDNS_Click);
+            // 
+            // CustomLabelSelectNIC
+            // 
+            this.CustomLabelSelectNIC.AutoSize = true;
+            this.CustomLabelSelectNIC.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSelectNIC.Border = false;
+            this.CustomLabelSelectNIC.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSelectNIC.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSelectNIC.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSelectNIC.Location = new System.Drawing.Point(25, 20);
+            this.CustomLabelSelectNIC.Name = "CustomLabelSelectNIC";
+            this.CustomLabelSelectNIC.RoundedCorners = 0;
+            this.CustomLabelSelectNIC.Size = new System.Drawing.Size(135, 15);
+            this.CustomLabelSelectNIC.TabIndex = 0;
+            this.CustomLabelSelectNIC.Text = "Select Network Interface";
+            // 
+            // CustomLabelSetDNSInfo
+            // 
+            this.CustomLabelSetDNSInfo.AutoSize = true;
+            this.CustomLabelSetDNSInfo.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSetDNSInfo.Border = false;
+            this.CustomLabelSetDNSInfo.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSetDNSInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSetDNSInfo.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSetDNSInfo.Location = new System.Drawing.Point(25, 91);
+            this.CustomLabelSetDNSInfo.Name = "CustomLabelSetDNSInfo";
+            this.CustomLabelSetDNSInfo.RoundedCorners = 0;
+            this.CustomLabelSetDNSInfo.Size = new System.Drawing.Size(220, 45);
+            this.CustomLabelSetDNSInfo.TabIndex = 2;
+            this.CustomLabelSetDNSInfo.Text = "You have two options:\r\n1. Set DNS to Windows by below button.\r\n2. Set DoH to Fire" +
+    "fox manually.";
+            // 
+            // CustomComboBoxNICs
+            // 
+            this.CustomComboBoxNICs.BackColor = System.Drawing.Color.DimGray;
+            this.CustomComboBoxNICs.BorderColor = System.Drawing.Color.Blue;
+            this.CustomComboBoxNICs.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
+            this.CustomComboBoxNICs.ForeColor = System.Drawing.Color.White;
+            this.CustomComboBoxNICs.FormattingEnabled = true;
+            this.CustomComboBoxNICs.ItemHeight = 17;
+            this.CustomComboBoxNICs.Location = new System.Drawing.Point(25, 49);
+            this.CustomComboBoxNICs.Name = "CustomComboBoxNICs";
+            this.CustomComboBoxNICs.SelectionColor = System.Drawing.Color.DodgerBlue;
+            this.CustomComboBoxNICs.Size = new System.Drawing.Size(180, 23);
+            this.CustomComboBoxNICs.TabIndex = 1;
+            // 
+            // TabPageShare
+            // 
+            this.TabPageShare.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageShare.Controls.Add(this.CustomButtonSetProxy);
+            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyDataLength);
+            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyDpiInfo1);
+            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyFragmentSize);
+            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyDpiInfo2);
+            this.TabPageShare.Controls.Add(this.CustomLabelShareSeparator1);
+            this.TabPageShare.Controls.Add(this.CustomCheckBoxHTTPProxyEventShowRequest);
+            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyDivideBy);
+            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyDpiInfo3);
+            this.TabPageShare.Controls.Add(this.CustomCheckBoxHTTPProxyEnableDpiBypass);
+            this.TabPageShare.Controls.Add(this.CustomButtonShare);
+            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyPort);
+            this.TabPageShare.Controls.Add(this.CustomLabelShareInfo);
+            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyPort);
+            this.TabPageShare.Location = new System.Drawing.Point(4, 25);
+            this.TabPageShare.Name = "TabPageShare";
+            this.TabPageShare.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageShare.Size = new System.Drawing.Size(678, 249);
+            this.TabPageShare.TabIndex = 4;
+            this.TabPageShare.Tag = 3;
+            this.TabPageShare.Text = "4. Share + Bypass DPI";
+            // 
+            // CustomButtonSetProxy
+            // 
+            this.CustomButtonSetProxy.BorderColor = System.Drawing.Color.Blue;
+            this.CustomButtonSetProxy.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomButtonSetProxy.Location = new System.Drawing.Point(151, 220);
+            this.CustomButtonSetProxy.Name = "CustomButtonSetProxy";
+            this.CustomButtonSetProxy.RoundedCorners = 0;
+            this.CustomButtonSetProxy.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomButtonSetProxy.Size = new System.Drawing.Size(75, 23);
+            this.CustomButtonSetProxy.TabIndex = 32;
+            this.CustomButtonSetProxy.Text = "Set/Unset";
+            this.CustomButtonSetProxy.UseVisualStyleBackColor = true;
+            this.CustomButtonSetProxy.Click += new System.EventHandler(this.CustomButtonSetProxy_Click);
+            // 
+            // CustomNumericUpDownHTTPProxyDataLength
+            // 
+            this.CustomNumericUpDownHTTPProxyDataLength.BackColor = System.Drawing.Color.DimGray;
+            this.CustomNumericUpDownHTTPProxyDataLength.BorderColor = System.Drawing.Color.Blue;
+            this.CustomNumericUpDownHTTPProxyDataLength.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CustomNumericUpDownHTTPProxyDataLength.Location = new System.Drawing.Point(195, 133);
+            this.CustomNumericUpDownHTTPProxyDataLength.Maximum = new decimal(new int[] {
+            65536,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyDataLength.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyDataLength.Name = "CustomNumericUpDownHTTPProxyDataLength";
+            this.CustomNumericUpDownHTTPProxyDataLength.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownHTTPProxyDataLength.TabIndex = 31;
+            this.CustomNumericUpDownHTTPProxyDataLength.Value = new decimal(new int[] {
+            60,
+            0,
+            0,
+            0});
+            // 
+            // CustomLabelHTTPProxyDpiInfo1
+            // 
+            this.CustomLabelHTTPProxyDpiInfo1.AutoSize = true;
+            this.CustomLabelHTTPProxyDpiInfo1.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelHTTPProxyDpiInfo1.Border = false;
+            this.CustomLabelHTTPProxyDpiInfo1.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelHTTPProxyDpiInfo1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelHTTPProxyDpiInfo1.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelHTTPProxyDpiInfo1.Location = new System.Drawing.Point(50, 135);
+            this.CustomLabelHTTPProxyDpiInfo1.Name = "CustomLabelHTTPProxyDpiInfo1";
+            this.CustomLabelHTTPProxyDpiInfo1.RoundedCorners = 0;
+            this.CustomLabelHTTPProxyDpiInfo1.Size = new System.Drawing.Size(137, 15);
+            this.CustomLabelHTTPProxyDpiInfo1.TabIndex = 30;
+            this.CustomLabelHTTPProxyDpiInfo1.Text = "If data length is less than";
+            // 
+            // CustomNumericUpDownHTTPProxyFragmentSize
+            // 
+            this.CustomNumericUpDownHTTPProxyFragmentSize.BackColor = System.Drawing.Color.DimGray;
+            this.CustomNumericUpDownHTTPProxyFragmentSize.BorderColor = System.Drawing.Color.Blue;
+            this.CustomNumericUpDownHTTPProxyFragmentSize.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CustomNumericUpDownHTTPProxyFragmentSize.Location = new System.Drawing.Point(374, 133);
+            this.CustomNumericUpDownHTTPProxyFragmentSize.Maximum = new decimal(new int[] {
+            65536,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyFragmentSize.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyFragmentSize.Name = "CustomNumericUpDownHTTPProxyFragmentSize";
+            this.CustomNumericUpDownHTTPProxyFragmentSize.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownHTTPProxyFragmentSize.TabIndex = 28;
+            this.CustomNumericUpDownHTTPProxyFragmentSize.Value = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            // 
+            // CustomLabelHTTPProxyDpiInfo2
+            // 
+            this.CustomLabelHTTPProxyDpiInfo2.AutoSize = true;
+            this.CustomLabelHTTPProxyDpiInfo2.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelHTTPProxyDpiInfo2.Border = false;
+            this.CustomLabelHTTPProxyDpiInfo2.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelHTTPProxyDpiInfo2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelHTTPProxyDpiInfo2.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelHTTPProxyDpiInfo2.Location = new System.Drawing.Point(256, 135);
+            this.CustomLabelHTTPProxyDpiInfo2.Name = "CustomLabelHTTPProxyDpiInfo2";
+            this.CustomLabelHTTPProxyDpiInfo2.RoundedCorners = 0;
+            this.CustomLabelHTTPProxyDpiInfo2.Size = new System.Drawing.Size(110, 15);
+            this.CustomLabelHTTPProxyDpiInfo2.TabIndex = 27;
+            this.CustomLabelHTTPProxyDpiInfo2.Text = "set fragment size to";
+            // 
+            // CustomLabelShareSeparator1
+            // 
+            this.CustomLabelShareSeparator1.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelShareSeparator1.Border = true;
+            this.CustomLabelShareSeparator1.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelShareSeparator1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelShareSeparator1.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelShareSeparator1.Location = new System.Drawing.Point(20, 85);
+            this.CustomLabelShareSeparator1.Name = "CustomLabelShareSeparator1";
+            this.CustomLabelShareSeparator1.RoundedCorners = 0;
+            this.CustomLabelShareSeparator1.Size = new System.Drawing.Size(640, 1);
+            this.CustomLabelShareSeparator1.TabIndex = 24;
+            // 
+            // CustomCheckBoxHTTPProxyEventShowRequest
+            // 
+            this.CustomCheckBoxHTTPProxyEventShowRequest.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxHTTPProxyEventShowRequest.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxHTTPProxyEventShowRequest.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxHTTPProxyEventShowRequest.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxHTTPProxyEventShowRequest.Location = new System.Drawing.Point(355, 50);
+            this.CustomCheckBoxHTTPProxyEventShowRequest.Name = "CustomCheckBoxHTTPProxyEventShowRequest";
+            this.CustomCheckBoxHTTPProxyEventShowRequest.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxHTTPProxyEventShowRequest.Size = new System.Drawing.Size(135, 17);
+            this.CustomCheckBoxHTTPProxyEventShowRequest.TabIndex = 23;
+            this.CustomCheckBoxHTTPProxyEventShowRequest.Text = "Write requests to log";
+            this.CustomCheckBoxHTTPProxyEventShowRequest.UseVisualStyleBackColor = false;
+            // 
+            // CustomNumericUpDownHTTPProxyDivideBy
+            // 
+            this.CustomNumericUpDownHTTPProxyDivideBy.BackColor = System.Drawing.Color.DimGray;
+            this.CustomNumericUpDownHTTPProxyDivideBy.BorderColor = System.Drawing.Color.Blue;
+            this.CustomNumericUpDownHTTPProxyDivideBy.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CustomNumericUpDownHTTPProxyDivideBy.Location = new System.Drawing.Point(318, 168);
+            this.CustomNumericUpDownHTTPProxyDivideBy.Maximum = new decimal(new int[] {
+            500,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyDivideBy.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyDivideBy.Name = "CustomNumericUpDownHTTPProxyDivideBy";
+            this.CustomNumericUpDownHTTPProxyDivideBy.Size = new System.Drawing.Size(50, 23);
+            this.CustomNumericUpDownHTTPProxyDivideBy.TabIndex = 19;
+            this.CustomNumericUpDownHTTPProxyDivideBy.Value = new decimal(new int[] {
+            60,
+            0,
+            0,
+            0});
+            // 
+            // CustomLabelHTTPProxyDpiInfo3
+            // 
+            this.CustomLabelHTTPProxyDpiInfo3.AutoSize = true;
+            this.CustomLabelHTTPProxyDpiInfo3.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelHTTPProxyDpiInfo3.Border = false;
+            this.CustomLabelHTTPProxyDpiInfo3.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelHTTPProxyDpiInfo3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelHTTPProxyDpiInfo3.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelHTTPProxyDpiInfo3.Location = new System.Drawing.Point(50, 170);
+            this.CustomLabelHTTPProxyDpiInfo3.Name = "CustomLabelHTTPProxyDpiInfo3";
+            this.CustomLabelHTTPProxyDpiInfo3.RoundedCorners = 0;
+            this.CustomLabelHTTPProxyDpiInfo3.Size = new System.Drawing.Size(260, 15);
+            this.CustomLabelHTTPProxyDpiInfo3.TabIndex = 18;
+            this.CustomLabelHTTPProxyDpiInfo3.Text = "else set fragment size by dividing data length by";
+            // 
+            // CustomCheckBoxHTTPProxyEnableDpiBypass
+            // 
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Checked = true;
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Location = new System.Drawing.Point(25, 100);
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Name = "CustomCheckBoxHTTPProxyEnableDpiBypass";
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Size = new System.Drawing.Size(120, 17);
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.TabIndex = 17;
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Text = "Enable DPI bypass";
+            this.CustomCheckBoxHTTPProxyEnableDpiBypass.UseVisualStyleBackColor = false;
+            // 
+            // CustomButtonShare
+            // 
+            this.CustomButtonShare.BorderColor = System.Drawing.Color.Blue;
+            this.CustomButtonShare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomButtonShare.Location = new System.Drawing.Point(50, 220);
+            this.CustomButtonShare.Name = "CustomButtonShare";
+            this.CustomButtonShare.RoundedCorners = 0;
+            this.CustomButtonShare.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomButtonShare.Size = new System.Drawing.Size(95, 23);
+            this.CustomButtonShare.TabIndex = 16;
+            this.CustomButtonShare.Text = "Enable/Disable";
+            this.CustomButtonShare.UseVisualStyleBackColor = true;
+            this.CustomButtonShare.Click += new System.EventHandler(this.CustomButtonShare_Click);
+            // 
+            // CustomLabelHTTPProxyPort
+            // 
+            this.CustomLabelHTTPProxyPort.AutoSize = true;
+            this.CustomLabelHTTPProxyPort.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelHTTPProxyPort.Border = false;
+            this.CustomLabelHTTPProxyPort.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelHTTPProxyPort.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelHTTPProxyPort.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelHTTPProxyPort.Location = new System.Drawing.Point(25, 50);
+            this.CustomLabelHTTPProxyPort.Name = "CustomLabelHTTPProxyPort";
+            this.CustomLabelHTTPProxyPort.RoundedCorners = 0;
+            this.CustomLabelHTTPProxyPort.Size = new System.Drawing.Size(99, 15);
+            this.CustomLabelHTTPProxyPort.TabIndex = 15;
+            this.CustomLabelHTTPProxyPort.Text = "HTTP Proxy. Port:";
+            // 
+            // CustomLabelShareInfo
+            // 
+            this.CustomLabelShareInfo.AutoSize = true;
+            this.CustomLabelShareInfo.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelShareInfo.Border = false;
+            this.CustomLabelShareInfo.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelShareInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelShareInfo.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomLabelShareInfo.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelShareInfo.Location = new System.Drawing.Point(25, 10);
+            this.CustomLabelShareInfo.Name = "CustomLabelShareInfo";
+            this.CustomLabelShareInfo.RoundedCorners = 0;
+            this.CustomLabelShareInfo.Size = new System.Drawing.Size(421, 21);
+            this.CustomLabelShareInfo.TabIndex = 14;
+            this.CustomLabelShareInfo.Text = "Share to other devices on the same network. (Experimental)";
+            // 
+            // CustomNumericUpDownHTTPProxyPort
+            // 
+            this.CustomNumericUpDownHTTPProxyPort.BackColor = System.Drawing.Color.DimGray;
+            this.CustomNumericUpDownHTTPProxyPort.BorderColor = System.Drawing.Color.Blue;
+            this.CustomNumericUpDownHTTPProxyPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CustomNumericUpDownHTTPProxyPort.Location = new System.Drawing.Point(132, 48);
+            this.CustomNumericUpDownHTTPProxyPort.Maximum = new decimal(new int[] {
+            65535,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyPort.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyPort.Name = "CustomNumericUpDownHTTPProxyPort";
+            this.CustomNumericUpDownHTTPProxyPort.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownHTTPProxyPort.TabIndex = 12;
+            this.CustomNumericUpDownHTTPProxyPort.Value = new decimal(new int[] {
+            8080,
+            0,
+            0,
+            0});
+            // 
             // TabPageDPI
             // 
             this.TabPageDPI.BackColor = System.Drawing.Color.Transparent;
@@ -723,8 +1070,8 @@
             this.TabPageDPI.Padding = new System.Windows.Forms.Padding(3);
             this.TabPageDPI.Size = new System.Drawing.Size(678, 249);
             this.TabPageDPI.TabIndex = 2;
-            this.TabPageDPI.Tag = 2;
-            this.TabPageDPI.Text = "3. Bypass DPI";
+            this.TabPageDPI.Tag = 4;
+            this.TabPageDPI.Text = "5. GoodbyeDPI";
             // 
             // CustomTabControlDPIBasicAdvanced
             // 
@@ -1542,352 +1889,6 @@
             this.CustomCheckBoxDPIAdvP.TabIndex = 0;
             this.CustomCheckBoxDPIAdvP.Text = "-p";
             this.CustomCheckBoxDPIAdvP.UseVisualStyleBackColor = false;
-            // 
-            // TabPageSetDNS
-            // 
-            this.TabPageSetDNS.BackColor = System.Drawing.Color.Transparent;
-            this.TabPageSetDNS.Controls.Add(this.CustomButtonSetDNS);
-            this.TabPageSetDNS.Controls.Add(this.CustomLabelSelectNIC);
-            this.TabPageSetDNS.Controls.Add(this.CustomLabelSetDNSInfo);
-            this.TabPageSetDNS.Controls.Add(this.CustomComboBoxNICs);
-            this.TabPageSetDNS.Location = new System.Drawing.Point(4, 25);
-            this.TabPageSetDNS.Name = "TabPageSetDNS";
-            this.TabPageSetDNS.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSetDNS.Size = new System.Drawing.Size(678, 249);
-            this.TabPageSetDNS.TabIndex = 3;
-            this.TabPageSetDNS.Tag = 3;
-            this.TabPageSetDNS.Text = "4. Set DNS";
-            // 
-            // CustomButtonSetDNS
-            // 
-            this.CustomButtonSetDNS.BorderColor = System.Drawing.Color.Blue;
-            this.CustomButtonSetDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonSetDNS.Location = new System.Drawing.Point(50, 220);
-            this.CustomButtonSetDNS.Name = "CustomButtonSetDNS";
-            this.CustomButtonSetDNS.RoundedCorners = 0;
-            this.CustomButtonSetDNS.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonSetDNS.Size = new System.Drawing.Size(75, 23);
-            this.CustomButtonSetDNS.TabIndex = 3;
-            this.CustomButtonSetDNS.Text = "Set/Unset";
-            this.CustomButtonSetDNS.UseVisualStyleBackColor = true;
-            this.CustomButtonSetDNS.Click += new System.EventHandler(this.CustomButtonSetDNS_Click);
-            // 
-            // CustomLabelSelectNIC
-            // 
-            this.CustomLabelSelectNIC.AutoSize = true;
-            this.CustomLabelSelectNIC.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelSelectNIC.Border = false;
-            this.CustomLabelSelectNIC.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelSelectNIC.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelSelectNIC.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSelectNIC.Location = new System.Drawing.Point(25, 20);
-            this.CustomLabelSelectNIC.Name = "CustomLabelSelectNIC";
-            this.CustomLabelSelectNIC.RoundedCorners = 0;
-            this.CustomLabelSelectNIC.Size = new System.Drawing.Size(135, 15);
-            this.CustomLabelSelectNIC.TabIndex = 0;
-            this.CustomLabelSelectNIC.Text = "Select Network Interface";
-            // 
-            // CustomLabelSetDNSInfo
-            // 
-            this.CustomLabelSetDNSInfo.AutoSize = true;
-            this.CustomLabelSetDNSInfo.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelSetDNSInfo.Border = false;
-            this.CustomLabelSetDNSInfo.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelSetDNSInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelSetDNSInfo.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSetDNSInfo.Location = new System.Drawing.Point(25, 91);
-            this.CustomLabelSetDNSInfo.Name = "CustomLabelSetDNSInfo";
-            this.CustomLabelSetDNSInfo.RoundedCorners = 0;
-            this.CustomLabelSetDNSInfo.Size = new System.Drawing.Size(220, 45);
-            this.CustomLabelSetDNSInfo.TabIndex = 2;
-            this.CustomLabelSetDNSInfo.Text = "You have two options:\r\n1. Set DNS to Windows by below button.\r\n2. Set DoH to Fire" +
-    "fox manually.";
-            // 
-            // CustomComboBoxNICs
-            // 
-            this.CustomComboBoxNICs.BackColor = System.Drawing.Color.DimGray;
-            this.CustomComboBoxNICs.BorderColor = System.Drawing.Color.Blue;
-            this.CustomComboBoxNICs.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
-            this.CustomComboBoxNICs.ForeColor = System.Drawing.Color.White;
-            this.CustomComboBoxNICs.FormattingEnabled = true;
-            this.CustomComboBoxNICs.ItemHeight = 17;
-            this.CustomComboBoxNICs.Location = new System.Drawing.Point(25, 49);
-            this.CustomComboBoxNICs.Name = "CustomComboBoxNICs";
-            this.CustomComboBoxNICs.SelectionColor = System.Drawing.Color.DodgerBlue;
-            this.CustomComboBoxNICs.Size = new System.Drawing.Size(180, 23);
-            this.CustomComboBoxNICs.TabIndex = 1;
-            // 
-            // TabPageShare
-            // 
-            this.TabPageShare.BackColor = System.Drawing.Color.Transparent;
-            this.TabPageShare.Controls.Add(this.CustomButtonSetProxy);
-            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyDataLength);
-            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyDpiInfo1);
-            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyFragmentSize);
-            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyDpiInfo2);
-            this.TabPageShare.Controls.Add(this.CustomLabelShareSeparator1);
-            this.TabPageShare.Controls.Add(this.CustomCheckBoxHTTPProxyEventShowRequest);
-            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyDivideBy);
-            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyDpiInfo3);
-            this.TabPageShare.Controls.Add(this.CustomCheckBoxHTTPProxyEnableDpiBypass);
-            this.TabPageShare.Controls.Add(this.CustomButtonShare);
-            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyPort);
-            this.TabPageShare.Controls.Add(this.CustomLabelShareInfo);
-            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyPort);
-            this.TabPageShare.Location = new System.Drawing.Point(4, 25);
-            this.TabPageShare.Name = "TabPageShare";
-            this.TabPageShare.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageShare.Size = new System.Drawing.Size(678, 249);
-            this.TabPageShare.TabIndex = 4;
-            this.TabPageShare.Tag = 4;
-            this.TabPageShare.Text = "5. Share";
-            // 
-            // CustomButtonSetProxy
-            // 
-            this.CustomButtonSetProxy.BorderColor = System.Drawing.Color.Blue;
-            this.CustomButtonSetProxy.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonSetProxy.Location = new System.Drawing.Point(151, 220);
-            this.CustomButtonSetProxy.Name = "CustomButtonSetProxy";
-            this.CustomButtonSetProxy.RoundedCorners = 0;
-            this.CustomButtonSetProxy.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonSetProxy.Size = new System.Drawing.Size(75, 23);
-            this.CustomButtonSetProxy.TabIndex = 32;
-            this.CustomButtonSetProxy.Text = "Set/Unset";
-            this.CustomButtonSetProxy.UseVisualStyleBackColor = true;
-            this.CustomButtonSetProxy.Click += new System.EventHandler(this.CustomButtonSetProxy_Click);
-            // 
-            // CustomNumericUpDownHTTPProxyDataLength
-            // 
-            this.CustomNumericUpDownHTTPProxyDataLength.BackColor = System.Drawing.Color.DimGray;
-            this.CustomNumericUpDownHTTPProxyDataLength.BorderColor = System.Drawing.Color.Blue;
-            this.CustomNumericUpDownHTTPProxyDataLength.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownHTTPProxyDataLength.Location = new System.Drawing.Point(195, 133);
-            this.CustomNumericUpDownHTTPProxyDataLength.Maximum = new decimal(new int[] {
-            65536,
-            0,
-            0,
-            0});
-            this.CustomNumericUpDownHTTPProxyDataLength.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.CustomNumericUpDownHTTPProxyDataLength.Name = "CustomNumericUpDownHTTPProxyDataLength";
-            this.CustomNumericUpDownHTTPProxyDataLength.Size = new System.Drawing.Size(55, 23);
-            this.CustomNumericUpDownHTTPProxyDataLength.TabIndex = 31;
-            this.CustomNumericUpDownHTTPProxyDataLength.Value = new decimal(new int[] {
-            60,
-            0,
-            0,
-            0});
-            // 
-            // CustomLabelHTTPProxyDpiInfo1
-            // 
-            this.CustomLabelHTTPProxyDpiInfo1.AutoSize = true;
-            this.CustomLabelHTTPProxyDpiInfo1.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelHTTPProxyDpiInfo1.Border = false;
-            this.CustomLabelHTTPProxyDpiInfo1.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelHTTPProxyDpiInfo1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelHTTPProxyDpiInfo1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelHTTPProxyDpiInfo1.Location = new System.Drawing.Point(50, 135);
-            this.CustomLabelHTTPProxyDpiInfo1.Name = "CustomLabelHTTPProxyDpiInfo1";
-            this.CustomLabelHTTPProxyDpiInfo1.RoundedCorners = 0;
-            this.CustomLabelHTTPProxyDpiInfo1.Size = new System.Drawing.Size(139, 17);
-            this.CustomLabelHTTPProxyDpiInfo1.TabIndex = 30;
-            this.CustomLabelHTTPProxyDpiInfo1.Text = "If data length is less than";
-            // 
-            // CustomNumericUpDownHTTPProxyFragmentSize
-            // 
-            this.CustomNumericUpDownHTTPProxyFragmentSize.BackColor = System.Drawing.Color.DimGray;
-            this.CustomNumericUpDownHTTPProxyFragmentSize.BorderColor = System.Drawing.Color.Blue;
-            this.CustomNumericUpDownHTTPProxyFragmentSize.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownHTTPProxyFragmentSize.Location = new System.Drawing.Point(374, 133);
-            this.CustomNumericUpDownHTTPProxyFragmentSize.Maximum = new decimal(new int[] {
-            65536,
-            0,
-            0,
-            0});
-            this.CustomNumericUpDownHTTPProxyFragmentSize.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.CustomNumericUpDownHTTPProxyFragmentSize.Name = "CustomNumericUpDownHTTPProxyFragmentSize";
-            this.CustomNumericUpDownHTTPProxyFragmentSize.Size = new System.Drawing.Size(55, 23);
-            this.CustomNumericUpDownHTTPProxyFragmentSize.TabIndex = 28;
-            this.CustomNumericUpDownHTTPProxyFragmentSize.Value = new decimal(new int[] {
-            2,
-            0,
-            0,
-            0});
-            // 
-            // CustomLabelHTTPProxyDpiInfo2
-            // 
-            this.CustomLabelHTTPProxyDpiInfo2.AutoSize = true;
-            this.CustomLabelHTTPProxyDpiInfo2.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelHTTPProxyDpiInfo2.Border = false;
-            this.CustomLabelHTTPProxyDpiInfo2.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelHTTPProxyDpiInfo2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelHTTPProxyDpiInfo2.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelHTTPProxyDpiInfo2.Location = new System.Drawing.Point(256, 135);
-            this.CustomLabelHTTPProxyDpiInfo2.Name = "CustomLabelHTTPProxyDpiInfo2";
-            this.CustomLabelHTTPProxyDpiInfo2.RoundedCorners = 0;
-            this.CustomLabelHTTPProxyDpiInfo2.Size = new System.Drawing.Size(112, 17);
-            this.CustomLabelHTTPProxyDpiInfo2.TabIndex = 27;
-            this.CustomLabelHTTPProxyDpiInfo2.Text = "set fragment size to";
-            // 
-            // CustomLabelShareSeparator1
-            // 
-            this.CustomLabelShareSeparator1.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelShareSeparator1.Border = true;
-            this.CustomLabelShareSeparator1.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelShareSeparator1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelShareSeparator1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelShareSeparator1.Location = new System.Drawing.Point(20, 85);
-            this.CustomLabelShareSeparator1.Name = "CustomLabelShareSeparator1";
-            this.CustomLabelShareSeparator1.RoundedCorners = 0;
-            this.CustomLabelShareSeparator1.Size = new System.Drawing.Size(640, 1);
-            this.CustomLabelShareSeparator1.TabIndex = 24;
-            // 
-            // CustomCheckBoxHTTPProxyEventShowRequest
-            // 
-            this.CustomCheckBoxHTTPProxyEventShowRequest.BackColor = System.Drawing.Color.DimGray;
-            this.CustomCheckBoxHTTPProxyEventShowRequest.BorderColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxHTTPProxyEventShowRequest.CheckColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxHTTPProxyEventShowRequest.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxHTTPProxyEventShowRequest.Location = new System.Drawing.Point(355, 50);
-            this.CustomCheckBoxHTTPProxyEventShowRequest.Name = "CustomCheckBoxHTTPProxyEventShowRequest";
-            this.CustomCheckBoxHTTPProxyEventShowRequest.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomCheckBoxHTTPProxyEventShowRequest.Size = new System.Drawing.Size(135, 17);
-            this.CustomCheckBoxHTTPProxyEventShowRequest.TabIndex = 23;
-            this.CustomCheckBoxHTTPProxyEventShowRequest.Text = "Write requests to log";
-            this.CustomCheckBoxHTTPProxyEventShowRequest.UseVisualStyleBackColor = false;
-            // 
-            // CustomNumericUpDownHTTPProxyDivideBy
-            // 
-            this.CustomNumericUpDownHTTPProxyDivideBy.BackColor = System.Drawing.Color.DimGray;
-            this.CustomNumericUpDownHTTPProxyDivideBy.BorderColor = System.Drawing.Color.Blue;
-            this.CustomNumericUpDownHTTPProxyDivideBy.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownHTTPProxyDivideBy.Location = new System.Drawing.Point(318, 168);
-            this.CustomNumericUpDownHTTPProxyDivideBy.Maximum = new decimal(new int[] {
-            500,
-            0,
-            0,
-            0});
-            this.CustomNumericUpDownHTTPProxyDivideBy.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.CustomNumericUpDownHTTPProxyDivideBy.Name = "CustomNumericUpDownHTTPProxyDivideBy";
-            this.CustomNumericUpDownHTTPProxyDivideBy.Size = new System.Drawing.Size(50, 23);
-            this.CustomNumericUpDownHTTPProxyDivideBy.TabIndex = 19;
-            this.CustomNumericUpDownHTTPProxyDivideBy.Value = new decimal(new int[] {
-            60,
-            0,
-            0,
-            0});
-            // 
-            // CustomLabelHTTPProxyDpiInfo3
-            // 
-            this.CustomLabelHTTPProxyDpiInfo3.AutoSize = true;
-            this.CustomLabelHTTPProxyDpiInfo3.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelHTTPProxyDpiInfo3.Border = false;
-            this.CustomLabelHTTPProxyDpiInfo3.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelHTTPProxyDpiInfo3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelHTTPProxyDpiInfo3.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelHTTPProxyDpiInfo3.Location = new System.Drawing.Point(50, 170);
-            this.CustomLabelHTTPProxyDpiInfo3.Name = "CustomLabelHTTPProxyDpiInfo3";
-            this.CustomLabelHTTPProxyDpiInfo3.RoundedCorners = 0;
-            this.CustomLabelHTTPProxyDpiInfo3.Size = new System.Drawing.Size(262, 17);
-            this.CustomLabelHTTPProxyDpiInfo3.TabIndex = 18;
-            this.CustomLabelHTTPProxyDpiInfo3.Text = "else set fragment size by dividing data length by";
-            // 
-            // CustomCheckBoxHTTPProxyEnableDpiBypass
-            // 
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.BackColor = System.Drawing.Color.DimGray;
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.BorderColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.CheckColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Checked = true;
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Location = new System.Drawing.Point(25, 100);
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Name = "CustomCheckBoxHTTPProxyEnableDpiBypass";
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Size = new System.Drawing.Size(178, 17);
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.TabIndex = 17;
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.Text = "Enable additional DPI bypass";
-            this.CustomCheckBoxHTTPProxyEnableDpiBypass.UseVisualStyleBackColor = false;
-            // 
-            // CustomButtonShare
-            // 
-            this.CustomButtonShare.BorderColor = System.Drawing.Color.Blue;
-            this.CustomButtonShare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonShare.Location = new System.Drawing.Point(50, 220);
-            this.CustomButtonShare.Name = "CustomButtonShare";
-            this.CustomButtonShare.RoundedCorners = 0;
-            this.CustomButtonShare.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonShare.Size = new System.Drawing.Size(95, 23);
-            this.CustomButtonShare.TabIndex = 16;
-            this.CustomButtonShare.Text = "Enable/Disable";
-            this.CustomButtonShare.UseVisualStyleBackColor = true;
-            this.CustomButtonShare.Click += new System.EventHandler(this.CustomButtonShare_Click);
-            // 
-            // CustomLabelHTTPProxyPort
-            // 
-            this.CustomLabelHTTPProxyPort.AutoSize = true;
-            this.CustomLabelHTTPProxyPort.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelHTTPProxyPort.Border = false;
-            this.CustomLabelHTTPProxyPort.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelHTTPProxyPort.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelHTTPProxyPort.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelHTTPProxyPort.Location = new System.Drawing.Point(25, 50);
-            this.CustomLabelHTTPProxyPort.Name = "CustomLabelHTTPProxyPort";
-            this.CustomLabelHTTPProxyPort.RoundedCorners = 0;
-            this.CustomLabelHTTPProxyPort.Size = new System.Drawing.Size(101, 17);
-            this.CustomLabelHTTPProxyPort.TabIndex = 15;
-            this.CustomLabelHTTPProxyPort.Text = "HTTP Proxy. Port:";
-            // 
-            // CustomLabelShareInfo
-            // 
-            this.CustomLabelShareInfo.AutoSize = true;
-            this.CustomLabelShareInfo.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelShareInfo.Border = false;
-            this.CustomLabelShareInfo.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelShareInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelShareInfo.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.CustomLabelShareInfo.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelShareInfo.Location = new System.Drawing.Point(25, 10);
-            this.CustomLabelShareInfo.Name = "CustomLabelShareInfo";
-            this.CustomLabelShareInfo.RoundedCorners = 0;
-            this.CustomLabelShareInfo.Size = new System.Drawing.Size(423, 23);
-            this.CustomLabelShareInfo.TabIndex = 14;
-            this.CustomLabelShareInfo.Text = "Share to other devices on the same network. (Experimental)";
-            // 
-            // CustomNumericUpDownHTTPProxyPort
-            // 
-            this.CustomNumericUpDownHTTPProxyPort.BackColor = System.Drawing.Color.DimGray;
-            this.CustomNumericUpDownHTTPProxyPort.BorderColor = System.Drawing.Color.Blue;
-            this.CustomNumericUpDownHTTPProxyPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownHTTPProxyPort.Location = new System.Drawing.Point(132, 48);
-            this.CustomNumericUpDownHTTPProxyPort.Maximum = new decimal(new int[] {
-            65535,
-            0,
-            0,
-            0});
-            this.CustomNumericUpDownHTTPProxyPort.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.CustomNumericUpDownHTTPProxyPort.Name = "CustomNumericUpDownHTTPProxyPort";
-            this.CustomNumericUpDownHTTPProxyPort.Size = new System.Drawing.Size(55, 23);
-            this.CustomNumericUpDownHTTPProxyPort.TabIndex = 12;
-            this.CustomNumericUpDownHTTPProxyPort.Value = new decimal(new int[] {
-            8080,
-            0,
-            0,
-            0});
             // 
             // TabPageSettings
             // 
@@ -2786,7 +2787,9 @@
             this.CustomStatusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.CustomStatusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.ToolStripStatusLabelDNS,
+            this.ToolStripStatusLabelDnsLatency,
             this.ToolStripStatusLabelDoH,
+            this.ToolStripStatusLabelDohLatency,
             this.ToolStripStatusLabelSpace,
             this.ToolStripStatusLabelPercent});
             this.CustomStatusStrip1.Location = new System.Drawing.Point(0, 564);
@@ -2812,10 +2815,18 @@
             this.ToolStripStatusLabelDoH.Text = "DoH status: Offline.";
             this.ToolStripStatusLabelDoH.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // ToolStripStatusLabelDnsLatency
+            // 
+            this.ToolStripStatusLabelDnsLatency.AutoSize = false;
+            this.ToolStripStatusLabelDnsLatency.Name = "ToolStripStatusLabelDnsLatency";
+            this.ToolStripStatusLabelDnsLatency.Size = new System.Drawing.Size(100, 17);
+            this.ToolStripStatusLabelDnsLatency.Text = "Latency: -1";
+            this.ToolStripStatusLabelDnsLatency.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // ToolStripStatusLabelSpace
             // 
             this.ToolStripStatusLabelSpace.Name = "ToolStripStatusLabelSpace";
-            this.ToolStripStatusLabelSpace.Size = new System.Drawing.Size(394, 17);
+            this.ToolStripStatusLabelSpace.Size = new System.Drawing.Size(163, 17);
             this.ToolStripStatusLabelSpace.Spring = true;
             // 
             // ToolStripStatusLabelPercent
@@ -2946,7 +2957,7 @@
             this.CustomRichTextBoxStatusIsDNSSet.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsDNSSet.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsDNSSet.HideSelection = true;
-            this.CustomRichTextBoxStatusIsDNSSet.Location = new System.Drawing.Point(375, 13);
+            this.CustomRichTextBoxStatusIsDNSSet.Location = new System.Drawing.Point(260, 13);
             this.CustomRichTextBoxStatusIsDNSSet.MaxLength = 2147483647;
             this.CustomRichTextBoxStatusIsDNSSet.MinimumSize = new System.Drawing.Size(0, 17);
             this.CustomRichTextBoxStatusIsDNSSet.Multiline = false;
@@ -2981,7 +2992,7 @@
             this.CustomRichTextBoxStatusIsDPIActive.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsDPIActive.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsDPIActive.HideSelection = true;
-            this.CustomRichTextBoxStatusIsDPIActive.Location = new System.Drawing.Point(260, 13);
+            this.CustomRichTextBoxStatusIsDPIActive.Location = new System.Drawing.Point(365, 13);
             this.CustomRichTextBoxStatusIsDPIActive.MaxLength = 2147483647;
             this.CustomRichTextBoxStatusIsDPIActive.MinimumSize = new System.Drawing.Size(0, 17);
             this.CustomRichTextBoxStatusIsDPIActive.Multiline = false;
@@ -3071,6 +3082,14 @@
             this.CustomRichTextBoxStatusWorkingServers.WordWrap = false;
             this.CustomRichTextBoxStatusWorkingServers.ZoomFactor = 1F;
             // 
+            // ToolStripStatusLabelDohLatency
+            // 
+            this.ToolStripStatusLabelDohLatency.AutoSize = false;
+            this.ToolStripStatusLabelDohLatency.Name = "ToolStripStatusLabelDohLatency";
+            this.ToolStripStatusLabelDohLatency.Size = new System.Drawing.Size(100, 17);
+            this.ToolStripStatusLabelDohLatency.Text = "Latency: -1";
+            this.ToolStripStatusLabelDohLatency.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // FormMain
             // 
             this.AcceptButton = this.CustomButtonCheck;
@@ -3099,6 +3118,14 @@
             this.TabPageCheck.ResumeLayout(false);
             this.TabPageCheck.PerformLayout();
             this.TabPageConnect.ResumeLayout(false);
+            this.TabPageSetDNS.ResumeLayout(false);
+            this.TabPageSetDNS.PerformLayout();
+            this.TabPageShare.ResumeLayout(false);
+            this.TabPageShare.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyDataLength)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyFragmentSize)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyDivideBy)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyPort)).EndInit();
             this.TabPageDPI.ResumeLayout(false);
             this.CustomTabControlDPIBasicAdvanced.ResumeLayout(false);
             this.TabPageDPIBasic.ResumeLayout(false);
@@ -3111,14 +3138,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvE)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvK)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvF)).EndInit();
-            this.TabPageSetDNS.ResumeLayout(false);
-            this.TabPageSetDNS.PerformLayout();
-            this.TabPageShare.ResumeLayout(false);
-            this.TabPageShare.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyDataLength)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyFragmentSize)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyDivideBy)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyPort)).EndInit();
             this.TabPageSettings.ResumeLayout(false);
             this.CustomTabControlSettings.ResumeLayout(false);
             this.TabPageSettingsWorkingMode.ResumeLayout(false);
@@ -3312,5 +3331,7 @@
         private CustomControls.CustomLabel CustomLabelHTTPProxyDpiInfo1;
         private CustomControls.CustomButton CustomButtonSetProxy;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusIsProxySet;
+        private ToolStripStatusLabel ToolStripStatusLabelDnsLatency;
+        private ToolStripStatusLabel ToolStripStatusLabelDohLatency;
     }
 }

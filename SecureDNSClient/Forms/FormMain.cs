@@ -29,10 +29,10 @@ namespace SecureDNSClient
         private bool IsDNSSet = false;
         private bool IsSharing = false;
         private bool IsProxySet = false;
+        private int LocalDnsLatency = -1;
+        private int LocalDohLatency = -1;
         private int LastProxyPort = 0;
         private bool ConnectAllClicked = false;
-        private StringBuilder LiveStatusDNSResult = new();
-        private StringBuilder LiveStatusDoHResult = new();
         private int NumberOfWorkingServers = 0;
         private IPAddress? LocalIP = IPAddress.Loopback; // as default
         public Settings AppSettings;
@@ -91,9 +91,6 @@ namespace SecureDNSClient
 
             string msgFragmentChunks = "More chunks means more CPU usage.";
             CustomNumericUpDownHTTPProxyDivideBy.SetToolTip("Warning", msgFragmentChunks);
-
-            string msgHTTPProxy = "To share DPI + DNS over network (experimental).";
-            CustomButtonShare.SetToolTip("Info", msgHTTPProxy);
 
             // Add Tooltips to advanced DPI
             string msgP = "Block passive DPI.";
@@ -162,6 +159,7 @@ namespace SecureDNSClient
             SecureDNS.UpdateNICs(CustomComboBoxNICs);
 
             UpdateBools();
+            UpdateBoolDnsDohAuto();
             UpdateStatusShort();
             UpdateStatusLong();
 
@@ -178,6 +176,7 @@ namespace SecureDNSClient
         }
 
         //============================== Constant
+
         private void DefaultSettings()
         {
             // Check
@@ -190,6 +189,14 @@ namespace SecureDNSClient
             CustomRadioButtonConnectCloudflare.Checked = false;
             CustomRadioButtonConnectDNSCrypt.Checked = false;
             CustomTextBoxHTTPProxy.Text = string.Empty;
+
+            // Share
+            CustomNumericUpDownHTTPProxyPort.Value = (decimal)8080;
+            CustomCheckBoxHTTPProxyEventShowRequest.Checked = false;
+            CustomCheckBoxHTTPProxyEnableDpiBypass.Checked = true;
+            CustomNumericUpDownHTTPProxyDataLength.Value = (decimal)60;
+            CustomNumericUpDownHTTPProxyFragmentSize.Value = (decimal)2;
+            CustomNumericUpDownHTTPProxyDivideBy.Value = (decimal)60;
 
             // DPI Basic
             CustomRadioButtonDPIMode1.Checked = false;
@@ -235,14 +242,6 @@ namespace SecureDNSClient
             CustomCheckBoxDPIAdvReverseFrag.Checked = false;
             CustomCheckBoxDPIAdvMaxPayload.Checked = true;
             CustomNumericUpDownDPIAdvMaxPayload.Value = (decimal)1200;
-
-            // Share
-            CustomNumericUpDownHTTPProxyPort.Value = (decimal)8080;
-            CustomCheckBoxHTTPProxyEventShowRequest.Checked = false;
-            CustomCheckBoxHTTPProxyEnableDpiBypass.Checked = true;
-            CustomNumericUpDownHTTPProxyDataLength.Value = (decimal)60;
-            CustomNumericUpDownHTTPProxyFragmentSize.Value = (decimal)2;
-            CustomNumericUpDownHTTPProxyDivideBy.Value = (decimal)60;
 
             // Settings Working Mode
             CustomRadioButtonSettingWorkingModeDNS.Checked = true;
@@ -350,7 +349,7 @@ namespace SecureDNSClient
         private void UpdateBools()
         {
             System.Timers.Timer updateBoolsTimer = new();
-            updateBoolsTimer.Interval = 5000;
+            updateBoolsTimer.Interval = 4000;
             updateBoolsTimer.Elapsed += (s, e) =>
             {
                 // Update bool IsConnected
@@ -358,19 +357,14 @@ namespace SecureDNSClient
                               ProcessManager.FindProcessByID(PIDDNSProxyCF) ||
                               ProcessManager.FindProcessByID(PIDDNSCrypt);
 
-                // Update bool IsDPIActive
-                IsDPIActive = ProcessManager.FindProcessByID(PIDGoodbyeDPI);
-
-                // Update bool IsDNSConnected and IsDoHConnected
-                if (IsConnected)
-                    UpdateBoolDNSDoH();
-                else
+                // In case dnsproxy process terminated
+                if (!IsConnected)
                 {
-                    // In case dnsproxy process terminated
                     IsDNSConnected = IsConnected;
                     IsDoHConnected = IsConnected;
-                    //if (HTTPProxy != null && HTTPProxy.IsRunning)
-                    //    HTTPProxy.Stop();
+                    LocalDnsLatency = -1;
+                    LocalDohLatency = -1;
+                    if (IsDNSSet) UnsetSavedDNS();
                 }
 
                 // Update bool IsHTTPProxyRunning
@@ -381,66 +375,80 @@ namespace SecureDNSClient
 
                 // Update bool IsProxySet
                 IsProxySet = UpdateBoolIsProxySet();
+
+                // Update bool IsDPIActive
+                if (ProcessManager.FindProcessByID(PIDGoodbyeDPI) ||
+                   (HTTPProxy != null && HTTPProxy.IsRunning && HTTPProxy.IsDpiActive))
+                    IsDPIActive = true;
+                else
+                    IsDPIActive = false;
             };
             updateBoolsTimer.Start();
         }
 
-        private void UpdateBoolDNSDoH()
+        private void UpdateBoolDnsDohAuto()
         {
-            // Update bool IsDNSConnected
-            string dnsArgs = "google.com " + IPAddress.Loopback.ToString();
-            process(dnsArgs, LiveStatusDNSResult);
-            IsDNSConnected = LiveStatusDNSResult.ToString().Contains("ANSWER SECTION");
-            LiveStatusDNSResult.Clear();
-            
-            // Update bool IsDoHConnected
-            if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
+            int timeout = 10000;
+            System.Timers.Timer dnsLatencyTimer = new();
+            dnsLatencyTimer.Interval = timeout + 500;
+            dnsLatencyTimer.Elapsed += (s, e) =>
             {
-                string dohArgs = "google.com https://" + IPAddress.Loopback.ToString() + "/dns-query";
-                process(dohArgs, LiveStatusDoHResult);
-                IsDoHConnected = LiveStatusDoHResult.ToString().Contains("ANSWER SECTION");
-                LiveStatusDoHResult.Clear();
-            }
+                Parallel.Invoke(
+                    () => UpdateBoolDnsOnce(timeout),
+                    () => UpdateBoolDohOnce(timeout)
+                );
+            };
+            dnsLatencyTimer.Start();
+        }
 
-            try
+        private void UpdateBoolDnsOnce(int timeout)
+        {
+            if (IsConnected)
             {
-                if (!string.IsNullOrEmpty(TheDll))
-                    if (File.Exists(TheDll) && (IsDNSConnected || IsDoHConnected)) File.Delete(TheDll);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-            }
+                // DNS
+                LocalDnsLatency = SecureDNS.CheckDns("google.com", IPAddress.Loopback.ToString(), timeout, GetCPUPriority());
+                IsDNSConnected = LocalDnsLatency != -1;
 
-            void process(string args, StringBuilder stringBuilder)
-            {
-                Task.Run(() =>
+                try
                 {
-                    Process process = new();
-                    process.StartInfo.FileName = SecureDNS.DnsLookup;
-                    process.StartInfo.Arguments = args;
-                    process.StartInfo.CreateNoWindow = true;
-                    process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.RedirectStandardOutput = true;
-                    process.StartInfo.WorkingDirectory = Info.CurrentPath;
+                    if (!string.IsNullOrEmpty(TheDll))
+                        if (File.Exists(TheDll) && IsDNSConnected) File.Delete(TheDll);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+            }
+            else
+            {
+                LocalDnsLatency = -1;
+                IsDNSConnected = LocalDnsLatency != -1;
+            }
+        }
 
-                    process.OutputDataReceived += (sender, args) =>
-                    {
-                        stringBuilder.AppendLine(args.Data);
-                    };
+        private void UpdateBoolDohOnce(int timeout)
+        {
+            if (IsConnected && CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
+            {
+                // DoH
+                string dohServer = "https://" + IPAddress.Loopback.ToString() + "/dns-query";
+                LocalDohLatency = SecureDNS.CheckDns("google.com", dohServer, timeout, GetCPUPriority());
+                IsDoHConnected = LocalDohLatency != -1;
 
-                    try
-                    {
-                        process.Start();
-                        process.BeginOutputReadLine();
-                        process.WaitForExit(2000);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex.Message);
-                    }
-                });
+                try
+                {
+                    if (!string.IsNullOrEmpty(TheDll))
+                        if (File.Exists(TheDll) && IsDoHConnected) File.Delete(TheDll);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+            }
+            else
+            {
+                LocalDohLatency = -1;
+                IsDoHConnected = LocalDohLatency != -1;
             }
         }
 
@@ -497,8 +505,10 @@ namespace SecureDNSClient
 
                 // Live Status
                 ToolStripStatusLabelDNS.Text = IsDNSConnected ? "DNS status: Online." : "DNS status: Offline.";
+                ToolStripStatusLabelDnsLatency.Text = $"Latency: {LocalDnsLatency}";
                 ToolStripStatusLabelDoH.Text = IsDoHConnected ? "DoH status: Online." : "DoH status: Offline.";
-                
+                ToolStripStatusLabelDohLatency.Text = $"Latency: {LocalDohLatency}";
+
                 if (!CustomCheckBoxSettingDisableAudioAlert.Checked && !IsCheckingStarted)
                     PlayAudioAlert();
             };
@@ -508,7 +518,7 @@ namespace SecureDNSClient
         private void UpdateStatusLong()
         {
             System.Windows.Forms.Timer timer = new();
-            timer.Interval = 5000;
+            timer.Interval = 4000;
             timer.Tick += (s, e) =>
             {
                 UpdateStatus();
@@ -525,19 +535,19 @@ namespace SecureDNSClient
             this.InvokeIt(() => CustomRichTextBoxStatusIsConnected.AppendText("Is Connected: ", ForeColor));
             this.InvokeIt(() => CustomRichTextBoxStatusIsConnected.AppendText(textConnect, colorConnect));
 
-            // Update Status IsDpiActive
-            string textDPI = IsDPIActive ? "Yes" : "No";
-            Color colorDPI = IsDPIActive ? Color.MediumSeaGreen : Color.IndianRed;
-            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.ResetText());
-            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.AppendText("Is DPI Active: ", ForeColor));
-            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.AppendText(textDPI, colorDPI));
-
             // Update Status IsDnsSet
             string textDNS = IsDNSSet ? "Yes" : "No";
             Color colorDNS = IsDNSSet ? Color.MediumSeaGreen : Color.IndianRed;
             this.InvokeIt(() => CustomRichTextBoxStatusIsDNSSet.ResetText());
             this.InvokeIt(() => CustomRichTextBoxStatusIsDNSSet.AppendText("Is DNS Set: ", ForeColor));
             this.InvokeIt(() => CustomRichTextBoxStatusIsDNSSet.AppendText(textDNS, colorDNS));
+
+            // Update Status IsDpiActive
+            string textDPI = IsDPIActive ? "Yes" : "No";
+            Color colorDPI = IsDPIActive ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.ResetText());
+            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.AppendText("Is DPI Active: ", ForeColor));
+            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.AppendText(textDPI, colorDPI));
 
             // Update Status IsSharing
             string textSharing = IsSharing ? "Yes" : "No";
@@ -807,6 +817,7 @@ namespace SecureDNSClient
         }
 
         //============================== Check
+
         private async Task CheckServers()
         {
             // Get and check blocked domain is valid
@@ -985,15 +996,13 @@ namespace SecureDNSClient
                     int timeoutMS = (int)(timeoutSec * 1000);
 
                     // Get Status and Latency
-                    Stopwatch stopwatch = new();
-                    stopwatch.Start();
                     bool dnsOK = false;
+                    int latency = -1;
                     if (insecure)
-                        dnsOK = SecureDNS.CheckDns(true, blockedDomainNoWww, dns, timeoutMS, localPortInsecure, bootstrap, bootstrapPort, GetCPUPriority());
+                        latency = SecureDNS.CheckDns(true, blockedDomainNoWww, dns, timeoutMS, localPortInsecure, bootstrap, bootstrapPort, GetCPUPriority());
                     else
-                        dnsOK = SecureDNS.CheckDns(blockedDomainNoWww, dns, timeoutMS, GetCPUPriority());
-                    stopwatch.Stop();
-                    long latency = stopwatch.ElapsedMilliseconds;
+                        latency = SecureDNS.CheckDns(blockedDomainNoWww, dns, timeoutMS, GetCPUPriority());
+                    dnsOK = latency != -1;
 
                     if (StopChecking) return;
 
@@ -1161,6 +1170,7 @@ namespace SecureDNSClient
         }
 
         //============================== Connect
+
         private void Connect()
         {
             // Write Connecting message to log
@@ -1248,7 +1258,10 @@ namespace SecureDNSClient
             void internalConnect()
             {
                 // To see online status immediately
-                UpdateBoolDNSDoH();
+                Parallel.Invoke(
+                    () => UpdateBoolDnsOnce(10000),
+                    () => UpdateBoolDohOnce(10000)
+                );
 
                 // Update Groupbox Status
                 UpdateStatus();
@@ -1396,10 +1409,32 @@ namespace SecureDNSClient
             if (!CustomRadioButtonConnectDNSCrypt.Checked) return;
             string? proxyScheme = CustomTextBoxHTTPProxy.Text;
 
-            // Check if proxy scheme is correct
-            if (string.IsNullOrWhiteSpace(proxyScheme) || !proxyScheme.Contains("//"))
+            void proxySchemeIncorrect()
             {
                 string msgWrongProxy = "HTTP(S) proxy scheme must be like: \"https://myproxy.net:8080\"";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWrongProxy + NL, Color.IndianRed));
+            }
+
+            // Check if proxy scheme is correct 1
+            if (string.IsNullOrWhiteSpace(proxyScheme) || !proxyScheme.Contains("//") || proxyScheme.EndsWith('/'))
+            {
+                proxySchemeIncorrect();
+                return;
+            }
+
+            // Check if proxy scheme is correct 2
+            Uri? uri = Network.UrlToUri(proxyScheme);
+            if (uri == null)
+            {
+                proxySchemeIncorrect();
+                return;
+            }
+
+            // Check if proxy works
+            bool canPing = Network.CanPing(uri.Host, uri.Port, 15);
+            if (!canPing)
+            {
+                string msgWrongProxy = "Proxy doesn't work.";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWrongProxy + NL, Color.IndianRed));
                 return;
             }
@@ -1450,7 +1485,7 @@ namespace SecureDNSClient
 
             // Execute DNSCrypt
             Process process = new();
-            process.PriorityClass = GetCPUPriority();
+            //process.PriorityClass = GetCPUPriority(); // Exception: No process is associated with this object.
             process.StartInfo.FileName = SecureDNS.DNSCrypt;
             process.StartInfo.Arguments = SecureDNS.DNSCryptConfigPath;
             process.StartInfo.CreateNoWindow = true;
@@ -1526,7 +1561,8 @@ namespace SecureDNSClient
             int timeoutMS = 5000;
 
             // Check Cloudflare
-            bool isCfOpen = SecureDNS.CheckDns(blockedDomainNoWww, cfDoH, timeoutMS, GetCPUPriority());
+            int latency = SecureDNS.CheckDns(blockedDomainNoWww, cfDoH, timeoutMS, GetCPUPriority());
+            bool isCfOpen = latency != -1;
             if (isCfOpen)
             {
                 // Not blocked, connect normally
@@ -1580,10 +1616,8 @@ namespace SecureDNSClient
                     string domainToCheck = "google.com";
 
                     // Delay
-                    Stopwatch stopwatch = new();
-                    stopwatch.Start();
-                    bool result = SecureDNS.CheckDns(domainToCheck, cfDoH, timeoutMS * 10, GetCPUPriority());
-                    stopwatch.Stop();
+                    int latency = SecureDNS.CheckDns(domainToCheck, cfDoH, timeoutMS * 10, GetCPUPriority());
+                    bool result = latency != -1;
                     if (result)
                     {
                         // Connected
@@ -1594,7 +1628,7 @@ namespace SecureDNSClient
                         string msgDelay1 = "Server delay: ";
                         string msgDelay2 = $" ms.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay1, Color.Orange));
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(stopwatch.ElapsedMilliseconds.ToString(), Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(latency.ToString(), Color.DodgerBlue));
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay2, Color.Orange));
 
                         return true;
@@ -1761,10 +1795,8 @@ namespace SecureDNSClient
                                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg2, Color.MediumSeaGreen));
                                     
                                     // Delay
-                                    Stopwatch stopwatch = new();
-                                    stopwatch.Start();
-                                    bool result = SecureDNS.CheckDns(blockedDomainNoWww, loopback, timeoutMS, GetCPUPriority());
-                                    stopwatch.Stop();
+                                    int latency = SecureDNS.CheckDns(blockedDomainNoWww, loopback, timeoutMS, GetCPUPriority());
+                                    bool result = latency != -1;
                                     Task.Delay(500).Wait(); // Wait a moment
                                     if (result)
                                     {
@@ -1776,7 +1808,7 @@ namespace SecureDNSClient
                                         string msgDelay1 = "Server delay: ";
                                         string msgDelay2 = $" ms.{NL}";
                                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay1, Color.Orange));
-                                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(stopwatch.ElapsedMilliseconds.ToString(), Color.DodgerBlue));
+                                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(latency.ToString(), Color.DodgerBlue));
                                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay2, Color.Orange));
                                         return true;
                                     }
@@ -1847,7 +1879,367 @@ namespace SecureDNSClient
             }
         }
 
+        //============================== DNS
+
+        private async void SetDNS()
+        {
+            // Get NIC Name
+            string? nicName = CustomComboBoxNICs.SelectedItem as string;
+
+            // Check if NIC Name is empty
+            if (string.IsNullOrEmpty(nicName))
+            {
+                string msg = "Select a Network Interface first." + NL;
+                CustomRichTextBoxLog.AppendText(msg, Color.LightGray);
+                return;
+            }
+
+            // Check if NIC is null
+            NetworkInterface? nic = Network.GetNICByName(nicName);
+            if (nic == null) return;
+
+            string loopbackIP = IPAddress.Loopback.ToString();
+            string dnss = loopbackIP;
+            if (LocalIP != null)
+                dnss += "," + LocalIP;
+
+            if (!IsDNSSet)
+            {
+                // Set DNS
+                // Write Connect first to log
+                if (!IsDNSConnected)
+                {
+                    string msgConnect = string.Empty;
+                    if (!IsDoHConnected)
+                        msgConnect = "Connect first." + NL;
+                    else
+                        msgConnect = "Activate legacy DNS Server first." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
+                    return;
+                }
+
+                // Check Internet Connectivity
+                if (!IsInternetAlive()) return;
+
+                // Get and check blocked domain is valid
+                bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
+                if (!isBlockedDomainValid) return;
+
+                // Show warning while connected using dnscrypt + proxy
+                if (ProcessManager.FindProcessByID(PIDDNSCrypt) && CustomRadioButtonConnectDNSCrypt.Checked)
+                {
+                    string msg = "Set DNS while connected via proxy is not a good idea.\nYou may break the connection.\nContinue?";
+                    DialogResult dr = CustomMessageBox.Show(msg, "Info", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    if (dr == DialogResult.No) return;
+                }
+
+                // Set DNS
+                Network.UnsetDNS(nic); // Unset first
+                Task.Delay(100).Wait(); // Wait a moment
+                Network.SetDNS(nic, dnss); // Set DNS
+                IsDNSSet = true;
+
+                // Save NIC name to file
+                FileDirectory.CreateEmptyFile(SecureDNS.NicNamePath);
+                File.WriteAllText(SecureDNS.NicNamePath, nicName);
+
+                // Update Groupbox Status
+                UpdateStatus();
+
+                // Write Set DNS message to log
+                string msg1 = "Local DNS ";
+                string msg2 = loopbackIP;
+                string msg3 = " set to ";
+                string msg4 = nicName + " (" + nic.Description + ")";
+                CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
+                CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
+                CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
+                CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
+
+                // Go to Check Tab
+                if (ConnectAllClicked && IsConnected)
+                {
+                    this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
+                    this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 0);
+                    ConnectAllClicked = false;
+                }
+
+                // Check DPI works if DPI is Active
+                if (IsDPIActive)
+                    await CheckDPIWorks(blockedDomain);
+            }
+            else
+            {
+                // Unset DNS
+                Network.UnsetDNS(nic);
+                Task.Delay(200).Wait();
+                UnsetSavedDNS();
+                IsDNSSet = false;
+
+                // Flush DNS
+                FlushDNS();
+
+                // Update Groupbox Status
+                UpdateStatus();
+
+                // Write Unset DNS message to log
+                string msg1 = "Local DNS ";
+                string msg2 = loopbackIP;
+                string msg3 = " removed from ";
+                string msg4 = nicName + " (" + nic.Description + ")";
+                CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
+                CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
+                CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
+                CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
+            }
+        }
+
+        //============================== Share
+
+        private void Share()
+        {
+            if (!IsSharing)
+            {
+                //// Write Set DNS first to log
+                //if (!IsDNSSet)
+                //{
+                //    string msg = "Set DNS first." + NL;
+                //    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                //    return;
+                //}
+
+                // Check port
+                int httpProxyPort = SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort);
+                bool portHTTPProxy = Network.IsPortOpen(IPAddress.Loopback.ToString(), httpProxyPort, 3);
+                if (portHTTPProxy)
+                {
+                    string existingProcessName = ProcessManager.GetProcessNameByListeningPort(httpProxyPort);
+                    existingProcessName = existingProcessName == string.Empty ? "Unknown" : existingProcessName;
+                    string msg = $"Port {httpProxyPort} is occupied by \"{existingProcessName}\". Change the port from Connect tab.{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                    IsConnecting = false;
+                    return;
+                }
+
+                // Start Share
+                HTTPProxy = new();
+                if (!HTTPProxy.IsRunning)
+                {
+                    HTTPProxy.OnRequestReceived -= HTTPProxy_OnRequestReceived;
+                    HTTPProxy.OnRequestReceived += HTTPProxy_OnRequestReceived;
+                    HTTPProxy.OnErrorOccurred -= HTTPProxy_OnErrorOccurred;
+                    HTTPProxy.OnErrorOccurred += HTTPProxy_OnErrorOccurred;
+
+                    // Get fragment settings
+                    bool enableDpiBypass = CustomCheckBoxHTTPProxyEnableDpiBypass.Checked;
+                    int dataLength = int.Parse(CustomNumericUpDownHTTPProxyDataLength.Value.ToString());
+                    int fragmentSize = int.Parse(CustomNumericUpDownHTTPProxyFragmentSize.Value.ToString());
+                    int divideBy = int.Parse(CustomNumericUpDownHTTPProxyDivideBy.Value.ToString());
+
+                    if (enableDpiBypass)
+                    {
+                        HTTPProxy.EnableDpiBypassProgram(DPIBypass.Mode.Program, dataLength, fragmentSize, divideBy);
+                        IsDPIActive = true;
+                    }
+
+                    HTTPProxy.Start(IPAddress.Any, SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort), 100);
+                    Task.Delay(500).Wait();
+
+                    // Delete error log on > 1MB
+                    if (File.Exists(SecureDNS.HTTPProxyServerErrorLogPath))
+                    {
+                        try
+                        {
+                            long lenth = new FileInfo(SecureDNS.HTTPProxyServerErrorLogPath).Length;
+                            if (FileDirectory.ConvertSize(lenth, FileDirectory.SizeUnits.Byte, FileDirectory.SizeUnits.MB) > 1)
+                                File.Delete(SecureDNS.HTTPProxyServerErrorLogPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"Delete HTTP Proxy log file: {ex.Message}");
+                        }
+                    }
+
+                    // Proxy Event Requests
+                    void HTTPProxy_OnRequestReceived(object? sender, EventArgs e)
+                    {
+                        if (sender is string req)
+                        {
+                            if (CustomCheckBoxHTTPProxyEventShowRequest.Checked)
+                            {
+                                req += NL; // Adding an additional line break.
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(req, Color.Gray));
+                            }
+                        }
+                    }
+
+                    // Proxy Event Errors
+                    void HTTPProxy_OnErrorOccurred(object? sender, EventArgs e)
+                    {
+                        if (sender is string error)
+                        {
+                            error += NL; // Adding an additional line break.
+                            FileDirectory.AppendTextLine(SecureDNS.HTTPProxyServerErrorLogPath, error, new UTF8Encoding(false));
+                        }
+                    }
+
+                    if (HTTPProxy.IsRunning)
+                    {
+                        // Update bool
+                        IsSharing = true;
+
+                        // Set Last Proxy Port
+                        LastProxyPort = HTTPProxy.ListeningPort;
+
+                        // Write Sharing Address to log
+                        LocalIP = Network.GetLocalIPv4(); // Update Local IP
+                        IPAddress localIP = LocalIP ?? IPAddress.Loopback;
+                        string msgHTTPProxy1 = "Local HTTP Proxy:" + NL;
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgHTTPProxy1, Color.LightGray));
+                        string msgHTTPProxy2 = $"http://{localIP}:{SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort)}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgHTTPProxy2 + NL, Color.DodgerBlue));
+                    }
+                    else
+                    {
+                        // Update bool
+                        IsSharing = false;
+
+                        // Write Sharing Error to log
+                        string msgHTTPProxyError = $"HTTP Proxy Server couldn't run.{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgHTTPProxyError, Color.IndianRed));
+                    }
+                }
+            }
+            else
+            {
+                // Stop Share
+                if (HTTPProxy != null)
+                {
+                    if (HTTPProxy.IsRunning)
+                    {
+                        // Unset Proxy First
+                        if (IsProxySet) SetProxy();
+                        Task.Delay(100).Wait();
+                        Network.UnsetProxy(false);
+
+                        HTTPProxy.Stop();
+                        Task.Delay(500).Wait();
+
+                        if (!HTTPProxy.IsRunning)
+                        {
+                            // Update bool
+                            IsSharing = false;
+
+                            // Write deactivated message to log
+                            string msgDiactivated = $"HTTP Proxy Server deactivated.{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDiactivated, Color.MediumSeaGreen));
+                        }
+                        else
+                        {
+                            // Couldn't stop
+                            string msg = $"Couldn't stop HTTP Proxy Server.{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                        }
+                    }
+                    else
+                    {
+                        // Already deactivated
+                        string msg = $"It's already deactivated.{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                    }
+                }
+                else
+                {
+                    // Already deactivated
+                    string msg = $"It's already deactivated.{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                }
+            }
+        }
+
+        private async void SetProxy()
+        {
+            if (!IsProxySet)
+            {
+                // Set Proxy
+                // Write Enable Proxy first to log
+                if (!IsSharing)
+                {
+                    string msg = "Enable Proxy first." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                    return;
+                }
+
+                if (HTTPProxy != null)
+                {
+                    // Get IP:Port
+                    string ip = IPAddress.Loopback.ToString();
+                    int port = HTTPProxy.ListeningPort;
+
+                    // Start Set Proxy
+                    Network.SetHttpProxy(ip, port);
+
+                    Task.Delay(300).Wait(); // Wait a moment
+
+                    bool isProxySet = Network.IsProxySet(out string _, out string _, out string _, out string _);
+                    if (isProxySet)
+                    {
+                        // Update bool
+                        IsProxySet = true;
+
+                        // Write Set Proxy message to log
+                        string msg1 = "HTTP Proxy ";
+                        string msg2 = $"{ip}:{port}";
+                        string msg3 = " set to system.";
+                        CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
+                        CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
+                        CustomRichTextBoxLog.AppendText(msg3 + NL, Color.LightGray);
+
+                        // Check DPI Works
+                        if (CustomCheckBoxHTTPProxyEnableDpiBypass.Checked)
+                        {
+                            // Get and check blocked domain is valid
+                            bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
+                            if (isBlockedDomainValid)
+                                await CheckDPIWorks(blockedDomain);
+                        }
+                    }
+                    else
+                    {
+                        // Write Set Proxy error to log
+                        string msg = "Couldn't set HTTP Proxy to system.";
+                        CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+                    }
+                }
+            }
+            else
+            {
+                // Unset Proxy
+                Network.UnsetProxy(false);
+
+                Task.Delay(300).Wait(); // Wait a moment
+
+                bool isProxySet = Network.IsProxySet(out string _, out string _, out string _, out string _);
+                if (!isProxySet)
+                {
+                    // Update bool
+                    IsProxySet = false;
+
+                    // Write Unset Proxy message to log
+                    string msg1 = "HTTP Proxy removed from system.";
+                    CustomRichTextBoxLog.AppendText(msg1 + NL, Color.LightGray);
+                }
+                else
+                {
+                    // Write Unset Proxy error to log
+                    string msg = "Couldn't unset HTTP Proxy from system.";
+                    CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+                }
+            }
+        }
+
         //============================== DPI
+
         private async void DPIBasic()
         {
             // Write Connect first to log
@@ -1943,7 +2335,7 @@ namespace SecureDNSClient
 
             // Execute GoodByeDPI
             PIDGoodbyeDPI = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
-            
+
             if (ProcessManager.FindProcessByID(PIDGoodbyeDPI))
             {
                 // Write DPI Mode to log
@@ -2003,7 +2395,7 @@ namespace SecureDNSClient
                     return;
                 }
             }
-            
+
             // Write Blacklist file Error to log
             if (CustomCheckBoxDPIAdvBlacklist.Checked)
             {
@@ -2209,7 +2601,7 @@ namespace SecureDNSClient
                 }
             }
         }
-        
+
         private async Task CheckDPIWorks(string host, int timeoutSec = 30) //Default timeout: 100 sec
         {
             if (string.IsNullOrWhiteSpace(host)) return;
@@ -2229,17 +2621,35 @@ namespace SecureDNSClient
 
             if (IsDNSSet)
             {
-                if (IsDPIActive || (IsSharing && CustomCheckBoxHTTPProxyEnableDpiBypass.Checked))
+                if (IsDPIActive)
                 {
                     try
                     {
                         string url = $"https://{host}/";
                         Uri uri = new(url, UriKind.Absolute);
-                        using HttpClient httpClient = new();
-                        httpClient.Timeout = new TimeSpan(0, 0, timeoutSec);
-                        HttpResponseMessage checkingResponse = await httpClient.GetAsync(uri);
-                        Task.Delay(500).Wait();
 
+                        HttpResponseMessage checkingResponse;
+
+                        if (HTTPProxy != null && HTTPProxy.IsRunning && HTTPProxy.IsDpiActive && IsSharing)
+                        {
+                            string proxyScheme = $"http://{IPAddress.Loopback}:{LastProxyPort}";
+                            using SocketsHttpHandler socketsHttpHandler = new();
+                            socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true);
+                            using HttpClient httpClientWithProxy = new(socketsHttpHandler);
+                            httpClientWithProxy.Timeout = new TimeSpan(0, 0, timeoutSec);
+
+                            checkingResponse = await httpClientWithProxy.GetAsync(uri);
+                            Task.Delay(500).Wait();
+                        }
+                        else
+                        {
+                            using HttpClient httpClient = new();
+                            httpClient.Timeout = new TimeSpan(0, 0, timeoutSec);
+
+                            checkingResponse = await httpClient.GetAsync(uri);
+                            Task.Delay(500).Wait();
+                        }
+                        
                         if (checkingResponse.IsSuccessStatusCode)
                         {
                             // Write Success to log
@@ -2266,10 +2676,8 @@ namespace SecureDNSClient
                         // Write Failed to log
                         string msgDPI1 = $"DPI Check: ";
                         string msgDPI2 = $"{ex.Message}{NL}";
-                        string msgDPI3 = $"Unable to check. Try open {host} in your browser.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI3, Color.IndianRed));
                         CheckDPIWorksStopWatch.Stop();
                         CheckDPIWorksStopWatch.Reset();
                     }
@@ -2294,350 +2702,6 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
                 CheckDPIWorksStopWatch.Stop();
                 CheckDPIWorksStopWatch.Reset();
-            }
-        }
-
-        //============================== DNS
-        private async void SetDNS()
-        {
-            // Get NIC Name
-            string? nicName = CustomComboBoxNICs.SelectedItem as string;
-
-            // Check if NIC Name is empty
-            if (string.IsNullOrEmpty(nicName))
-            {
-                string msg = "Select a Network Interface first." + NL;
-                CustomRichTextBoxLog.AppendText(msg, Color.LightGray);
-                return;
-            }
-
-            // Check if NIC is null
-            NetworkInterface? nic = Network.GetNICByName(nicName);
-            if (nic == null) return;
-
-            string loopbackIP = IPAddress.Loopback.ToString();
-            string dnss = loopbackIP;
-            if (LocalIP != null)
-                dnss += "," + LocalIP;
-
-            if (!IsDNSSet)
-            {
-                // Set DNS
-                // Write Connect first to log
-                if (!IsDNSConnected)
-                {
-                    string msgConnect = string.Empty;
-                    if (!IsDoHConnected)
-                        msgConnect = "Connect first." + NL;
-                    else
-                        msgConnect = "Activate legacy DNS Server first." + NL;
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
-                    return;
-                }
-
-                // Check Internet Connectivity
-                if (!IsInternetAlive()) return;
-
-                // Get and check blocked domain is valid
-                bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
-                if (!isBlockedDomainValid) return;
-
-                // Set DNS
-                Network.UnsetDNS(nic); // Unset first
-                Task.Delay(100).Wait(); // Wait a moment
-                Network.SetDNS(nic, dnss); // Set DNS
-                IsDNSSet = true;
-
-                // Save NIC name to file
-                FileDirectory.CreateEmptyFile(SecureDNS.NicNamePath);
-                File.WriteAllText(SecureDNS.NicNamePath, nicName);
-
-                // Update Groupbox Status
-                UpdateStatus();
-
-                // Write Set DNS message to log
-                string msg1 = "Local DNS ";
-                string msg2 = loopbackIP;
-                string msg3 = " set to ";
-                string msg4 = nicName + " (" + nic.Description + ")";
-                CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
-                CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
-                CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
-                CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
-
-                // Go to Check Tab
-                if (ConnectAllClicked && IsConnected)
-                {
-                    this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
-                    this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 0);
-                    ConnectAllClicked = false;
-                }
-
-                // Check DPI works if DPI is Active
-                if (ProcessManager.FindProcessByID(PIDGoodbyeDPI))
-                    await CheckDPIWorks(blockedDomain);
-            }
-            else
-            {
-                // Unset DNS
-                Network.UnsetDNS(nic);
-                Task.Delay(200).Wait();
-                UnsetSavedDNS();
-                IsDNSSet = false;
-
-                // Flush DNS
-                FlushDNS();
-
-                // Update Groupbox Status
-                UpdateStatus();
-
-                // Write Unset DNS message to log
-                string msg1 = "Local DNS ";
-                string msg2 = loopbackIP;
-                string msg3 = " removed from ";
-                string msg4 = nicName + " (" + nic.Description + ")";
-                CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
-                CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
-                CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
-                CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
-            }
-        }
-
-        //============================== Share
-        private void Share()
-        {
-            if (!IsSharing)
-            {
-                //// Write Set DNS first to log
-                //if (!IsDNSSet)
-                //{
-                //    string msg = "Set DNS first." + NL;
-                //    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                //    return;
-                //}
-
-                // Check port
-                int httpProxyPort = SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort);
-                bool portHTTPProxy = Network.IsPortOpen(IPAddress.Loopback.ToString(), httpProxyPort, 3);
-                if (portHTTPProxy)
-                {
-                    string existingProcessName = ProcessManager.GetProcessNameByListeningPort(httpProxyPort);
-                    existingProcessName = existingProcessName == string.Empty ? "Unknown" : existingProcessName;
-                    string msg = $"Port {httpProxyPort} is occupied by \"{existingProcessName}\". Change the port from Connect tab.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    IsConnecting = false;
-                    return;
-                }
-
-                // Start Share
-                HTTPProxy = new();
-                if (!HTTPProxy.IsRunning)
-                {
-                    HTTPProxy.OnRequestReceived += HTTPProxy_OnRequestReceived;
-                    HTTPProxy.OnErrorOccurred += HTTPProxy_OnErrorOccurred;
-
-                    // Get fragment settings
-                    bool enableDpiBypass = CustomCheckBoxHTTPProxyEnableDpiBypass.Checked;
-                    int dataLength = int.Parse(CustomNumericUpDownHTTPProxyDataLength.Value.ToString());
-                    int fragmentSize = int.Parse(CustomNumericUpDownHTTPProxyFragmentSize.Value.ToString());
-                    int divideBy = int.Parse(CustomNumericUpDownHTTPProxyDivideBy.Value.ToString());
-
-                    if (enableDpiBypass)
-                        HTTPProxy.EnableDpiBypassProgram(DPIBypass.Mode.Program, dataLength, fragmentSize, divideBy);
-
-                    HTTPProxy.Start(IPAddress.Any, SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort), 100, true);
-                    Task.Delay(500).Wait();
-
-                    // Delete error log on > 1MB
-                    if (File.Exists(SecureDNS.HTTPProxyServerErrorLogPath))
-                    {
-                        try
-                        {
-                            long lenth = new FileInfo(SecureDNS.HTTPProxyServerErrorLogPath).Length;
-                            if (FileDirectory.ConvertSize(lenth, FileDirectory.SizeUnits.Byte, FileDirectory.SizeUnits.MB) > 1)
-                                File.Delete(SecureDNS.HTTPProxyServerErrorLogPath);
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Delete HTTP Proxy log file: {ex.Message}");
-                        }
-                    }
-
-                    // Proxy Event Requests
-                    void HTTPProxy_OnRequestReceived(object? sender, EventArgs e)
-                    {
-                        if (sender is string req)
-                        {
-                            if (CustomCheckBoxHTTPProxyEventShowRequest.Checked)
-                            {
-                                req += NL; // Adding an additional line break.
-                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(req, Color.Gray));
-                            }
-                        }
-                    }
-
-                    // Proxy Event Errors
-                    void HTTPProxy_OnErrorOccurred(object? sender, EventArgs e)
-                    {
-                        if (sender is string error)
-                        {
-                            error += NL; // Adding an additional line break.
-                            FileDirectory.AppendTextLine(SecureDNS.HTTPProxyServerErrorLogPath, error, new UTF8Encoding(false));
-                        }
-                    }
-
-                    if (HTTPProxy.IsRunning)
-                    {
-                        // Update bool
-                        IsSharing = true;
-
-                        // Set Last Proxy Port
-                        LastProxyPort = HTTPProxy.ListeningPort;
-
-                        // Write Sharing Address to log
-                        LocalIP = Network.GetLocalIPv4(); // Update Local IP
-                        IPAddress localIP = LocalIP ?? IPAddress.Loopback;
-                        string msgHTTPProxy1 = "Local HTTP Proxy:" + NL;
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgHTTPProxy1, Color.LightGray));
-                        string msgHTTPProxy2 = $"http://{localIP}:{SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort)}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgHTTPProxy2 + NL, Color.DodgerBlue));
-                    }
-                    else
-                    {
-                        // Update bool
-                        IsSharing = false;
-
-                        // Write Sharing Error to log
-                        string msgHTTPProxyError = $"HTTP Proxy Server couldn't run.{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgHTTPProxyError, Color.IndianRed));
-                    }
-                }
-            }
-            else
-            {
-                // Stop Share
-                if (HTTPProxy != null)
-                {
-                    if (HTTPProxy.IsRunning)
-                    {
-                        // Unset Proxy First
-                        if (IsProxySet) SetProxy();
-                        Task.Delay(100).Wait();
-                        Network.UnsetProxy(false);
-
-                        HTTPProxy.Stop();
-                        Task.Delay(500).Wait();
-
-                        if (!HTTPProxy.IsRunning)
-                        {
-                            // Update bool
-                            IsSharing = false;
-
-                            // Write deactivated message to log
-                            string msgDiactivated = $"HTTP Proxy Server deactivated.{NL}";
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDiactivated, Color.MediumSeaGreen));
-                        }
-                        else
-                        {
-                            // Couldn't stop
-                            string msg = $"Couldn't stop HTTP Proxy Server.{NL}";
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                        }
-                    }
-                    else
-                    {
-                        // Already deactivated
-                        string msg = $"It's already deactivated.{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
-                    }
-                }
-                else
-                {
-                    // Already deactivated
-                    string msg = $"It's already deactivated.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
-                }
-            }
-        }
-
-        private async void SetProxy()
-        {
-            if (!IsProxySet)
-            {
-                // Set Proxy
-                // Write Enable Proxy first to log
-                if (!IsSharing)
-                {
-                    string msg = "Enable Proxy first." + NL;
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    return;
-                }
-
-                if (HTTPProxy != null)
-                {
-                    // Get IP:Port
-                    string ip = IPAddress.Loopback.ToString();
-                    int port = HTTPProxy.ListeningPort;
-
-                    // Start Set Proxy
-                    Network.SetHttpProxy(ip, port);
-
-                    Task.Delay(300).Wait(); // Wait a moment
-
-                    bool isProxySet = Network.IsProxySet(out string _, out string _, out string _, out string _);
-                    if (isProxySet)
-                    {
-                        // Update bool
-                        IsProxySet = true;
-
-                        // Write Set Proxy message to log
-                        string msg1 = "HTTP Proxy ";
-                        string msg2 = $"{ip}:{port}";
-                        string msg3 = " set to system.";
-                        CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
-                        CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
-                        CustomRichTextBoxLog.AppendText(msg3 + NL, Color.LightGray);
-
-                        // Check DPI Works
-                        if (CustomCheckBoxHTTPProxyEnableDpiBypass.Checked)
-                        {
-                            // Get and check blocked domain is valid
-                            bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
-                            if (isBlockedDomainValid)
-                                await CheckDPIWorks(blockedDomain);
-                        }
-                    }
-                    else
-                    {
-                        // Write Set Proxy error to log
-                        string msg = "Couldn't set HTTP Proxy to system.";
-                        CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
-                    }
-                }
-            }
-            else
-            {
-                // Unset Proxy
-                Network.UnsetProxy(false);
-
-                Task.Delay(300).Wait(); // Wait a moment
-
-                bool isProxySet = Network.IsProxySet(out string _, out string _, out string _, out string _);
-                if (!isProxySet)
-                {
-                    // Update bool
-                    IsProxySet = false;
-
-                    // Write Unset Proxy message to log
-                    string msg1 = "HTTP Proxy removed from system.";
-                    CustomRichTextBoxLog.AppendText(msg1 + NL, Color.LightGray);
-                }
-                else
-                {
-                    // Write Unset Proxy error to log
-                    string msg = "Couldn't unset HTTP Proxy from system.";
-                    CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
-                }
             }
         }
 
@@ -2925,11 +2989,11 @@ namespace SecureDNSClient
                     // Update Groupbox Status
                     UpdateStatus();
 
-                    // Clear Live Status StringBuilder
-                    LiveStatusDNSResult.Clear();
-                    IsDNSConnected = LiveStatusDNSResult.ToString().Contains("ANSWER SECTION");
-                    LiveStatusDoHResult.Clear();
-                    IsDoHConnected = LiveStatusDoHResult.ToString().Contains("ANSWER SECTION");
+                    // To see offline status immediately
+                    Parallel.Invoke(
+                        () => UpdateBoolDnsOnce(1000),
+                        () => UpdateBoolDohOnce(1000)
+                    );
                 }
                 catch (Exception ex)
                 {

@@ -18,9 +18,8 @@ namespace MsmhTools
 {
     public static class Network
     {
-        public static string? UrlToHost(string url)
+        public static Uri? UrlToUri(string url)
         {
-            string? host = null;
             try
             {
                 string[] split1 = url.Split("//");
@@ -34,15 +33,15 @@ namespace MsmhTools
                             prefix += "//";
                     }
                 }
-
+                
                 Uri uri = new(prefix);
-                host = uri.Host;
+                return uri;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
             }
-            return host;
+            return null;
         }
 
         public static IPAddress? HostToIP(string host, bool getIPv6 = false)
@@ -132,6 +131,12 @@ namespace MsmhTools
             return result.RemoveDuplicates();
         }
 
+        /// <summary>
+        /// Uses ipinfo.io to get result
+        /// </summary>
+        /// <param name="iPAddress">IP to check</param>
+        /// <param name="proxyScheme">Use proxy to connect</param>
+        /// <returns>Company name</returns>
         public static async Task<string?> IpToCompanyAsync(IPAddress iPAddress, string? proxyScheme = null)
         {
             string? company = null;
@@ -789,7 +794,65 @@ namespace MsmhTools
             }
         }
 
+        /// <summary>
+        /// Only the 'http', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task<bool> CheckProxyWorks(string websiteToCheck, string proxyScheme, int timeoutSec)
+        {
+            try
+            {
+                Uri uri = new(websiteToCheck, UriKind.Absolute);
 
+                using SocketsHttpHandler socketsHttpHandler = new();
+                socketsHttpHandler.Proxy = new WebProxy(proxyScheme);
+                using HttpClient httpClientWithProxy = new(socketsHttpHandler);
+                httpClientWithProxy.Timeout = new TimeSpan(0, 0, timeoutSec);
+
+                HttpResponseMessage checkingResponse = await httpClientWithProxy.GetAsync(uri);
+                Task.Delay(200).Wait();
+
+                return checkingResponse.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Check Proxy: {ex.Message}");
+                return false;
+            }
+        }
+
+        public static bool CanPing(string host, int timeoutMS)
+        {
+            Ping ping = new();
+
+            try
+            {
+                PingReply reply = ping.Send(host, timeoutMS);
+                if (reply == null) return false;
+
+                return reply.Status == IPStatus.Success;
+            }
+            catch (PingException ex)
+            {
+                Debug.WriteLine($"Ping: {ex.Message}");
+                return false;
+            }
+        }
+
+        public static bool CanPing(string host, int port, int timeoutMS)
+        {
+            try
+            {
+                using var client = new TcpClient(host, port);
+                client.SendTimeout = timeoutMS;
+                return true;
+            }
+            catch (SocketException ex)
+            {
+                Debug.WriteLine($"Ping: {ex.Message}");
+                return false;
+            }
+        }
 
     }
 }

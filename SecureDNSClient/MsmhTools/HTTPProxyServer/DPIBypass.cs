@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-// https://github.com/msasanmh/SecureDNSClient
 
 namespace MsmhTools.HTTPProxyServer
 {

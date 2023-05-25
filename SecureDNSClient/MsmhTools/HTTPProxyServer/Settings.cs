@@ -5,33 +5,9 @@ using System.Text;
 namespace MsmhTools.HTTPProxyServer
 {
     /// <summary>
-    /// System settings.
-    /// </summary>
-    public class ProxySettings
-    {
-        /// <summary>
-        /// Proxy server settings.
-        /// </summary>
-        public SettingsProxy Proxy
-        {
-            get
-            {
-                return _Proxy;
-            }
-            set
-            {
-                if (value == null) _Proxy = new SettingsProxy();
-                else _Proxy = value;
-            }
-        }
-
-        private SettingsProxy _Proxy = new();
-    }
-
-    /// <summary>
     /// Proxy server settings.
     /// </summary>
-    public class SettingsProxy
+    public class ProxySettings
     {
         private IPAddress _ListenerIpAddress { get; set; } = IPAddress.Any;
         private int _ListenerPort { get; set; } = 8080;
@@ -83,15 +59,5 @@ namespace MsmhTools.HTTPProxyServer
                 _MaxThreads = value;
             }
         }
-
-        /// <summary>
-        /// Enable or disable SSL.
-        /// </summary>
-        public bool Ssl { get; set; } = false;
-
-        /// <summary>
-        /// Enable or disable connections to sites with certificates that cannot be validated.
-        /// </summary>
-        public bool AcceptInvalidCertificates { get; set; } = true;
     }
 }

@@ -59,7 +59,43 @@ namespace SecureDNSClient
         public static readonly string KeyPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate", "localhost.key"));
         public static readonly string CertPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate", "localhost.crt"));
 
-        public static bool CheckDns(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
+        /// <summary>
+        /// Check DNS and get latency (ms)
+        /// </summary>
+        /// <param name="domain"></param>
+        /// <param name="dnsServer"></param>
+        /// <param name="timeoutMS"></param>
+        /// <param name="processPriorityClass"></param>
+        /// <returns>Returns -1 if DNS fail</returns>
+        public static int CheckDns(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
+        {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+            bool isDnsOK = CheckDnsWork(domain, dnsServer, timeoutMS, processPriorityClass);
+            stopwatch.Stop();
+
+            return isDnsOK ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
+        }
+
+        /// <summary>
+        /// Check DNS and get latency (ms)
+        /// </summary>
+        /// <param name="domain"></param>
+        /// <param name="dnsServer"></param>
+        /// <param name="timeoutMS"></param>
+        /// <param name="processPriorityClass"></param>
+        /// <returns>Returns -1 if DNS fail</returns>
+        public static int CheckDns(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
+        {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+            bool isDnsOK = CheckDnsWork(insecure, domain, dnsServer, timeoutMS, localPort, bootstrap, bootsratPort, processPriorityClass);
+            stopwatch.Stop();
+
+            return isDnsOK ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
+        }
+
+        private static bool CheckDnsWork(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
         {
             var task = Task.Run(() =>
             {
@@ -80,7 +116,7 @@ namespace SecureDNSClient
                 return false;
         }
 
-        public static bool CheckDns(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
+        private static bool CheckDnsWork(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
         {
             var task = Task.Run(() =>
             {
@@ -210,10 +246,17 @@ namespace SecureDNSClient
 
         public static async Task<string> UrlToCompanyOffline(string url)
         {
-            string? host = Network.UrlToHost(url);
-            if (string.IsNullOrEmpty(host))
-                host = "NotFound";
-            return await HostToCompanyOffline(host);
+            string host = "NotFound";
+            Uri? uri = Network.UrlToUri(url);
+
+            if (uri != null)
+            {
+                host = uri.Host;
+                if (!string.IsNullOrEmpty(host))
+                    return await HostToCompanyOffline(host);
+            }
+            
+            return host;
         }
 
         public static async Task<string> StampToCompanyOffline(string stampUrl)
@@ -248,31 +291,36 @@ namespace SecureDNSClient
         public static async Task<string> UrlToCompanyAsync(string url, string? proxyScheme = null)
         {
             string company = "Couldn't retrieve information.";
-            string? host = Network.UrlToHost(url);
-            if (!string.IsNullOrWhiteSpace(host))
+            Uri? uri = Network.UrlToUri(url);
+            if (uri != null)
             {
-                IPAddress? ipAddress = Network.HostToIP(host);
-                string? companyFull;
-                if (ipAddress != null)
+                string? host = uri.Host;
+                if (!string.IsNullOrWhiteSpace(host))
                 {
-                    if (proxyScheme == null)
-                        companyFull = await Network.IpToCompanyAsync(ipAddress);
-                    else
-                        companyFull = await Network.IpToCompanyAsync(ipAddress, proxyScheme);
-                    if (!string.IsNullOrWhiteSpace(companyFull))
+                    IPAddress? ipAddress = Network.HostToIP(host);
+                    string? companyFull;
+                    if (ipAddress != null)
                     {
-                        company = string.Empty;
-                        string[] split = companyFull.Split(" ");
-                        for (int n = 0; n < split.Length; n++)
+                        if (proxyScheme == null)
+                            companyFull = await Network.IpToCompanyAsync(ipAddress);
+                        else
+                            companyFull = await Network.IpToCompanyAsync(ipAddress, proxyScheme);
+                        if (!string.IsNullOrWhiteSpace(companyFull))
                         {
-                            string s = split[n];
-                            if (n != 0)
-                                company += s + " ";
+                            company = string.Empty;
+                            string[] split = companyFull.Split(" ");
+                            for (int n = 0; n < split.Length; n++)
+                            {
+                                string s = split[n];
+                                if (n != 0)
+                                    company += s + " ";
+                            }
+                            company = company.Trim();
                         }
-                        company = company.Trim();
                     }
                 }
             }
+            
             return company;
         }
 
@@ -328,9 +376,13 @@ namespace SecureDNSClient
                     string company = await UrlToCompanyAsync(dns);
                     if (!company.Contains("Couldn't retrieve information."))
                     {
-                        object hostToCom = Network.UrlToHost(dns) + "|" + company;
-                        HostToCompanyList.Add(hostToCom);
-                        Debug.WriteLine(hostToCom);
+                        Uri? uri = Network.UrlToUri(dns);
+                        if (uri != null)
+                        {
+                            object hostToCom = uri.Host + "|" + company;
+                            HostToCompanyList.Add(hostToCom);
+                            Debug.WriteLine(hostToCom);
+                        }
                     }
                 }
                 // Remove Duplicates

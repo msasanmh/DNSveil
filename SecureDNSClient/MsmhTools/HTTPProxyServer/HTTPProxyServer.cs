@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using RestWrapper;
-using WatsonWebserver;
 using System.Text;
 using System.Diagnostics;
 
@@ -17,7 +12,7 @@ namespace MsmhTools.HTTPProxyServer
     {
         private static ProxySettings _Settings = new();
 
-        private static TunnelManager? _Tunnels;
+        private static TunnelManager? _TunnelManager;
         private static TcpListener? _TcpListener;
 
         private static CancellationTokenSource? _CancelTokenSource;
@@ -25,7 +20,7 @@ namespace MsmhTools.HTTPProxyServer
         private static int _ActiveThreads = 0;
 
         public bool IsRunning = false;
-        public static bool Cancel = false;
+        private static bool Cancel = false;
 
         public static readonly int MaxDataSize = 65536;
         private DPIBypass.Mode DpiBypassMode = DPIBypass.Mode.Disable;
@@ -45,27 +40,27 @@ namespace MsmhTools.HTTPProxyServer
             
         }
 
-        public void Start(IPAddress ipAddress, int port, int maxThreads, bool ssl)
+        public void Start(IPAddress ipAddress, int port, int maxThreads)
         {
+            if (IsRunning) return;
+            IsRunning = true;
+
             Task.Run(() =>
             {
-                if (IsRunning) return;
-                IsRunning = true;
-                
-                _Settings = new ProxySettings();
-                _Settings.Proxy.ListenerIpAddress = ipAddress;
-                _Settings.Proxy.ListenerPort = port;
-                _Settings.Proxy.MaxThreads = maxThreads;
-                _Settings.Proxy.Ssl = ssl;
+                _Settings = new();
+                _Settings.ListenerIpAddress = ipAddress;
+                _Settings.ListenerPort = port;
+                _Settings.MaxThreads = maxThreads;
 
                 Welcome();
 
-                _Tunnels = new TunnelManager();
+                _TunnelManager = new();
 
-                _CancelTokenSource = new CancellationTokenSource();
+                _CancelTokenSource = new();
                 _CancelToken = _CancelTokenSource.Token;
 
                 Cancel = false;
+
                 Task.Run(() => AcceptConnections(), _CancelToken);
 
                 Terminator.Reset();
@@ -89,12 +84,17 @@ namespace MsmhTools.HTTPProxyServer
 
         public int ListeningPort
         {
-            get => _Settings.Proxy.ListenerPort;
+            get => _Settings.ListenerPort;
+        }
+
+        public bool IsDpiActive
+        {
+            get => DpiBypassMode != DPIBypass.Mode.Disable;
         }
 
         public Dictionary<int, Tunnel> GetCurrentConnectTunnels()
         {
-            return _Tunnels != null ? _Tunnels.GetMetadata() : new Dictionary<int, Tunnel>();
+            return _TunnelManager != null ? _TunnelManager.GetMetadata() : new Dictionary<int, Tunnel>();
         }
 
         #region Setup-Methods
@@ -102,7 +102,7 @@ namespace MsmhTools.HTTPProxyServer
         private void Welcome()
         {
             // Event
-            string msgEvent = $"HTTP Proxy Server starting on {_Settings.Proxy.ListenerIpAddress}:{_Settings.Proxy.ListenerPort}";
+            string msgEvent = $"HTTP Proxy Server starting on {_Settings.ListenerIpAddress}:{_Settings.ListenerPort}";
             OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
             OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
         }
@@ -139,19 +139,18 @@ namespace MsmhTools.HTTPProxyServer
         {
             try
             {
-                _TcpListener = new TcpListener(_Settings.Proxy.ListenerIpAddress, _Settings.Proxy.ListenerPort);
-
+                _TcpListener = new(_Settings.ListenerIpAddress, _Settings.ListenerPort);
                 _TcpListener.Start();
                 Task.Delay(200).Wait();
 
                 if (_TcpListener != null)
                 {
                     IsRunning = _TcpListener.Server.IsBound;
-
+                    
                     while (!Cancel)
                     {
-                        TcpClient client = _TcpListener.AcceptTcpClient();
-                        Task.Run(() => ProcessConnection(client), _CancelToken);
+                        TcpClient tcpClient = _TcpListener.AcceptTcpClient();
+                        Task.Run(() => ProcessConnection(tcpClient), _CancelToken);
                         if (_CancelToken.IsCancellationRequested || Cancel)
                             break;
                     }
@@ -164,29 +163,30 @@ namespace MsmhTools.HTTPProxyServer
             catch (Exception eOuter)
             {
                 // Event Error
-                string msgEventErr = $"Accept Connections: {eOuter.Message}";
-                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                if (!_CancelToken.IsCancellationRequested || !Cancel)
+                {
+                    string msgEventErr = $"Accept Connections: {eOuter.Message}";
+                    OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                }
             }
         }
         
         private async Task ProcessConnection(TcpClient client)
         {
-            string clientIp = string.Empty;
-            int clientPort = 0;
             int connectionId = Environment.CurrentManagedThreadId;
             _ActiveThreads++;
             Debug.WriteLine($"Active Requests: {_ActiveThreads}");
-
+            
             try
             {
                 // Check-if-Max-Exceeded
-                if (_ActiveThreads >= _Settings.Proxy.MaxThreads)
+                if (_ActiveThreads >= _Settings.MaxThreads)
                 {
                     // Event
-                    string msgEventErr = $"AcceptConnections connection count {_ActiveThreads} exceeds configured max {_Settings.Proxy.MaxThreads}, waiting";
+                    string msgEventErr = $"AcceptConnections connection count {_ActiveThreads} exceeds configured max {_Settings.MaxThreads}, waiting";
                     OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
 
-                    while (_ActiveThreads >= _Settings.Proxy.MaxThreads)
+                    while (_ActiveThreads >= _Settings.MaxThreads)
                     {
                         Task.Delay(100).Wait();
                     }
@@ -198,13 +198,13 @@ namespace MsmhTools.HTTPProxyServer
                 string clientEndpoint = clientIpEndpoint != null ? clientIpEndpoint.ToString() : string.Empty;
                 string serverEndpoint = serverIpEndpoint != null ? serverIpEndpoint.ToString() : string.Empty;
 
-                clientIp = clientIpEndpoint != null ? clientIpEndpoint.Address.ToString() : string.Empty;
-                clientPort = clientIpEndpoint != null ? clientIpEndpoint.Port : 0;
+                string clientIp = clientIpEndpoint != null ? clientIpEndpoint.Address.ToString() : string.Empty;
+                int clientPort = clientIpEndpoint != null ? clientIpEndpoint.Port : 0;
 
                 string serverIp = serverIpEndpoint != null ? serverIpEndpoint.Address.ToString() : string.Empty;
                 int serverPort = serverIpEndpoint != null ? serverIpEndpoint.Port : 0;
 
-                HttpRequest req = HttpRequest.FromTcpClient(client);
+                Request req = Request.FromTcpClient(client);
                 if (req == null)
                 {
                     // Event Error
@@ -223,13 +223,13 @@ namespace MsmhTools.HTTPProxyServer
                 string msgEvent = $"{req.DestHostname}:{req.DestHostPort}";
                 OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
 
-                if (req.Method == WatsonWebserver.HttpMethod.CONNECT)
+                if (req.Method == HttpMethod.CONNECT)
                 {
                     // Event
                     msgEvent = $"{clientEndpoint} proxying request via CONNECT to {req.FullUrl}";
                     OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
-                    ConnectRequest(connectionId, client, req);
+                    ConnectHttpsRequest(connectionId, client, req);
                 }
                 else
                 {
@@ -237,14 +237,7 @@ namespace MsmhTools.HTTPProxyServer
                     msgEvent = $"{clientEndpoint} proxying request to {req.FullUrl}";
                     OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
-                    RestResponse? resp = ProxyRequest(req).Result;
-                    if (resp != null)
-                    {
-                        NetworkStream ns = client.GetStream();
-                        await SendRestResponse(resp, ns);
-                        await ns.FlushAsync();
-                        ns.Close();
-                    }
+                    await ConnectHttpRequestAsync(req, client);
                 }
 
                 client.Close();
@@ -257,57 +250,14 @@ namespace MsmhTools.HTTPProxyServer
             catch (Exception eInner)
             {
                 // Event Error
-                string msgEventErr = $"Accept Connections: {eInner.Message}";
+                string msgEventErr = $"Process Connection: {eInner.Message}";
                 OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
             }
         }
 
-        private async Task<RestResponse?> ProxyRequest(HttpRequest request)
-        {
-            try
-            {
-                if (request.Headers != null)
-                {
-                    string foundVal = string.Empty;
+        //======================================== Connect HTTPS Request
 
-                    foreach (KeyValuePair<string, string> currKvp in request.Headers)
-                    {
-                        if (string.IsNullOrEmpty(currKvp.Key)) continue;
-                        if (currKvp.Key.ToLower().Equals("expect"))
-                        {
-                            foundVal = currKvp.Key;
-                            break;
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(foundVal)) request.Headers.Remove(foundVal);
-                }
-
-                RestRequest req = new(
-                    request.FullUrl,
-                    (RestWrapper.HttpMethod)(Enum.Parse(typeof(RestWrapper.HttpMethod), request.Method.ToString())),
-                    request.Headers,
-                    request.ContentType);
-
-                if (request.ContentLength > 0)
-                {
-                    return await req.SendAsync(request.ContentLength, request.Data);
-                }
-                else
-                {
-                    return await req.SendAsync();
-                }
-            }
-            catch (Exception e)
-            {
-                // Evemt Error
-                string msgEventErr = $"{e.Message}";
-                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
-                return null;
-            }
-        }
-
-        private void ConnectRequest(int connectionId, TcpClient client, HttpRequest req)
+        private void ConnectHttpsRequest(int connectionId, TcpClient client, Request req)
         {
             Tunnel? currTunnel = null;
             TcpClient? server = null;
@@ -321,7 +271,17 @@ namespace MsmhTools.HTTPProxyServer
 
                 try
                 {
-                    server.Connect(req.DestHostname, req.DestHostPort);
+                    if (!string.IsNullOrEmpty(req.DestHostname))
+                    {
+                        server.Connect(req.DestHostname, req.DestHostPort);
+                    }
+                    else
+                    {
+                        // Event Error
+                        string msgEventErr = $"Hostname was null or empty.";
+                        OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                        return;
+                    }
                 }
                 catch (Exception)
                 {
@@ -335,8 +295,22 @@ namespace MsmhTools.HTTPProxyServer
                 server.Client.NoDelay = true;
 
                 byte[] connectResponse = ConnectResponse();
+                static byte[] ConnectResponse()
+                {
+                    string resp = "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
+                    return Encoding.UTF8.GetBytes(resp);
+                }
                 client.Client.Send(connectResponse);
 
+                if (string.IsNullOrEmpty(req.SourceIp) || string.IsNullOrEmpty(req.DestIp))
+                {
+                    // Event Error
+                    string msgEventErr = $"Source or dest IP were null or empty. SourceIp: {req.SourceIp} DestIp: {req.DestIp}";
+                    OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                    return;
+                }
+
+                // Create Tunnel
                 currTunnel = new Tunnel(
                     req.SourceIp,
                     req.SourcePort,
@@ -356,8 +330,8 @@ namespace MsmhTools.HTTPProxyServer
                 else if (DpiBypassMode == DPIBypass.Mode.Random)
                     currTunnel.EnableDpiBypassRandom(DPIBypass.Mode.Random, FragmentLength, FragmentDelay);
 
-                if (_Tunnels != null)
-                    _Tunnels.Add(connectionId, currTunnel);
+                if (_TunnelManager != null)
+                    _TunnelManager.Add(connectionId, currTunnel);
 
                 while (currTunnel.IsActive())
                 {
@@ -376,90 +350,148 @@ namespace MsmhTools.HTTPProxyServer
             }
             finally
             {
-                if (_Tunnels != null)
-                    _Tunnels.Remove(connectionId);
+                if (_TunnelManager != null)
+                    _TunnelManager.Remove(connectionId);
 
                 if (client != null)
-                {
                     client.Dispose();
-                }
 
                 if (server != null)
-                {
                     server.Dispose();
-                }
             }
         }
 
-        private static byte[] ConnectResponse()
-        {
-            string resp = "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
-            return Encoding.UTF8.GetBytes(resp);
-        }
+        //======================================== Connect HTTP Request
 
-        private async Task SendRestResponse(RestResponse resp, NetworkStream ns)
+        private async Task ConnectHttpRequestAsync(Request req, TcpClient tcpClient)
         {
-            try
+            RestResponse? resp = proxyRequest(req).Result;
+            if (resp != null)
             {
-                byte[]? ret = null;
-                string statusLine = resp.ProtocolVersion + " " + resp.StatusCode + " " + resp.StatusDescription + "\r\n";
-                ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(statusLine));
+                NetworkStream ns = tcpClient.GetStream();
+                await sendRestResponse(resp, ns);
+                await ns.FlushAsync();
+                ns.Close();
+            }
 
-                if (!string.IsNullOrEmpty(resp.ContentType))
+            async Task<RestResponse?> proxyRequest(Request request)
+            {
+                try
                 {
-                    string contentTypeLine = "Content-Type: " + resp.ContentType + "\r\n";
-                    ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(contentTypeLine));
-                }
-
-                if (resp.ContentLength > 0)
-                {
-                    string contentLenLine = "Content-Length: " + resp.ContentLength + "\r\n";
-                    ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(contentLenLine));
-                }
-
-                if (resp.Headers != null && resp.Headers.Count > 0)
-                {
-                    foreach (KeyValuePair<string, string> currHeader in resp.Headers)
+                    if (request.Headers != null)
                     {
-                        if (string.IsNullOrEmpty(currHeader.Key)) continue;
-                        if (currHeader.Key.ToLower().Trim().Equals("content-type")) continue;
-                        if (currHeader.Key.ToLower().Trim().Equals("content-length")) continue;
+                        string foundVal = string.Empty;
 
-                        string headerLine = currHeader.Key + ": " + currHeader.Value + "\r\n";
-                        ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(headerLine));
+                        foreach (KeyValuePair<string, string> currKvp in request.Headers)
+                        {
+                            if (string.IsNullOrEmpty(currKvp.Key)) continue;
+                            if (currKvp.Key.ToLower().Equals("expect"))
+                            {
+                                foundVal = currKvp.Key;
+                                break;
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(foundVal)) request.Headers.Remove(foundVal);
+                    }
+
+                    if (string.IsNullOrEmpty(request.FullUrl))
+                    {
+                        // Evemt Error
+                        string msgEventErr = $"Full Url was null or empty. FullUrl: {request.FullUrl}";
+                        OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                        return null;
+                    }
+
+                    //(HttpMethod)(Enum.Parse(typeof(RestWrapper.HttpMethod), request.Method.ToString())),
+                    RestRequest rRequest = new(
+                        request.FullUrl,
+                        request.Method,
+                        request.Headers,
+                        request.ContentType);
+                    
+                    if (request.ContentLength > 0)
+                    {
+                        return await rRequest.SendAsync(request.ContentLength, request.DataStream);
+                    }
+                    else
+                    {
+                        return await rRequest.SendAsync();
                     }
                 }
-
-                ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes("\r\n"));
-
-                await ns.WriteAsync(ret);
-                await ns.FlushAsync();
-
-                if (resp.Data != null && resp.ContentLength > 0)
+                catch (Exception e)
                 {
-                    long bytesRemaining = resp.ContentLength;
-                    byte[] buffer = new byte[65536];
+                    // Evemt Error
+                    string msgEventErr = $"{e.Message}";
+                    OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                    return null;
+                }
+            }
 
-                    while (bytesRemaining > 0)
+            async Task sendRestResponse(RestResponse resp, NetworkStream ns)
+            {
+                try
+                {
+                    byte[]? ret = Array.Empty<byte>();
+                    string statusLine = resp.ProtocolVersion + " " + resp.StatusCode + " " + resp.StatusDescription + "\r\n";
+                    ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(statusLine));
+
+                    if (!string.IsNullOrEmpty(resp.ContentType))
                     {
-                        int bytesRead = await resp.Data.ReadAsync(buffer);
-                        if (bytesRead > 0)
+                        string contentTypeLine = "Content-Type: " + resp.ContentType + "\r\n";
+                        ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(contentTypeLine));
+                    }
+
+                    if (resp.ContentLength > 0)
+                    {
+                        string contentLenLine = "Content-Length: " + resp.ContentLength + "\r\n";
+                        ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(contentLenLine));
+                    }
+
+                    if (resp.Headers != null && resp.Headers.Count > 0)
+                    {
+                        foreach (KeyValuePair<string, string> currHeader in resp.Headers)
                         {
-                            bytesRemaining -= bytesRead;
-                            await ns.WriteAsync(buffer.AsMemory(0, bytesRead));
-                            await ns.FlushAsync();
+                            if (string.IsNullOrEmpty(currHeader.Key)) continue;
+                            if (currHeader.Key.ToLower().Trim().Equals("content-type")) continue;
+                            if (currHeader.Key.ToLower().Trim().Equals("content-length")) continue;
+
+                            string headerLine = currHeader.Key + ": " + currHeader.Value + "\r\n";
+                            ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(headerLine));
                         }
                     }
-                }
 
-                return;
-            }
-            catch (Exception e)
-            {
-                // Event Error
-                string msgEventErr = $"Send Rest Response: {e.Message}";
-                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
-                return;
+                    ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes("\r\n"));
+
+                    await ns.WriteAsync(ret);
+                    await ns.FlushAsync();
+
+                    if (resp.Data != null && resp.ContentLength > 0)
+                    {
+                        long bytesRemaining = resp.ContentLength;
+                        byte[] buffer = new byte[65536];
+
+                        while (bytesRemaining > 0)
+                        {
+                            int bytesRead = await resp.Data.ReadAsync(buffer);
+                            if (bytesRead > 0)
+                            {
+                                bytesRemaining -= bytesRead;
+                                await ns.WriteAsync(buffer.AsMemory(0, bytesRead));
+                                await ns.FlushAsync();
+                            }
+                        }
+                    }
+
+                    return;
+                }
+                catch (Exception e)
+                {
+                    // Event Error
+                    string msgEventErr = $"Send Rest Response: {e.Message}";
+                    OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                    return;
+                }
             }
         }
 
