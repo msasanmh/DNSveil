@@ -6,8 +6,13 @@ A GUI for [DNSLookup](https://github.com/ameshkov/dnslookup), [DNSProxy](https:/
 - *Bypass YouTube, Twitter and any SNI/DNS based blocked websites.*
 
 Requirements: .Net Destop Runtime 6.<br>
-Download Runtime: [https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)<br>
-[Download Application](https://github.com/msasanmh/SecureDNSClient/releases)
+Download Runtime x64: [runtime-desktop-6.0.16-windows-x64-installer](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)<br>
+Download Runtime x86: [runtime-desktop-6.0.16-windows-x86-installer](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x86-installer)<br>
+Download App: [Click here](https://github.com/msasanmh/SecureDNSClient/releases)<br>
+
+**Note:**
+*some antivirus apps raise alert as PUA (Potentially Unwanted Application) for WinDivert which is used by GoodbyeDPI.*
+*If your antivirus detects WinDivert as a threat, add it to your exclusion list to ensure SDC functions as expected.*
 
 ![SDCv2 0 6](https://user-images.githubusercontent.com/1586825/220970918-43face7b-3825-4b8e-98e5-a38122c7199a.jpg)
 
