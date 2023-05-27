@@ -551,7 +551,34 @@ namespace MsmhTools
         public static void SetDNS(NetworkInterface nic, string dnsServers)
         {
             // Requires Elevation
+            // Only netsh can set DNS on Windows 7
             if (nic == null) return;
+
+            try
+            {
+                string dnsServer1 = dnsServers;
+                string dnsServer2 = string.Empty;
+                if (dnsServers.Contains(','))
+                {
+                    string[] split = dnsServers.Split(',');
+                    dnsServer1 = split[0];
+                    dnsServer2 = split[1];
+                }
+
+                string processName = "netsh";
+                string processArgs1 = $"interface ipv4 delete dnsservers {nic.Name} all";
+                string processArgs2 = $"interface ipv4 set dnsservers {nic.Name} static {dnsServer1} primary";
+                string processArgs3 = $"interface ipv4 add dnsservers {nic.Name} {dnsServer2} index=2";
+                ProcessManager.Execute(processName, processArgs1, true, true);
+                ProcessManager.Execute(processName, processArgs2, true, true);
+                if (!string.IsNullOrEmpty(dnsServer2))
+                    ProcessManager.Execute(processName, processArgs3, true, true);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+
             try
             {
                 using ManagementClass managementClass = new("Win32_NetworkAdapterConfiguration");
@@ -581,9 +608,18 @@ namespace MsmhTools
             // NetSh Command: netsh interface ip set dns "nic.Name" source=dhcp
             if (nic == null) return;
 
-            string processName = "netsh";
-            string processArgs = "interface ip set dns \"" + nic.Name + "\" source=dhcp";
-            ProcessManager.ExecuteOnly(processName, processArgs, true, true);
+            try
+            {
+                string processName = "netsh";
+                string processArgs1 = $"interface ipv4 delete dnsservers {nic.Name} all";
+                string processArgs2 = $"interface ipv4 set dnsservers {nic.Name} source=dhcp";
+                ProcessManager.Execute(processName, processArgs1, true, true);
+                ProcessManager.Execute(processName, processArgs2, true, true);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
 
             try
             {
@@ -606,6 +642,44 @@ namespace MsmhTools
             {
                 Debug.WriteLine(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Check if DNS is set to Static or DHCP
+        /// </summary>
+        /// <param name="nic">Network Interface</param>
+        /// <param name="dnsServer1">Primary DNS Server</param>
+        /// <param name="dnsServer2">Secondary DNS Server</param>
+        /// <returns>True = Static, False = DHCP</returns>
+        public static bool IsDnsSet(NetworkInterface nic, out string dnsServer1, out string dnsServer2)
+        {
+            dnsServer1 = dnsServer2 = string.Empty;
+            if (nic == null) return false;
+
+            string processName = "netsh";
+            string processArgs = $"interface ipv4 show dnsservers {nic.Name}";
+            string stdout = ProcessManager.Execute(processName, processArgs, true, false);
+
+            List<string> lines = stdout.SplitToLines();
+            for (int n = 0; n < lines.Count; n++)
+            {
+                string line = lines[n];
+                if (n == 2 && line.Contains(':'))
+                {
+                    string[] split1 = line.Split(':');
+                    if (split1.Length > 1)
+                    {
+                        dnsServer1 = split1[1].Trim();
+                    }
+                }
+                else if (n == 3)
+                {
+                    dnsServer2 = line.Trim();
+                }
+                Debug.WriteLine(line);
+            }
+            //Debug.WriteLine(stdout);
+            return !stdout.Contains("DHCP");
         }
 
         public static bool IsInternetAlive(string? url = null, int timeoutMs = 5000)

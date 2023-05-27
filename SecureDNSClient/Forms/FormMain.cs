@@ -367,6 +367,9 @@ namespace SecureDNSClient
                     if (IsDNSSet) UnsetSavedDNS();
                 }
 
+                // Update bool IsDnsSet
+                IsDNSSet = UpdateBoolIsDnsSet(out bool _);
+
                 // Update bool IsHTTPProxyRunning
                 if (HTTPProxy != null)
                     IsSharing = HTTPProxy.IsRunning;
@@ -450,6 +453,35 @@ namespace SecureDNSClient
                 LocalDohLatency = -1;
                 IsDoHConnected = LocalDohLatency != -1;
             }
+        }
+
+        private bool UpdateBoolIsDnsSet(out bool isAnotherDnsSet)
+        {
+            isAnotherDnsSet = false;
+            if (File.Exists(SecureDNS.NicNamePath))
+            {
+                string nicName = File.ReadAllText(SecureDNS.NicNamePath).Replace(NL, string.Empty);
+                if (nicName.Length > 0)
+                {
+                    NetworkInterface? nic = Network.GetNICByName(nicName);
+                    if (nic != null)
+                    {
+                        bool isDnsSet = Network.IsDnsSet(nic, out string dnsServer1, out string dnsServer2);
+                        if (!isDnsSet) return false; // DNS is set to DHCP
+                        else
+                        {
+                            if (dnsServer1 == IPAddress.Loopback.ToString())
+                                return true;
+                            else
+                            {
+                                isAnotherDnsSet = true;
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         private bool UpdateBoolIsProxySet()
@@ -1935,7 +1967,7 @@ namespace SecureDNSClient
 
                 // Set DNS
                 Network.UnsetDNS(nic); // Unset first
-                Task.Delay(100).Wait(); // Wait a moment
+                Task.Delay(200).Wait(); // Wait a moment
                 Network.SetDNS(nic, dnss); // Set DNS
                 IsDNSSet = true;
 
@@ -2628,8 +2660,6 @@ namespace SecureDNSClient
                         string url = $"https://{host}/";
                         Uri uri = new(url, UriKind.Absolute);
 
-                        HttpResponseMessage checkingResponse;
-
                         if (HTTPProxy != null && HTTPProxy.IsRunning && HTTPProxy.IsDpiActive && IsSharing)
                         {
                             string proxyScheme = $"http://{IPAddress.Loopback}:{LastProxyPort}";
@@ -2638,19 +2668,35 @@ namespace SecureDNSClient
                             using HttpClient httpClientWithProxy = new(socketsHttpHandler);
                             httpClientWithProxy.Timeout = new TimeSpan(0, 0, timeoutSec);
 
-                            checkingResponse = await httpClientWithProxy.GetAsync(uri);
+                            HttpResponseMessage r = await httpClientWithProxy.GetAsync(uri);
                             Task.Delay(500).Wait();
+
+                            if (r.IsSuccessStatusCode || r.StatusCode.ToString() == "NotFound")
+                            {
+                                msgSuccess();
+                                r.Dispose();
+                            }
+                            else
+                                msgFailed(r);
                         }
                         else
                         {
                             using HttpClient httpClient = new();
                             httpClient.Timeout = new TimeSpan(0, 0, timeoutSec);
 
-                            checkingResponse = await httpClient.GetAsync(uri);
+                            HttpResponseMessage r = await httpClient.GetAsync(uri);
                             Task.Delay(500).Wait();
+
+                            if (r.IsSuccessStatusCode || r.StatusCode.ToString() == "NotFound")
+                            {
+                                msgSuccess();
+                                r.Dispose();
+                            }
+                            else
+                                msgFailed(r);
                         }
-                        
-                        if (checkingResponse.IsSuccessStatusCode)
+
+                        void msgSuccess()
                         {
                             // Write Success to log
                             var elapsedTime = Math.Round((double)CheckDPIWorksStopWatch.ElapsedMilliseconds / 1000);
@@ -2659,13 +2705,16 @@ namespace SecureDNSClient
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.MediumSeaGreen));
                         }
-                        else
+
+                        void msgFailed(HttpResponseMessage r)
                         {
                             // Write Status to log
                             string msgDPI1 = $"DPI Check: ";
-                            string msgDPI2 = $"Status {checkingResponse.StatusCode}: {checkingResponse.ReasonPhrase}.{NL}";
+                            string msgDPI2 = $"Status {r.StatusCode}: {r.ReasonPhrase}.{NL}";
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.DodgerBlue));
+
+                            r.Dispose();
                         }
 
                         CheckDPIWorksStopWatch.Stop();

@@ -181,8 +181,9 @@
             this.PictureBoxAbout = new System.Windows.Forms.PictureBox();
             this.CustomStatusStrip1 = new CustomControls.CustomStatusStrip();
             this.ToolStripStatusLabelDNS = new System.Windows.Forms.ToolStripStatusLabel();
-            this.ToolStripStatusLabelDoH = new System.Windows.Forms.ToolStripStatusLabel();
             this.ToolStripStatusLabelDnsLatency = new System.Windows.Forms.ToolStripStatusLabel();
+            this.ToolStripStatusLabelDoH = new System.Windows.Forms.ToolStripStatusLabel();
+            this.ToolStripStatusLabelDohLatency = new System.Windows.Forms.ToolStripStatusLabel();
             this.ToolStripStatusLabelSpace = new System.Windows.Forms.ToolStripStatusLabel();
             this.ToolStripStatusLabelPercent = new System.Windows.Forms.ToolStripStatusLabel();
             this.NotifyIconMain = new System.Windows.Forms.NotifyIcon(this.components);
@@ -194,7 +195,6 @@
             this.CustomRichTextBoxStatusIsDPIActive = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsConnected = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusWorkingServers = new CustomControls.CustomRichTextBox();
-            this.ToolStripStatusLabelDohLatency = new System.Windows.Forms.ToolStripStatusLabel();
             this.CustomGroupBoxLog.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSSLFragmentSize)).BeginInit();
             this.CustomTabControlMain.SuspendLayout();
@@ -638,6 +638,7 @@
             this.CustomButtonConnectAll.TabIndex = 9;
             this.CustomButtonConnectAll.Text = "Connect all/Disconnect all";
             this.CustomButtonConnectAll.UseVisualStyleBackColor = true;
+            this.CustomButtonConnectAll.Visible = false;
             this.CustomButtonConnectAll.Click += new System.EventHandler(this.CustomButtonConnectAll_Click);
             // 
             // CustomButtonViewWorkingServers
@@ -2807,14 +2808,6 @@
             this.ToolStripStatusLabelDNS.Text = "DNS status: Offline.";
             this.ToolStripStatusLabelDNS.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // ToolStripStatusLabelDoH
-            // 
-            this.ToolStripStatusLabelDoH.AutoSize = false;
-            this.ToolStripStatusLabelDoH.Name = "ToolStripStatusLabelDoH";
-            this.ToolStripStatusLabelDoH.Size = new System.Drawing.Size(120, 17);
-            this.ToolStripStatusLabelDoH.Text = "DoH status: Offline.";
-            this.ToolStripStatusLabelDoH.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
             // ToolStripStatusLabelDnsLatency
             // 
             this.ToolStripStatusLabelDnsLatency.AutoSize = false;
@@ -2823,10 +2816,26 @@
             this.ToolStripStatusLabelDnsLatency.Text = "Latency: -1";
             this.ToolStripStatusLabelDnsLatency.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // ToolStripStatusLabelDoH
+            // 
+            this.ToolStripStatusLabelDoH.AutoSize = false;
+            this.ToolStripStatusLabelDoH.Name = "ToolStripStatusLabelDoH";
+            this.ToolStripStatusLabelDoH.Size = new System.Drawing.Size(120, 17);
+            this.ToolStripStatusLabelDoH.Text = "DoH status: Offline.";
+            this.ToolStripStatusLabelDoH.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // ToolStripStatusLabelDohLatency
+            // 
+            this.ToolStripStatusLabelDohLatency.AutoSize = false;
+            this.ToolStripStatusLabelDohLatency.Name = "ToolStripStatusLabelDohLatency";
+            this.ToolStripStatusLabelDohLatency.Size = new System.Drawing.Size(100, 17);
+            this.ToolStripStatusLabelDohLatency.Text = "Latency: -1";
+            this.ToolStripStatusLabelDohLatency.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // ToolStripStatusLabelSpace
             // 
             this.ToolStripStatusLabelSpace.Name = "ToolStripStatusLabelSpace";
-            this.ToolStripStatusLabelSpace.Size = new System.Drawing.Size(163, 17);
+            this.ToolStripStatusLabelSpace.Size = new System.Drawing.Size(194, 17);
             this.ToolStripStatusLabelSpace.Spring = true;
             // 
             // ToolStripStatusLabelPercent
@@ -3081,14 +3090,6 @@
             this.CustomRichTextBoxStatusWorkingServers.UnderlinedStyle = false;
             this.CustomRichTextBoxStatusWorkingServers.WordWrap = false;
             this.CustomRichTextBoxStatusWorkingServers.ZoomFactor = 1F;
-            // 
-            // ToolStripStatusLabelDohLatency
-            // 
-            this.ToolStripStatusLabelDohLatency.AutoSize = false;
-            this.ToolStripStatusLabelDohLatency.Name = "ToolStripStatusLabelDohLatency";
-            this.ToolStripStatusLabelDohLatency.Size = new System.Drawing.Size(100, 17);
-            this.ToolStripStatusLabelDohLatency.Text = "Latency: -1";
-            this.ToolStripStatusLabelDohLatency.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // FormMain
             // 
