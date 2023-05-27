@@ -1,4 +1,4 @@
-# Secure DNS Client
+# SDC - Secure DNS Client
 A GUI for [DNSLookup](https://github.com/ameshkov/dnslookup), [DNSProxy](https://github.com/AdguardTeam/dnsproxy), [DNSCrypt](https://github.com/DNSCrypt/dnscrypt-proxy) and [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI). (Windows only)
 
 - *Find and use fastest DNS Over HTTPS servers.*
