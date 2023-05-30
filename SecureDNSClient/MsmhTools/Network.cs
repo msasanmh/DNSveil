@@ -44,6 +44,56 @@ namespace MsmhTools
             return null;
         }
 
+        public static string UrlToHostAndPort(string url, int defaultPort, out int port)
+        {
+            url = url.Trim();
+
+            // Strip xxxx://
+            if (url.Contains("//"))
+            {
+                string[] split = url.Split("//");
+                if (!string.IsNullOrEmpty(split[1]))
+                    url = split[1];
+            }
+
+            // Strip /xxxx (Path)
+            if (!url.Contains("//") && url.Contains('/'))
+            {
+                string[] split = url.Split('/');
+                if (!string.IsNullOrEmpty(split[0]))
+                    url = split[0];
+            }
+
+            string host = url;
+            port = defaultPort;
+
+            // Split Host and Port
+            if (url.Contains("]:"))
+            {
+                // IPv6 domain + port
+                string[] split = url.Split("]:");
+                if (split.Length == 2)
+                {
+                    host = split[0] + "]";
+                    bool isInt = int.TryParse(split[1], out int result);
+                    if (isInt) port = result;
+                }
+            }
+            else if (!url.Contains('[') && !url.Contains(']') && url.Contains(':'))
+            {
+                // Domain or IPv4
+                string[] split = url.Split(':');
+                if (split.Length == 2)
+                {
+                    host = split[0];
+                    bool isInt = int.TryParse(split[1], out int result);
+                    if (isInt) port = result;
+                }
+            }
+
+            return host;
+        }
+
         public static IPAddress? HostToIP(string host, bool getIPv6 = false)
         {
             IPAddress? result = null;
@@ -579,6 +629,8 @@ namespace MsmhTools
                 Debug.WriteLine(ex.Message);
             }
 
+            Task.Delay(200).Wait();
+
             try
             {
                 using ManagementClass managementClass = new("Win32_NetworkAdapterConfiguration");
@@ -602,6 +654,10 @@ namespace MsmhTools
             }
         }
 
+        /// <summary>
+        /// Unset DNS to DHCP
+        /// </summary>
+        /// <param name="nic">Network Interface</param>
         public static void UnsetDNS(NetworkInterface nic)
         {
             // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
@@ -645,6 +701,18 @@ namespace MsmhTools
         }
 
         /// <summary>
+        /// Unset DNS by seting DNS to Static
+        /// </summary>
+        /// <param name="nic">Network Interface</param>
+        /// <param name="dns1">Primary</param>
+        /// <param name="dns2">Secondary</param>
+        public static void UnsetDNS(NetworkInterface nic, string dns1, string dns2)
+        {
+            string dnsServers = $"{dns1},{dns2}";
+            SetDNS(nic, dnsServers);
+        }
+
+        /// <summary>
         /// Check if DNS is set to Static or DHCP
         /// </summary>
         /// <param name="nic">Network Interface</param>
@@ -664,19 +732,23 @@ namespace MsmhTools
             for (int n = 0; n < lines.Count; n++)
             {
                 string line = lines[n];
-                if (n == 2 && line.Contains(':'))
+                // Get Primary
+                if (line.Contains(": ") && line.Contains('.') && line.Count(c => c == '.') == 3)
                 {
-                    string[] split1 = line.Split(':');
-                    if (split1.Length > 1)
+                    string[] split = line.Split(": ");
+                    if (split.Length > 1)
                     {
-                        dnsServer1 = split1[1].Trim();
+                        dnsServer1 = split[1].Trim();
+                        Debug.WriteLine($"DNS 1: {dnsServer1}");
                     }
                 }
-                else if (n == 3)
+
+                // Get Secondary
+                if (!line.Contains(": ") && line.Contains('.') && line.Count(c => c == '.') == 3)
                 {
                     dnsServer2 = line.Trim();
+                    Debug.WriteLine($"DNS 2: {dnsServer2}");
                 }
-                Debug.WriteLine(line);
             }
             //Debug.WriteLine(stdout);
             return !stdout.Contains("DHCP");

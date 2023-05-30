@@ -10,6 +10,39 @@ namespace MsmhTools.HTTPProxyServer
 {
     public class HTTPProxyServer
     {
+        public static DPIBypassProgram BypassProgram = new();
+        public void EnableDPIBypass(DPIBypassProgram dpiBypassProgram)
+        {
+            BypassProgram = dpiBypassProgram;
+        }
+
+        public class DPIBypassProgram : HTTPProxyServer
+        {
+            public DPIBypass.Mode DPIBypassMode { get; set; } = DPIBypass.Mode.Disable;
+            public int FirstPartOfDataLength { get; set; } = 0;
+            public int FragmentSize { get; set; } = 0;
+            public int FragmentChunks { get; set; } = 0;
+            public int FragmentDelay { get; set; } = 0;
+            /// <summary>
+            /// Don't chunk the request when size is 65536.
+            /// </summary>
+            public bool DontChunkTheBiggestRequest { get; set; } = false;
+            public bool SendInRandom { get; set; } = false;
+            public DPIBypassProgram()
+            {
+
+            }
+
+            public void Set(DPIBypass.Mode mode, int firstPartOfDataLength, int fragmentSize, int fragmentChunks, int fragmentDelay)
+            {
+                DPIBypassMode = mode;
+                FirstPartOfDataLength = firstPartOfDataLength;
+                FragmentSize = fragmentSize;
+                FragmentChunks = fragmentChunks;
+                FragmentDelay = fragmentDelay;
+            }
+        }
+
         private static ProxySettings _Settings = new();
 
         private static TunnelManager? _TunnelManager;
@@ -23,16 +56,11 @@ namespace MsmhTools.HTTPProxyServer
         private static bool Cancel = false;
 
         public static readonly int MaxDataSize = 65536;
-        private DPIBypass.Mode DpiBypassMode = DPIBypass.Mode.Disable;
-        private int FirstPartOfDataLength = 100;
-        private int ProgramFragmentSize = 1;
-        private int DivideBy = 100;
-        private int FragmentLength = 7;
-        private int FragmentDelay = 0;
 
         public event EventHandler<EventArgs>? OnRequestReceived;
         public event EventHandler<EventArgs>? OnErrorOccurred;
         public event EventHandler<EventArgs>? OnDebugInfoReceived;
+        public event EventHandler<EventArgs>? OnChunkDetailsReceived;
         private static readonly EventWaitHandle Terminator = new(false, EventResetMode.ManualReset);
 
         public HTTPProxyServer()
@@ -60,6 +88,7 @@ namespace MsmhTools.HTTPProxyServer
                 _CancelToken = _CancelTokenSource.Token;
 
                 Cancel = false;
+                Tunnel.Cancel = false;
 
                 Task.Run(() => AcceptConnections(), _CancelToken);
 
@@ -76,7 +105,19 @@ namespace MsmhTools.HTTPProxyServer
                 Terminator.Set();
                 _CancelTokenSource.Cancel(true);
                 Cancel = true;
+                Tunnel.Cancel = true;
                 _TcpListener.Stop();
+
+                //if (_TunnelManager != null)
+                //{
+                //    var t = _TunnelManager.GetFull().ToList();
+                //    for (int n = 0; n < t.Count; n++)
+                //    {
+                //        var kvp = t[n];
+                //        _TunnelManager.Remove(kvp.Key);
+                //    }
+                //}
+
                 IsRunning = _TcpListener.Server.IsBound;
                 Goodbye();
             }
@@ -89,7 +130,7 @@ namespace MsmhTools.HTTPProxyServer
 
         public bool IsDpiActive
         {
-            get => DpiBypassMode != DPIBypass.Mode.Disable;
+            get => BypassProgram.DPIBypassMode != DPIBypass.Mode.Disable;
         }
 
         public Dictionary<int, Tunnel> GetCurrentConnectTunnels()
@@ -115,28 +156,14 @@ namespace MsmhTools.HTTPProxyServer
             OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
         }
 
-        public void EnableDpiBypassProgram(DPIBypass.Mode mode, int firstPartOfDataLength, int programFragmentSize, int divideBy, int fragmentDelay = 0)
-        {
-            DpiBypassMode = mode;
-            FirstPartOfDataLength = firstPartOfDataLength;
-            ProgramFragmentSize = programFragmentSize;
-            DivideBy = divideBy;
-            FragmentDelay = fragmentDelay;
-        }
-        
-        public void EnableDpiBypassRandom(DPIBypass.Mode mode, int fragmentLength, int fragmentDelay = 0)
-        {
-            DpiBypassMode = mode;
-            FragmentLength = fragmentLength;
-            FragmentDelay = fragmentDelay;
-        }
-
         #endregion
 
         #region Connection-Handler
 
         private void AcceptConnections()
         {
+            if (Cancel) return;
+
             try
             {
                 _TcpListener = new(_Settings.ListenerIpAddress, _Settings.ListenerPort);
@@ -173,6 +200,8 @@ namespace MsmhTools.HTTPProxyServer
         
         private async Task ProcessConnection(TcpClient client)
         {
+            if (Cancel) return;
+
             int connectionId = Environment.CurrentManagedThreadId;
             _ActiveThreads++;
             Debug.WriteLine($"Active Requests: {_ActiveThreads}");
@@ -204,7 +233,7 @@ namespace MsmhTools.HTTPProxyServer
                 string serverIp = serverIpEndpoint != null ? serverIpEndpoint.Address.ToString() : string.Empty;
                 int serverPort = serverIpEndpoint != null ? serverIpEndpoint.Port : 0;
 
-                Request req = Request.FromTcpClient(client);
+                Request? req = Request.FromTcpClient(client);
                 if (req == null)
                 {
                     // Event Error
@@ -220,13 +249,12 @@ namespace MsmhTools.HTTPProxyServer
                 req.DestPort = serverPort;
 
                 // Event
-                string msgEvent = $"{req.DestHostname}:{req.DestHostPort}";
-                OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+                OnRequestReceived?.Invoke($"{req.DestHostname}:{req.DestHostPort}", EventArgs.Empty);
 
                 if (req.Method == HttpMethod.CONNECT)
                 {
                     // Event
-                    msgEvent = $"{clientEndpoint} proxying request via CONNECT to {req.FullUrl}";
+                    string msgEvent = $"{clientEndpoint} proxying request via CONNECT to {req.FullUrl}";
                     OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
                     ConnectHttpsRequest(connectionId, client, req);
@@ -234,7 +262,7 @@ namespace MsmhTools.HTTPProxyServer
                 else
                 {
                     // Event
-                    msgEvent = $"{clientEndpoint} proxying request to {req.FullUrl}";
+                    string msgEvent = $"{clientEndpoint} proxying request to {req.FullUrl}";
                     OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
                     await ConnectHttpRequestAsync(req, client);
@@ -259,6 +287,8 @@ namespace MsmhTools.HTTPProxyServer
 
         private void ConnectHttpsRequest(int connectionId, TcpClient client, Request req)
         {
+            if (Cancel) return;
+
             Tunnel? currTunnel = null;
             TcpClient? server = null;
 
@@ -267,7 +297,7 @@ namespace MsmhTools.HTTPProxyServer
                 client.NoDelay = true;
                 client.Client.NoDelay = true;
 
-                server = new TcpClient();
+                server = new();
 
                 try
                 {
@@ -311,7 +341,7 @@ namespace MsmhTools.HTTPProxyServer
                 }
 
                 // Create Tunnel
-                currTunnel = new Tunnel(
+                currTunnel = new(
                     req.SourceIp,
                     req.SourcePort,
                     req.DestIp,
@@ -321,14 +351,35 @@ namespace MsmhTools.HTTPProxyServer
                     client,
                     server);
 
-                // Pass the events
-                currTunnel.PassTheEvents(OnRequestReceived, OnErrorOccurred);
+                // Tunnel Event OnChunkDetailsReceived
+                currTunnel.OnChunkDetailsReceived -= CurrTunnel_OnChunkDetailsReceived;
+                currTunnel.OnChunkDetailsReceived += CurrTunnel_OnChunkDetailsReceived;
+                void CurrTunnel_OnChunkDetailsReceived(object? sender, EventArgs e)
+                {
+                    if (sender is string chunkDetails)
+                    {
+                        string msgEvent = $"{req.DestHostname}:{req.DestHostPort} {chunkDetails}";
+                        OnChunkDetailsReceived?.Invoke(msgEvent, EventArgs.Empty);
+                    }
+                }
 
-                // Pass DPI bypass
-                if (DpiBypassMode == DPIBypass.Mode.Program)
-                    currTunnel.EnableDpiBypassProgram(DPIBypass.Mode.Program, FirstPartOfDataLength, ProgramFragmentSize, DivideBy, FragmentDelay);
-                else if (DpiBypassMode == DPIBypass.Mode.Random)
-                    currTunnel.EnableDpiBypassRandom(DPIBypass.Mode.Random, FragmentLength, FragmentDelay);
+                // Tunnel Event OnDebugInfoReceived
+                currTunnel.OnDebugInfoReceived -= CurrTunnel_OnDebugInfoReceived;
+                currTunnel.OnDebugInfoReceived += CurrTunnel_OnDebugInfoReceived;
+                void CurrTunnel_OnDebugInfoReceived(object? sender, EventArgs e)
+                {
+                    if (sender is string debugInfo)
+                        OnDebugInfoReceived?.Invoke(debugInfo, EventArgs.Empty);
+                }
+
+                // Tunnel Event OnErrorOccurred
+                currTunnel.OnErrorOccurred -= CurrTunnel_OnErrorOccurred;
+                currTunnel.OnErrorOccurred += CurrTunnel_OnErrorOccurred;
+                void CurrTunnel_OnErrorOccurred(object? sender, EventArgs e)
+                {
+                    if (sender is string error)
+                        OnErrorOccurred?.Invoke(error, EventArgs.Empty);
+                }
 
                 if (_TunnelManager != null)
                     _TunnelManager.Add(connectionId, currTunnel);
@@ -365,6 +416,8 @@ namespace MsmhTools.HTTPProxyServer
 
         private async Task ConnectHttpRequestAsync(Request req, TcpClient tcpClient)
         {
+            if (Cancel) return;
+
             RestResponse? resp = proxyRequest(req).Result;
             if (resp != null)
             {
@@ -376,6 +429,8 @@ namespace MsmhTools.HTTPProxyServer
 
             async Task<RestResponse?> proxyRequest(Request request)
             {
+                if (Cancel) return null;
+
                 try
                 {
                     if (request.Headers != null)
@@ -430,6 +485,8 @@ namespace MsmhTools.HTTPProxyServer
 
             async Task sendRestResponse(RestResponse resp, NetworkStream ns)
             {
+                if (Cancel) return;
+
                 try
                 {
                     byte[]? ret = Array.Empty<byte>();

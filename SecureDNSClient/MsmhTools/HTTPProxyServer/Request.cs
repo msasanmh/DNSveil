@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MsmhTools.HTTPProxyServer
 {
@@ -455,7 +450,7 @@ namespace MsmhTools.HTTPProxyServer
         /// </summary>
         /// <param name="client">TcpClient.</param>
         /// <returns>A populated HttpRequest.</returns>
-        public static Request FromTcpClient(TcpClient client)
+        public static Request? FromTcpClient(TcpClient client)
         {
             if (client == null) throw new ArgumentNullException(nameof(client));
 
@@ -522,7 +517,10 @@ namespace MsmhTools.HTTPProxyServer
 
                 // Process-Headers
                 if (headerBytes == null || headerBytes.Length < 1)
-                    throw new IOException("No header data read from the stream.");
+                {
+                    //throw new IOException("No header data read from the stream.");
+                    return null;
+                }
 
                 ret = BuildHeaders(headerBytes);
 

@@ -246,17 +246,8 @@ namespace SecureDNSClient
 
         public static async Task<string> UrlToCompanyOffline(string url)
         {
-            string host = "NotFound";
-            Uri? uri = Network.UrlToUri(url);
-
-            if (uri != null)
-            {
-                host = uri.Host;
-                if (!string.IsNullOrEmpty(host))
-                    return await HostToCompanyOffline(host);
-            }
-            
-            return host;
+            string host = Network.UrlToHostAndPort(url, 53, out int _);
+            return await HostToCompanyOffline(host);
         }
 
         public static async Task<string> StampToCompanyOffline(string stampUrl)
@@ -291,36 +282,32 @@ namespace SecureDNSClient
         public static async Task<string> UrlToCompanyAsync(string url, string? proxyScheme = null)
         {
             string company = "Couldn't retrieve information.";
-            Uri? uri = Network.UrlToUri(url);
-            if (uri != null)
+            string? host = Network.UrlToHostAndPort(url, 443, out int _);
+            if (!string.IsNullOrWhiteSpace(host))
             {
-                string? host = uri.Host;
-                if (!string.IsNullOrWhiteSpace(host))
+                IPAddress? ipAddress = Network.HostToIP(host);
+                string? companyFull;
+                if (ipAddress != null)
                 {
-                    IPAddress? ipAddress = Network.HostToIP(host);
-                    string? companyFull;
-                    if (ipAddress != null)
+                    if (proxyScheme == null)
+                        companyFull = await Network.IpToCompanyAsync(ipAddress);
+                    else
+                        companyFull = await Network.IpToCompanyAsync(ipAddress, proxyScheme);
+                    if (!string.IsNullOrWhiteSpace(companyFull))
                     {
-                        if (proxyScheme == null)
-                            companyFull = await Network.IpToCompanyAsync(ipAddress);
-                        else
-                            companyFull = await Network.IpToCompanyAsync(ipAddress, proxyScheme);
-                        if (!string.IsNullOrWhiteSpace(companyFull))
+                        company = string.Empty;
+                        string[] split = companyFull.Split(" ");
+                        for (int n = 0; n < split.Length; n++)
                         {
-                            company = string.Empty;
-                            string[] split = companyFull.Split(" ");
-                            for (int n = 0; n < split.Length; n++)
-                            {
-                                string s = split[n];
-                                if (n != 0)
-                                    company += s + " ";
-                            }
-                            company = company.Trim();
+                            string s = split[n];
+                            if (n != 0)
+                                company += s + " ";
                         }
+                        company = company.Trim();
                     }
                 }
             }
-            
+
             return company;
         }
 
@@ -376,13 +363,10 @@ namespace SecureDNSClient
                     string company = await UrlToCompanyAsync(dns);
                     if (!company.Contains("Couldn't retrieve information."))
                     {
-                        Uri? uri = Network.UrlToUri(dns);
-                        if (uri != null)
-                        {
-                            object hostToCom = uri.Host + "|" + company;
-                            HostToCompanyList.Add(hostToCom);
-                            Debug.WriteLine(hostToCom);
-                        }
+                        string host = Network.UrlToHostAndPort(dns, 443, out int _);
+                        object hostToCom = host + "|" + company;
+                        HostToCompanyList.Add(hostToCom);
+                        Debug.WriteLine(hostToCom);
                     }
                 }
                 // Remove Duplicates

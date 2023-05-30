@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MsmhTools.HTTPProxyServer
 { 
@@ -71,18 +67,11 @@ namespace MsmhTools.HTTPProxyServer
         public Stream ServerStream { get; set; }
 
         private bool _Active = true;
-
-        private DPIBypass.Mode DpiBypassMode = DPIBypass.Mode.Disable;
-        private int FirstPartOfDataLength = 100;
-        private int ProgramFragmentSize = 1;
-        private int DivideBy = 100;
-        private int FragmentLength = 7;
-        private int FragmentDelay = 0;
+        public static bool Cancel { get; set; } = false;
 
         public event EventHandler<EventArgs>? OnErrorOccurred;
         public event EventHandler<EventArgs>? OnDebugInfoReceived;
-
-        #region Constructors-and-Factories
+        public event EventHandler<EventArgs>? OnChunkDetailsReceived;
 
         /// <summary>
         /// Construct a Tunnel object.
@@ -146,45 +135,6 @@ namespace MsmhTools.HTTPProxyServer
             _Active = true;
         }
 
-        public void EnableDpiBypassProgram(DPIBypass.Mode mode, int firstPartOfDataLength, int programFragmentSize, int divideBy, int fragmentDelay = 0)
-        {
-            DpiBypassMode = mode;
-            FirstPartOfDataLength = firstPartOfDataLength;
-            ProgramFragmentSize = programFragmentSize;
-            DivideBy = divideBy;
-            FragmentDelay = fragmentDelay;
-        }
-
-        public void EnableDpiBypassRandom(DPIBypass.Mode mode, int fragmentLength, int fragmentDelay = 0)
-        {
-            DpiBypassMode = mode;
-            FragmentLength = fragmentLength;
-            FragmentDelay = fragmentDelay;
-        }
-
-        public void PassTheEvents(EventHandler<EventArgs>? onRequestReceived = null,
-                                  EventHandler<EventArgs>? onErrorOccurred = null,
-                                  EventHandler<EventArgs>? onDebugInfoReceived = null)
-        {
-            OnErrorOccurred += Tunnel_OnErrorOccurred;
-            void Tunnel_OnErrorOccurred(object? sender, EventArgs e)
-            {
-                if (sender is string msg && onErrorOccurred != null)
-                    onErrorOccurred?.Invoke(msg, EventArgs.Empty);
-            }
-
-            OnDebugInfoReceived += Tunnel_OnDebugInfoReceived;
-            void Tunnel_OnDebugInfoReceived(object? sender, EventArgs e)
-            {
-                if (sender is string msg && onDebugInfoReceived != null)
-                    onDebugInfoReceived?.Invoke(msg, EventArgs.Empty);
-            }
-        }
-
-        #endregion
-
-        #region Public-Methods
-
         /// <summary>
         /// Human-readable string.
         /// </summary>
@@ -218,6 +168,8 @@ namespace MsmhTools.HTTPProxyServer
         /// <returns>True if both connections are active.</returns>
         public bool IsActive()
         {
+            if (Cancel) return false;
+
             bool clientActive = false;
             bool serverActive = false;
             bool clientSocketActive = false;
@@ -296,10 +248,6 @@ namespace MsmhTools.HTTPProxyServer
             Dispose(true);
         }
 
-        #endregion
-
-        #region Private-Methods
-
         protected virtual void Dispose(bool disposing)
         {
             if (ClientStream != null)
@@ -324,6 +272,7 @@ namespace MsmhTools.HTTPProxyServer
         private bool StreamReadSync(TcpClient client, out byte[]? data)
         {
             data = null;
+            if (Cancel) return false;
 
             try
             { 
@@ -374,14 +323,17 @@ namespace MsmhTools.HTTPProxyServer
             }
             finally
             {
+
             }
         }
 
         private async Task<byte[]?> StreamReadAsync(TcpClient client)
         {
+            if (Cancel) return null;
             try
-            { 
+            {
                 Stream stream = client.GetStream();
+                if (stream == null) return null;
                 byte[] buffer = new byte[65536];
 
                 using MemoryStream memStream = new();
@@ -424,11 +376,13 @@ namespace MsmhTools.HTTPProxyServer
             }
             finally
             {
+
             }
         }
 
         private TcpState GetTcpLocalState(TcpClient tcpClient)
         {
+            if (Cancel) return TcpState.Unknown;
             var state = IPGlobalProperties.GetIPGlobalProperties()
               .GetActiveTcpConnections()
               .FirstOrDefault(x => x.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint));
@@ -437,14 +391,19 @@ namespace MsmhTools.HTTPProxyServer
 
         private TcpState GetTcpRemoteState(TcpClient tcpClient)
         {
+            if (tcpClient.Client == null || Cancel)
+                return TcpState.Unknown;
+
+            Socket socket = tcpClient.Client;
             var state = IPGlobalProperties.GetIPGlobalProperties()
-              .GetActiveTcpConnections()
-              .FirstOrDefault(x => x.RemoteEndPoint.Equals(tcpClient.Client.RemoteEndPoint));
+                      .GetActiveTcpConnections()
+                      .FirstOrDefault(x => x.RemoteEndPoint.Equals(socket.RemoteEndPoint));
             return state != null ? state.State : TcpState.Unknown;
         }
 
         private void ClientReaderSync()
         {
+            if (Cancel) return;
             try
             {
                 // Event
@@ -499,6 +458,7 @@ namespace MsmhTools.HTTPProxyServer
 
         private void ServerReaderSync()
         {
+            if (Cancel) return;
             try
             {
                 // Event
@@ -553,6 +513,7 @@ namespace MsmhTools.HTTPProxyServer
 
         private async void ClientReaderAsync()
         {
+            if (Cancel) return;
             try
             {
                 // Event
@@ -597,6 +558,7 @@ namespace MsmhTools.HTTPProxyServer
 
         private async void ServerReaderAsync()
         {
+            if (Cancel) return;
             try
             {
                 // Event
@@ -651,23 +613,35 @@ namespace MsmhTools.HTTPProxyServer
 
         private void Send(byte[] data, Socket? socket)
         {
+            if (Cancel) return;
             if (socket != null)
             {
-                if (DpiBypassMode == DPIBypass.Mode.Program)
+                HTTPProxyServer.DPIBypassProgram bp = HTTPProxyServer.BypassProgram;
+                if (bp.DPIBypassMode == DPIBypass.Mode.Program)
                 {
                     DPIBypass.ProgramMode programMode = new(data, socket);
-                    programMode.Send(FirstPartOfDataLength, ProgramFragmentSize, DivideBy, FragmentDelay);
-                }
-                else if (DpiBypassMode == DPIBypass.Mode.Random)
-                {
-                    DPIBypass.RandomMode randomMode = new(data, socket);
-                    randomMode.Send(FragmentLength, FragmentDelay);
+                    programMode.OnChunkDetailsReceived -= ProgramMode_OnChunkDetailsReceived;
+                    programMode.OnChunkDetailsReceived += ProgramMode_OnChunkDetailsReceived;
+                    programMode.DontChunkTheBiggestRequest = bp.DontChunkTheBiggestRequest;
+                    programMode.SendInRandom = bp.SendInRandom;
+                    programMode.Send(bp.FirstPartOfDataLength, bp.FragmentSize, bp.FragmentChunks, bp.FragmentDelay);
                 }
                 else
                     socket.Send(data);
             }
         }
 
-        #endregion
+        private void ProgramMode_OnChunkDetailsReceived(object? sender, EventArgs e)
+        {
+            if (sender is string msg)
+                OnChunkDetailsReceived?.Invoke(msg, EventArgs.Empty);
+        }
+
+        private void RandomMode_OnChunkDetailsReceived(object? sender, EventArgs e)
+        {
+            if (sender is string msg)
+                OnChunkDetailsReceived?.Invoke(msg, EventArgs.Empty);
+        }
+
     }
 }

@@ -38,6 +38,7 @@ namespace SecureDNSClient
         public Settings AppSettings;
         private ToolStripMenuItem ToolStripMenuItemIcon = new();
         private HTTPProxyServer? HTTPProxy;
+        public static HTTPProxyServer.DPIBypassProgram DPIBypassProgram { get; private set; } = new();
         private bool AudioAlertOnline = true;
         private bool AudioAlertOffline = false;
         private readonly Stopwatch CheckDPIWorksStopWatch = new();
@@ -90,7 +91,7 @@ namespace SecureDNSClient
             CustomButtonViewWorkingServers.SetToolTip("Info", msgViewCustomServers);
 
             string msgFragmentChunks = "More chunks means more CPU usage.";
-            CustomNumericUpDownHTTPProxyDivideBy.SetToolTip("Warning", msgFragmentChunks);
+            CustomNumericUpDownPDpiFragmentChunks.SetToolTip("Warning", msgFragmentChunks);
 
             // Add Tooltips to advanced DPI
             string msgP = "Block passive DPI.";
@@ -193,10 +194,14 @@ namespace SecureDNSClient
             // Share
             CustomNumericUpDownHTTPProxyPort.Value = (decimal)8080;
             CustomCheckBoxHTTPProxyEventShowRequest.Checked = false;
-            CustomCheckBoxHTTPProxyEnableDpiBypass.Checked = true;
-            CustomNumericUpDownHTTPProxyDataLength.Value = (decimal)60;
-            CustomNumericUpDownHTTPProxyFragmentSize.Value = (decimal)2;
-            CustomNumericUpDownHTTPProxyDivideBy.Value = (decimal)60;
+            CustomCheckBoxHTTPProxyEventShowChunkDetails.Checked = false;
+            CustomCheckBoxPDpiEnableDpiBypass.Checked = true;
+            CustomNumericUpDownPDpiDataLength.Value = (decimal)60;
+            CustomNumericUpDownPDpiFragmentSize.Value = (decimal)2;
+            CustomNumericUpDownPDpiFragmentChunks.Value = (decimal)60;
+            CustomCheckBoxPDpiFragModeRandom.Checked = false;
+            CustomCheckBoxPDpiDontChunkBigData.Checked = false;
+            CustomNumericUpDownPDpiFragDelay.Value = (decimal)0;
 
             // DPI Basic
             CustomRadioButtonDPIMode1.Checked = false;
@@ -258,6 +263,12 @@ namespace SecureDNSClient
             CustomCheckBoxSettingEnableCache.Checked = true;
             CustomNumericUpDownSettingMaxServers.Value = (decimal)5;
             CustomNumericUpDownSettingCamouflagePort.Value = (decimal)5380;
+
+            // Settings Set/Unset DNS
+            CustomRadioButtonSettingUnsetDnsToDhcp.Checked = false;
+            CustomRadioButtonSettingUnsetDnsToStatic.Checked = true;
+            CustomTextBoxSettingUnsetDns1.Text = "8.8.8.8";
+            CustomTextBoxSettingUnsetDns2.Text = "8.8.4.4";
 
             // Settings CPU
             CustomRadioButtonSettingCPUHigh.Checked = false;
@@ -364,11 +375,13 @@ namespace SecureDNSClient
                     IsDoHConnected = IsConnected;
                     LocalDnsLatency = -1;
                     LocalDohLatency = -1;
+                    if (CamouflageDNSServer != null && CamouflageDNSServer.IsRunning)
+                        CamouflageDNSServer.Stop();
                     if (IsDNSSet) UnsetSavedDNS();
                 }
 
                 // Update bool IsDnsSet
-                IsDNSSet = UpdateBoolIsDnsSet(out bool _);
+                //IsDNSSet = UpdateBoolIsDnsSet(out bool _); // I need to test this on Win7 myself!
 
                 // Update bool IsHTTPProxyRunning
                 if (HTTPProxy != null)
@@ -466,7 +479,7 @@ namespace SecureDNSClient
                     NetworkInterface? nic = Network.GetNICByName(nicName);
                     if (nic != null)
                     {
-                        bool isDnsSet = Network.IsDnsSet(nic, out string dnsServer1, out string dnsServer2);
+                        bool isDnsSet = Network.IsDnsSet(nic, out string dnsServer1, out string _);
                         if (!isDnsSet) return false; // DNS is set to DHCP
                         else
                         {
@@ -649,10 +662,10 @@ namespace SecureDNSClient
 
         private void FlushDnsOnExit()
         {
-            ProcessManager.ExecuteOnly("ipconfig", "/flushdns");
-            ProcessManager.ExecuteOnly("ipconfig", "/registerdns");
-            ProcessManager.ExecuteOnly("ipconfig", "/release");
-            ProcessManager.ExecuteOnly("ipconfig", "/renew");
+            ProcessManager.Execute("ipconfig", "/flushdns", true, true);
+            ProcessManager.Execute("ipconfig", "/registerdns", true, true);
+            ProcessManager.Execute("ipconfig", "/release", true, true);
+            ProcessManager.ExecuteOnly("ipconfig", "/renew", true, true);
             //ProcessManager.Execute("netsh", "winsock reset"); // Needs PC Restart
         }
 
@@ -666,10 +679,29 @@ namespace SecureDNSClient
                 ProcessManager.KillProcessByName("dnscrypt-proxy");
             if (ProcessManager.FindProcessByName("goodbyedpi"))
                 ProcessManager.KillProcessByName("goodbyedpi");
+            // Unset DNS
             UnsetSavedDNS();
         }
 
         private void UnsetSavedDNS()
+        {
+            bool unsetToDHCP = CustomRadioButtonSettingUnsetDnsToDhcp.Checked;
+            if (unsetToDHCP)
+            {
+                // Unset to DHCP
+                UnsetSavedDnsDHCP();
+            }
+            else
+            {
+                // Unset to Static
+                string dns1 = CustomTextBoxSettingUnsetDns1.Text;
+                string dns2 = CustomTextBoxSettingUnsetDns2.Text;
+                UnsetSavedDnsStatic(dns1, dns2);
+            }
+        }
+
+        // Unset to DHCP
+        private void UnsetSavedDnsDHCP()
         {
             if (File.Exists(SecureDNS.NicNamePath))
             {
@@ -680,6 +712,24 @@ namespace SecureDNSClient
                     if (nic != null)
                     {
                         Network.UnsetDNS(nic);
+                        IsDNSSet = false;
+                    }
+                }
+            }
+        }
+
+        // Unset to Static
+        private void UnsetSavedDnsStatic(string dns1, string dns2)
+        {
+            if (File.Exists(SecureDNS.NicNamePath))
+            {
+                string nicName = File.ReadAllText(SecureDNS.NicNamePath).Replace(NL, string.Empty);
+                if (nicName.Length > 0)
+                {
+                    NetworkInterface? nic = Network.GetNICByName(nicName);
+                    if (nic != null)
+                    {
+                        Network.UnsetDNS(nic, dns1, dns2);
                         IsDNSSet = false;
                     }
                 }
@@ -977,7 +1027,7 @@ namespace SecureDNSClient
                     
                     // SDNS
                     DNSCryptStampReader? dnsCryptStampReader = null;
-                    if (dns.StartsWith("sdns://"))
+                    if (dns.ToLower().StartsWith("sdns://"))
                     {
                         // Decode Stamp
                         dnsCryptStampReader = new(dns);
@@ -1364,7 +1414,7 @@ namespace SecureDNSClient
 
             // Sort by latency
             if (WorkingDnsList.Count > 1)
-                WorkingDnsList = WorkingDnsList.OrderByDescending(t => t.Item1).ToList();
+                WorkingDnsList = WorkingDnsList.OrderBy(t => t.Item1).ToList();
 
             // Get number of max servers
             int maxServers = decimal.ToInt32(CustomNumericUpDownSettingMaxServers.Value);
@@ -1378,7 +1428,7 @@ namespace SecureDNSClient
                 Tuple<long, string> latencyHost = WorkingDnsList[n];
                 long latency = latencyHost.Item1;
                 string host = latencyHost.Item2;
-
+                
                 hosts += " -u " + host;
                 theDll.WriteLine(host);
 
@@ -1447,23 +1497,18 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWrongProxy + NL, Color.IndianRed));
             }
 
-            // Check if proxy scheme is correct 1
+            // Check if proxy scheme is correct
             if (string.IsNullOrWhiteSpace(proxyScheme) || !proxyScheme.Contains("//") || proxyScheme.EndsWith('/'))
             {
                 proxySchemeIncorrect();
                 return;
             }
 
-            // Check if proxy scheme is correct 2
-            Uri? uri = Network.UrlToUri(proxyScheme);
-            if (uri == null)
-            {
-                proxySchemeIncorrect();
-                return;
-            }
+            // Get Host and Port of Proxy
+            string host = Network.UrlToHostAndPort(proxyScheme, 0, out int port);
 
             // Check if proxy works
-            bool canPing = Network.CanPing(uri.Host, uri.Port, 15);
+            bool canPing = Network.CanPing(host, port, 15);
             if (!canPing)
             {
                 string msgWrongProxy = "Proxy doesn't work.";
@@ -1943,7 +1988,7 @@ namespace SecureDNSClient
                 {
                     string msgConnect = string.Empty;
                     if (!IsDoHConnected)
-                        msgConnect = "Connect first." + NL;
+                        msgConnect = "Wait until DNS gets online." + NL;
                     else
                         msgConnect = "Activate legacy DNS Server first." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
@@ -1966,8 +2011,6 @@ namespace SecureDNSClient
                 }
 
                 // Set DNS
-                Network.UnsetDNS(nic); // Unset first
-                Task.Delay(200).Wait(); // Wait a moment
                 Network.SetDNS(nic, dnss); // Set DNS
                 IsDNSSet = true;
 
@@ -2003,9 +2046,24 @@ namespace SecureDNSClient
             else
             {
                 // Unset DNS
-                Network.UnsetDNS(nic);
-                Task.Delay(200).Wait();
-                UnsetSavedDNS();
+                bool unsetToDHCP = CustomRadioButtonSettingUnsetDnsToDhcp.Checked;
+                if (unsetToDHCP)
+                {
+                    // Unset to DHCP
+                    Network.UnsetDNS(nic);
+                    Task.Delay(200).Wait();
+                    UnsetSavedDnsDHCP();
+                }
+                else
+                {
+                    // Unset to Static
+                    string dns1 = CustomTextBoxSettingUnsetDns1.Text;
+                    string dns2 = CustomTextBoxSettingUnsetDns2.Text;
+                    Network.UnsetDNS(nic, dns1, dns2);
+                    Task.Delay(200).Wait();
+                    UnsetSavedDnsStatic(dns1, dns2);
+                }
+                
                 IsDNSSet = false;
 
                 // Flush DNS
@@ -2059,20 +2117,12 @@ namespace SecureDNSClient
                 {
                     HTTPProxy.OnRequestReceived -= HTTPProxy_OnRequestReceived;
                     HTTPProxy.OnRequestReceived += HTTPProxy_OnRequestReceived;
+                    HTTPProxy.OnChunkDetailsReceived -= HTTPProxy_OnChunkDetailsReceived;
+                    HTTPProxy.OnChunkDetailsReceived += HTTPProxy_OnChunkDetailsReceived;
                     HTTPProxy.OnErrorOccurred -= HTTPProxy_OnErrorOccurred;
                     HTTPProxy.OnErrorOccurred += HTTPProxy_OnErrorOccurred;
 
-                    // Get fragment settings
-                    bool enableDpiBypass = CustomCheckBoxHTTPProxyEnableDpiBypass.Checked;
-                    int dataLength = int.Parse(CustomNumericUpDownHTTPProxyDataLength.Value.ToString());
-                    int fragmentSize = int.Parse(CustomNumericUpDownHTTPProxyFragmentSize.Value.ToString());
-                    int divideBy = int.Parse(CustomNumericUpDownHTTPProxyDivideBy.Value.ToString());
-
-                    if (enableDpiBypass)
-                    {
-                        HTTPProxy.EnableDpiBypassProgram(DPIBypass.Mode.Program, dataLength, fragmentSize, divideBy);
-                        IsDPIActive = true;
-                    }
+                    ApplyPDpiChanges();
 
                     HTTPProxy.Start(IPAddress.Any, SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort), 100);
                     Task.Delay(500).Wait();
@@ -2101,6 +2151,18 @@ namespace SecureDNSClient
                             {
                                 req += NL; // Adding an additional line break.
                                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(req, Color.Gray));
+                            }
+                        }
+                    }
+
+                    void HTTPProxy_OnChunkDetailsReceived(object? sender, EventArgs e)
+                    {
+                        if (sender is string msg)
+                        {
+                            if (CustomCheckBoxHTTPProxyEventShowChunkDetails.Checked)
+                            {
+                                msg += NL; // Adding an additional line break.
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
                             }
                         }
                     }
@@ -2228,7 +2290,7 @@ namespace SecureDNSClient
                         CustomRichTextBoxLog.AppendText(msg3 + NL, Color.LightGray);
 
                         // Check DPI Works
-                        if (CustomCheckBoxHTTPProxyEnableDpiBypass.Checked)
+                        if (CustomCheckBoxPDpiEnableDpiBypass.Checked)
                         {
                             // Get and check blocked domain is valid
                             bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
@@ -2266,6 +2328,40 @@ namespace SecureDNSClient
                     // Write Unset Proxy error to log
                     string msg = "Couldn't unset HTTP Proxy from system.";
                     CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+                }
+            }
+        }
+
+        private async void ApplyPDpiChanges()
+        {
+            if (HTTPProxy != null)
+            {
+                // Get fragment settings
+                bool enableDpiBypass = CustomCheckBoxPDpiEnableDpiBypass.Checked;
+                int dataLength = int.Parse(CustomNumericUpDownPDpiDataLength.Value.ToString());
+                int fragmentSize = int.Parse(CustomNumericUpDownPDpiFragmentSize.Value.ToString());
+                int fragmentChunks = int.Parse(CustomNumericUpDownPDpiFragmentChunks.Value.ToString());
+                bool randomMode = CustomCheckBoxPDpiFragModeRandom.Checked;
+                bool dontChunkBigdata = CustomCheckBoxPDpiDontChunkBigData.Checked;
+                int fragmentDelay = int.Parse(CustomNumericUpDownPDpiFragDelay.Value.ToString());
+
+                DPIBypass.Mode bypassMode = enableDpiBypass ? DPIBypass.Mode.Program : DPIBypass.Mode.Disable;
+                IsDPIActive = DPIBypassProgram.DPIBypassMode == DPIBypass.Mode.Program;
+
+                DPIBypassProgram.Set(bypassMode, dataLength, fragmentSize, fragmentChunks, fragmentDelay);
+                DPIBypassProgram.DontChunkTheBiggestRequest = dontChunkBigdata;
+                DPIBypassProgram.SendInRandom = randomMode;
+                HTTPProxy.EnableDPIBypass(DPIBypassProgram);
+
+                // Check DPI Works
+                if (CustomCheckBoxPDpiEnableDpiBypass.Checked && HTTPProxy.IsRunning)
+                {
+                    IsDPIActive = true;
+                    Task.Delay(100).Wait();
+                    // Get and check blocked domain is valid
+                    bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
+                    if (isBlockedDomainValid)
+                        await CheckDPIWorks(blockedDomain);
                 }
             }
         }
@@ -2815,7 +2911,7 @@ namespace SecureDNSClient
                     if (IsDNSSet)
                         SetDNS(); // Unset DNS
                     else
-                        UnsetSavedDNS(); // Unset Saved DNS
+                        UnsetSavedDNS();
                 }
 
                 try
@@ -3095,6 +3191,11 @@ namespace SecureDNSClient
         private void CustomButtonSetProxy_Click(object sender, EventArgs e)
         {
             SetProxy();
+        }
+
+        private void CustomButtonPDpiApplyChanges_Click(object sender, EventArgs e)
+        {
+            ApplyPDpiChanges();
         }
 
         private void CustomButtonRestoreDefault_Click(object sender, EventArgs e)
