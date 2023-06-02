@@ -26,6 +26,8 @@ namespace SecureDNSClient
         private bool IsDNSConnected = false;
         private bool IsDoHConnected = false;
         private bool IsDPIActive = false;
+        private bool IsProxyDPIActive = false;
+        private bool IsGoodbyeDPIActive = false;
         private bool IsDNSSet = false;
         private bool IsSharing = false;
         private bool IsProxySet = false;
@@ -401,12 +403,15 @@ namespace SecureDNSClient
                 // Update bool IsProxySet
                 IsProxySet = UpdateBoolIsProxySet();
 
+                // Update bool IsProxyDPIActive
+                IsProxyDPIActive = (HTTPProxy != null && HTTPProxy.IsRunning && HTTPProxy.IsDpiActive);
+
+                // Update bool IsGoodbyeDPIActive
+                IsGoodbyeDPIActive = ProcessManager.FindProcessByID(PIDGoodbyeDPI);
+
                 // Update bool IsDPIActive
-                if (ProcessManager.FindProcessByID(PIDGoodbyeDPI) ||
-                   (HTTPProxy != null && HTTPProxy.IsRunning && HTTPProxy.IsDpiActive))
-                    IsDPIActive = true;
-                else
-                    IsDPIActive = false;
+                IsDPIActive = (IsProxyDPIActive || IsGoodbyeDPIActive);
+
             };
             updateBoolsTimer.Start();
         }
@@ -615,12 +620,19 @@ namespace SecureDNSClient
             this.InvokeIt(() => CustomRichTextBoxStatusIsDNSSet.AppendText("Is DNS Set: ", ForeColor));
             this.InvokeIt(() => CustomRichTextBoxStatusIsDNSSet.AppendText(textDNS, colorDNS));
 
-            // Update Status IsDpiActive
-            string textDPI = IsDPIActive ? "Yes" : "No";
-            Color colorDPI = IsDPIActive ? Color.MediumSeaGreen : Color.IndianRed;
-            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.ResetText());
-            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.AppendText("Is DPI Active: ", ForeColor));
-            this.InvokeIt(() => CustomRichTextBoxStatusIsDPIActive.AppendText(textDPI, colorDPI));
+            // Update Status IsProxyDPIActive
+            string textProxyDPI = IsProxyDPIActive ? "Active" : "Inactive";
+            Color colorProxyDPI = IsProxyDPIActive ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomRichTextBoxStatusProxyDpiBypass.ResetText());
+            this.InvokeIt(() => CustomRichTextBoxStatusProxyDpiBypass.AppendText("Proxy DPI Bypass: ", ForeColor));
+            this.InvokeIt(() => CustomRichTextBoxStatusProxyDpiBypass.AppendText(textProxyDPI, colorProxyDPI));
+
+            // Update Status IsGoodbyeDPIActive
+            string textGoodbyeDPI = IsGoodbyeDPIActive ? "Active" : "Inactive";
+            Color colorGoodbyeDPI = IsGoodbyeDPIActive ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomRichTextBoxStatusGoodbyeDPI.ResetText());
+            this.InvokeIt(() => CustomRichTextBoxStatusGoodbyeDPI.AppendText("GoodbyeDPI: ", ForeColor));
+            this.InvokeIt(() => CustomRichTextBoxStatusGoodbyeDPI.AppendText(textGoodbyeDPI, colorGoodbyeDPI));
 
             // Update Status IsSharing
             string textSharing = IsSharing ? "Yes" : "No";
@@ -977,7 +989,7 @@ namespace SecureDNSClient
             // Warn users to deactivate DPI before checking servers
             if (IsDPIActive)
             {
-                string msg = "It's better to not check servers while DPI is active.\nStart checking servers?";
+                string msg = "It's better to not check servers while DPI Bypass is active.\nStart checking servers?";
                 var resume = CustomMessageBox.Show(msg, "DPI is active", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (resume == DialogResult.No) return;
             }
@@ -2301,6 +2313,7 @@ namespace SecureDNSClient
                         {
                             // Update bool
                             IsSharing = false;
+                            IsProxyDPIActive = false;
 
                             // Write deactivated message to log
                             string msgDiactivated = $"HTTP Proxy Server deactivated.{NL}";
@@ -2424,7 +2437,7 @@ namespace SecureDNSClient
                 int fragmentDelay = int.Parse(CustomNumericUpDownPDpiFragDelay.Value.ToString());
 
                 DPIBypass.Mode bypassMode = enableDpiBypass ? DPIBypass.Mode.Program : DPIBypass.Mode.Disable;
-                IsDPIActive = DPIBypassProgram.DPIBypassMode == DPIBypass.Mode.Program;
+                IsProxyDPIActive = DPIBypassProgram.DPIBypassMode == DPIBypass.Mode.Program;
 
                 DPIBypassProgram.Set(bypassMode, dataLength, fragmentSize, fragmentChunks, fragmentDelay);
                 DPIBypassProgram.DontChunkTheBiggestRequest = dontChunkBigdata;
@@ -2434,7 +2447,7 @@ namespace SecureDNSClient
                 // Check DPI Works
                 if (CustomCheckBoxPDpiEnableDpiBypass.Checked && HTTPProxy.IsRunning)
                 {
-                    IsDPIActive = true;
+                    IsProxyDPIActive = true;
                     Task.Delay(100).Wait();
                     // Get and check blocked domain is valid
                     bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
@@ -2552,8 +2565,8 @@ namespace SecureDNSClient
                 // Update Groupbox Status
                 UpdateStatus();
 
-                // Set DPI Active true
-                IsDPIActive = true;
+                // Set IsGoodbyeDPIActive true
+                IsGoodbyeDPIActive = true;
 
                 // Go to SetDNS Tab if it's not already set
                 if (ConnectAllClicked && !IsDNSSet)
@@ -2763,8 +2776,8 @@ namespace SecureDNSClient
                 // Update Groupbox Status
                 UpdateStatus();
 
-                // Set DPI Active true
-                IsDPIActive = true;
+                // Set IsGoodbyeDPIActive true
+                IsGoodbyeDPIActive = true;
 
                 // Go to SetDNS Tab if it's not already set
                 if (ConnectAllClicked && !IsDNSSet)
@@ -2802,6 +2815,9 @@ namespace SecureDNSClient
                 }
                 else
                 {
+                    // Set IsGoodbyeDPIActive False
+                    IsGoodbyeDPIActive = false;
+
                     string msgDC = "DPI bypass deactivated." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
                 }
@@ -2834,7 +2850,7 @@ namespace SecureDNSClient
                         string url = $"https://{host}/";
                         Uri uri = new(url, UriKind.Absolute);
 
-                        if (HTTPProxy != null && HTTPProxy.IsRunning && HTTPProxy.IsDpiActive && IsSharing)
+                        if (IsProxyDPIActive)
                         {
                             string proxyScheme = $"http://{IPAddress.Loopback}:{LastProxyPort}";
                             using SocketsHttpHandler socketsHttpHandler = new();
@@ -2909,7 +2925,7 @@ namespace SecureDNSClient
                 {
                     // Write activate DPI first to log
                     string msgDPI1 = $"DPI Check: ";
-                    string msgDPI2 = $"Activate DPI to check.{NL}";
+                    string msgDPI2 = $"Activate DPI Bypass to check.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
                     StopWatchCheckDPIWorks.Stop();

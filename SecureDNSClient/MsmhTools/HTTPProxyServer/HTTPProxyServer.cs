@@ -69,6 +69,7 @@ namespace MsmhTools.HTTPProxyServer
         {
             // Captive Portal
             BlackList.Add("ipv6.msftconnecttest.com:80");
+            BlackList.Add("msedge.b.tlu.dl.delivery.mp.microsoft.com:80");
             BlackList.Add("detectportal.firefox.com:80");
             BlackList.Add("gstatic.com:80");
         }

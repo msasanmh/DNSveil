@@ -198,6 +198,7 @@
             this.NotifyIconMain = new System.Windows.Forms.NotifyIcon(this.components);
             this.CustomContextMenuStripIcon = new CustomControls.CustomContextMenuStrip();
             this.CustomGroupBoxStatus = new CustomControls.CustomGroupBox();
+            this.CustomRichTextBoxStatusGoodbyeDPI = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusProxyRequests = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusLocalDoHLatency = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusLocalDoH = new CustomControls.CustomRichTextBox();
@@ -206,7 +207,7 @@
             this.CustomRichTextBoxStatusIsProxySet = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsSharing = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsDNSSet = new CustomControls.CustomRichTextBox();
-            this.CustomRichTextBoxStatusIsDPIActive = new CustomControls.CustomRichTextBox();
+            this.CustomRichTextBoxStatusProxyDpiBypass = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsConnected = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusWorkingServers = new CustomControls.CustomRichTextBox();
             this.SplitContainerMain = new System.Windows.Forms.SplitContainer();
@@ -422,7 +423,7 @@
             this.CustomLabelSSLFragmentSize.Location = new System.Drawing.Point(296, 95);
             this.CustomLabelSSLFragmentSize.Name = "CustomLabelSSLFragmentSize";
             this.CustomLabelSSLFragmentSize.RoundedCorners = 0;
-            this.CustomLabelSSLFragmentSize.Size = new System.Drawing.Size(104, 17);
+            this.CustomLabelSSLFragmentSize.Size = new System.Drawing.Size(102, 15);
             this.CustomLabelSSLFragmentSize.TabIndex = 10;
             this.CustomLabelSSLFragmentSize.Text = "SSL fragment size:";
             // 
@@ -553,7 +554,7 @@
             this.CustomLabelDPIModes.Location = new System.Drawing.Point(25, 70);
             this.CustomLabelDPIModes.Name = "CustomLabelDPIModes";
             this.CustomLabelDPIModes.RoundedCorners = 0;
-            this.CustomLabelDPIModes.Size = new System.Drawing.Size(77, 17);
+            this.CustomLabelDPIModes.Size = new System.Drawing.Size(75, 15);
             this.CustomLabelDPIModes.TabIndex = 3;
             this.CustomLabelDPIModes.Text = "Select mode:";
             // 
@@ -619,7 +620,7 @@
             this.CustomTabControlSecureDNS.SelectedIndex = 0;
             this.CustomTabControlSecureDNS.Size = new System.Drawing.Size(686, 365);
             this.CustomTabControlSecureDNS.TabIndex = 0;
-            this.CustomTabControlSecureDNS.Tag = 3;
+            this.CustomTabControlSecureDNS.Tag = 0;
             // 
             // TabPageCheck
             // 
@@ -896,7 +897,7 @@
             this.CustomLabelHTTPProxyHandleRequests.Location = new System.Drawing.Point(200, 55);
             this.CustomLabelHTTPProxyHandleRequests.Name = "CustomLabelHTTPProxyHandleRequests";
             this.CustomLabelHTTPProxyHandleRequests.RoundedCorners = 0;
-            this.CustomLabelHTTPProxyHandleRequests.Size = new System.Drawing.Size(97, 17);
+            this.CustomLabelHTTPProxyHandleRequests.Size = new System.Drawing.Size(95, 15);
             this.CustomLabelHTTPProxyHandleRequests.TabIndex = 39;
             this.CustomLabelHTTPProxyHandleRequests.Text = "Handle requests:";
             // 
@@ -951,7 +952,7 @@
             this.CustomLabelPDpiFragDelay.Location = new System.Drawing.Point(240, 220);
             this.CustomLabelPDpiFragDelay.Name = "CustomLabelPDpiFragDelay";
             this.CustomLabelPDpiFragDelay.RoundedCorners = 0;
-            this.CustomLabelPDpiFragDelay.Size = new System.Drawing.Size(121, 17);
+            this.CustomLabelPDpiFragDelay.Size = new System.Drawing.Size(119, 15);
             this.CustomLabelPDpiFragDelay.TabIndex = 35;
             this.CustomLabelPDpiFragDelay.Text = "Fragment delay (ms):";
             // 
@@ -1035,7 +1036,7 @@
             this.CustomLabelPDpiDpiInfo1.Location = new System.Drawing.Point(50, 140);
             this.CustomLabelPDpiDpiInfo1.Name = "CustomLabelPDpiDpiInfo1";
             this.CustomLabelPDpiDpiInfo1.RoundedCorners = 0;
-            this.CustomLabelPDpiDpiInfo1.Size = new System.Drawing.Size(109, 17);
+            this.CustomLabelPDpiDpiInfo1.Size = new System.Drawing.Size(107, 15);
             this.CustomLabelPDpiDpiInfo1.TabIndex = 30;
             this.CustomLabelPDpiDpiInfo1.Text = "If data length is <=";
             // 
@@ -1075,7 +1076,7 @@
             this.CustomLabelPDpiDpiInfo2.Location = new System.Drawing.Point(218, 140);
             this.CustomLabelPDpiDpiInfo2.Name = "CustomLabelPDpiDpiInfo2";
             this.CustomLabelPDpiDpiInfo2.RoundedCorners = 0;
-            this.CustomLabelPDpiDpiInfo2.Size = new System.Drawing.Size(112, 17);
+            this.CustomLabelPDpiDpiInfo2.Size = new System.Drawing.Size(110, 15);
             this.CustomLabelPDpiDpiInfo2.TabIndex = 27;
             this.CustomLabelPDpiDpiInfo2.Text = "set fragment size to";
             // 
@@ -1142,7 +1143,7 @@
             this.CustomLabelPDpiDpiInfo3.Location = new System.Drawing.Point(50, 180);
             this.CustomLabelPDpiDpiInfo3.Name = "CustomLabelPDpiDpiInfo3";
             this.CustomLabelPDpiDpiInfo3.RoundedCorners = 0;
-            this.CustomLabelPDpiDpiInfo3.Size = new System.Drawing.Size(164, 17);
+            this.CustomLabelPDpiDpiInfo3.Size = new System.Drawing.Size(162, 15);
             this.CustomLabelPDpiDpiInfo3.TabIndex = 18;
             this.CustomLabelPDpiDpiInfo3.Text = "else chunk data into n pieces:";
             // 
@@ -1189,7 +1190,7 @@
             this.CustomLabelHTTPProxyPort.Location = new System.Drawing.Point(25, 55);
             this.CustomLabelHTTPProxyPort.Name = "CustomLabelHTTPProxyPort";
             this.CustomLabelHTTPProxyPort.RoundedCorners = 0;
-            this.CustomLabelHTTPProxyPort.Size = new System.Drawing.Size(101, 17);
+            this.CustomLabelHTTPProxyPort.Size = new System.Drawing.Size(99, 15);
             this.CustomLabelHTTPProxyPort.TabIndex = 15;
             this.CustomLabelHTTPProxyPort.Text = "HTTP Proxy. Port:";
             // 
@@ -1205,7 +1206,7 @@
             this.CustomLabelShareInfo.Location = new System.Drawing.Point(25, 10);
             this.CustomLabelShareInfo.Name = "CustomLabelShareInfo";
             this.CustomLabelShareInfo.RoundedCorners = 0;
-            this.CustomLabelShareInfo.Size = new System.Drawing.Size(423, 23);
+            this.CustomLabelShareInfo.Size = new System.Drawing.Size(421, 21);
             this.CustomLabelShareInfo.TabIndex = 14;
             this.CustomLabelShareInfo.Text = "Share to other devices on the same network. (Experimental)";
             // 
@@ -1302,7 +1303,7 @@
             this.CustomLabelInfoDPIModes.Location = new System.Drawing.Point(25, 15);
             this.CustomLabelInfoDPIModes.Name = "CustomLabelInfoDPIModes";
             this.CustomLabelInfoDPIModes.RoundedCorners = 0;
-            this.CustomLabelInfoDPIModes.Size = new System.Drawing.Size(149, 40);
+            this.CustomLabelInfoDPIModes.Size = new System.Drawing.Size(147, 38);
             this.CustomLabelInfoDPIModes.TabIndex = 20;
             this.CustomLabelInfoDPIModes.Text = "Light: MTN-AST-ASK\r\nMedium: MCI-SHT";
             // 
@@ -1373,7 +1374,7 @@
             this.CustomLabelDPIModesGoodbyeDPI.Location = new System.Drawing.Point(25, 130);
             this.CustomLabelDPIModesGoodbyeDPI.Name = "CustomLabelDPIModesGoodbyeDPI";
             this.CustomLabelDPIModesGoodbyeDPI.RoundedCorners = 0;
-            this.CustomLabelDPIModesGoodbyeDPI.Size = new System.Drawing.Size(120, 17);
+            this.CustomLabelDPIModesGoodbyeDPI.Size = new System.Drawing.Size(118, 15);
             this.CustomLabelDPIModesGoodbyeDPI.TabIndex = 15;
             this.CustomLabelDPIModesGoodbyeDPI.Text = "Goodbye DPI modes:";
             // 
@@ -3134,6 +3135,7 @@
             // CustomGroupBoxStatus
             // 
             this.CustomGroupBoxStatus.BorderColor = System.Drawing.Color.Blue;
+            this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusGoodbyeDPI);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusProxyRequests);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusLocalDoHLatency);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomButtonToggleLogView);
@@ -3143,7 +3145,7 @@
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsProxySet);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsSharing);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsDNSSet);
-            this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsDPIActive);
+            this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusProxyDpiBypass);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsConnected);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusWorkingServers);
             this.CustomGroupBoxStatus.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -3154,6 +3156,41 @@
             this.CustomGroupBoxStatus.TabIndex = 8;
             this.CustomGroupBoxStatus.TabStop = false;
             this.CustomGroupBoxStatus.Text = "Status";
+            // 
+            // CustomRichTextBoxStatusGoodbyeDPI
+            // 
+            this.CustomRichTextBoxStatusGoodbyeDPI.AcceptsTab = false;
+            this.CustomRichTextBoxStatusGoodbyeDPI.AutoWordSelection = false;
+            this.CustomRichTextBoxStatusGoodbyeDPI.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRichTextBoxStatusGoodbyeDPI.Border = false;
+            this.CustomRichTextBoxStatusGoodbyeDPI.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRichTextBoxStatusGoodbyeDPI.BorderSize = 1;
+            this.CustomRichTextBoxStatusGoodbyeDPI.BulletIndent = 0;
+            this.CustomRichTextBoxStatusGoodbyeDPI.Cursor = System.Windows.Forms.Cursors.Default;
+            this.CustomRichTextBoxStatusGoodbyeDPI.DetectUrls = true;
+            this.CustomRichTextBoxStatusGoodbyeDPI.EnableAutoDragDrop = false;
+            this.CustomRichTextBoxStatusGoodbyeDPI.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomRichTextBoxStatusGoodbyeDPI.ForeColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusGoodbyeDPI.HideSelection = true;
+            this.CustomRichTextBoxStatusGoodbyeDPI.Location = new System.Drawing.Point(5, 290);
+            this.CustomRichTextBoxStatusGoodbyeDPI.MaxLength = 2147483647;
+            this.CustomRichTextBoxStatusGoodbyeDPI.MinimumSize = new System.Drawing.Size(0, 15);
+            this.CustomRichTextBoxStatusGoodbyeDPI.Multiline = false;
+            this.CustomRichTextBoxStatusGoodbyeDPI.Name = "CustomRichTextBoxStatusGoodbyeDPI";
+            this.CustomRichTextBoxStatusGoodbyeDPI.ReadOnly = true;
+            this.CustomRichTextBoxStatusGoodbyeDPI.RightMargin = 0;
+            this.CustomRichTextBoxStatusGoodbyeDPI.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomRichTextBoxStatusGoodbyeDPI.ScrollToBottom = false;
+            this.CustomRichTextBoxStatusGoodbyeDPI.SelectionColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusGoodbyeDPI.SelectionLength = 0;
+            this.CustomRichTextBoxStatusGoodbyeDPI.SelectionStart = 0;
+            this.CustomRichTextBoxStatusGoodbyeDPI.ShortcutsEnabled = true;
+            this.CustomRichTextBoxStatusGoodbyeDPI.Size = new System.Drawing.Size(170, 23);
+            this.CustomRichTextBoxStatusGoodbyeDPI.TabIndex = 0;
+            this.CustomRichTextBoxStatusGoodbyeDPI.Texts = "GoodbyeDPI: Inactive";
+            this.CustomRichTextBoxStatusGoodbyeDPI.UnderlinedStyle = false;
+            this.CustomRichTextBoxStatusGoodbyeDPI.WordWrap = false;
+            this.CustomRichTextBoxStatusGoodbyeDPI.ZoomFactor = 1F;
             // 
             // CustomRichTextBoxStatusProxyRequests
             // 
@@ -3170,7 +3207,7 @@
             this.CustomRichTextBoxStatusProxyRequests.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusProxyRequests.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusProxyRequests.HideSelection = true;
-            this.CustomRichTextBoxStatusProxyRequests.Location = new System.Drawing.Point(5, 240);
+            this.CustomRichTextBoxStatusProxyRequests.Location = new System.Drawing.Point(5, 215);
             this.CustomRichTextBoxStatusProxyRequests.MaxLength = 2147483647;
             this.CustomRichTextBoxStatusProxyRequests.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusProxyRequests.Multiline = false;
@@ -3345,7 +3382,7 @@
             this.CustomRichTextBoxStatusIsProxySet.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsProxySet.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsProxySet.HideSelection = true;
-            this.CustomRichTextBoxStatusIsProxySet.Location = new System.Drawing.Point(5, 265);
+            this.CustomRichTextBoxStatusIsProxySet.Location = new System.Drawing.Point(5, 240);
             this.CustomRichTextBoxStatusIsProxySet.MaxLength = 2147483647;
             this.CustomRichTextBoxStatusIsProxySet.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusIsProxySet.Multiline = false;
@@ -3380,7 +3417,7 @@
             this.CustomRichTextBoxStatusIsSharing.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsSharing.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsSharing.HideSelection = true;
-            this.CustomRichTextBoxStatusIsSharing.Location = new System.Drawing.Point(5, 215);
+            this.CustomRichTextBoxStatusIsSharing.Location = new System.Drawing.Point(5, 190);
             this.CustomRichTextBoxStatusIsSharing.MaxLength = 2147483647;
             this.CustomRichTextBoxStatusIsSharing.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusIsSharing.Multiline = false;
@@ -3435,40 +3472,40 @@
             this.CustomRichTextBoxStatusIsDNSSet.WordWrap = false;
             this.CustomRichTextBoxStatusIsDNSSet.ZoomFactor = 1F;
             // 
-            // CustomRichTextBoxStatusIsDPIActive
+            // CustomRichTextBoxStatusProxyDpiBypass
             // 
-            this.CustomRichTextBoxStatusIsDPIActive.AcceptsTab = false;
-            this.CustomRichTextBoxStatusIsDPIActive.AutoWordSelection = false;
-            this.CustomRichTextBoxStatusIsDPIActive.BackColor = System.Drawing.Color.DimGray;
-            this.CustomRichTextBoxStatusIsDPIActive.Border = false;
-            this.CustomRichTextBoxStatusIsDPIActive.BorderColor = System.Drawing.Color.Blue;
-            this.CustomRichTextBoxStatusIsDPIActive.BorderSize = 1;
-            this.CustomRichTextBoxStatusIsDPIActive.BulletIndent = 0;
-            this.CustomRichTextBoxStatusIsDPIActive.Cursor = System.Windows.Forms.Cursors.Default;
-            this.CustomRichTextBoxStatusIsDPIActive.DetectUrls = true;
-            this.CustomRichTextBoxStatusIsDPIActive.EnableAutoDragDrop = false;
-            this.CustomRichTextBoxStatusIsDPIActive.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.CustomRichTextBoxStatusIsDPIActive.ForeColor = System.Drawing.Color.White;
-            this.CustomRichTextBoxStatusIsDPIActive.HideSelection = true;
-            this.CustomRichTextBoxStatusIsDPIActive.Location = new System.Drawing.Point(5, 190);
-            this.CustomRichTextBoxStatusIsDPIActive.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsDPIActive.MinimumSize = new System.Drawing.Size(0, 15);
-            this.CustomRichTextBoxStatusIsDPIActive.Multiline = false;
-            this.CustomRichTextBoxStatusIsDPIActive.Name = "CustomRichTextBoxStatusIsDPIActive";
-            this.CustomRichTextBoxStatusIsDPIActive.ReadOnly = true;
-            this.CustomRichTextBoxStatusIsDPIActive.RightMargin = 0;
-            this.CustomRichTextBoxStatusIsDPIActive.ScrollBars = System.Windows.Forms.ScrollBars.None;
-            this.CustomRichTextBoxStatusIsDPIActive.ScrollToBottom = false;
-            this.CustomRichTextBoxStatusIsDPIActive.SelectionColor = System.Drawing.Color.White;
-            this.CustomRichTextBoxStatusIsDPIActive.SelectionLength = 0;
-            this.CustomRichTextBoxStatusIsDPIActive.SelectionStart = 0;
-            this.CustomRichTextBoxStatusIsDPIActive.ShortcutsEnabled = true;
-            this.CustomRichTextBoxStatusIsDPIActive.Size = new System.Drawing.Size(170, 23);
-            this.CustomRichTextBoxStatusIsDPIActive.TabIndex = 0;
-            this.CustomRichTextBoxStatusIsDPIActive.Texts = "Is DPI Active: Yes";
-            this.CustomRichTextBoxStatusIsDPIActive.UnderlinedStyle = false;
-            this.CustomRichTextBoxStatusIsDPIActive.WordWrap = false;
-            this.CustomRichTextBoxStatusIsDPIActive.ZoomFactor = 1F;
+            this.CustomRichTextBoxStatusProxyDpiBypass.AcceptsTab = false;
+            this.CustomRichTextBoxStatusProxyDpiBypass.AutoWordSelection = false;
+            this.CustomRichTextBoxStatusProxyDpiBypass.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRichTextBoxStatusProxyDpiBypass.Border = false;
+            this.CustomRichTextBoxStatusProxyDpiBypass.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRichTextBoxStatusProxyDpiBypass.BorderSize = 1;
+            this.CustomRichTextBoxStatusProxyDpiBypass.BulletIndent = 0;
+            this.CustomRichTextBoxStatusProxyDpiBypass.Cursor = System.Windows.Forms.Cursors.Default;
+            this.CustomRichTextBoxStatusProxyDpiBypass.DetectUrls = true;
+            this.CustomRichTextBoxStatusProxyDpiBypass.EnableAutoDragDrop = false;
+            this.CustomRichTextBoxStatusProxyDpiBypass.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomRichTextBoxStatusProxyDpiBypass.ForeColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusProxyDpiBypass.HideSelection = true;
+            this.CustomRichTextBoxStatusProxyDpiBypass.Location = new System.Drawing.Point(5, 265);
+            this.CustomRichTextBoxStatusProxyDpiBypass.MaxLength = 2147483647;
+            this.CustomRichTextBoxStatusProxyDpiBypass.MinimumSize = new System.Drawing.Size(0, 15);
+            this.CustomRichTextBoxStatusProxyDpiBypass.Multiline = false;
+            this.CustomRichTextBoxStatusProxyDpiBypass.Name = "CustomRichTextBoxStatusProxyDpiBypass";
+            this.CustomRichTextBoxStatusProxyDpiBypass.ReadOnly = true;
+            this.CustomRichTextBoxStatusProxyDpiBypass.RightMargin = 0;
+            this.CustomRichTextBoxStatusProxyDpiBypass.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomRichTextBoxStatusProxyDpiBypass.ScrollToBottom = false;
+            this.CustomRichTextBoxStatusProxyDpiBypass.SelectionColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusProxyDpiBypass.SelectionLength = 0;
+            this.CustomRichTextBoxStatusProxyDpiBypass.SelectionStart = 0;
+            this.CustomRichTextBoxStatusProxyDpiBypass.ShortcutsEnabled = true;
+            this.CustomRichTextBoxStatusProxyDpiBypass.Size = new System.Drawing.Size(170, 23);
+            this.CustomRichTextBoxStatusProxyDpiBypass.TabIndex = 0;
+            this.CustomRichTextBoxStatusProxyDpiBypass.Texts = "Proxy DPI Bypass: Inactive";
+            this.CustomRichTextBoxStatusProxyDpiBypass.UnderlinedStyle = false;
+            this.CustomRichTextBoxStatusProxyDpiBypass.WordWrap = false;
+            this.CustomRichTextBoxStatusProxyDpiBypass.ZoomFactor = 1F;
             // 
             // CustomRichTextBoxStatusIsConnected
             // 
@@ -3760,7 +3797,7 @@
         private CustomControls.CustomGroupBox CustomGroupBoxStatus;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusIsConnected;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusWorkingServers;
-        private CustomControls.CustomRichTextBox CustomRichTextBoxStatusIsDPIActive;
+        private CustomControls.CustomRichTextBox CustomRichTextBoxStatusProxyDpiBypass;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusIsDNSSet;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusIsSharing;
         private CustomControls.CustomButton CustomButtonConnectAll;
@@ -3846,5 +3883,6 @@
         private CustomControls.CustomLabel CustomLabelHTTPProxyHandleRequests;
         private SplitContainer SplitContainerMain;
         private SplitContainer SplitContainerTop;
+        private CustomControls.CustomRichTextBox CustomRichTextBoxStatusGoodbyeDPI;
     }
 }
