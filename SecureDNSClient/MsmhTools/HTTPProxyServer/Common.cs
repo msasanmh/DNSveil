@@ -15,9 +15,6 @@ namespace MsmhTools.HTTPProxyServer
             return ret;
         }
 
-
-
-
         /// <summary>
         /// Fully read a stream into a byte array.
         /// </summary>
@@ -77,6 +74,20 @@ namespace MsmhTools.HTTPProxyServer
             }
         }
 
+        public static bool IsWin7()
+        {
+            bool result = false;
+            OperatingSystem os = Environment.OSVersion;
+            Version vs = os.Version;
+
+            if (os.Platform == PlatformID.Win32NT)
+            {
+                if (vs.Minor == 1 && vs.Major == 6)
+                    result = true;
+            }
+
+            return result;
+        }
 
     }
 }

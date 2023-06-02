@@ -327,7 +327,7 @@ namespace MsmhTools.HTTPProxyServer
                         {
                             tempKey = WebUtility.UrlDecode(tempKey);
                             QuerystringEntries = Common.AddToDict(tempKey, null, QuerystringEntries);
-                        } 
+                        }
                     }
 
                     if (inVal == 1)
@@ -383,9 +383,9 @@ namespace MsmhTools.HTTPProxyServer
                 gzip = xferEncodingHeader.ToLower().Contains("gzip");
                 deflate = xferEncodingHeader.ToLower().Contains("deflate");
             }
-            
-            if (chunkedXfer 
-                && Method != HttpMethod.GET 
+
+            if (chunkedXfer
+                && Method != HttpMethod.GET
                 && Method != HttpMethod.HEAD)
             {
                 Stream bodyStream = ctx.Request.InputStream;
@@ -417,7 +417,7 @@ namespace MsmhTools.HTTPProxyServer
                         Data = new byte[ContentLength];
                         Buffer.BlockCopy(decodedData, 0, Data, 0, decodedData.Length);
                     }
-                } 
+                }
             }
             else if (ContentLength > 0)
             {
@@ -426,7 +426,7 @@ namespace MsmhTools.HTTPProxyServer
                     if (Method != HttpMethod.GET && Method != HttpMethod.HEAD)
                     {
                         try
-                        { 
+                        {
                             Data = new byte[ContentLength];
                             Stream bodyStream = ctx.Request.InputStream;
                             Data = Common.StreamToBytes(bodyStream);
@@ -440,7 +440,7 @@ namespace MsmhTools.HTTPProxyServer
                 else
                 {
                     Data = null;
-                    DataStream = ctx.Request.InputStream; 
+                    DataStream = ctx.Request.InputStream;
                 }
             }
         }
@@ -623,7 +623,7 @@ namespace MsmhTools.HTTPProxyServer
             if (bytes.Length < 4) throw new ArgumentException("Too few bytes supplied to form a valid HTTP request.");
 
             bool endOfHeader = false;
-            byte[] headerBytes = new byte[1]; 
+            byte[] headerBytes = new byte[1];
 
             Request ret = new();
 
@@ -1094,8 +1094,9 @@ namespace MsmhTools.HTTPProxyServer
                     // First-Line
                     string[] requestLine = headers[i].Trim().Trim('\0').Split(' ');
                     if (requestLine.Length < 3) throw new ArgumentException("Request line does not contain at least three parts (method, raw URL, protocol/version).");
-                      
-                    ret.Method = (HttpMethod)Enum.Parse(typeof(HttpMethod), requestLine[0], true);
+
+                    // (HttpMethod)Enum.Parse(typeof(HttpMethod), requestLine[0], true);
+                    ret.Method = GetHttpMethod.Parse(requestLine[0]);
                     ret.FullUrl = requestLine[1];
                     ret.ProtocolVersion = requestLine[2];
                     ret.RawUrlWithQuery = ret.FullUrl;
@@ -1127,7 +1128,7 @@ namespace MsmhTools.HTTPProxyServer
                                     throw new Exception("Unable to parse destination hostname and port.");
                                 }
                             }
-                        } 
+                        }
                     }
                 }
                 else
@@ -1176,7 +1177,7 @@ namespace MsmhTools.HTTPProxyServer
             List<string> ret = new();
 
             foreach (char c in rawUrlWithoutQuery)
-            { 
+            {
                 if ((position == 0) &&
                     (string.Compare(tempString, "") == 0) &&
                     (c == '/'))
@@ -1227,7 +1228,7 @@ namespace MsmhTools.HTTPProxyServer
             if (string.IsNullOrEmpty(query)) return null;
 
             Dictionary<string, string> ret = new();
-             
+
             int inKey = 1;
             int inVal = 0;
             int position = 0;
@@ -1271,7 +1272,7 @@ namespace MsmhTools.HTTPProxyServer
                         continue;
                     }
                 }
-                
+
                 if (inVal == 1)
                 {
                     if (!string.IsNullOrEmpty(tempVal)) tempVal = WebUtility.UrlEncode(tempVal);

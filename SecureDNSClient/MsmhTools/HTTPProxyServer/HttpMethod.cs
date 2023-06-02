@@ -25,6 +25,30 @@ namespace MsmhTools.HTTPProxyServer
         [EnumMember(Value = "OPTIONS")]
         OPTIONS,
         [EnumMember(Value = "TRACE")]
-        TRACE
+        TRACE,
+        [EnumMember(Value = "UNKNOWN")]
+        UNKNOWN
+    }
+
+    public static class GetHttpMethod
+    {
+        public static HttpMethod Parse(string method)
+        {
+            method = method.Trim().ToLower();
+            var httpMethod = method switch
+            {
+                "get" => HttpMethod.GET,
+                "head" => HttpMethod.HEAD,
+                "put" => HttpMethod.PUT,
+                "post" => HttpMethod.POST,
+                "delete" => HttpMethod.DELETE,
+                "patch" => HttpMethod.PATCH,
+                "connect" => HttpMethod.CONNECT,
+                "options" => HttpMethod.OPTIONS,
+                "trace" => HttpMethod.TRACE,
+                _ => HttpMethod.UNKNOWN,
+            };
+            return httpMethod;
+        }
     }
 }

@@ -614,6 +614,7 @@ namespace MsmhTools.HTTPProxyServer
         private void Send(byte[] data, Socket? socket)
         {
             if (Cancel) return;
+            if (HTTPProxyServer._ActiveThreads >= HTTPProxyServer._Settings.MaxThreads) return;
             if (socket != null)
             {
                 HTTPProxyServer.DPIBypassProgram bp = HTTPProxyServer.BypassProgram;

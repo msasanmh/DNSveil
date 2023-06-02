@@ -13,6 +13,40 @@ using System.Diagnostics;
 namespace MsmhTools.HTTPProxyServer
 {
     /// <summary>
+    /// Authorization header options.
+    /// </summary>
+    public class AuthorizationHeader
+    {
+        /// <summary>
+        /// The username to use in the authorization header, if any.
+        /// </summary>
+        public string? User = null;
+
+        /// <summary>
+        /// The password to use in the authorization header, if any.
+        /// </summary>
+        public string? Password = null;
+
+        /// <summary>
+        /// The bearer token to use in the authorization header, if any.
+        /// </summary>
+        public string? BearerToken = null;
+
+        /// <summary>
+        /// Enable to encode credentials in the authorization header.
+        /// </summary>
+        public bool EncodeCredentials = true;
+
+        /// <summary>
+        /// Instantiate the object.
+        /// </summary>
+        public AuthorizationHeader()
+        {
+
+        }
+    }
+
+    /// <summary>
     /// RESTful HTTP request to be sent to a server.
     /// </summary>
     public class RestRequest
@@ -32,6 +66,25 @@ namespace MsmhTools.HTTPProxyServer
         /// The HTTP method to use, also known as a verb (GET, PUT, POST, DELETE, etc).
         /// </summary>
         public HttpMethod Method = HttpMethod.GET;
+
+
+        private AuthorizationHeader _Authorization = new();
+
+        /// <summary>
+        /// Authorization header parameters.
+        /// </summary>
+        public AuthorizationHeader Authorization
+        {
+            get
+            {
+                return _Authorization;
+            }
+            set
+            {
+                if (value == null) _Authorization = new AuthorizationHeader();
+                else _Authorization = value;
+            }
+        }
 
         /// <summary>
         /// Ignore certificate errors such as expired certificates, self-signed certificates, or those that cannot be validated.
@@ -244,7 +297,7 @@ namespace MsmhTools.HTTPProxyServer
         /// <param name="contentLength">The number of bytes to read from the input stream.</param>
         /// <param name="stream">Stream containing the data you wish to send to the server (does not work with GET requests).</param>
         /// <returns>RestResponse.</returns>
-        public RestResponse? Send(long contentLength, Stream stream)
+        public RestResponse? Send(long contentLength, Stream? stream)
         {
             return SendInternal(contentLength, stream);
         }
@@ -446,6 +499,29 @@ namespace MsmhTools.HTTPProxyServer
                             client.Headers.Add(pair.Key, pair.Value);
                         }
                     }
+                }
+
+                // Add-Auth-Info
+                if (!string.IsNullOrEmpty(_Authorization.User))
+                {
+                    if (_Authorization.EncodeCredentials)
+                    {
+                        Logger?.Invoke(_Header + "adding encoded credentials for user " + _Authorization.User);
+
+                        string authInfo = _Authorization.User + ":" + _Authorization.Password;
+                        authInfo = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
+                        client.Headers.Add("Authorization", "Basic " + authInfo);
+                    }
+                    else
+                    {
+                        Logger?.Invoke(_Header + "adding plaintext credentials for user " + _Authorization.User);
+                        client.Headers.Add("Authorization", "Basic " + _Authorization.User + ":" + _Authorization.Password);
+                    }
+                }
+                else if (!string.IsNullOrEmpty(_Authorization.BearerToken))
+                {
+                    Logger?.Invoke(_Header + "adding authorization bearer token " + _Authorization.BearerToken);
+                    client.Headers.Add("Authorization", "Bearer " + _Authorization.BearerToken);
                 }
 
                 // Write-Request-Body-Data

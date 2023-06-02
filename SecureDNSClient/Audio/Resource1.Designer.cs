@@ -95,5 +95,14 @@ namespace SecureDNSClient.Audio {
                 return ResourceManager.GetStream("Secure_DNS_Online", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream Warning_Handle_Requests_Exceeded {
+            get {
+                return ResourceManager.GetStream("Warning_Handle_Requests_Exceeded", resourceCulture);
+            }
+        }
     }
 }

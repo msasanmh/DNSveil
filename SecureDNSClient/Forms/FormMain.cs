@@ -41,7 +41,10 @@ namespace SecureDNSClient
         public static HTTPProxyServer.DPIBypassProgram DPIBypassProgram { get; private set; } = new();
         private bool AudioAlertOnline = true;
         private bool AudioAlertOffline = false;
-        private readonly Stopwatch CheckDPIWorksStopWatch = new();
+        private bool AudioAlertRequestsExceeded = false;
+        private readonly Stopwatch StopWatchCheckDPIWorks = new();
+        private readonly Stopwatch StopWatchShowRequests = new();
+        private readonly Stopwatch StopWatchShowChunkDetails = new();
         private string TheDll = string.Empty;
         private readonly string NL = Environment.NewLine;
         private readonly int LogHeight;
@@ -62,7 +65,7 @@ namespace SecureDNSClient
         public FormMain()
         {
             InitializeComponent();
-            CustomStatusStrip1.SizingGrip = false;
+            //CustomStatusStrip1.SizingGrip = false;
 
             // Set Min Size for Toggle Log View
             MinimumSize = new Size(Width, Height - CustomGroupBoxLog.Height);
@@ -193,6 +196,7 @@ namespace SecureDNSClient
 
             // Share
             CustomNumericUpDownHTTPProxyPort.Value = (decimal)8080;
+            CustomNumericUpDownHTTPProxyHandleRequests.Value = (decimal)2000;
             CustomCheckBoxHTTPProxyEventShowRequest.Checked = false;
             CustomCheckBoxHTTPProxyEventShowChunkDetails.Checked = false;
             CustomCheckBoxPDpiEnableDpiBypass.Checked = true;
@@ -315,8 +319,9 @@ namespace SecureDNSClient
         {
             using Graphics g = form.CreateGraphics();
 
-            int x1 = 90; int x2 = 120;
-            int y1 = 21; int y2 = 207;
+            int x1 = 120; int y1 = 21;
+            int splitMainD = SplitContainerMain.SplitterDistance;
+            int splitTopD = SplitContainerTop.SplitterDistance;
 
             if (form.AutoScaleDimensions == form.CurrentAutoScaleDimensions)
             {
@@ -325,22 +330,26 @@ namespace SecureDNSClient
                 // 144 = 150%
                 if (g.DpiX == 120) // 125%
                 {
-                    setSize(x1 + 15, y1 + 10, x2 + 30, y2 + ((25 * y2) / 100));
+                    setSize(x1 + 35, y1 + 10, splitMainD, splitTopD + 100);
                 }
                 else if (g.DpiX == 144) // 150%
                 {
-                    setSize(x1 + 65, y1 + 20, x2 + 60, y2 + ((50 * y2) / 100));
+                    setSize(x1 + 80, y1 + 20, splitMainD, splitTopD + 450);
                 }
-                
-                void setSize(int x1, int y1, int x2, int y2)
+
+                void setSize(int x1, int y1, int splitMainD, int splitTopD)
                 {
+                    CustomTabControlMain.SizeMode = TabSizeMode.Fixed;
                     CustomTabControlMain.ItemSize = new Size(x1, y1);
+                    CustomTabControlSecureDNS.SizeMode = TabSizeMode.Fixed;
                     CustomTabControlSecureDNS.ItemSize = new Size(x1, y1);
+                    CustomTabControlDPIBasicAdvanced.SizeMode = TabSizeMode.Fixed;
                     CustomTabControlDPIBasicAdvanced.ItemSize = new Size(x1, y1);
+                    CustomTabControlSettings.SizeMode = TabSizeMode.Fixed;
                     CustomTabControlSettings.ItemSize = new Size(y1 + 9, x1);
-                    CustomGroupBoxLog.Height = y2;
-                    ToolStripStatusLabelDNS.Width = x2;
-                    ToolStripStatusLabelDoH.Width = x2;
+
+                    SplitContainerMain.SplitterDistance = splitMainD;
+                    SplitContainerTop.SplitterDistance = splitTopD;
                 }
             }
         }
@@ -549,10 +558,29 @@ namespace SecureDNSClient
                     CustomButtonSetDNS.Enabled = true;
 
                 // Live Status
-                ToolStripStatusLabelDNS.Text = IsDNSConnected ? "DNS status: Online." : "DNS status: Offline.";
-                ToolStripStatusLabelDnsLatency.Text = $"Latency: {LocalDnsLatency}";
-                ToolStripStatusLabelDoH.Text = IsDoHConnected ? "DoH status: Online." : "DoH status: Offline.";
-                ToolStripStatusLabelDohLatency.Text = $"Latency: {LocalDohLatency}";
+                string statusLocalDNS = IsDNSConnected ? "Online" : "Offline";
+                Color colorStatusLocalDNS = IsDNSConnected ? Color.MediumSeaGreen : Color.IndianRed;
+                CustomRichTextBoxStatusLocalDNS.ResetText();
+                CustomRichTextBoxStatusLocalDNS.AppendText("Local DNS: ", ForeColor);
+                CustomRichTextBoxStatusLocalDNS.AppendText(statusLocalDNS, colorStatusLocalDNS);
+
+                string statusLocalDnsLatency = LocalDnsLatency != -1 ? $"{LocalDnsLatency}" : "-1";
+                Color colorStatusLocalDnsLatency = LocalDnsLatency != -1 ? Color.MediumSeaGreen : Color.IndianRed;
+                CustomRichTextBoxStatusLocalDnsLatency.ResetText();
+                CustomRichTextBoxStatusLocalDnsLatency.AppendText("Local DNS Latency: ", ForeColor);
+                CustomRichTextBoxStatusLocalDnsLatency.AppendText(statusLocalDnsLatency, colorStatusLocalDnsLatency);
+
+                string statusLocalDoH = IsDoHConnected ? "Online" : "Offline";
+                Color colorStatusLocalDoH = IsDoHConnected ? Color.MediumSeaGreen : Color.IndianRed;
+                CustomRichTextBoxStatusLocalDoH.ResetText();
+                CustomRichTextBoxStatusLocalDoH.AppendText("Local DoH: ", ForeColor);
+                CustomRichTextBoxStatusLocalDoH.AppendText(statusLocalDoH, colorStatusLocalDoH);
+
+                string statusLocalDoHLatency = LocalDohLatency != -1 ? $"{LocalDohLatency}" : "-1";
+                Color colorStatusLocalDoHLatency = LocalDohLatency != -1 ? Color.MediumSeaGreen : Color.IndianRed;
+                CustomRichTextBoxStatusLocalDoHLatency.ResetText();
+                CustomRichTextBoxStatusLocalDoHLatency.AppendText("Local DoH Latency: ", ForeColor);
+                CustomRichTextBoxStatusLocalDoHLatency.AppendText(statusLocalDoHLatency, colorStatusLocalDoHLatency);
 
                 if (!CustomCheckBoxSettingDisableAudioAlert.Checked && !IsCheckingStarted)
                     PlayAudioAlert();
@@ -601,6 +629,18 @@ namespace SecureDNSClient
             this.InvokeIt(() => CustomRichTextBoxStatusIsSharing.AppendText("Is Sharing: ", ForeColor));
             this.InvokeIt(() => CustomRichTextBoxStatusIsSharing.AppendText(textSharing, colorSharing));
 
+            // Update Status ProxyRequests
+            string textProxyRequests = "0 of 0";
+            Color colorProxyRequests = Color.MediumSeaGreen;
+            if (HTTPProxy != null)
+            {
+                textProxyRequests = $"{HTTPProxy.ActiveRequests} of {HTTPProxy.MaxRequests}";
+                colorProxyRequests = HTTPProxy.ActiveRequests < HTTPProxy.MaxRequests ? Color.MediumSeaGreen : Color.IndianRed;
+            }
+            this.InvokeIt(() => CustomRichTextBoxStatusProxyRequests.ResetText());
+            this.InvokeIt(() => CustomRichTextBoxStatusProxyRequests.AppendText("Proxy Requests ", ForeColor));
+            this.InvokeIt(() => CustomRichTextBoxStatusProxyRequests.AppendText(textProxyRequests, colorProxyRequests));
+
             // Update Status IsProxySet
             string textProxySet = IsProxySet ? "Yes" : "No";
             Color colorProxySet = IsProxySet ? Color.MediumSeaGreen : Color.IndianRed;
@@ -620,6 +660,7 @@ namespace SecureDNSClient
                 {
                     SoundPlayer soundPlayer = new(Audio.Resource1.DNS_Online);
                     soundPlayer.PlaySync();
+                    soundPlayer.Stop();
                     soundPlayer.Dispose();
                 });
             }
@@ -641,12 +682,31 @@ namespace SecureDNSClient
                     Task.Delay(1000).Wait();
                     SoundPlayer soundPlayer = new(Audio.Resource1.DNS_Offline);
                     soundPlayer.PlaySync();
+                    soundPlayer.Stop();
                     soundPlayer.Dispose();
                     Task.Delay(5000).Wait();
                 });
                 
                 if (softEtherPID != -1)
                     ProcessManager.ResumeProcess(softEtherPID);
+            }
+            
+            if (HTTPProxy != null)
+            {
+                if (HTTPProxy.IsRunning && (HTTPProxy.ActiveRequests >= HTTPProxy.MaxRequests) && !AudioAlertRequestsExceeded)
+                {
+                    AudioAlertRequestsExceeded = true;
+                    Task.Run(() =>
+                    {
+                        SoundPlayer soundPlayer = new(Audio.Resource1.Warning_Handle_Requests_Exceeded);
+                        soundPlayer.PlaySync();
+                        soundPlayer.Stop();
+                        soundPlayer.Dispose();
+                    });
+                }
+
+                if (HTTPProxy.ActiveRequests < HTTPProxy.MaxRequests - 5)
+                    AudioAlertRequestsExceeded = false;
             }
         }
 
@@ -1016,7 +1076,7 @@ namespace SecureDNSClient
 
                 // Percentage
                 int persent = n * 100 / dnsCount;
-                this.InvokeIt(() => ToolStripStatusLabelPercent.Text = persent.ToString() + "%");
+                this.InvokeIt(() => CustomLabelCheckPercent.Text = persent.ToString() + "%");
 
                 string dns = dnsList[n].Trim();
 
@@ -1142,7 +1202,7 @@ namespace SecureDNSClient
             }
 
             // Percentage (100%)
-            this.InvokeIt(() => ToolStripStatusLabelPercent.Text = "100%");
+            this.InvokeIt(() => CustomLabelCheckPercent.Text = "100%");
 
             // Return if there is no working server
             if (!WorkingDnsList.Any())
@@ -2124,7 +2184,10 @@ namespace SecureDNSClient
 
                     ApplyPDpiChanges();
 
-                    HTTPProxy.Start(IPAddress.Any, SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort), 100);
+                    // Get number of handle requests
+                    int handleReq = int.Parse(CustomNumericUpDownHTTPProxyHandleRequests.Value.ToString());
+
+                    HTTPProxy.Start(IPAddress.Any, SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort), handleReq);
                     Task.Delay(500).Wait();
 
                     // Delete error log on > 1MB
@@ -2149,20 +2212,35 @@ namespace SecureDNSClient
                         {
                             if (CustomCheckBoxHTTPProxyEventShowRequest.Checked)
                             {
-                                req += NL; // Adding an additional line break.
-                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(req, Color.Gray));
+                                if (!StopWatchShowRequests.IsRunning) StopWatchShowRequests.Start();
+                                if (StopWatchShowRequests.ElapsedMilliseconds > 20)
+                                {
+                                    req += NL; // Adding an additional line break.
+                                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(req, Color.Gray));
+                                    
+                                    StopWatchShowRequests.Stop();
+                                    StopWatchShowRequests.Reset();
+                                }
                             }
                         }
                     }
 
+                    // Proxy Event Chunk Details
                     void HTTPProxy_OnChunkDetailsReceived(object? sender, EventArgs e)
                     {
                         if (sender is string msg)
                         {
                             if (CustomCheckBoxHTTPProxyEventShowChunkDetails.Checked)
                             {
-                                msg += NL; // Adding an additional line break.
-                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
+                                if (!StopWatchShowChunkDetails.IsRunning) StopWatchShowChunkDetails.Start();
+                                if (StopWatchShowChunkDetails.ElapsedMilliseconds > 500)
+                                {
+                                    msg += NL; // Adding an additional line break.
+                                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
+
+                                    StopWatchShowChunkDetails.Stop();
+                                    StopWatchShowChunkDetails.Reset();
+                                }
                             }
                         }
                     }
@@ -2735,13 +2813,13 @@ namespace SecureDNSClient
             if (string.IsNullOrWhiteSpace(host)) return;
 
             // If user changing DPI mode fast, return.
-            if (CheckDPIWorksStopWatch.IsRunning)
+            if (StopWatchCheckDPIWorks.IsRunning)
                 return;
 
             Task.Delay(1000).Wait();
 
             // Start StopWatch
-            CheckDPIWorksStopWatch.Start();
+            StopWatchCheckDPIWorks.Start();
 
             // Write start DPI checking to log
             string msgDPI = $"Checking DPI Bypass ({host})...{NL}";
@@ -2795,7 +2873,7 @@ namespace SecureDNSClient
                         void msgSuccess()
                         {
                             // Write Success to log
-                            var elapsedTime = Math.Round((double)CheckDPIWorksStopWatch.ElapsedMilliseconds / 1000);
+                            var elapsedTime = Math.Round((double)StopWatchCheckDPIWorks.ElapsedMilliseconds / 1000);
                             string msgDPI1 = $"DPI Check: ";
                             string msgDPI2 = $"Successfully opened {host} in {elapsedTime} seconds.{NL}";
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
@@ -2813,8 +2891,8 @@ namespace SecureDNSClient
                             r.Dispose();
                         }
 
-                        CheckDPIWorksStopWatch.Stop();
-                        CheckDPIWorksStopWatch.Reset();
+                        StopWatchCheckDPIWorks.Stop();
+                        StopWatchCheckDPIWorks.Reset();
                     }
                     catch (Exception ex)
                     {
@@ -2823,8 +2901,8 @@ namespace SecureDNSClient
                         string msgDPI2 = $"{ex.Message}{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
-                        CheckDPIWorksStopWatch.Stop();
-                        CheckDPIWorksStopWatch.Reset();
+                        StopWatchCheckDPIWorks.Stop();
+                        StopWatchCheckDPIWorks.Reset();
                     }
                 }
                 else
@@ -2834,8 +2912,8 @@ namespace SecureDNSClient
                     string msgDPI2 = $"Activate DPI to check.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
-                    CheckDPIWorksStopWatch.Stop();
-                    CheckDPIWorksStopWatch.Reset();
+                    StopWatchCheckDPIWorks.Stop();
+                    StopWatchCheckDPIWorks.Reset();
                 }
             }
             else
@@ -2845,8 +2923,8 @@ namespace SecureDNSClient
                 string msgDPI2 = $"Set DNS to check.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
-                CheckDPIWorksStopWatch.Stop();
-                CheckDPIWorksStopWatch.Reset();
+                StopWatchCheckDPIWorks.Stop();
+                StopWatchCheckDPIWorks.Reset();
             }
         }
 
@@ -2854,19 +2932,25 @@ namespace SecureDNSClient
 
         private void CustomButtonToggleLogView_Click(object sender, EventArgs e)
         {
+            int logHeight = LogHeight;
+
             if (CustomGroupBoxLog.Visible)
             {
                 SuspendLayout();
                 CustomGroupBoxLog.Visible = false;
-                Size = new(Width, Height - LogHeight);
+                SplitContainerMain.Panel2Collapsed = true;
+                SplitContainerMain.Panel2.Hide();
+                Size = new(Width, Height - logHeight);
                 ResumeLayout();
                 Invalidate();
             }
             else
             {
                 SuspendLayout();
-                Size = new(Width, Height + LogHeight);
+                Size = new(Width, Height + logHeight);
                 CustomGroupBoxLog.Visible = true;
+                SplitContainerMain.Panel2Collapsed = false;
+                SplitContainerMain.Panel2.Show();
                 ResumeLayout();
                 Invalidate();
             }

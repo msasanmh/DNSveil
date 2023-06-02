@@ -51,7 +51,7 @@
             this.TabPageSecureDNS = new System.Windows.Forms.TabPage();
             this.CustomTabControlSecureDNS = new CustomControls.CustomTabControl();
             this.TabPageCheck = new System.Windows.Forms.TabPage();
-            this.CustomButtonToggleLogView = new CustomControls.CustomButton();
+            this.CustomLabelCheckPercent = new CustomControls.CustomLabel();
             this.CustomButtonConnectAll = new CustomControls.CustomButton();
             this.CustomButtonViewWorkingServers = new CustomControls.CustomButton();
             this.TabPageConnect = new System.Windows.Forms.TabPage();
@@ -64,6 +64,8 @@
             this.CustomLabelSetDNSInfo = new CustomControls.CustomLabel();
             this.CustomComboBoxNICs = new CustomControls.CustomComboBox();
             this.TabPageShare = new System.Windows.Forms.TabPage();
+            this.CustomNumericUpDownHTTPProxyHandleRequests = new CustomControls.CustomNumericUpDown();
+            this.CustomLabelHTTPProxyHandleRequests = new CustomControls.CustomLabel();
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails = new CustomControls.CustomCheckBox();
             this.CustomButtonPDpiApplyChanges = new CustomControls.CustomButton();
             this.CustomNumericUpDownPDpiFragDelay = new CustomControls.CustomNumericUpDown();
@@ -192,22 +194,23 @@
             this.CustomLabelAboutThis2 = new CustomControls.CustomLabel();
             this.CustomLabelAboutThis = new CustomControls.CustomLabel();
             this.PictureBoxAbout = new System.Windows.Forms.PictureBox();
-            this.CustomStatusStrip1 = new CustomControls.CustomStatusStrip();
-            this.ToolStripStatusLabelDNS = new System.Windows.Forms.ToolStripStatusLabel();
-            this.ToolStripStatusLabelDnsLatency = new System.Windows.Forms.ToolStripStatusLabel();
-            this.ToolStripStatusLabelDoH = new System.Windows.Forms.ToolStripStatusLabel();
-            this.ToolStripStatusLabelDohLatency = new System.Windows.Forms.ToolStripStatusLabel();
-            this.ToolStripStatusLabelSpace = new System.Windows.Forms.ToolStripStatusLabel();
-            this.ToolStripStatusLabelPercent = new System.Windows.Forms.ToolStripStatusLabel();
+            this.CustomButtonToggleLogView = new CustomControls.CustomButton();
             this.NotifyIconMain = new System.Windows.Forms.NotifyIcon(this.components);
             this.CustomContextMenuStripIcon = new CustomControls.CustomContextMenuStrip();
             this.CustomGroupBoxStatus = new CustomControls.CustomGroupBox();
+            this.CustomRichTextBoxStatusProxyRequests = new CustomControls.CustomRichTextBox();
+            this.CustomRichTextBoxStatusLocalDoHLatency = new CustomControls.CustomRichTextBox();
+            this.CustomRichTextBoxStatusLocalDoH = new CustomControls.CustomRichTextBox();
+            this.CustomRichTextBoxStatusLocalDnsLatency = new CustomControls.CustomRichTextBox();
+            this.CustomRichTextBoxStatusLocalDNS = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsProxySet = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsSharing = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsDNSSet = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsDPIActive = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusIsConnected = new CustomControls.CustomRichTextBox();
             this.CustomRichTextBoxStatusWorkingServers = new CustomControls.CustomRichTextBox();
+            this.SplitContainerMain = new System.Windows.Forms.SplitContainer();
+            this.SplitContainerTop = new System.Windows.Forms.SplitContainer();
             this.CustomGroupBoxLog.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSSLFragmentSize)).BeginInit();
             this.CustomTabControlMain.SuspendLayout();
@@ -217,6 +220,7 @@
             this.TabPageConnect.SuspendLayout();
             this.TabPageSetDNS.SuspendLayout();
             this.TabPageShare.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyHandleRequests)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiFragDelay)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiDataLength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiFragmentSize)).BeginInit();
@@ -249,8 +253,15 @@
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingBootstrapDnsPort)).BeginInit();
             this.TabPageAbout.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBoxAbout)).BeginInit();
-            this.CustomStatusStrip1.SuspendLayout();
             this.CustomGroupBoxStatus.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.SplitContainerMain)).BeginInit();
+            this.SplitContainerMain.Panel1.SuspendLayout();
+            this.SplitContainerMain.Panel2.SuspendLayout();
+            this.SplitContainerMain.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.SplitContainerTop)).BeginInit();
+            this.SplitContainerTop.Panel1.SuspendLayout();
+            this.SplitContainerTop.Panel2.SuspendLayout();
+            this.SplitContainerTop.SuspendLayout();
             this.SuspendLayout();
             // 
             // CustomRichTextBoxLog
@@ -283,7 +294,7 @@
             this.CustomRichTextBoxLog.SelectionLength = 0;
             this.CustomRichTextBoxLog.SelectionStart = 0;
             this.CustomRichTextBoxLog.ShortcutsEnabled = true;
-            this.CustomRichTextBoxLog.Size = new System.Drawing.Size(694, 185);
+            this.CustomRichTextBoxLog.Size = new System.Drawing.Size(878, 155);
             this.CustomRichTextBoxLog.TabIndex = 0;
             this.CustomRichTextBoxLog.Texts = "";
             this.CustomRichTextBoxLog.UnderlinedStyle = false;
@@ -292,13 +303,15 @@
             // 
             // CustomButtonCheck
             // 
+            this.CustomButtonCheck.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonCheck.AutoSize = true;
             this.CustomButtonCheck.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonCheck.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonCheck.Location = new System.Drawing.Point(292, 220);
+            this.CustomButtonCheck.Location = new System.Drawing.Point(302, 303);
             this.CustomButtonCheck.Name = "CustomButtonCheck";
             this.CustomButtonCheck.RoundedCorners = 0;
             this.CustomButtonCheck.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonCheck.Size = new System.Drawing.Size(90, 23);
+            this.CustomButtonCheck.Size = new System.Drawing.Size(93, 27);
             this.CustomButtonCheck.TabIndex = 2;
             this.CustomButtonCheck.Text = "Check/Cancel";
             this.CustomButtonCheck.UseVisualStyleBackColor = true;
@@ -306,16 +319,14 @@
             // 
             // CustomGroupBoxLog
             // 
-            this.CustomGroupBoxLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.CustomGroupBoxLog.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.CustomGroupBoxLog.BorderColor = System.Drawing.Color.Blue;
             this.CustomGroupBoxLog.Controls.Add(this.CustomRichTextBoxLog);
-            this.CustomGroupBoxLog.Location = new System.Drawing.Point(1, 356);
+            this.CustomGroupBoxLog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.CustomGroupBoxLog.Location = new System.Drawing.Point(0, 0);
             this.CustomGroupBoxLog.Margin = new System.Windows.Forms.Padding(1);
             this.CustomGroupBoxLog.Name = "CustomGroupBoxLog";
-            this.CustomGroupBoxLog.Size = new System.Drawing.Size(700, 207);
+            this.CustomGroupBoxLog.Size = new System.Drawing.Size(884, 177);
             this.CustomGroupBoxLog.TabIndex = 3;
             this.CustomGroupBoxLog.TabStop = false;
             this.CustomGroupBoxLog.Text = "Log";
@@ -326,7 +337,7 @@
             this.CustomCheckBoxInsecure.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxInsecure.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxInsecure.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxInsecure.Location = new System.Drawing.Point(25, 171);
+            this.CustomCheckBoxInsecure.Location = new System.Drawing.Point(25, 190);
             this.CustomCheckBoxInsecure.Name = "CustomCheckBoxInsecure";
             this.CustomCheckBoxInsecure.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxInsecure.Size = new System.Drawing.Size(211, 17);
@@ -343,7 +354,7 @@
             this.CustomLabelCustomServersInfo.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelCustomServersInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelCustomServersInfo.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelCustomServersInfo.Location = new System.Drawing.Point(41, 72);
+            this.CustomLabelCustomServersInfo.Location = new System.Drawing.Point(41, 75);
             this.CustomLabelCustomServersInfo.Name = "CustomLabelCustomServersInfo";
             this.CustomLabelCustomServersInfo.RoundedCorners = 0;
             this.CustomLabelCustomServersInfo.Size = new System.Drawing.Size(218, 92);
@@ -353,13 +364,15 @@
             // 
             // CustomButtonEditCustomServers
             // 
+            this.CustomButtonEditCustomServers.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonEditCustomServers.AutoSize = true;
             this.CustomButtonEditCustomServers.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonEditCustomServers.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonEditCustomServers.Location = new System.Drawing.Point(50, 220);
+            this.CustomButtonEditCustomServers.Location = new System.Drawing.Point(40, 303);
             this.CustomButtonEditCustomServers.Name = "CustomButtonEditCustomServers";
             this.CustomButtonEditCustomServers.RoundedCorners = 0;
             this.CustomButtonEditCustomServers.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonEditCustomServers.Size = new System.Drawing.Size(110, 23);
+            this.CustomButtonEditCustomServers.Size = new System.Drawing.Size(121, 27);
             this.CustomButtonEditCustomServers.TabIndex = 5;
             this.CustomButtonEditCustomServers.Text = "Edit custom servers";
             this.CustomButtonEditCustomServers.UseVisualStyleBackColor = true;
@@ -371,7 +384,7 @@
             this.CustomRadioButtonCustom.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonCustom.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonCustom.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonCustom.Location = new System.Drawing.Point(25, 43);
+            this.CustomRadioButtonCustom.Location = new System.Drawing.Point(25, 50);
             this.CustomRadioButtonCustom.Name = "CustomRadioButtonCustom";
             this.CustomRadioButtonCustom.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonCustom.Size = new System.Drawing.Size(125, 17);
@@ -406,10 +419,10 @@
             this.CustomLabelSSLFragmentSize.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSSLFragmentSize.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSSLFragmentSize.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSSLFragmentSize.Location = new System.Drawing.Point(299, 83);
+            this.CustomLabelSSLFragmentSize.Location = new System.Drawing.Point(296, 95);
             this.CustomLabelSSLFragmentSize.Name = "CustomLabelSSLFragmentSize";
             this.CustomLabelSSLFragmentSize.RoundedCorners = 0;
-            this.CustomLabelSSLFragmentSize.Size = new System.Drawing.Size(102, 15);
+            this.CustomLabelSSLFragmentSize.Size = new System.Drawing.Size(104, 17);
             this.CustomLabelSSLFragmentSize.TabIndex = 10;
             this.CustomLabelSSLFragmentSize.Text = "SSL fragment size:";
             // 
@@ -418,7 +431,7 @@
             this.CustomNumericUpDownSSLFragmentSize.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownSSLFragmentSize.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownSSLFragmentSize.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownSSLFragmentSize.Location = new System.Drawing.Point(407, 81);
+            this.CustomNumericUpDownSSLFragmentSize.Location = new System.Drawing.Point(404, 93);
             this.CustomNumericUpDownSSLFragmentSize.Margin = new System.Windows.Forms.Padding(1);
             this.CustomNumericUpDownSSLFragmentSize.Maximum = new decimal(new int[] {
             70000,
@@ -426,7 +439,7 @@
             0,
             0});
             this.CustomNumericUpDownSSLFragmentSize.Name = "CustomNumericUpDownSSLFragmentSize";
-            this.CustomNumericUpDownSSLFragmentSize.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownSSLFragmentSize.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownSSLFragmentSize.TabIndex = 9;
             this.CustomNumericUpDownSSLFragmentSize.Value = new decimal(new int[] {
             40,
@@ -447,7 +460,7 @@
             this.CustomTextBoxHTTPProxy.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxHTTPProxy.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxHTTPProxy.HideSelection = true;
-            this.CustomTextBoxHTTPProxy.Location = new System.Drawing.Point(324, 110);
+            this.CustomTextBoxHTTPProxy.Location = new System.Drawing.Point(312, 123);
             this.CustomTextBoxHTTPProxy.Margin = new System.Windows.Forms.Padding(1);
             this.CustomTextBoxHTTPProxy.MaxLength = 32767;
             this.CustomTextBoxHTTPProxy.Multiline = false;
@@ -455,7 +468,7 @@
             this.CustomTextBoxHTTPProxy.ReadOnly = false;
             this.CustomTextBoxHTTPProxy.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.CustomTextBoxHTTPProxy.ShortcutsEnabled = true;
-            this.CustomTextBoxHTTPProxy.Size = new System.Drawing.Size(215, 23);
+            this.CustomTextBoxHTTPProxy.Size = new System.Drawing.Size(205, 23);
             this.CustomTextBoxHTTPProxy.TabIndex = 0;
             this.CustomTextBoxHTTPProxy.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxHTTPProxy.Texts = "";
@@ -469,7 +482,7 @@
             this.CustomRadioButtonDPIModeExtreme.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIModeExtreme.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIModeExtreme.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIModeExtreme.Location = new System.Drawing.Point(192, 83);
+            this.CustomRadioButtonDPIModeExtreme.Location = new System.Drawing.Point(196, 95);
             this.CustomRadioButtonDPIModeExtreme.Margin = new System.Windows.Forms.Padding(1);
             this.CustomRadioButtonDPIModeExtreme.Name = "CustomRadioButtonDPIModeExtreme";
             this.CustomRadioButtonDPIModeExtreme.SelectionColor = System.Drawing.Color.LightBlue;
@@ -485,7 +498,7 @@
             this.CustomRadioButtonDPIModeHigh.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIModeHigh.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIModeHigh.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIModeHigh.Location = new System.Drawing.Point(143, 83);
+            this.CustomRadioButtonDPIModeHigh.Location = new System.Drawing.Point(147, 95);
             this.CustomRadioButtonDPIModeHigh.Margin = new System.Windows.Forms.Padding(1);
             this.CustomRadioButtonDPIModeHigh.Name = "CustomRadioButtonDPIModeHigh";
             this.CustomRadioButtonDPIModeHigh.SelectionColor = System.Drawing.Color.LightBlue;
@@ -501,7 +514,7 @@
             this.CustomRadioButtonDPIModeMedium.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIModeMedium.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIModeMedium.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIModeMedium.Location = new System.Drawing.Point(75, 83);
+            this.CustomRadioButtonDPIModeMedium.Location = new System.Drawing.Point(79, 95);
             this.CustomRadioButtonDPIModeMedium.Margin = new System.Windows.Forms.Padding(1);
             this.CustomRadioButtonDPIModeMedium.Name = "CustomRadioButtonDPIModeMedium";
             this.CustomRadioButtonDPIModeMedium.SelectionColor = System.Drawing.Color.LightBlue;
@@ -518,7 +531,7 @@
             this.CustomRadioButtonDPIModeLight.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIModeLight.Checked = true;
             this.CustomRadioButtonDPIModeLight.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIModeLight.Location = new System.Drawing.Point(25, 83);
+            this.CustomRadioButtonDPIModeLight.Location = new System.Drawing.Point(25, 95);
             this.CustomRadioButtonDPIModeLight.Margin = new System.Windows.Forms.Padding(1);
             this.CustomRadioButtonDPIModeLight.Name = "CustomRadioButtonDPIModeLight";
             this.CustomRadioButtonDPIModeLight.SelectionColor = System.Drawing.Color.LightBlue;
@@ -537,22 +550,24 @@
             this.CustomLabelDPIModes.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelDPIModes.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelDPIModes.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelDPIModes.Location = new System.Drawing.Point(25, 65);
+            this.CustomLabelDPIModes.Location = new System.Drawing.Point(25, 70);
             this.CustomLabelDPIModes.Name = "CustomLabelDPIModes";
             this.CustomLabelDPIModes.RoundedCorners = 0;
-            this.CustomLabelDPIModes.Size = new System.Drawing.Size(75, 15);
+            this.CustomLabelDPIModes.Size = new System.Drawing.Size(77, 17);
             this.CustomLabelDPIModes.TabIndex = 3;
             this.CustomLabelDPIModes.Text = "Select mode:";
             // 
             // CustomButtonConnect
             // 
+            this.CustomButtonConnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonConnect.AutoSize = true;
             this.CustomButtonConnect.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonConnect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonConnect.Location = new System.Drawing.Point(50, 220);
+            this.CustomButtonConnect.Location = new System.Drawing.Point(40, 303);
             this.CustomButtonConnect.Name = "CustomButtonConnect";
             this.CustomButtonConnect.RoundedCorners = 0;
             this.CustomButtonConnect.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonConnect.Size = new System.Drawing.Size(120, 23);
+            this.CustomButtonConnect.Size = new System.Drawing.Size(128, 27);
             this.CustomButtonConnect.TabIndex = 1;
             this.CustomButtonConnect.Text = "Connect/Disconnect";
             this.CustomButtonConnect.UseVisualStyleBackColor = true;
@@ -560,19 +575,18 @@
             // 
             // CustomTabControlMain
             // 
-            this.CustomTabControlMain.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.CustomTabControlMain.BorderColor = System.Drawing.Color.Blue;
             this.CustomTabControlMain.Controls.Add(this.TabPageSecureDNS);
             this.CustomTabControlMain.Controls.Add(this.TabPageSettings);
             this.CustomTabControlMain.Controls.Add(this.TabPageAbout);
+            this.CustomTabControlMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CustomTabControlMain.HideTabHeader = false;
             this.CustomTabControlMain.ItemSize = new System.Drawing.Size(90, 21);
-            this.CustomTabControlMain.Location = new System.Drawing.Point(1, 1);
+            this.CustomTabControlMain.Location = new System.Drawing.Point(0, 0);
             this.CustomTabControlMain.Margin = new System.Windows.Forms.Padding(0);
             this.CustomTabControlMain.Name = "CustomTabControlMain";
             this.CustomTabControlMain.SelectedIndex = 0;
-            this.CustomTabControlMain.Size = new System.Drawing.Size(700, 313);
+            this.CustomTabControlMain.Size = new System.Drawing.Size(700, 400);
             this.CustomTabControlMain.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             this.CustomTabControlMain.TabIndex = 6;
             this.CustomTabControlMain.Tag = 0;
@@ -584,7 +598,7 @@
             this.TabPageSecureDNS.Location = new System.Drawing.Point(4, 25);
             this.TabPageSecureDNS.Name = "TabPageSecureDNS";
             this.TabPageSecureDNS.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSecureDNS.Size = new System.Drawing.Size(692, 284);
+            this.TabPageSecureDNS.Size = new System.Drawing.Size(692, 371);
             this.TabPageSecureDNS.TabIndex = 0;
             this.TabPageSecureDNS.Tag = 0;
             this.TabPageSecureDNS.Text = "Secure DNS";
@@ -599,18 +613,18 @@
             this.CustomTabControlSecureDNS.Controls.Add(this.TabPageDPI);
             this.CustomTabControlSecureDNS.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CustomTabControlSecureDNS.HideTabHeader = false;
-            this.CustomTabControlSecureDNS.ItemSize = new System.Drawing.Size(90, 21);
+            this.CustomTabControlSecureDNS.ItemSize = new System.Drawing.Size(120, 21);
             this.CustomTabControlSecureDNS.Location = new System.Drawing.Point(3, 3);
             this.CustomTabControlSecureDNS.Name = "CustomTabControlSecureDNS";
             this.CustomTabControlSecureDNS.SelectedIndex = 0;
-            this.CustomTabControlSecureDNS.Size = new System.Drawing.Size(686, 278);
+            this.CustomTabControlSecureDNS.Size = new System.Drawing.Size(686, 365);
             this.CustomTabControlSecureDNS.TabIndex = 0;
             this.CustomTabControlSecureDNS.Tag = 3;
             // 
             // TabPageCheck
             // 
             this.TabPageCheck.BackColor = System.Drawing.Color.Transparent;
-            this.TabPageCheck.Controls.Add(this.CustomButtonToggleLogView);
+            this.TabPageCheck.Controls.Add(this.CustomLabelCheckPercent);
             this.TabPageCheck.Controls.Add(this.CustomButtonConnectAll);
             this.TabPageCheck.Controls.Add(this.CustomButtonViewWorkingServers);
             this.TabPageCheck.Controls.Add(this.CustomButtonCheck);
@@ -622,34 +636,38 @@
             this.TabPageCheck.Location = new System.Drawing.Point(4, 25);
             this.TabPageCheck.Name = "TabPageCheck";
             this.TabPageCheck.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageCheck.Size = new System.Drawing.Size(678, 249);
+            this.TabPageCheck.Size = new System.Drawing.Size(678, 336);
             this.TabPageCheck.TabIndex = 0;
             this.TabPageCheck.Tag = 0;
             this.TabPageCheck.Text = "1. Check";
             // 
-            // CustomButtonToggleLogView
+            // CustomLabelCheckPercent
             // 
-            this.CustomButtonToggleLogView.BorderColor = System.Drawing.Color.Blue;
-            this.CustomButtonToggleLogView.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonToggleLogView.Location = new System.Drawing.Point(6, 220);
-            this.CustomButtonToggleLogView.Name = "CustomButtonToggleLogView";
-            this.CustomButtonToggleLogView.RoundedCorners = 5;
-            this.CustomButtonToggleLogView.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonToggleLogView.Size = new System.Drawing.Size(23, 23);
-            this.CustomButtonToggleLogView.TabIndex = 10;
-            this.CustomButtonToggleLogView.Text = "T";
-            this.CustomButtonToggleLogView.UseVisualStyleBackColor = true;
-            this.CustomButtonToggleLogView.Click += new System.EventHandler(this.CustomButtonToggleLogView_Click);
+            this.CustomLabelCheckPercent.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomLabelCheckPercent.AutoSize = true;
+            this.CustomLabelCheckPercent.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelCheckPercent.Border = false;
+            this.CustomLabelCheckPercent.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelCheckPercent.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelCheckPercent.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelCheckPercent.Location = new System.Drawing.Point(415, 309);
+            this.CustomLabelCheckPercent.Name = "CustomLabelCheckPercent";
+            this.CustomLabelCheckPercent.RoundedCorners = 0;
+            this.CustomLabelCheckPercent.Size = new System.Drawing.Size(25, 17);
+            this.CustomLabelCheckPercent.TabIndex = 11;
+            this.CustomLabelCheckPercent.Text = "0%";
             // 
             // CustomButtonConnectAll
             // 
+            this.CustomButtonConnectAll.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.CustomButtonConnectAll.AutoSize = true;
             this.CustomButtonConnectAll.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonConnectAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonConnectAll.Location = new System.Drawing.Point(529, 220);
+            this.CustomButtonConnectAll.Location = new System.Drawing.Point(517, 303);
             this.CustomButtonConnectAll.Name = "CustomButtonConnectAll";
             this.CustomButtonConnectAll.RoundedCorners = 0;
             this.CustomButtonConnectAll.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonConnectAll.Size = new System.Drawing.Size(145, 23);
+            this.CustomButtonConnectAll.Size = new System.Drawing.Size(158, 27);
             this.CustomButtonConnectAll.TabIndex = 9;
             this.CustomButtonConnectAll.Text = "Connect all/Disconnect all";
             this.CustomButtonConnectAll.UseVisualStyleBackColor = true;
@@ -658,13 +676,15 @@
             // 
             // CustomButtonViewWorkingServers
             // 
+            this.CustomButtonViewWorkingServers.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonViewWorkingServers.AutoSize = true;
             this.CustomButtonViewWorkingServers.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonViewWorkingServers.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonViewWorkingServers.Location = new System.Drawing.Point(166, 220);
+            this.CustomButtonViewWorkingServers.Location = new System.Drawing.Point(167, 303);
             this.CustomButtonViewWorkingServers.Name = "CustomButtonViewWorkingServers";
             this.CustomButtonViewWorkingServers.RoundedCorners = 0;
             this.CustomButtonViewWorkingServers.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonViewWorkingServers.Size = new System.Drawing.Size(120, 23);
+            this.CustomButtonViewWorkingServers.Size = new System.Drawing.Size(129, 27);
             this.CustomButtonViewWorkingServers.TabIndex = 8;
             this.CustomButtonViewWorkingServers.Text = "View working servers";
             this.CustomButtonViewWorkingServers.UseVisualStyleBackColor = true;
@@ -681,7 +701,7 @@
             this.TabPageConnect.Location = new System.Drawing.Point(4, 25);
             this.TabPageConnect.Name = "TabPageConnect";
             this.TabPageConnect.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageConnect.Size = new System.Drawing.Size(678, 249);
+            this.TabPageConnect.Size = new System.Drawing.Size(678, 336);
             this.TabPageConnect.TabIndex = 1;
             this.TabPageConnect.Tag = 1;
             this.TabPageConnect.Text = "2. Connect";
@@ -692,7 +712,7 @@
             this.CustomRadioButtonConnectCloudflare.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonConnectCloudflare.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonConnectCloudflare.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonConnectCloudflare.Location = new System.Drawing.Point(25, 70);
+            this.CustomRadioButtonConnectCloudflare.Location = new System.Drawing.Point(25, 80);
             this.CustomRadioButtonConnectCloudflare.Name = "CustomRadioButtonConnectCloudflare";
             this.CustomRadioButtonConnectCloudflare.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonConnectCloudflare.Size = new System.Drawing.Size(168, 17);
@@ -707,7 +727,7 @@
             this.CustomRadioButtonConnectCheckedServers.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonConnectCheckedServers.Checked = true;
             this.CustomRadioButtonConnectCheckedServers.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonConnectCheckedServers.Location = new System.Drawing.Point(25, 30);
+            this.CustomRadioButtonConnectCheckedServers.Location = new System.Drawing.Point(25, 35);
             this.CustomRadioButtonConnectCheckedServers.Name = "CustomRadioButtonConnectCheckedServers";
             this.CustomRadioButtonConnectCheckedServers.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonConnectCheckedServers.Size = new System.Drawing.Size(169, 17);
@@ -722,7 +742,7 @@
             this.CustomRadioButtonConnectDNSCrypt.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonConnectDNSCrypt.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonConnectDNSCrypt.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonConnectDNSCrypt.Location = new System.Drawing.Point(25, 110);
+            this.CustomRadioButtonConnectDNSCrypt.Location = new System.Drawing.Point(25, 125);
             this.CustomRadioButtonConnectDNSCrypt.Name = "CustomRadioButtonConnectDNSCrypt";
             this.CustomRadioButtonConnectDNSCrypt.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonConnectDNSCrypt.Size = new System.Drawing.Size(283, 17);
@@ -741,20 +761,22 @@
             this.TabPageSetDNS.Location = new System.Drawing.Point(4, 25);
             this.TabPageSetDNS.Name = "TabPageSetDNS";
             this.TabPageSetDNS.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSetDNS.Size = new System.Drawing.Size(678, 249);
+            this.TabPageSetDNS.Size = new System.Drawing.Size(678, 336);
             this.TabPageSetDNS.TabIndex = 3;
             this.TabPageSetDNS.Tag = 2;
             this.TabPageSetDNS.Text = "3. Set DNS";
             // 
             // CustomButtonSetDNS
             // 
+            this.CustomButtonSetDNS.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonSetDNS.AutoSize = true;
             this.CustomButtonSetDNS.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonSetDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonSetDNS.Location = new System.Drawing.Point(50, 220);
+            this.CustomButtonSetDNS.Location = new System.Drawing.Point(40, 303);
             this.CustomButtonSetDNS.Name = "CustomButtonSetDNS";
             this.CustomButtonSetDNS.RoundedCorners = 0;
             this.CustomButtonSetDNS.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonSetDNS.Size = new System.Drawing.Size(75, 23);
+            this.CustomButtonSetDNS.Size = new System.Drawing.Size(71, 27);
             this.CustomButtonSetDNS.TabIndex = 3;
             this.CustomButtonSetDNS.Text = "Set/Unset";
             this.CustomButtonSetDNS.UseVisualStyleBackColor = true;
@@ -768,7 +790,7 @@
             this.CustomLabelSelectNIC.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSelectNIC.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSelectNIC.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSelectNIC.Location = new System.Drawing.Point(25, 20);
+            this.CustomLabelSelectNIC.Location = new System.Drawing.Point(25, 25);
             this.CustomLabelSelectNIC.Name = "CustomLabelSelectNIC";
             this.CustomLabelSelectNIC.RoundedCorners = 0;
             this.CustomLabelSelectNIC.Size = new System.Drawing.Size(135, 15);
@@ -783,7 +805,7 @@
             this.CustomLabelSetDNSInfo.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSetDNSInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSetDNSInfo.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSetDNSInfo.Location = new System.Drawing.Point(25, 91);
+            this.CustomLabelSetDNSInfo.Location = new System.Drawing.Point(25, 100);
             this.CustomLabelSetDNSInfo.Name = "CustomLabelSetDNSInfo";
             this.CustomLabelSetDNSInfo.RoundedCorners = 0;
             this.CustomLabelSetDNSInfo.Size = new System.Drawing.Size(220, 45);
@@ -799,15 +821,17 @@
             this.CustomComboBoxNICs.ForeColor = System.Drawing.Color.White;
             this.CustomComboBoxNICs.FormattingEnabled = true;
             this.CustomComboBoxNICs.ItemHeight = 17;
-            this.CustomComboBoxNICs.Location = new System.Drawing.Point(25, 49);
+            this.CustomComboBoxNICs.Location = new System.Drawing.Point(25, 55);
             this.CustomComboBoxNICs.Name = "CustomComboBoxNICs";
             this.CustomComboBoxNICs.SelectionColor = System.Drawing.Color.DodgerBlue;
-            this.CustomComboBoxNICs.Size = new System.Drawing.Size(180, 23);
+            this.CustomComboBoxNICs.Size = new System.Drawing.Size(171, 23);
             this.CustomComboBoxNICs.TabIndex = 1;
             // 
             // TabPageShare
             // 
             this.TabPageShare.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageShare.Controls.Add(this.CustomNumericUpDownHTTPProxyHandleRequests);
+            this.TabPageShare.Controls.Add(this.CustomLabelHTTPProxyHandleRequests);
             this.TabPageShare.Controls.Add(this.CustomCheckBoxHTTPProxyEventShowChunkDetails);
             this.TabPageShare.Controls.Add(this.CustomButtonPDpiApplyChanges);
             this.TabPageShare.Controls.Add(this.CustomNumericUpDownPDpiFragDelay);
@@ -831,10 +855,50 @@
             this.TabPageShare.Location = new System.Drawing.Point(4, 25);
             this.TabPageShare.Name = "TabPageShare";
             this.TabPageShare.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageShare.Size = new System.Drawing.Size(678, 249);
+            this.TabPageShare.Size = new System.Drawing.Size(678, 336);
             this.TabPageShare.TabIndex = 4;
             this.TabPageShare.Tag = 3;
             this.TabPageShare.Text = "4. Share + Bypass DPI";
+            // 
+            // CustomNumericUpDownHTTPProxyHandleRequests
+            // 
+            this.CustomNumericUpDownHTTPProxyHandleRequests.BackColor = System.Drawing.Color.DimGray;
+            this.CustomNumericUpDownHTTPProxyHandleRequests.BorderColor = System.Drawing.Color.Blue;
+            this.CustomNumericUpDownHTTPProxyHandleRequests.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CustomNumericUpDownHTTPProxyHandleRequests.Location = new System.Drawing.Point(300, 53);
+            this.CustomNumericUpDownHTTPProxyHandleRequests.Maximum = new decimal(new int[] {
+            50000,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyHandleRequests.Minimum = new decimal(new int[] {
+            200,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownHTTPProxyHandleRequests.Name = "CustomNumericUpDownHTTPProxyHandleRequests";
+            this.CustomNumericUpDownHTTPProxyHandleRequests.Size = new System.Drawing.Size(53, 23);
+            this.CustomNumericUpDownHTTPProxyHandleRequests.TabIndex = 40;
+            this.CustomNumericUpDownHTTPProxyHandleRequests.Value = new decimal(new int[] {
+            2000,
+            0,
+            0,
+            0});
+            // 
+            // CustomLabelHTTPProxyHandleRequests
+            // 
+            this.CustomLabelHTTPProxyHandleRequests.AutoSize = true;
+            this.CustomLabelHTTPProxyHandleRequests.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelHTTPProxyHandleRequests.Border = false;
+            this.CustomLabelHTTPProxyHandleRequests.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelHTTPProxyHandleRequests.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelHTTPProxyHandleRequests.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelHTTPProxyHandleRequests.Location = new System.Drawing.Point(200, 55);
+            this.CustomLabelHTTPProxyHandleRequests.Name = "CustomLabelHTTPProxyHandleRequests";
+            this.CustomLabelHTTPProxyHandleRequests.RoundedCorners = 0;
+            this.CustomLabelHTTPProxyHandleRequests.Size = new System.Drawing.Size(97, 17);
+            this.CustomLabelHTTPProxyHandleRequests.TabIndex = 39;
+            this.CustomLabelHTTPProxyHandleRequests.Text = "Handle requests:";
             // 
             // CustomCheckBoxHTTPProxyEventShowChunkDetails
             // 
@@ -842,7 +906,7 @@
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxHTTPProxyEventShowChunkDetails.Location = new System.Drawing.Point(480, 50);
+            this.CustomCheckBoxHTTPProxyEventShowChunkDetails.Location = new System.Drawing.Point(455, 55);
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.Name = "CustomCheckBoxHTTPProxyEventShowChunkDetails";
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.Size = new System.Drawing.Size(161, 17);
@@ -852,13 +916,15 @@
             // 
             // CustomButtonPDpiApplyChanges
             // 
+            this.CustomButtonPDpiApplyChanges.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonPDpiApplyChanges.AutoSize = true;
             this.CustomButtonPDpiApplyChanges.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonPDpiApplyChanges.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonPDpiApplyChanges.Location = new System.Drawing.Point(272, 220);
+            this.CustomButtonPDpiApplyChanges.Location = new System.Drawing.Point(249, 303);
             this.CustomButtonPDpiApplyChanges.Name = "CustomButtonPDpiApplyChanges";
             this.CustomButtonPDpiApplyChanges.RoundedCorners = 0;
             this.CustomButtonPDpiApplyChanges.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonPDpiApplyChanges.Size = new System.Drawing.Size(150, 23);
+            this.CustomButtonPDpiApplyChanges.Size = new System.Drawing.Size(157, 27);
             this.CustomButtonPDpiApplyChanges.TabIndex = 37;
             this.CustomButtonPDpiApplyChanges.Text = "Apply DPI bypass changes";
             this.CustomButtonPDpiApplyChanges.UseVisualStyleBackColor = true;
@@ -869,9 +935,9 @@
             this.CustomNumericUpDownPDpiFragDelay.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownPDpiFragDelay.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownPDpiFragDelay.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownPDpiFragDelay.Location = new System.Drawing.Point(377, 183);
+            this.CustomNumericUpDownPDpiFragDelay.Location = new System.Drawing.Point(363, 218);
             this.CustomNumericUpDownPDpiFragDelay.Name = "CustomNumericUpDownPDpiFragDelay";
-            this.CustomNumericUpDownPDpiFragDelay.Size = new System.Drawing.Size(45, 23);
+            this.CustomNumericUpDownPDpiFragDelay.Size = new System.Drawing.Size(43, 23);
             this.CustomNumericUpDownPDpiFragDelay.TabIndex = 36;
             // 
             // CustomLabelPDpiFragDelay
@@ -882,7 +948,7 @@
             this.CustomLabelPDpiFragDelay.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelPDpiFragDelay.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelPDpiFragDelay.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelPDpiFragDelay.Location = new System.Drawing.Point(250, 185);
+            this.CustomLabelPDpiFragDelay.Location = new System.Drawing.Point(240, 220);
             this.CustomLabelPDpiFragDelay.Name = "CustomLabelPDpiFragDelay";
             this.CustomLabelPDpiFragDelay.RoundedCorners = 0;
             this.CustomLabelPDpiFragDelay.Size = new System.Drawing.Size(121, 17);
@@ -895,7 +961,7 @@
             this.CustomCheckBoxPDpiDontChunkBigData.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxPDpiDontChunkBigData.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxPDpiDontChunkBigData.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxPDpiDontChunkBigData.Location = new System.Drawing.Point(54, 185);
+            this.CustomCheckBoxPDpiDontChunkBigData.Location = new System.Drawing.Point(50, 220);
             this.CustomCheckBoxPDpiDontChunkBigData.Name = "CustomCheckBoxPDpiDontChunkBigData";
             this.CustomCheckBoxPDpiDontChunkBigData.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxPDpiDontChunkBigData.Size = new System.Drawing.Size(182, 17);
@@ -909,7 +975,7 @@
             this.CustomCheckBoxPDpiFragModeRandom.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxPDpiFragModeRandom.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxPDpiFragModeRandom.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxPDpiFragModeRandom.Location = new System.Drawing.Point(298, 150);
+            this.CustomCheckBoxPDpiFragModeRandom.Location = new System.Drawing.Point(285, 180);
             this.CustomCheckBoxPDpiFragModeRandom.Name = "CustomCheckBoxPDpiFragModeRandom";
             this.CustomCheckBoxPDpiFragModeRandom.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxPDpiFragModeRandom.Size = new System.Drawing.Size(101, 17);
@@ -919,13 +985,15 @@
             // 
             // CustomButtonSetProxy
             // 
+            this.CustomButtonSetProxy.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonSetProxy.AutoSize = true;
             this.CustomButtonSetProxy.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonSetProxy.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonSetProxy.Location = new System.Drawing.Point(151, 220);
+            this.CustomButtonSetProxy.Location = new System.Drawing.Point(143, 303);
             this.CustomButtonSetProxy.Name = "CustomButtonSetProxy";
             this.CustomButtonSetProxy.RoundedCorners = 0;
             this.CustomButtonSetProxy.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonSetProxy.Size = new System.Drawing.Size(75, 23);
+            this.CustomButtonSetProxy.Size = new System.Drawing.Size(71, 27);
             this.CustomButtonSetProxy.TabIndex = 32;
             this.CustomButtonSetProxy.Text = "Set/Unset";
             this.CustomButtonSetProxy.UseVisualStyleBackColor = true;
@@ -936,7 +1004,7 @@
             this.CustomNumericUpDownPDpiDataLength.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownPDpiDataLength.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownPDpiDataLength.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownPDpiDataLength.Location = new System.Drawing.Point(165, 113);
+            this.CustomNumericUpDownPDpiDataLength.Location = new System.Drawing.Point(159, 138);
             this.CustomNumericUpDownPDpiDataLength.Maximum = new decimal(new int[] {
             65536,
             0,
@@ -948,7 +1016,7 @@
             0,
             0});
             this.CustomNumericUpDownPDpiDataLength.Name = "CustomNumericUpDownPDpiDataLength";
-            this.CustomNumericUpDownPDpiDataLength.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownPDpiDataLength.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownPDpiDataLength.TabIndex = 31;
             this.CustomNumericUpDownPDpiDataLength.Value = new decimal(new int[] {
             60,
@@ -964,7 +1032,7 @@
             this.CustomLabelPDpiDpiInfo1.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelPDpiDpiInfo1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelPDpiDpiInfo1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelPDpiDpiInfo1.Location = new System.Drawing.Point(50, 115);
+            this.CustomLabelPDpiDpiInfo1.Location = new System.Drawing.Point(50, 140);
             this.CustomLabelPDpiDpiInfo1.Name = "CustomLabelPDpiDpiInfo1";
             this.CustomLabelPDpiDpiInfo1.RoundedCorners = 0;
             this.CustomLabelPDpiDpiInfo1.Size = new System.Drawing.Size(109, 17);
@@ -976,7 +1044,7 @@
             this.CustomNumericUpDownPDpiFragmentSize.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownPDpiFragmentSize.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownPDpiFragmentSize.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownPDpiFragmentSize.Location = new System.Drawing.Point(344, 113);
+            this.CustomNumericUpDownPDpiFragmentSize.Location = new System.Drawing.Point(333, 138);
             this.CustomNumericUpDownPDpiFragmentSize.Maximum = new decimal(new int[] {
             65536,
             0,
@@ -988,7 +1056,7 @@
             0,
             0});
             this.CustomNumericUpDownPDpiFragmentSize.Name = "CustomNumericUpDownPDpiFragmentSize";
-            this.CustomNumericUpDownPDpiFragmentSize.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownPDpiFragmentSize.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownPDpiFragmentSize.TabIndex = 28;
             this.CustomNumericUpDownPDpiFragmentSize.Value = new decimal(new int[] {
             2,
@@ -1004,7 +1072,7 @@
             this.CustomLabelPDpiDpiInfo2.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelPDpiDpiInfo2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelPDpiDpiInfo2.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelPDpiDpiInfo2.Location = new System.Drawing.Point(226, 115);
+            this.CustomLabelPDpiDpiInfo2.Location = new System.Drawing.Point(218, 140);
             this.CustomLabelPDpiDpiInfo2.Name = "CustomLabelPDpiDpiInfo2";
             this.CustomLabelPDpiDpiInfo2.RoundedCorners = 0;
             this.CustomLabelPDpiDpiInfo2.Size = new System.Drawing.Size(112, 17);
@@ -1018,10 +1086,10 @@
             this.CustomLabelShareSeparator1.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelShareSeparator1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelShareSeparator1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelShareSeparator1.Location = new System.Drawing.Point(20, 80);
+            this.CustomLabelShareSeparator1.Location = new System.Drawing.Point(20, 89);
             this.CustomLabelShareSeparator1.Name = "CustomLabelShareSeparator1";
             this.CustomLabelShareSeparator1.RoundedCorners = 0;
-            this.CustomLabelShareSeparator1.Size = new System.Drawing.Size(640, 1);
+            this.CustomLabelShareSeparator1.Size = new System.Drawing.Size(609, 1);
             this.CustomLabelShareSeparator1.TabIndex = 24;
             // 
             // CustomCheckBoxHTTPProxyEventShowRequest
@@ -1030,7 +1098,7 @@
             this.CustomCheckBoxHTTPProxyEventShowRequest.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxHTTPProxyEventShowRequest.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxHTTPProxyEventShowRequest.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxHTTPProxyEventShowRequest.Location = new System.Drawing.Point(320, 50);
+            this.CustomCheckBoxHTTPProxyEventShowRequest.Location = new System.Drawing.Point(455, 30);
             this.CustomCheckBoxHTTPProxyEventShowRequest.Name = "CustomCheckBoxHTTPProxyEventShowRequest";
             this.CustomCheckBoxHTTPProxyEventShowRequest.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxHTTPProxyEventShowRequest.Size = new System.Drawing.Size(135, 17);
@@ -1043,7 +1111,7 @@
             this.CustomNumericUpDownPDpiFragmentChunks.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownPDpiFragmentChunks.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownPDpiFragmentChunks.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownPDpiFragmentChunks.Location = new System.Drawing.Point(220, 148);
+            this.CustomNumericUpDownPDpiFragmentChunks.Location = new System.Drawing.Point(218, 178);
             this.CustomNumericUpDownPDpiFragmentChunks.Maximum = new decimal(new int[] {
             500,
             0,
@@ -1055,7 +1123,7 @@
             0,
             0});
             this.CustomNumericUpDownPDpiFragmentChunks.Name = "CustomNumericUpDownPDpiFragmentChunks";
-            this.CustomNumericUpDownPDpiFragmentChunks.Size = new System.Drawing.Size(50, 23);
+            this.CustomNumericUpDownPDpiFragmentChunks.Size = new System.Drawing.Size(47, 23);
             this.CustomNumericUpDownPDpiFragmentChunks.TabIndex = 19;
             this.CustomNumericUpDownPDpiFragmentChunks.Value = new decimal(new int[] {
             60,
@@ -1071,7 +1139,7 @@
             this.CustomLabelPDpiDpiInfo3.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelPDpiDpiInfo3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelPDpiDpiInfo3.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelPDpiDpiInfo3.Location = new System.Drawing.Point(50, 150);
+            this.CustomLabelPDpiDpiInfo3.Location = new System.Drawing.Point(50, 180);
             this.CustomLabelPDpiDpiInfo3.Name = "CustomLabelPDpiDpiInfo3";
             this.CustomLabelPDpiDpiInfo3.RoundedCorners = 0;
             this.CustomLabelPDpiDpiInfo3.Size = new System.Drawing.Size(164, 17);
@@ -1086,7 +1154,7 @@
             this.CustomCheckBoxPDpiEnableDpiBypass.Checked = true;
             this.CustomCheckBoxPDpiEnableDpiBypass.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxPDpiEnableDpiBypass.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxPDpiEnableDpiBypass.Location = new System.Drawing.Point(25, 90);
+            this.CustomCheckBoxPDpiEnableDpiBypass.Location = new System.Drawing.Point(25, 110);
             this.CustomCheckBoxPDpiEnableDpiBypass.Name = "CustomCheckBoxPDpiEnableDpiBypass";
             this.CustomCheckBoxPDpiEnableDpiBypass.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxPDpiEnableDpiBypass.Size = new System.Drawing.Size(120, 17);
@@ -1096,13 +1164,15 @@
             // 
             // CustomButtonShare
             // 
+            this.CustomButtonShare.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonShare.AutoSize = true;
             this.CustomButtonShare.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonShare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonShare.Location = new System.Drawing.Point(50, 220);
+            this.CustomButtonShare.Location = new System.Drawing.Point(40, 303);
             this.CustomButtonShare.Name = "CustomButtonShare";
             this.CustomButtonShare.RoundedCorners = 0;
             this.CustomButtonShare.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonShare.Size = new System.Drawing.Size(95, 23);
+            this.CustomButtonShare.Size = new System.Drawing.Size(97, 27);
             this.CustomButtonShare.TabIndex = 16;
             this.CustomButtonShare.Text = "Enable/Disable";
             this.CustomButtonShare.UseVisualStyleBackColor = true;
@@ -1116,7 +1186,7 @@
             this.CustomLabelHTTPProxyPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelHTTPProxyPort.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelHTTPProxyPort.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelHTTPProxyPort.Location = new System.Drawing.Point(25, 50);
+            this.CustomLabelHTTPProxyPort.Location = new System.Drawing.Point(25, 55);
             this.CustomLabelHTTPProxyPort.Name = "CustomLabelHTTPProxyPort";
             this.CustomLabelHTTPProxyPort.RoundedCorners = 0;
             this.CustomLabelHTTPProxyPort.Size = new System.Drawing.Size(101, 17);
@@ -1144,7 +1214,7 @@
             this.CustomNumericUpDownHTTPProxyPort.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownHTTPProxyPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownHTTPProxyPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownHTTPProxyPort.Location = new System.Drawing.Point(132, 48);
+            this.CustomNumericUpDownHTTPProxyPort.Location = new System.Drawing.Point(130, 53);
             this.CustomNumericUpDownHTTPProxyPort.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -1156,7 +1226,7 @@
             0,
             0});
             this.CustomNumericUpDownHTTPProxyPort.Name = "CustomNumericUpDownHTTPProxyPort";
-            this.CustomNumericUpDownHTTPProxyPort.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownHTTPProxyPort.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownHTTPProxyPort.TabIndex = 12;
             this.CustomNumericUpDownHTTPProxyPort.Value = new decimal(new int[] {
             8080,
@@ -1171,7 +1241,7 @@
             this.TabPageDPI.Location = new System.Drawing.Point(4, 25);
             this.TabPageDPI.Name = "TabPageDPI";
             this.TabPageDPI.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageDPI.Size = new System.Drawing.Size(678, 249);
+            this.TabPageDPI.Size = new System.Drawing.Size(678, 336);
             this.TabPageDPI.TabIndex = 2;
             this.TabPageDPI.Tag = 4;
             this.TabPageDPI.Text = "5. GoodbyeDPI";
@@ -1187,10 +1257,10 @@
             this.CustomTabControlDPIBasicAdvanced.Location = new System.Drawing.Point(3, 3);
             this.CustomTabControlDPIBasicAdvanced.Name = "CustomTabControlDPIBasicAdvanced";
             this.CustomTabControlDPIBasicAdvanced.SelectedIndex = 0;
-            this.CustomTabControlDPIBasicAdvanced.Size = new System.Drawing.Size(672, 243);
+            this.CustomTabControlDPIBasicAdvanced.Size = new System.Drawing.Size(672, 330);
             this.CustomTabControlDPIBasicAdvanced.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             this.CustomTabControlDPIBasicAdvanced.TabIndex = 13;
-            this.CustomTabControlDPIBasicAdvanced.Tag = 0;
+            this.CustomTabControlDPIBasicAdvanced.Tag = 1;
             // 
             // TabPageDPIBasic
             // 
@@ -1215,7 +1285,7 @@
             this.TabPageDPIBasic.Location = new System.Drawing.Point(4, 25);
             this.TabPageDPIBasic.Name = "TabPageDPIBasic";
             this.TabPageDPIBasic.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageDPIBasic.Size = new System.Drawing.Size(664, 214);
+            this.TabPageDPIBasic.Size = new System.Drawing.Size(664, 301);
             this.TabPageDPIBasic.TabIndex = 0;
             this.TabPageDPIBasic.Tag = 0;
             this.TabPageDPIBasic.Text = "Basic";
@@ -1232,7 +1302,7 @@
             this.CustomLabelInfoDPIModes.Location = new System.Drawing.Point(25, 15);
             this.CustomLabelInfoDPIModes.Name = "CustomLabelInfoDPIModes";
             this.CustomLabelInfoDPIModes.RoundedCorners = 0;
-            this.CustomLabelInfoDPIModes.Size = new System.Drawing.Size(147, 38);
+            this.CustomLabelInfoDPIModes.Size = new System.Drawing.Size(149, 40);
             this.CustomLabelInfoDPIModes.TabIndex = 20;
             this.CustomLabelInfoDPIModes.Text = "Light: MTN-AST-ASK\r\nMedium: MCI-SHT";
             // 
@@ -1242,7 +1312,7 @@
             this.CustomRadioButtonDPIMode6.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode6.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode6.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIMode6.Location = new System.Drawing.Point(368, 140);
+            this.CustomRadioButtonDPIMode6.Location = new System.Drawing.Point(370, 155);
             this.CustomRadioButtonDPIMode6.Name = "CustomRadioButtonDPIMode6";
             this.CustomRadioButtonDPIMode6.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonDPIMode6.Size = new System.Drawing.Size(63, 17);
@@ -1256,7 +1326,7 @@
             this.CustomRadioButtonDPIMode5.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode5.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode5.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIMode5.Location = new System.Drawing.Point(299, 140);
+            this.CustomRadioButtonDPIMode5.Location = new System.Drawing.Point(301, 155);
             this.CustomRadioButtonDPIMode5.Name = "CustomRadioButtonDPIMode5";
             this.CustomRadioButtonDPIMode5.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonDPIMode5.Size = new System.Drawing.Size(63, 17);
@@ -1270,7 +1340,7 @@
             this.CustomRadioButtonDPIMode4.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode4.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode4.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIMode4.Location = new System.Drawing.Point(230, 140);
+            this.CustomRadioButtonDPIMode4.Location = new System.Drawing.Point(232, 155);
             this.CustomRadioButtonDPIMode4.Name = "CustomRadioButtonDPIMode4";
             this.CustomRadioButtonDPIMode4.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonDPIMode4.Size = new System.Drawing.Size(63, 17);
@@ -1284,7 +1354,7 @@
             this.CustomRadioButtonDPIMode3.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode3.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode3.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIMode3.Location = new System.Drawing.Point(161, 140);
+            this.CustomRadioButtonDPIMode3.Location = new System.Drawing.Point(163, 155);
             this.CustomRadioButtonDPIMode3.Name = "CustomRadioButtonDPIMode3";
             this.CustomRadioButtonDPIMode3.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonDPIMode3.Size = new System.Drawing.Size(63, 17);
@@ -1300,10 +1370,10 @@
             this.CustomLabelDPIModesGoodbyeDPI.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelDPIModesGoodbyeDPI.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelDPIModesGoodbyeDPI.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelDPIModesGoodbyeDPI.Location = new System.Drawing.Point(25, 120);
+            this.CustomLabelDPIModesGoodbyeDPI.Location = new System.Drawing.Point(25, 130);
             this.CustomLabelDPIModesGoodbyeDPI.Name = "CustomLabelDPIModesGoodbyeDPI";
             this.CustomLabelDPIModesGoodbyeDPI.RoundedCorners = 0;
-            this.CustomLabelDPIModesGoodbyeDPI.Size = new System.Drawing.Size(118, 15);
+            this.CustomLabelDPIModesGoodbyeDPI.Size = new System.Drawing.Size(120, 17);
             this.CustomLabelDPIModesGoodbyeDPI.TabIndex = 15;
             this.CustomLabelDPIModesGoodbyeDPI.Text = "Goodbye DPI modes:";
             // 
@@ -1313,7 +1383,7 @@
             this.CustomRadioButtonDPIMode2.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode2.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode2.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIMode2.Location = new System.Drawing.Point(92, 140);
+            this.CustomRadioButtonDPIMode2.Location = new System.Drawing.Point(94, 155);
             this.CustomRadioButtonDPIMode2.Name = "CustomRadioButtonDPIMode2";
             this.CustomRadioButtonDPIMode2.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonDPIMode2.Size = new System.Drawing.Size(63, 17);
@@ -1327,7 +1397,7 @@
             this.CustomRadioButtonDPIMode1.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode1.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonDPIMode1.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonDPIMode1.Location = new System.Drawing.Point(25, 140);
+            this.CustomRadioButtonDPIMode1.Location = new System.Drawing.Point(25, 155);
             this.CustomRadioButtonDPIMode1.Name = "CustomRadioButtonDPIMode1";
             this.CustomRadioButtonDPIMode1.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonDPIMode1.Size = new System.Drawing.Size(63, 17);
@@ -1337,13 +1407,15 @@
             // 
             // CustomButtonDPIBasicDeactivate
             // 
+            this.CustomButtonDPIBasicDeactivate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonDPIBasicDeactivate.AutoSize = true;
             this.CustomButtonDPIBasicDeactivate.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonDPIBasicDeactivate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonDPIBasicDeactivate.Location = new System.Drawing.Point(166, 185);
+            this.CustomButtonDPIBasicDeactivate.Location = new System.Drawing.Point(172, 268);
             this.CustomButtonDPIBasicDeactivate.Name = "CustomButtonDPIBasicDeactivate";
             this.CustomButtonDPIBasicDeactivate.RoundedCorners = 0;
             this.CustomButtonDPIBasicDeactivate.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonDPIBasicDeactivate.Size = new System.Drawing.Size(75, 23);
+            this.CustomButtonDPIBasicDeactivate.Size = new System.Drawing.Size(74, 27);
             this.CustomButtonDPIBasicDeactivate.TabIndex = 12;
             this.CustomButtonDPIBasicDeactivate.Text = "Deactivate";
             this.CustomButtonDPIBasicDeactivate.UseVisualStyleBackColor = true;
@@ -1351,13 +1423,15 @@
             // 
             // CustomButtonDPIBasicActivate
             // 
+            this.CustomButtonDPIBasicActivate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonDPIBasicActivate.AutoSize = true;
             this.CustomButtonDPIBasicActivate.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonDPIBasicActivate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonDPIBasicActivate.Location = new System.Drawing.Point(50, 185);
+            this.CustomButtonDPIBasicActivate.Location = new System.Drawing.Point(45, 268);
             this.CustomButtonDPIBasicActivate.Name = "CustomButtonDPIBasicActivate";
             this.CustomButtonDPIBasicActivate.RoundedCorners = 0;
             this.CustomButtonDPIBasicActivate.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonDPIBasicActivate.Size = new System.Drawing.Size(110, 23);
+            this.CustomButtonDPIBasicActivate.Size = new System.Drawing.Size(121, 27);
             this.CustomButtonDPIBasicActivate.TabIndex = 11;
             this.CustomButtonDPIBasicActivate.Text = "Activate/Reactivate";
             this.CustomButtonDPIBasicActivate.UseVisualStyleBackColor = true;
@@ -1403,7 +1477,7 @@
             this.TabPageDPIAdvanced.Location = new System.Drawing.Point(4, 25);
             this.TabPageDPIAdvanced.Name = "TabPageDPIAdvanced";
             this.TabPageDPIAdvanced.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageDPIAdvanced.Size = new System.Drawing.Size(664, 214);
+            this.TabPageDPIAdvanced.Size = new System.Drawing.Size(664, 301);
             this.TabPageDPIAdvanced.TabIndex = 1;
             this.TabPageDPIAdvanced.Tag = 1;
             this.TabPageDPIAdvanced.Text = "Advanced";
@@ -1420,14 +1494,14 @@
             this.CustomTextBoxDPIAdvAutoTTL.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxDPIAdvAutoTTL.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxDPIAdvAutoTTL.HideSelection = true;
-            this.CustomTextBoxDPIAdvAutoTTL.Location = new System.Drawing.Point(415, 86);
+            this.CustomTextBoxDPIAdvAutoTTL.Location = new System.Drawing.Point(393, 93);
             this.CustomTextBoxDPIAdvAutoTTL.MaxLength = 32767;
             this.CustomTextBoxDPIAdvAutoTTL.Multiline = false;
             this.CustomTextBoxDPIAdvAutoTTL.Name = "CustomTextBoxDPIAdvAutoTTL";
             this.CustomTextBoxDPIAdvAutoTTL.ReadOnly = false;
             this.CustomTextBoxDPIAdvAutoTTL.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.CustomTextBoxDPIAdvAutoTTL.ShortcutsEnabled = true;
-            this.CustomTextBoxDPIAdvAutoTTL.Size = new System.Drawing.Size(55, 23);
+            this.CustomTextBoxDPIAdvAutoTTL.Size = new System.Drawing.Size(53, 23);
             this.CustomTextBoxDPIAdvAutoTTL.TabIndex = 0;
             this.CustomTextBoxDPIAdvAutoTTL.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxDPIAdvAutoTTL.Texts = "1-4-10";
@@ -1440,7 +1514,7 @@
             this.CustomNumericUpDownDPIAdvMaxPayload.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownDPIAdvMaxPayload.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownDPIAdvMaxPayload.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownDPIAdvMaxPayload.Location = new System.Drawing.Point(113, 142);
+            this.CustomNumericUpDownDPIAdvMaxPayload.Location = new System.Drawing.Point(106, 153);
             this.CustomNumericUpDownDPIAdvMaxPayload.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -1452,7 +1526,7 @@
             0,
             0});
             this.CustomNumericUpDownDPIAdvMaxPayload.Name = "CustomNumericUpDownDPIAdvMaxPayload";
-            this.CustomNumericUpDownDPIAdvMaxPayload.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownDPIAdvMaxPayload.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownDPIAdvMaxPayload.TabIndex = 36;
             this.CustomNumericUpDownDPIAdvMaxPayload.Value = new decimal(new int[] {
             1200,
@@ -1465,7 +1539,7 @@
             this.CustomNumericUpDownDPIAdvMinTTL.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownDPIAdvMinTTL.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownDPIAdvMinTTL.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownDPIAdvMinTTL.Location = new System.Drawing.Point(577, 86);
+            this.CustomNumericUpDownDPIAdvMinTTL.Location = new System.Drawing.Point(539, 93);
             this.CustomNumericUpDownDPIAdvMinTTL.Maximum = new decimal(new int[] {
             3600,
             0,
@@ -1477,7 +1551,7 @@
             0,
             0});
             this.CustomNumericUpDownDPIAdvMinTTL.Name = "CustomNumericUpDownDPIAdvMinTTL";
-            this.CustomNumericUpDownDPIAdvMinTTL.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownDPIAdvMinTTL.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownDPIAdvMinTTL.TabIndex = 35;
             this.CustomNumericUpDownDPIAdvMinTTL.Value = new decimal(new int[] {
             3,
@@ -1490,7 +1564,7 @@
             this.CustomNumericUpDownDPIAdvSetTTL.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownDPIAdvSetTTL.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownDPIAdvSetTTL.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownDPIAdvSetTTL.Location = new System.Drawing.Point(241, 86);
+            this.CustomNumericUpDownDPIAdvSetTTL.Location = new System.Drawing.Point(230, 93);
             this.CustomNumericUpDownDPIAdvSetTTL.Maximum = new decimal(new int[] {
             3600,
             0,
@@ -1502,7 +1576,7 @@
             0,
             0});
             this.CustomNumericUpDownDPIAdvSetTTL.Name = "CustomNumericUpDownDPIAdvSetTTL";
-            this.CustomNumericUpDownDPIAdvSetTTL.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownDPIAdvSetTTL.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownDPIAdvSetTTL.TabIndex = 34;
             this.CustomNumericUpDownDPIAdvSetTTL.Value = new decimal(new int[] {
             1,
@@ -1515,7 +1589,7 @@
             this.CustomNumericUpDownDPIAdvPort.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownDPIAdvPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownDPIAdvPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownDPIAdvPort.Location = new System.Drawing.Point(397, 58);
+            this.CustomNumericUpDownDPIAdvPort.Location = new System.Drawing.Point(376, 63);
             this.CustomNumericUpDownDPIAdvPort.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -1527,7 +1601,7 @@
             0,
             0});
             this.CustomNumericUpDownDPIAdvPort.Name = "CustomNumericUpDownDPIAdvPort";
-            this.CustomNumericUpDownDPIAdvPort.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownDPIAdvPort.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownDPIAdvPort.TabIndex = 33;
             this.CustomNumericUpDownDPIAdvPort.Value = new decimal(new int[] {
             80,
@@ -1537,13 +1611,15 @@
             // 
             // CustomButtonDPIAdvDeactivate
             // 
+            this.CustomButtonDPIAdvDeactivate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonDPIAdvDeactivate.AutoSize = true;
             this.CustomButtonDPIAdvDeactivate.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonDPIAdvDeactivate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonDPIAdvDeactivate.Location = new System.Drawing.Point(166, 185);
+            this.CustomButtonDPIAdvDeactivate.Location = new System.Drawing.Point(172, 268);
             this.CustomButtonDPIAdvDeactivate.Name = "CustomButtonDPIAdvDeactivate";
             this.CustomButtonDPIAdvDeactivate.RoundedCorners = 0;
             this.CustomButtonDPIAdvDeactivate.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonDPIAdvDeactivate.Size = new System.Drawing.Size(75, 23);
+            this.CustomButtonDPIAdvDeactivate.Size = new System.Drawing.Size(74, 27);
             this.CustomButtonDPIAdvDeactivate.TabIndex = 32;
             this.CustomButtonDPIAdvDeactivate.Text = "Deactivate";
             this.CustomButtonDPIAdvDeactivate.UseVisualStyleBackColor = true;
@@ -1551,13 +1627,15 @@
             // 
             // CustomButtonDPIAdvActivate
             // 
+            this.CustomButtonDPIAdvActivate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonDPIAdvActivate.AutoSize = true;
             this.CustomButtonDPIAdvActivate.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonDPIAdvActivate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonDPIAdvActivate.Location = new System.Drawing.Point(50, 185);
+            this.CustomButtonDPIAdvActivate.Location = new System.Drawing.Point(45, 268);
             this.CustomButtonDPIAdvActivate.Name = "CustomButtonDPIAdvActivate";
             this.CustomButtonDPIAdvActivate.RoundedCorners = 0;
             this.CustomButtonDPIAdvActivate.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonDPIAdvActivate.Size = new System.Drawing.Size(110, 23);
+            this.CustomButtonDPIAdvActivate.Size = new System.Drawing.Size(121, 27);
             this.CustomButtonDPIAdvActivate.TabIndex = 31;
             this.CustomButtonDPIAdvActivate.Text = "Activate/Reactivate";
             this.CustomButtonDPIAdvActivate.UseVisualStyleBackColor = true;
@@ -1567,11 +1645,11 @@
             // 
             this.CustomButtonDPIAdvBlacklist.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonDPIAdvBlacklist.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonDPIAdvBlacklist.Location = new System.Drawing.Point(252, 142);
+            this.CustomButtonDPIAdvBlacklist.Location = new System.Drawing.Point(241, 153);
             this.CustomButtonDPIAdvBlacklist.Name = "CustomButtonDPIAdvBlacklist";
             this.CustomButtonDPIAdvBlacklist.RoundedCorners = 0;
             this.CustomButtonDPIAdvBlacklist.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonDPIAdvBlacklist.Size = new System.Drawing.Size(60, 23);
+            this.CustomButtonDPIAdvBlacklist.Size = new System.Drawing.Size(57, 25);
             this.CustomButtonDPIAdvBlacklist.TabIndex = 30;
             this.CustomButtonDPIAdvBlacklist.Text = "Edit";
             this.CustomButtonDPIAdvBlacklist.UseVisualStyleBackColor = true;
@@ -1583,7 +1661,7 @@
             this.CustomCheckBoxDPIAdvBlacklist.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvBlacklist.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvBlacklist.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvBlacklist.Location = new System.Drawing.Point(172, 144);
+            this.CustomCheckBoxDPIAdvBlacklist.Location = new System.Drawing.Point(165, 155);
             this.CustomCheckBoxDPIAdvBlacklist.Name = "CustomCheckBoxDPIAdvBlacklist";
             this.CustomCheckBoxDPIAdvBlacklist.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvBlacklist.Size = new System.Drawing.Size(74, 17);
@@ -1599,7 +1677,7 @@
             this.CustomCheckBoxDPIAdvMaxPayload.Checked = true;
             this.CustomCheckBoxDPIAdvMaxPayload.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxDPIAdvMaxPayload.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvMaxPayload.Location = new System.Drawing.Point(6, 144);
+            this.CustomCheckBoxDPIAdvMaxPayload.Location = new System.Drawing.Point(5, 155);
             this.CustomCheckBoxDPIAdvMaxPayload.Name = "CustomCheckBoxDPIAdvMaxPayload";
             this.CustomCheckBoxDPIAdvMaxPayload.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvMaxPayload.Size = new System.Drawing.Size(101, 17);
@@ -1613,7 +1691,7 @@
             this.CustomCheckBoxDPIAdvReverseFrag.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvReverseFrag.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvReverseFrag.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvReverseFrag.Location = new System.Drawing.Point(504, 116);
+            this.CustomCheckBoxDPIAdvReverseFrag.Location = new System.Drawing.Point(470, 125);
             this.CustomCheckBoxDPIAdvReverseFrag.Name = "CustomCheckBoxDPIAdvReverseFrag";
             this.CustomCheckBoxDPIAdvReverseFrag.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvReverseFrag.Size = new System.Drawing.Size(96, 17);
@@ -1629,7 +1707,7 @@
             this.CustomCheckBoxDPIAdvNativeFrag.Checked = true;
             this.CustomCheckBoxDPIAdvNativeFrag.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxDPIAdvNativeFrag.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvNativeFrag.Location = new System.Drawing.Point(338, 116);
+            this.CustomCheckBoxDPIAdvNativeFrag.Location = new System.Drawing.Point(320, 125);
             this.CustomCheckBoxDPIAdvNativeFrag.Name = "CustomCheckBoxDPIAdvNativeFrag";
             this.CustomCheckBoxDPIAdvNativeFrag.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvNativeFrag.Size = new System.Drawing.Size(90, 17);
@@ -1643,7 +1721,7 @@
             this.CustomCheckBoxDPIAdvWrongSeq.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvWrongSeq.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvWrongSeq.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvWrongSeq.Location = new System.Drawing.Point(172, 116);
+            this.CustomCheckBoxDPIAdvWrongSeq.Location = new System.Drawing.Point(165, 125);
             this.CustomCheckBoxDPIAdvWrongSeq.Name = "CustomCheckBoxDPIAdvWrongSeq";
             this.CustomCheckBoxDPIAdvWrongSeq.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvWrongSeq.Size = new System.Drawing.Size(89, 17);
@@ -1657,7 +1735,7 @@
             this.CustomCheckBoxDPIAdvWrongChksum.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvWrongChksum.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvWrongChksum.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvWrongChksum.Location = new System.Drawing.Point(6, 116);
+            this.CustomCheckBoxDPIAdvWrongChksum.Location = new System.Drawing.Point(5, 125);
             this.CustomCheckBoxDPIAdvWrongChksum.Name = "CustomCheckBoxDPIAdvWrongChksum";
             this.CustomCheckBoxDPIAdvWrongChksum.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvWrongChksum.Size = new System.Drawing.Size(112, 17);
@@ -1671,7 +1749,7 @@
             this.CustomCheckBoxDPIAdvMinTTL.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvMinTTL.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvMinTTL.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvMinTTL.Location = new System.Drawing.Point(504, 88);
+            this.CustomCheckBoxDPIAdvMinTTL.Location = new System.Drawing.Point(470, 95);
             this.CustomCheckBoxDPIAdvMinTTL.Name = "CustomCheckBoxDPIAdvMinTTL";
             this.CustomCheckBoxDPIAdvMinTTL.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvMinTTL.Size = new System.Drawing.Size(67, 17);
@@ -1685,7 +1763,7 @@
             this.CustomCheckBoxDPIAdvAutoTTL.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvAutoTTL.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvAutoTTL.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvAutoTTL.Location = new System.Drawing.Point(338, 88);
+            this.CustomCheckBoxDPIAdvAutoTTL.Location = new System.Drawing.Point(320, 95);
             this.CustomCheckBoxDPIAdvAutoTTL.Name = "CustomCheckBoxDPIAdvAutoTTL";
             this.CustomCheckBoxDPIAdvAutoTTL.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvAutoTTL.Size = new System.Drawing.Size(71, 17);
@@ -1699,7 +1777,7 @@
             this.CustomCheckBoxDPIAdvSetTTL.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvSetTTL.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvSetTTL.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvSetTTL.Location = new System.Drawing.Point(172, 88);
+            this.CustomCheckBoxDPIAdvSetTTL.Location = new System.Drawing.Point(165, 95);
             this.CustomCheckBoxDPIAdvSetTTL.Name = "CustomCheckBoxDPIAdvSetTTL";
             this.CustomCheckBoxDPIAdvSetTTL.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvSetTTL.Size = new System.Drawing.Size(63, 17);
@@ -1713,7 +1791,7 @@
             this.CustomCheckBoxDPIAdvAllowNoSNI.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvAllowNoSNI.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvAllowNoSNI.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvAllowNoSNI.Location = new System.Drawing.Point(6, 88);
+            this.CustomCheckBoxDPIAdvAllowNoSNI.Location = new System.Drawing.Point(5, 95);
             this.CustomCheckBoxDPIAdvAllowNoSNI.Name = "CustomCheckBoxDPIAdvAllowNoSNI";
             this.CustomCheckBoxDPIAdvAllowNoSNI.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvAllowNoSNI.Size = new System.Drawing.Size(98, 17);
@@ -1733,14 +1811,14 @@
             this.CustomTextBoxDPIAdvIpId.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxDPIAdvIpId.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxDPIAdvIpId.HideSelection = true;
-            this.CustomTextBoxDPIAdvIpId.Location = new System.Drawing.Point(566, 58);
+            this.CustomTextBoxDPIAdvIpId.Location = new System.Drawing.Point(529, 63);
             this.CustomTextBoxDPIAdvIpId.MaxLength = 32767;
             this.CustomTextBoxDPIAdvIpId.Multiline = false;
             this.CustomTextBoxDPIAdvIpId.Name = "CustomTextBoxDPIAdvIpId";
             this.CustomTextBoxDPIAdvIpId.ReadOnly = false;
             this.CustomTextBoxDPIAdvIpId.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.CustomTextBoxDPIAdvIpId.ShortcutsEnabled = true;
-            this.CustomTextBoxDPIAdvIpId.Size = new System.Drawing.Size(80, 23);
+            this.CustomTextBoxDPIAdvIpId.Size = new System.Drawing.Size(70, 23);
             this.CustomTextBoxDPIAdvIpId.TabIndex = 0;
             this.CustomTextBoxDPIAdvIpId.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxDPIAdvIpId.Texts = "";
@@ -1754,7 +1832,7 @@
             this.CustomCheckBoxDPIAdvIpId.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvIpId.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvIpId.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvIpId.Location = new System.Drawing.Point(504, 60);
+            this.CustomCheckBoxDPIAdvIpId.Location = new System.Drawing.Point(470, 65);
             this.CustomCheckBoxDPIAdvIpId.Name = "CustomCheckBoxDPIAdvIpId";
             this.CustomCheckBoxDPIAdvIpId.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvIpId.Size = new System.Drawing.Size(56, 17);
@@ -1768,7 +1846,7 @@
             this.CustomCheckBoxDPIAdvPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvPort.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvPort.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvPort.Location = new System.Drawing.Point(338, 60);
+            this.CustomCheckBoxDPIAdvPort.Location = new System.Drawing.Point(320, 65);
             this.CustomCheckBoxDPIAdvPort.Name = "CustomCheckBoxDPIAdvPort";
             this.CustomCheckBoxDPIAdvPort.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvPort.Size = new System.Drawing.Size(53, 17);
@@ -1784,7 +1862,7 @@
             this.CustomCheckBoxDPIAdvW.Checked = true;
             this.CustomCheckBoxDPIAdvW.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxDPIAdvW.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvW.Location = new System.Drawing.Point(172, 60);
+            this.CustomCheckBoxDPIAdvW.Location = new System.Drawing.Point(165, 65);
             this.CustomCheckBoxDPIAdvW.Name = "CustomCheckBoxDPIAdvW";
             this.CustomCheckBoxDPIAdvW.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvW.Size = new System.Drawing.Size(34, 17);
@@ -1798,7 +1876,7 @@
             this.CustomCheckBoxDPIAdvA.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvA.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvA.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvA.Location = new System.Drawing.Point(6, 60);
+            this.CustomCheckBoxDPIAdvA.Location = new System.Drawing.Point(5, 65);
             this.CustomCheckBoxDPIAdvA.Name = "CustomCheckBoxDPIAdvA";
             this.CustomCheckBoxDPIAdvA.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvA.Size = new System.Drawing.Size(32, 17);
@@ -1811,14 +1889,14 @@
             this.CustomNumericUpDownDPIAdvE.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownDPIAdvE.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownDPIAdvE.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownDPIAdvE.Location = new System.Drawing.Point(542, 30);
+            this.CustomNumericUpDownDPIAdvE.Location = new System.Drawing.Point(506, 33);
             this.CustomNumericUpDownDPIAdvE.Maximum = new decimal(new int[] {
             70000,
             0,
             0,
             0});
             this.CustomNumericUpDownDPIAdvE.Name = "CustomNumericUpDownDPIAdvE";
-            this.CustomNumericUpDownDPIAdvE.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownDPIAdvE.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownDPIAdvE.TabIndex = 10;
             this.CustomNumericUpDownDPIAdvE.Value = new decimal(new int[] {
             40,
@@ -1834,7 +1912,7 @@
             this.CustomCheckBoxDPIAdvE.Checked = true;
             this.CustomCheckBoxDPIAdvE.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxDPIAdvE.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvE.Location = new System.Drawing.Point(504, 32);
+            this.CustomCheckBoxDPIAdvE.Location = new System.Drawing.Point(470, 35);
             this.CustomCheckBoxDPIAdvE.Name = "CustomCheckBoxDPIAdvE";
             this.CustomCheckBoxDPIAdvE.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvE.Size = new System.Drawing.Size(32, 17);
@@ -1848,7 +1926,7 @@
             this.CustomCheckBoxDPIAdvN.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvN.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvN.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvN.Location = new System.Drawing.Point(338, 32);
+            this.CustomCheckBoxDPIAdvN.Location = new System.Drawing.Point(320, 35);
             this.CustomCheckBoxDPIAdvN.Name = "CustomCheckBoxDPIAdvN";
             this.CustomCheckBoxDPIAdvN.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvN.Size = new System.Drawing.Size(32, 17);
@@ -1861,7 +1939,7 @@
             this.CustomNumericUpDownDPIAdvK.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownDPIAdvK.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownDPIAdvK.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownDPIAdvK.Location = new System.Drawing.Point(210, 30);
+            this.CustomNumericUpDownDPIAdvK.Location = new System.Drawing.Point(201, 33);
             this.CustomNumericUpDownDPIAdvK.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -1873,7 +1951,7 @@
             0,
             0});
             this.CustomNumericUpDownDPIAdvK.Name = "CustomNumericUpDownDPIAdvK";
-            this.CustomNumericUpDownDPIAdvK.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownDPIAdvK.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownDPIAdvK.TabIndex = 7;
             this.CustomNumericUpDownDPIAdvK.Value = new decimal(new int[] {
             2,
@@ -1887,7 +1965,7 @@
             this.CustomCheckBoxDPIAdvK.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvK.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvK.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvK.Location = new System.Drawing.Point(172, 32);
+            this.CustomCheckBoxDPIAdvK.Location = new System.Drawing.Point(165, 35);
             this.CustomCheckBoxDPIAdvK.Name = "CustomCheckBoxDPIAdvK";
             this.CustomCheckBoxDPIAdvK.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvK.Size = new System.Drawing.Size(32, 17);
@@ -1900,14 +1978,14 @@
             this.CustomNumericUpDownDPIAdvF.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownDPIAdvF.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownDPIAdvF.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownDPIAdvF.Location = new System.Drawing.Point(41, 30);
+            this.CustomNumericUpDownDPIAdvF.Location = new System.Drawing.Point(38, 33);
             this.CustomNumericUpDownDPIAdvF.Maximum = new decimal(new int[] {
             70000,
             0,
             0,
             0});
             this.CustomNumericUpDownDPIAdvF.Name = "CustomNumericUpDownDPIAdvF";
-            this.CustomNumericUpDownDPIAdvF.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownDPIAdvF.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownDPIAdvF.TabIndex = 5;
             this.CustomNumericUpDownDPIAdvF.Value = new decimal(new int[] {
             2,
@@ -1921,7 +1999,7 @@
             this.CustomCheckBoxDPIAdvF.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvF.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxDPIAdvF.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvF.Location = new System.Drawing.Point(6, 32);
+            this.CustomCheckBoxDPIAdvF.Location = new System.Drawing.Point(5, 35);
             this.CustomCheckBoxDPIAdvF.Name = "CustomCheckBoxDPIAdvF";
             this.CustomCheckBoxDPIAdvF.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvF.Size = new System.Drawing.Size(29, 17);
@@ -1937,7 +2015,7 @@
             this.CustomCheckBoxDPIAdvM.Checked = true;
             this.CustomCheckBoxDPIAdvM.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxDPIAdvM.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvM.Location = new System.Drawing.Point(504, 4);
+            this.CustomCheckBoxDPIAdvM.Location = new System.Drawing.Point(470, 5);
             this.CustomCheckBoxDPIAdvM.Name = "CustomCheckBoxDPIAdvM";
             this.CustomCheckBoxDPIAdvM.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvM.Size = new System.Drawing.Size(36, 17);
@@ -1953,7 +2031,7 @@
             this.CustomCheckBoxDPIAdvS.Checked = true;
             this.CustomCheckBoxDPIAdvS.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxDPIAdvS.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvS.Location = new System.Drawing.Point(338, 4);
+            this.CustomCheckBoxDPIAdvS.Location = new System.Drawing.Point(320, 5);
             this.CustomCheckBoxDPIAdvS.Name = "CustomCheckBoxDPIAdvS";
             this.CustomCheckBoxDPIAdvS.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvS.Size = new System.Drawing.Size(31, 17);
@@ -1969,7 +2047,7 @@
             this.CustomCheckBoxDPIAdvR.Checked = true;
             this.CustomCheckBoxDPIAdvR.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxDPIAdvR.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvR.Location = new System.Drawing.Point(172, 4);
+            this.CustomCheckBoxDPIAdvR.Location = new System.Drawing.Point(165, 5);
             this.CustomCheckBoxDPIAdvR.Name = "CustomCheckBoxDPIAdvR";
             this.CustomCheckBoxDPIAdvR.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvR.Size = new System.Drawing.Size(30, 17);
@@ -1985,7 +2063,7 @@
             this.CustomCheckBoxDPIAdvP.Checked = true;
             this.CustomCheckBoxDPIAdvP.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxDPIAdvP.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxDPIAdvP.Location = new System.Drawing.Point(6, 4);
+            this.CustomCheckBoxDPIAdvP.Location = new System.Drawing.Point(5, 5);
             this.CustomCheckBoxDPIAdvP.Name = "CustomCheckBoxDPIAdvP";
             this.CustomCheckBoxDPIAdvP.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxDPIAdvP.Size = new System.Drawing.Size(33, 17);
@@ -2000,7 +2078,7 @@
             this.TabPageSettings.Location = new System.Drawing.Point(4, 25);
             this.TabPageSettings.Name = "TabPageSettings";
             this.TabPageSettings.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSettings.Size = new System.Drawing.Size(692, 284);
+            this.TabPageSettings.Size = new System.Drawing.Size(692, 371);
             this.TabPageSettings.TabIndex = 1;
             this.TabPageSettings.Tag = 1;
             this.TabPageSettings.Text = "Settings";
@@ -2015,6 +2093,7 @@
             this.CustomTabControlSettings.Controls.Add(this.TabPageSettingsSetUnsetDNS);
             this.CustomTabControlSettings.Controls.Add(this.TabPageSettingsCPU);
             this.CustomTabControlSettings.Controls.Add(this.TabPageSettingsOthers);
+            this.CustomTabControlSettings.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CustomTabControlSettings.HideTabHeader = false;
             this.CustomTabControlSettings.ItemSize = new System.Drawing.Size(30, 90);
             this.CustomTabControlSettings.Location = new System.Drawing.Point(3, 3);
@@ -2023,10 +2102,10 @@
             this.CustomTabControlSettings.Name = "CustomTabControlSettings";
             this.CustomTabControlSettings.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.CustomTabControlSettings.SelectedIndex = 0;
-            this.CustomTabControlSettings.Size = new System.Drawing.Size(688, 278);
+            this.CustomTabControlSettings.Size = new System.Drawing.Size(686, 365);
             this.CustomTabControlSettings.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             this.CustomTabControlSettings.TabIndex = 10;
-            this.CustomTabControlSettings.Tag = 3;
+            this.CustomTabControlSettings.Tag = 0;
             // 
             // TabPageSettingsWorkingMode
             // 
@@ -2038,20 +2117,21 @@
             this.TabPageSettingsWorkingMode.Location = new System.Drawing.Point(94, 4);
             this.TabPageSettingsWorkingMode.Name = "TabPageSettingsWorkingMode";
             this.TabPageSettingsWorkingMode.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSettingsWorkingMode.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsWorkingMode.Size = new System.Drawing.Size(588, 357);
             this.TabPageSettingsWorkingMode.TabIndex = 0;
             this.TabPageSettingsWorkingMode.Tag = 0;
             this.TabPageSettingsWorkingMode.Text = "Working mode";
             // 
             // CustomLabelSettingInfoWorkingMode2
             // 
+            this.CustomLabelSettingInfoWorkingMode2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.CustomLabelSettingInfoWorkingMode2.AutoSize = true;
             this.CustomLabelSettingInfoWorkingMode2.BackColor = System.Drawing.Color.DimGray;
             this.CustomLabelSettingInfoWorkingMode2.Border = false;
             this.CustomLabelSettingInfoWorkingMode2.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingInfoWorkingMode2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingInfoWorkingMode2.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingInfoWorkingMode2.Location = new System.Drawing.Point(50, 250);
+            this.CustomLabelSettingInfoWorkingMode2.Location = new System.Drawing.Point(50, 334);
             this.CustomLabelSettingInfoWorkingMode2.Name = "CustomLabelSettingInfoWorkingMode2";
             this.CustomLabelSettingInfoWorkingMode2.RoundedCorners = 0;
             this.CustomLabelSettingInfoWorkingMode2.Size = new System.Drawing.Size(262, 15);
@@ -2064,7 +2144,7 @@
             this.CustomRadioButtonSettingWorkingModeDNSandDoH.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingWorkingModeDNSandDoH.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingWorkingModeDNSandDoH.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingWorkingModeDNSandDoH.Location = new System.Drawing.Point(50, 130);
+            this.CustomRadioButtonSettingWorkingModeDNSandDoH.Location = new System.Drawing.Point(50, 145);
             this.CustomRadioButtonSettingWorkingModeDNSandDoH.Name = "CustomRadioButtonSettingWorkingModeDNSandDoH";
             this.CustomRadioButtonSettingWorkingModeDNSandDoH.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingWorkingModeDNSandDoH.Size = new System.Drawing.Size(234, 17);
@@ -2079,7 +2159,7 @@
             this.CustomRadioButtonSettingWorkingModeDNS.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingWorkingModeDNS.Checked = true;
             this.CustomRadioButtonSettingWorkingModeDNS.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingWorkingModeDNS.Location = new System.Drawing.Point(50, 90);
+            this.CustomRadioButtonSettingWorkingModeDNS.Location = new System.Drawing.Point(50, 100);
             this.CustomRadioButtonSettingWorkingModeDNS.Name = "CustomRadioButtonSettingWorkingModeDNS";
             this.CustomRadioButtonSettingWorkingModeDNS.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingWorkingModeDNS.Size = new System.Drawing.Size(123, 17);
@@ -2097,7 +2177,7 @@
             this.CustomLabelSettingInfoWorkingMode1.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingInfoWorkingMode1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingInfoWorkingMode1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingInfoWorkingMode1.Location = new System.Drawing.Point(50, 30);
+            this.CustomLabelSettingInfoWorkingMode1.Location = new System.Drawing.Point(50, 35);
             this.CustomLabelSettingInfoWorkingMode1.Name = "CustomLabelSettingInfoWorkingMode1";
             this.CustomLabelSettingInfoWorkingMode1.RoundedCorners = 0;
             this.CustomLabelSettingInfoWorkingMode1.Size = new System.Drawing.Size(394, 30);
@@ -2116,21 +2196,23 @@
             this.TabPageSettingsCheck.Location = new System.Drawing.Point(94, 4);
             this.TabPageSettingsCheck.Name = "TabPageSettingsCheck";
             this.TabPageSettingsCheck.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSettingsCheck.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsCheck.Size = new System.Drawing.Size(588, 357);
             this.TabPageSettingsCheck.TabIndex = 3;
             this.TabPageSettingsCheck.Tag = 1;
             this.TabPageSettingsCheck.Text = "Check";
             // 
             // CustomGroupBoxSettingCheckSDNS
             // 
+            this.CustomGroupBoxSettingCheckSDNS.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.CustomGroupBoxSettingCheckSDNS.BorderColor = System.Drawing.Color.Blue;
             this.CustomGroupBoxSettingCheckSDNS.Controls.Add(this.CustomCheckBoxSettingSdnsNoFilter);
             this.CustomGroupBoxSettingCheckSDNS.Controls.Add(this.CustomCheckBoxSettingSdnsNoLog);
             this.CustomGroupBoxSettingCheckSDNS.Controls.Add(this.CustomCheckBoxSettingSdnsDNSSec);
-            this.CustomGroupBoxSettingCheckSDNS.Location = new System.Drawing.Point(4, 100);
+            this.CustomGroupBoxSettingCheckSDNS.Location = new System.Drawing.Point(4, 111);
             this.CustomGroupBoxSettingCheckSDNS.Margin = new System.Windows.Forms.Padding(1);
             this.CustomGroupBoxSettingCheckSDNS.Name = "CustomGroupBoxSettingCheckSDNS";
-            this.CustomGroupBoxSettingCheckSDNS.Size = new System.Drawing.Size(582, 58);
+            this.CustomGroupBoxSettingCheckSDNS.Size = new System.Drawing.Size(580, 65);
             this.CustomGroupBoxSettingCheckSDNS.TabIndex = 11;
             this.CustomGroupBoxSettingCheckSDNS.TabStop = false;
             this.CustomGroupBoxSettingCheckSDNS.Text = "sdns:// servers must have";
@@ -2143,7 +2225,7 @@
             this.CustomCheckBoxSettingSdnsNoFilter.Checked = true;
             this.CustomCheckBoxSettingSdnsNoFilter.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxSettingSdnsNoFilter.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingSdnsNoFilter.Location = new System.Drawing.Point(440, 25);
+            this.CustomCheckBoxSettingSdnsNoFilter.Location = new System.Drawing.Point(420, 28);
             this.CustomCheckBoxSettingSdnsNoFilter.Name = "CustomCheckBoxSettingSdnsNoFilter";
             this.CustomCheckBoxSettingSdnsNoFilter.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxSettingSdnsNoFilter.Size = new System.Drawing.Size(67, 17);
@@ -2157,7 +2239,7 @@
             this.CustomCheckBoxSettingSdnsNoLog.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxSettingSdnsNoLog.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxSettingSdnsNoLog.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingSdnsNoLog.Location = new System.Drawing.Point(240, 25);
+            this.CustomCheckBoxSettingSdnsNoLog.Location = new System.Drawing.Point(230, 28);
             this.CustomCheckBoxSettingSdnsNoLog.Name = "CustomCheckBoxSettingSdnsNoLog";
             this.CustomCheckBoxSettingSdnsNoLog.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxSettingSdnsNoLog.Size = new System.Drawing.Size(61, 17);
@@ -2171,7 +2253,7 @@
             this.CustomCheckBoxSettingSdnsDNSSec.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxSettingSdnsDNSSec.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxSettingSdnsDNSSec.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingSdnsDNSSec.Location = new System.Drawing.Point(11, 25);
+            this.CustomCheckBoxSettingSdnsDNSSec.Location = new System.Drawing.Point(15, 28);
             this.CustomCheckBoxSettingSdnsDNSSec.Name = "CustomCheckBoxSettingSdnsDNSSec";
             this.CustomCheckBoxSettingSdnsDNSSec.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxSettingSdnsDNSSec.Size = new System.Drawing.Size(111, 17);
@@ -2191,14 +2273,14 @@
             this.CustomTextBoxSettingCheckDPIHost.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxSettingCheckDPIHost.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxSettingCheckDPIHost.HideSelection = true;
-            this.CustomTextBoxSettingCheckDPIHost.Location = new System.Drawing.Point(280, 58);
+            this.CustomTextBoxSettingCheckDPIHost.Location = new System.Drawing.Point(274, 63);
             this.CustomTextBoxSettingCheckDPIHost.MaxLength = 32767;
             this.CustomTextBoxSettingCheckDPIHost.Multiline = false;
             this.CustomTextBoxSettingCheckDPIHost.Name = "CustomTextBoxSettingCheckDPIHost";
             this.CustomTextBoxSettingCheckDPIHost.ReadOnly = false;
             this.CustomTextBoxSettingCheckDPIHost.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.CustomTextBoxSettingCheckDPIHost.ShortcutsEnabled = true;
-            this.CustomTextBoxSettingCheckDPIHost.Size = new System.Drawing.Size(150, 23);
+            this.CustomTextBoxSettingCheckDPIHost.Size = new System.Drawing.Size(143, 23);
             this.CustomTextBoxSettingCheckDPIHost.TabIndex = 0;
             this.CustomTextBoxSettingCheckDPIHost.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxSettingCheckDPIHost.Texts = "www.youtube.com";
@@ -2214,7 +2296,7 @@
             this.CustomLabelSettingCheckDPIInfo.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingCheckDPIInfo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingCheckDPIInfo.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingCheckDPIInfo.Location = new System.Drawing.Point(15, 60);
+            this.CustomLabelSettingCheckDPIInfo.Location = new System.Drawing.Point(15, 65);
             this.CustomLabelSettingCheckDPIInfo.Name = "CustomLabelSettingCheckDPIInfo";
             this.CustomLabelSettingCheckDPIInfo.RoundedCorners = 0;
             this.CustomLabelSettingCheckDPIInfo.Size = new System.Drawing.Size(257, 15);
@@ -2229,7 +2311,7 @@
             this.CustomLabelSettingCheckTimeout.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingCheckTimeout.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingCheckTimeout.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingCheckTimeout.Location = new System.Drawing.Point(15, 20);
+            this.CustomLabelSettingCheckTimeout.Location = new System.Drawing.Point(15, 25);
             this.CustomLabelSettingCheckTimeout.Name = "CustomLabelSettingCheckTimeout";
             this.CustomLabelSettingCheckTimeout.RoundedCorners = 0;
             this.CustomLabelSettingCheckTimeout.Size = new System.Drawing.Size(142, 15);
@@ -2247,7 +2329,7 @@
             0,
             0,
             65536});
-            this.CustomNumericUpDownSettingCheckTimeout.Location = new System.Drawing.Point(165, 18);
+            this.CustomNumericUpDownSettingCheckTimeout.Location = new System.Drawing.Point(160, 23);
             this.CustomNumericUpDownSettingCheckTimeout.Maximum = new decimal(new int[] {
             10,
             0,
@@ -2259,7 +2341,7 @@
             0,
             65536});
             this.CustomNumericUpDownSettingCheckTimeout.Name = "CustomNumericUpDownSettingCheckTimeout";
-            this.CustomNumericUpDownSettingCheckTimeout.Size = new System.Drawing.Size(50, 23);
+            this.CustomNumericUpDownSettingCheckTimeout.Size = new System.Drawing.Size(47, 23);
             this.CustomNumericUpDownSettingCheckTimeout.TabIndex = 3;
             this.CustomNumericUpDownSettingCheckTimeout.Value = new decimal(new int[] {
             5,
@@ -2278,7 +2360,7 @@
             this.TabPageSettingsConnect.Location = new System.Drawing.Point(94, 4);
             this.TabPageSettingsConnect.Name = "TabPageSettingsConnect";
             this.TabPageSettingsConnect.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSettingsConnect.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsConnect.Size = new System.Drawing.Size(588, 357);
             this.TabPageSettingsConnect.TabIndex = 4;
             this.TabPageSettingsConnect.Tag = 2;
             this.TabPageSettingsConnect.Text = "Connect";
@@ -2291,7 +2373,7 @@
             this.CustomCheckBoxSettingEnableCache.Checked = true;
             this.CustomCheckBoxSettingEnableCache.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxSettingEnableCache.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingEnableCache.Location = new System.Drawing.Point(50, 50);
+            this.CustomCheckBoxSettingEnableCache.Location = new System.Drawing.Point(50, 55);
             this.CustomCheckBoxSettingEnableCache.Name = "CustomCheckBoxSettingEnableCache";
             this.CustomCheckBoxSettingEnableCache.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxSettingEnableCache.Size = new System.Drawing.Size(119, 17);
@@ -2304,7 +2386,7 @@
             this.CustomNumericUpDownSettingCamouflagePort.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownSettingCamouflagePort.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownSettingCamouflagePort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownSettingCamouflagePort.Location = new System.Drawing.Point(218, 148);
+            this.CustomNumericUpDownSettingCamouflagePort.Location = new System.Drawing.Point(215, 163);
             this.CustomNumericUpDownSettingCamouflagePort.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -2316,7 +2398,7 @@
             0,
             0});
             this.CustomNumericUpDownSettingCamouflagePort.Name = "CustomNumericUpDownSettingCamouflagePort";
-            this.CustomNumericUpDownSettingCamouflagePort.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownSettingCamouflagePort.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownSettingCamouflagePort.TabIndex = 16;
             this.CustomNumericUpDownSettingCamouflagePort.Value = new decimal(new int[] {
             5380,
@@ -2332,7 +2414,7 @@
             this.CustomLabelCheckSettingCamouflagePort.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelCheckSettingCamouflagePort.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelCheckSettingCamouflagePort.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelCheckSettingCamouflagePort.Location = new System.Drawing.Point(50, 150);
+            this.CustomLabelCheckSettingCamouflagePort.Location = new System.Drawing.Point(50, 165);
             this.CustomLabelCheckSettingCamouflagePort.Name = "CustomLabelCheckSettingCamouflagePort";
             this.CustomLabelCheckSettingCamouflagePort.RoundedCorners = 0;
             this.CustomLabelCheckSettingCamouflagePort.Size = new System.Drawing.Size(160, 15);
@@ -2344,7 +2426,7 @@
             this.CustomNumericUpDownSettingMaxServers.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownSettingMaxServers.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownSettingMaxServers.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownSettingMaxServers.Location = new System.Drawing.Point(285, 98);
+            this.CustomNumericUpDownSettingMaxServers.Location = new System.Drawing.Point(275, 108);
             this.CustomNumericUpDownSettingMaxServers.Maximum = new decimal(new int[] {
             10,
             0,
@@ -2356,7 +2438,7 @@
             0,
             0});
             this.CustomNumericUpDownSettingMaxServers.Name = "CustomNumericUpDownSettingMaxServers";
-            this.CustomNumericUpDownSettingMaxServers.Size = new System.Drawing.Size(50, 23);
+            this.CustomNumericUpDownSettingMaxServers.Size = new System.Drawing.Size(47, 23);
             this.CustomNumericUpDownSettingMaxServers.TabIndex = 7;
             this.CustomNumericUpDownSettingMaxServers.Value = new decimal(new int[] {
             5,
@@ -2372,7 +2454,7 @@
             this.CustomLabelSettingMaxServers.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingMaxServers.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingMaxServers.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingMaxServers.Location = new System.Drawing.Point(50, 100);
+            this.CustomLabelSettingMaxServers.Location = new System.Drawing.Point(50, 110);
             this.CustomLabelSettingMaxServers.Name = "CustomLabelSettingMaxServers";
             this.CustomLabelSettingMaxServers.RoundedCorners = 0;
             this.CustomLabelSettingMaxServers.Size = new System.Drawing.Size(223, 15);
@@ -2391,7 +2473,7 @@
             this.TabPageSettingsSetUnsetDNS.Location = new System.Drawing.Point(94, 4);
             this.TabPageSettingsSetUnsetDNS.Name = "TabPageSettingsSetUnsetDNS";
             this.TabPageSettingsSetUnsetDNS.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSettingsSetUnsetDNS.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsSetUnsetDNS.Size = new System.Drawing.Size(588, 357);
             this.TabPageSettingsSetUnsetDNS.TabIndex = 5;
             this.TabPageSettingsSetUnsetDNS.Tag = 3;
             this.TabPageSettingsSetUnsetDNS.Text = "Set/Unset DNS";
@@ -2408,14 +2490,14 @@
             this.CustomTextBoxSettingUnsetDns2.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxSettingUnsetDns2.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxSettingUnsetDns2.HideSelection = true;
-            this.CustomTextBoxSettingUnsetDns2.Location = new System.Drawing.Point(183, 128);
+            this.CustomTextBoxSettingUnsetDns2.Location = new System.Drawing.Point(180, 138);
             this.CustomTextBoxSettingUnsetDns2.MaxLength = 32767;
             this.CustomTextBoxSettingUnsetDns2.Multiline = false;
             this.CustomTextBoxSettingUnsetDns2.Name = "CustomTextBoxSettingUnsetDns2";
             this.CustomTextBoxSettingUnsetDns2.ReadOnly = false;
             this.CustomTextBoxSettingUnsetDns2.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.CustomTextBoxSettingUnsetDns2.ShortcutsEnabled = true;
-            this.CustomTextBoxSettingUnsetDns2.Size = new System.Drawing.Size(100, 23);
+            this.CustomTextBoxSettingUnsetDns2.Size = new System.Drawing.Size(95, 23);
             this.CustomTextBoxSettingUnsetDns2.TabIndex = 0;
             this.CustomTextBoxSettingUnsetDns2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxSettingUnsetDns2.Texts = "8.8.4.4";
@@ -2435,14 +2517,14 @@
             this.CustomTextBoxSettingUnsetDns1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxSettingUnsetDns1.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxSettingUnsetDns1.HideSelection = true;
-            this.CustomTextBoxSettingUnsetDns1.Location = new System.Drawing.Point(183, 93);
+            this.CustomTextBoxSettingUnsetDns1.Location = new System.Drawing.Point(180, 103);
             this.CustomTextBoxSettingUnsetDns1.MaxLength = 32767;
             this.CustomTextBoxSettingUnsetDns1.Multiline = false;
             this.CustomTextBoxSettingUnsetDns1.Name = "CustomTextBoxSettingUnsetDns1";
             this.CustomTextBoxSettingUnsetDns1.ReadOnly = false;
             this.CustomTextBoxSettingUnsetDns1.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.CustomTextBoxSettingUnsetDns1.ShortcutsEnabled = true;
-            this.CustomTextBoxSettingUnsetDns1.Size = new System.Drawing.Size(100, 23);
+            this.CustomTextBoxSettingUnsetDns1.Size = new System.Drawing.Size(95, 23);
             this.CustomTextBoxSettingUnsetDns1.TabIndex = 0;
             this.CustomTextBoxSettingUnsetDns1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxSettingUnsetDns1.Texts = "8.8.8.8";
@@ -2458,7 +2540,7 @@
             this.CustomLabelSettingUnsetDns2.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingUnsetDns2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingUnsetDns2.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingUnsetDns2.Location = new System.Drawing.Point(110, 130);
+            this.CustomLabelSettingUnsetDns2.Location = new System.Drawing.Point(110, 140);
             this.CustomLabelSettingUnsetDns2.Name = "CustomLabelSettingUnsetDns2";
             this.CustomLabelSettingUnsetDns2.RoundedCorners = 0;
             this.CustomLabelSettingUnsetDns2.Size = new System.Drawing.Size(65, 15);
@@ -2473,7 +2555,7 @@
             this.CustomLabelSettingUnsetDns1.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingUnsetDns1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingUnsetDns1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingUnsetDns1.Location = new System.Drawing.Point(110, 95);
+            this.CustomLabelSettingUnsetDns1.Location = new System.Drawing.Point(110, 105);
             this.CustomLabelSettingUnsetDns1.Name = "CustomLabelSettingUnsetDns1";
             this.CustomLabelSettingUnsetDns1.RoundedCorners = 0;
             this.CustomLabelSettingUnsetDns1.Size = new System.Drawing.Size(51, 15);
@@ -2487,7 +2569,7 @@
             this.CustomRadioButtonSettingUnsetDnsToStatic.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingUnsetDnsToStatic.Checked = true;
             this.CustomRadioButtonSettingUnsetDnsToStatic.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingUnsetDnsToStatic.Location = new System.Drawing.Point(50, 65);
+            this.CustomRadioButtonSettingUnsetDnsToStatic.Location = new System.Drawing.Point(50, 70);
             this.CustomRadioButtonSettingUnsetDnsToStatic.Name = "CustomRadioButtonSettingUnsetDnsToStatic";
             this.CustomRadioButtonSettingUnsetDnsToStatic.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingUnsetDnsToStatic.Size = new System.Drawing.Size(131, 17);
@@ -2502,7 +2584,7 @@
             this.CustomRadioButtonSettingUnsetDnsToDhcp.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingUnsetDnsToDhcp.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingUnsetDnsToDhcp.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingUnsetDnsToDhcp.Location = new System.Drawing.Point(50, 30);
+            this.CustomRadioButtonSettingUnsetDnsToDhcp.Location = new System.Drawing.Point(50, 35);
             this.CustomRadioButtonSettingUnsetDnsToDhcp.Name = "CustomRadioButtonSettingUnsetDnsToDhcp";
             this.CustomRadioButtonSettingUnsetDnsToDhcp.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingUnsetDnsToDhcp.Size = new System.Drawing.Size(130, 17);
@@ -2522,7 +2604,7 @@
             this.TabPageSettingsCPU.Location = new System.Drawing.Point(94, 4);
             this.TabPageSettingsCPU.Name = "TabPageSettingsCPU";
             this.TabPageSettingsCPU.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSettingsCPU.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsCPU.Size = new System.Drawing.Size(588, 357);
             this.TabPageSettingsCPU.TabIndex = 1;
             this.TabPageSettingsCPU.Tag = 4;
             this.TabPageSettingsCPU.Text = "CPU";
@@ -2533,7 +2615,7 @@
             this.CustomRadioButtonSettingCPULow.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPULow.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPULow.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingCPULow.Location = new System.Drawing.Point(50, 170);
+            this.CustomRadioButtonSettingCPULow.Location = new System.Drawing.Point(50, 180);
             this.CustomRadioButtonSettingCPULow.Name = "CustomRadioButtonSettingCPULow";
             this.CustomRadioButtonSettingCPULow.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingCPULow.Size = new System.Drawing.Size(42, 17);
@@ -2547,7 +2629,7 @@
             this.CustomRadioButtonSettingCPUBelowNormal.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPUBelowNormal.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPUBelowNormal.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingCPUBelowNormal.Location = new System.Drawing.Point(50, 145);
+            this.CustomRadioButtonSettingCPUBelowNormal.Location = new System.Drawing.Point(50, 155);
             this.CustomRadioButtonSettingCPUBelowNormal.Name = "CustomRadioButtonSettingCPUBelowNormal";
             this.CustomRadioButtonSettingCPUBelowNormal.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingCPUBelowNormal.Size = new System.Drawing.Size(95, 17);
@@ -2562,7 +2644,7 @@
             this.CustomRadioButtonSettingCPUNormal.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPUNormal.Checked = true;
             this.CustomRadioButtonSettingCPUNormal.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingCPUNormal.Location = new System.Drawing.Point(50, 120);
+            this.CustomRadioButtonSettingCPUNormal.Location = new System.Drawing.Point(50, 130);
             this.CustomRadioButtonSettingCPUNormal.Name = "CustomRadioButtonSettingCPUNormal";
             this.CustomRadioButtonSettingCPUNormal.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingCPUNormal.Size = new System.Drawing.Size(61, 17);
@@ -2577,7 +2659,7 @@
             this.CustomRadioButtonSettingCPUAboveNormal.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPUAboveNormal.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPUAboveNormal.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingCPUAboveNormal.Location = new System.Drawing.Point(50, 95);
+            this.CustomRadioButtonSettingCPUAboveNormal.Location = new System.Drawing.Point(50, 105);
             this.CustomRadioButtonSettingCPUAboveNormal.Name = "CustomRadioButtonSettingCPUAboveNormal";
             this.CustomRadioButtonSettingCPUAboveNormal.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingCPUAboveNormal.Size = new System.Drawing.Size(97, 17);
@@ -2591,7 +2673,7 @@
             this.CustomRadioButtonSettingCPUHigh.BorderColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPUHigh.CheckColor = System.Drawing.Color.Blue;
             this.CustomRadioButtonSettingCPUHigh.ForeColor = System.Drawing.Color.White;
-            this.CustomRadioButtonSettingCPUHigh.Location = new System.Drawing.Point(50, 70);
+            this.CustomRadioButtonSettingCPUHigh.Location = new System.Drawing.Point(50, 80);
             this.CustomRadioButtonSettingCPUHigh.Name = "CustomRadioButtonSettingCPUHigh";
             this.CustomRadioButtonSettingCPUHigh.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomRadioButtonSettingCPUHigh.Size = new System.Drawing.Size(47, 17);
@@ -2607,7 +2689,7 @@
             this.CustomLabelSettingInfoCPU.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingInfoCPU.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingInfoCPU.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingInfoCPU.Location = new System.Drawing.Point(50, 30);
+            this.CustomLabelSettingInfoCPU.Location = new System.Drawing.Point(50, 35);
             this.CustomLabelSettingInfoCPU.Name = "CustomLabelSettingInfoCPU";
             this.CustomLabelSettingInfoCPU.RoundedCorners = 0;
             this.CustomLabelSettingInfoCPU.Size = new System.Drawing.Size(132, 15);
@@ -2631,7 +2713,7 @@
             this.TabPageSettingsOthers.Location = new System.Drawing.Point(94, 4);
             this.TabPageSettingsOthers.Name = "TabPageSettingsOthers";
             this.TabPageSettingsOthers.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageSettingsOthers.Size = new System.Drawing.Size(590, 270);
+            this.TabPageSettingsOthers.Size = new System.Drawing.Size(588, 357);
             this.TabPageSettingsOthers.TabIndex = 2;
             this.TabPageSettingsOthers.Tag = 5;
             this.TabPageSettingsOthers.Text = "Others";
@@ -2642,7 +2724,7 @@
             this.CustomNumericUpDownSettingFallbackDnsPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownSettingFallbackDnsPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.CustomNumericUpDownSettingFallbackDnsPort.Enabled = false;
-            this.CustomNumericUpDownSettingFallbackDnsPort.Location = new System.Drawing.Point(410, 63);
+            this.CustomNumericUpDownSettingFallbackDnsPort.Location = new System.Drawing.Point(395, 68);
             this.CustomNumericUpDownSettingFallbackDnsPort.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -2654,7 +2736,7 @@
             0,
             0});
             this.CustomNumericUpDownSettingFallbackDnsPort.Name = "CustomNumericUpDownSettingFallbackDnsPort";
-            this.CustomNumericUpDownSettingFallbackDnsPort.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownSettingFallbackDnsPort.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownSettingFallbackDnsPort.TabIndex = 13;
             this.CustomNumericUpDownSettingFallbackDnsPort.Value = new decimal(new int[] {
             53,
@@ -2670,7 +2752,7 @@
             this.CustomLabelSettingFallbackDnsPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingFallbackDnsPort.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingFallbackDnsPort.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingFallbackDnsPort.Location = new System.Drawing.Point(290, 65);
+            this.CustomLabelSettingFallbackDnsPort.Location = new System.Drawing.Point(275, 70);
             this.CustomLabelSettingFallbackDnsPort.Name = "CustomLabelSettingFallbackDnsPort";
             this.CustomLabelSettingFallbackDnsPort.RoundedCorners = 0;
             this.CustomLabelSettingFallbackDnsPort.Size = new System.Drawing.Size(104, 15);
@@ -2690,14 +2772,14 @@
             this.CustomTextBoxSettingFallbackDnsIP.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxSettingFallbackDnsIP.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxSettingFallbackDnsIP.HideSelection = true;
-            this.CustomTextBoxSettingFallbackDnsIP.Location = new System.Drawing.Point(125, 63);
+            this.CustomTextBoxSettingFallbackDnsIP.Location = new System.Drawing.Point(120, 68);
             this.CustomTextBoxSettingFallbackDnsIP.MaxLength = 32767;
             this.CustomTextBoxSettingFallbackDnsIP.Multiline = false;
             this.CustomTextBoxSettingFallbackDnsIP.Name = "CustomTextBoxSettingFallbackDnsIP";
             this.CustomTextBoxSettingFallbackDnsIP.ReadOnly = false;
             this.CustomTextBoxSettingFallbackDnsIP.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.CustomTextBoxSettingFallbackDnsIP.ShortcutsEnabled = true;
-            this.CustomTextBoxSettingFallbackDnsIP.Size = new System.Drawing.Size(100, 23);
+            this.CustomTextBoxSettingFallbackDnsIP.Size = new System.Drawing.Size(95, 23);
             this.CustomTextBoxSettingFallbackDnsIP.TabIndex = 0;
             this.CustomTextBoxSettingFallbackDnsIP.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxSettingFallbackDnsIP.Texts = "8.8.8.8";
@@ -2713,7 +2795,7 @@
             this.CustomLabelSettingFallbackDnsIP.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingFallbackDnsIP.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingFallbackDnsIP.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingFallbackDnsIP.Location = new System.Drawing.Point(15, 65);
+            this.CustomLabelSettingFallbackDnsIP.Location = new System.Drawing.Point(15, 70);
             this.CustomLabelSettingFallbackDnsIP.Name = "CustomLabelSettingFallbackDnsIP";
             this.CustomLabelSettingFallbackDnsIP.RoundedCorners = 0;
             this.CustomLabelSettingFallbackDnsIP.Size = new System.Drawing.Size(92, 15);
@@ -2725,7 +2807,7 @@
             this.CustomNumericUpDownSettingBootstrapDnsPort.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownSettingBootstrapDnsPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownSettingBootstrapDnsPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownSettingBootstrapDnsPort.Location = new System.Drawing.Point(410, 18);
+            this.CustomNumericUpDownSettingBootstrapDnsPort.Location = new System.Drawing.Point(395, 18);
             this.CustomNumericUpDownSettingBootstrapDnsPort.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -2737,7 +2819,7 @@
             0,
             0});
             this.CustomNumericUpDownSettingBootstrapDnsPort.Name = "CustomNumericUpDownSettingBootstrapDnsPort";
-            this.CustomNumericUpDownSettingBootstrapDnsPort.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownSettingBootstrapDnsPort.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownSettingBootstrapDnsPort.TabIndex = 9;
             this.CustomNumericUpDownSettingBootstrapDnsPort.Value = new decimal(new int[] {
             53,
@@ -2753,7 +2835,7 @@
             this.CustomLabelSettingBootstrapDnsPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingBootstrapDnsPort.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingBootstrapDnsPort.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingBootstrapDnsPort.Location = new System.Drawing.Point(290, 20);
+            this.CustomLabelSettingBootstrapDnsPort.Location = new System.Drawing.Point(275, 20);
             this.CustomLabelSettingBootstrapDnsPort.Name = "CustomLabelSettingBootstrapDnsPort";
             this.CustomLabelSettingBootstrapDnsPort.RoundedCorners = 0;
             this.CustomLabelSettingBootstrapDnsPort.Size = new System.Drawing.Size(112, 15);
@@ -2762,13 +2844,15 @@
             // 
             // CustomButtonSettingRestoreDefault
             // 
+            this.CustomButtonSettingRestoreDefault.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomButtonSettingRestoreDefault.AutoSize = true;
             this.CustomButtonSettingRestoreDefault.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonSettingRestoreDefault.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonSettingRestoreDefault.Location = new System.Drawing.Point(40, 235);
+            this.CustomButtonSettingRestoreDefault.Location = new System.Drawing.Point(40, 324);
             this.CustomButtonSettingRestoreDefault.Name = "CustomButtonSettingRestoreDefault";
             this.CustomButtonSettingRestoreDefault.RoundedCorners = 0;
             this.CustomButtonSettingRestoreDefault.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonSettingRestoreDefault.Size = new System.Drawing.Size(160, 23);
+            this.CustomButtonSettingRestoreDefault.Size = new System.Drawing.Size(171, 27);
             this.CustomButtonSettingRestoreDefault.TabIndex = 2;
             this.CustomButtonSettingRestoreDefault.Text = "Restore all settings to default";
             this.CustomButtonSettingRestoreDefault.UseVisualStyleBackColor = true;
@@ -2780,7 +2864,7 @@
             this.CustomCheckBoxSettingDisableAudioAlert.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxSettingDisableAudioAlert.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxSettingDisableAudioAlert.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingDisableAudioAlert.Location = new System.Drawing.Point(15, 155);
+            this.CustomCheckBoxSettingDisableAudioAlert.Location = new System.Drawing.Point(15, 170);
             this.CustomCheckBoxSettingDisableAudioAlert.Name = "CustomCheckBoxSettingDisableAudioAlert";
             this.CustomCheckBoxSettingDisableAudioAlert.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxSettingDisableAudioAlert.Size = new System.Drawing.Size(125, 17);
@@ -2809,7 +2893,7 @@
             this.CustomCheckBoxSettingDontAskCertificate.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxSettingDontAskCertificate.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxSettingDontAskCertificate.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingDontAskCertificate.Location = new System.Drawing.Point(15, 110);
+            this.CustomCheckBoxSettingDontAskCertificate.Location = new System.Drawing.Point(15, 120);
             this.CustomCheckBoxSettingDontAskCertificate.Name = "CustomCheckBoxSettingDontAskCertificate";
             this.CustomCheckBoxSettingDontAskCertificate.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxSettingDontAskCertificate.Size = new System.Drawing.Size(210, 17);
@@ -2829,14 +2913,14 @@
             this.CustomTextBoxSettingBootstrapDnsIP.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxSettingBootstrapDnsIP.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxSettingBootstrapDnsIP.HideSelection = true;
-            this.CustomTextBoxSettingBootstrapDnsIP.Location = new System.Drawing.Point(125, 18);
+            this.CustomTextBoxSettingBootstrapDnsIP.Location = new System.Drawing.Point(120, 18);
             this.CustomTextBoxSettingBootstrapDnsIP.MaxLength = 32767;
             this.CustomTextBoxSettingBootstrapDnsIP.Multiline = false;
             this.CustomTextBoxSettingBootstrapDnsIP.Name = "CustomTextBoxSettingBootstrapDnsIP";
             this.CustomTextBoxSettingBootstrapDnsIP.ReadOnly = false;
             this.CustomTextBoxSettingBootstrapDnsIP.ScrollBars = System.Windows.Forms.ScrollBars.None;
             this.CustomTextBoxSettingBootstrapDnsIP.ShortcutsEnabled = true;
-            this.CustomTextBoxSettingBootstrapDnsIP.Size = new System.Drawing.Size(100, 23);
+            this.CustomTextBoxSettingBootstrapDnsIP.Size = new System.Drawing.Size(95, 23);
             this.CustomTextBoxSettingBootstrapDnsIP.TabIndex = 0;
             this.CustomTextBoxSettingBootstrapDnsIP.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxSettingBootstrapDnsIP.Texts = "8.8.8.8";
@@ -2861,7 +2945,7 @@
             this.TabPageAbout.Location = new System.Drawing.Point(4, 25);
             this.TabPageAbout.Name = "TabPageAbout";
             this.TabPageAbout.Padding = new System.Windows.Forms.Padding(3);
-            this.TabPageAbout.Size = new System.Drawing.Size(692, 284);
+            this.TabPageAbout.Size = new System.Drawing.Size(692, 371);
             this.TabPageAbout.TabIndex = 2;
             this.TabPageAbout.Tag = 2;
             this.TabPageAbout.Text = "About";
@@ -2870,7 +2954,7 @@
             // 
             this.LinkLabelStAlidxdydz.AutoSize = true;
             this.LinkLabelStAlidxdydz.LinkBehavior = System.Windows.Forms.LinkBehavior.NeverUnderline;
-            this.LinkLabelStAlidxdydz.Location = new System.Drawing.Point(485, 153);
+            this.LinkLabelStAlidxdydz.Location = new System.Drawing.Point(461, 174);
             this.LinkLabelStAlidxdydz.Name = "LinkLabelStAlidxdydz";
             this.LinkLabelStAlidxdydz.Size = new System.Drawing.Size(59, 15);
             this.LinkLabelStAlidxdydz.TabIndex = 10;
@@ -2886,7 +2970,7 @@
             this.CustomLabelAboutSpecialThanks.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelAboutSpecialThanks.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelAboutSpecialThanks.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelAboutSpecialThanks.Location = new System.Drawing.Point(470, 120);
+            this.CustomLabelAboutSpecialThanks.Location = new System.Drawing.Point(446, 135);
             this.CustomLabelAboutSpecialThanks.Name = "CustomLabelAboutSpecialThanks";
             this.CustomLabelAboutSpecialThanks.RoundedCorners = 0;
             this.CustomLabelAboutSpecialThanks.Size = new System.Drawing.Size(81, 75);
@@ -2897,7 +2981,7 @@
             // 
             this.LinkLabelGoodbyeDPI.AutoSize = true;
             this.LinkLabelGoodbyeDPI.LinkBehavior = System.Windows.Forms.LinkBehavior.NeverUnderline;
-            this.LinkLabelGoodbyeDPI.Location = new System.Drawing.Point(300, 213);
+            this.LinkLabelGoodbyeDPI.Location = new System.Drawing.Point(285, 230);
             this.LinkLabelGoodbyeDPI.Name = "LinkLabelGoodbyeDPI";
             this.LinkLabelGoodbyeDPI.Size = new System.Drawing.Size(76, 15);
             this.LinkLabelGoodbyeDPI.TabIndex = 6;
@@ -2909,7 +2993,7 @@
             // 
             this.LinkLabelDNSCrypt.AutoSize = true;
             this.LinkLabelDNSCrypt.LinkBehavior = System.Windows.Forms.LinkBehavior.NeverUnderline;
-            this.LinkLabelDNSCrypt.Location = new System.Drawing.Point(300, 193);
+            this.LinkLabelDNSCrypt.Location = new System.Drawing.Point(285, 208);
             this.LinkLabelDNSCrypt.Name = "LinkLabelDNSCrypt";
             this.LinkLabelDNSCrypt.Size = new System.Drawing.Size(62, 15);
             this.LinkLabelDNSCrypt.TabIndex = 5;
@@ -2921,7 +3005,7 @@
             // 
             this.LinkLabelDNSProxy.AutoSize = true;
             this.LinkLabelDNSProxy.LinkBehavior = System.Windows.Forms.LinkBehavior.NeverUnderline;
-            this.LinkLabelDNSProxy.Location = new System.Drawing.Point(300, 173);
+            this.LinkLabelDNSProxy.Location = new System.Drawing.Point(285, 185);
             this.LinkLabelDNSProxy.Name = "LinkLabelDNSProxy";
             this.LinkLabelDNSProxy.Size = new System.Drawing.Size(160, 15);
             this.LinkLabelDNSProxy.TabIndex = 4;
@@ -2933,7 +3017,7 @@
             // 
             this.LinkLabelDNSLookup.AutoSize = true;
             this.LinkLabelDNSLookup.LinkBehavior = System.Windows.Forms.LinkBehavior.NeverUnderline;
-            this.LinkLabelDNSLookup.Location = new System.Drawing.Point(300, 153);
+            this.LinkLabelDNSLookup.Location = new System.Drawing.Point(285, 163);
             this.LinkLabelDNSLookup.Name = "LinkLabelDNSLookup";
             this.LinkLabelDNSLookup.Size = new System.Drawing.Size(73, 15);
             this.LinkLabelDNSLookup.TabIndex = 3;
@@ -2949,7 +3033,7 @@
             this.CustomLabelAboutUsing.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelAboutUsing.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelAboutUsing.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelAboutUsing.Location = new System.Drawing.Point(285, 120);
+            this.CustomLabelAboutUsing.Location = new System.Drawing.Point(270, 135);
             this.CustomLabelAboutUsing.Name = "CustomLabelAboutUsing";
             this.CustomLabelAboutUsing.RoundedCorners = 0;
             this.CustomLabelAboutUsing.Size = new System.Drawing.Size(36, 120);
@@ -2964,7 +3048,7 @@
             this.CustomLabelAboutVersion.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelAboutVersion.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelAboutVersion.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelAboutVersion.Location = new System.Drawing.Point(623, 46);
+            this.CustomLabelAboutVersion.Location = new System.Drawing.Point(600, 51);
             this.CustomLabelAboutVersion.Name = "CustomLabelAboutVersion";
             this.CustomLabelAboutVersion.RoundedCorners = 0;
             this.CustomLabelAboutVersion.Size = new System.Drawing.Size(45, 15);
@@ -2979,7 +3063,7 @@
             this.CustomLabelAboutThis2.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelAboutThis2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelAboutThis2.ForeColor = System.Drawing.Color.IndianRed;
-            this.CustomLabelAboutThis2.Location = new System.Drawing.Point(282, 70);
+            this.CustomLabelAboutThis2.Location = new System.Drawing.Point(267, 75);
             this.CustomLabelAboutThis2.Name = "CustomLabelAboutThis2";
             this.CustomLabelAboutThis2.RoundedCorners = 0;
             this.CustomLabelAboutThis2.Size = new System.Drawing.Size(333, 15);
@@ -2996,7 +3080,7 @@
             this.CustomLabelAboutThis.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelAboutThis.Font = new System.Drawing.Font("Verdana", 19F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.CustomLabelAboutThis.ForeColor = System.Drawing.Color.DodgerBlue;
-            this.CustomLabelAboutThis.Location = new System.Drawing.Point(250, 30);
+            this.CustomLabelAboutThis.Location = new System.Drawing.Point(235, 33);
             this.CustomLabelAboutThis.Name = "CustomLabelAboutThis";
             this.CustomLabelAboutThis.RoundedCorners = 0;
             this.CustomLabelAboutThis.Size = new System.Drawing.Size(367, 32);
@@ -3007,78 +3091,27 @@
             // PictureBoxAbout
             // 
             this.PictureBoxAbout.Image = global::SecureDNSClient.Properties.Resources.SecureDNSClient;
-            this.PictureBoxAbout.Location = new System.Drawing.Point(60, 30);
+            this.PictureBoxAbout.Location = new System.Drawing.Point(55, 35);
             this.PictureBoxAbout.Name = "PictureBoxAbout";
             this.PictureBoxAbout.Size = new System.Drawing.Size(128, 128);
             this.PictureBoxAbout.TabIndex = 0;
             this.PictureBoxAbout.TabStop = false;
             // 
-            // CustomStatusStrip1
+            // CustomButtonToggleLogView
             // 
-            this.CustomStatusStrip1.BackColor = System.Drawing.Color.DimGray;
-            this.CustomStatusStrip1.Border = false;
-            this.CustomStatusStrip1.BorderColor = System.Drawing.Color.Blue;
-            this.CustomStatusStrip1.ForeColor = System.Drawing.Color.White;
-            this.CustomStatusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.CustomStatusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.ToolStripStatusLabelDNS,
-            this.ToolStripStatusLabelDnsLatency,
-            this.ToolStripStatusLabelDoH,
-            this.ToolStripStatusLabelDohLatency,
-            this.ToolStripStatusLabelSpace,
-            this.ToolStripStatusLabelPercent});
-            this.CustomStatusStrip1.Location = new System.Drawing.Point(0, 564);
-            this.CustomStatusStrip1.Name = "CustomStatusStrip1";
-            this.CustomStatusStrip1.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomStatusStrip1.Size = new System.Drawing.Size(704, 22);
-            this.CustomStatusStrip1.TabIndex = 7;
-            this.CustomStatusStrip1.Text = "CustomStatusStrip1";
-            // 
-            // ToolStripStatusLabelDNS
-            // 
-            this.ToolStripStatusLabelDNS.AutoSize = false;
-            this.ToolStripStatusLabelDNS.Name = "ToolStripStatusLabelDNS";
-            this.ToolStripStatusLabelDNS.Size = new System.Drawing.Size(120, 17);
-            this.ToolStripStatusLabelDNS.Text = "DNS status: Offline.";
-            this.ToolStripStatusLabelDNS.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // ToolStripStatusLabelDnsLatency
-            // 
-            this.ToolStripStatusLabelDnsLatency.AutoSize = false;
-            this.ToolStripStatusLabelDnsLatency.Name = "ToolStripStatusLabelDnsLatency";
-            this.ToolStripStatusLabelDnsLatency.Size = new System.Drawing.Size(100, 17);
-            this.ToolStripStatusLabelDnsLatency.Text = "Latency: -1";
-            this.ToolStripStatusLabelDnsLatency.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // ToolStripStatusLabelDoH
-            // 
-            this.ToolStripStatusLabelDoH.AutoSize = false;
-            this.ToolStripStatusLabelDoH.Name = "ToolStripStatusLabelDoH";
-            this.ToolStripStatusLabelDoH.Size = new System.Drawing.Size(120, 17);
-            this.ToolStripStatusLabelDoH.Text = "DoH status: Offline.";
-            this.ToolStripStatusLabelDoH.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // ToolStripStatusLabelDohLatency
-            // 
-            this.ToolStripStatusLabelDohLatency.AutoSize = false;
-            this.ToolStripStatusLabelDohLatency.Name = "ToolStripStatusLabelDohLatency";
-            this.ToolStripStatusLabelDohLatency.Size = new System.Drawing.Size(100, 17);
-            this.ToolStripStatusLabelDohLatency.Text = "Latency: -1";
-            this.ToolStripStatusLabelDohLatency.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // ToolStripStatusLabelSpace
-            // 
-            this.ToolStripStatusLabelSpace.Name = "ToolStripStatusLabelSpace";
-            this.ToolStripStatusLabelSpace.Size = new System.Drawing.Size(194, 17);
-            this.ToolStripStatusLabelSpace.Spring = true;
-            // 
-            // ToolStripStatusLabelPercent
-            // 
-            this.ToolStripStatusLabelPercent.AutoSize = false;
-            this.ToolStripStatusLabelPercent.Name = "ToolStripStatusLabelPercent";
-            this.ToolStripStatusLabelPercent.Size = new System.Drawing.Size(55, 17);
-            this.ToolStripStatusLabelPercent.Text = "0%";
-            this.ToolStripStatusLabelPercent.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.CustomButtonToggleLogView.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.CustomButtonToggleLogView.AutoSize = true;
+            this.CustomButtonToggleLogView.BorderColor = System.Drawing.Color.Blue;
+            this.CustomButtonToggleLogView.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomButtonToggleLogView.Location = new System.Drawing.Point(144, 362);
+            this.CustomButtonToggleLogView.Name = "CustomButtonToggleLogView";
+            this.CustomButtonToggleLogView.RoundedCorners = 5;
+            this.CustomButtonToggleLogView.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomButtonToggleLogView.Size = new System.Drawing.Size(25, 27);
+            this.CustomButtonToggleLogView.TabIndex = 10;
+            this.CustomButtonToggleLogView.Text = "T";
+            this.CustomButtonToggleLogView.UseVisualStyleBackColor = true;
+            this.CustomButtonToggleLogView.Click += new System.EventHandler(this.CustomButtonToggleLogView_Click);
             // 
             // NotifyIconMain
             // 
@@ -3101,19 +3134,201 @@
             // CustomGroupBoxStatus
             // 
             this.CustomGroupBoxStatus.BorderColor = System.Drawing.Color.Blue;
+            this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusProxyRequests);
+            this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusLocalDoHLatency);
+            this.CustomGroupBoxStatus.Controls.Add(this.CustomButtonToggleLogView);
+            this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusLocalDoH);
+            this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusLocalDnsLatency);
+            this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusLocalDNS);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsProxySet);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsSharing);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsDNSSet);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsDPIActive);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusIsConnected);
             this.CustomGroupBoxStatus.Controls.Add(this.CustomRichTextBoxStatusWorkingServers);
-            this.CustomGroupBoxStatus.Location = new System.Drawing.Point(1, 315);
+            this.CustomGroupBoxStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.CustomGroupBoxStatus.Location = new System.Drawing.Point(0, 0);
             this.CustomGroupBoxStatus.Margin = new System.Windows.Forms.Padding(1);
             this.CustomGroupBoxStatus.Name = "CustomGroupBoxStatus";
-            this.CustomGroupBoxStatus.Size = new System.Drawing.Size(700, 40);
+            this.CustomGroupBoxStatus.Size = new System.Drawing.Size(180, 400);
             this.CustomGroupBoxStatus.TabIndex = 8;
             this.CustomGroupBoxStatus.TabStop = false;
             this.CustomGroupBoxStatus.Text = "Status";
+            // 
+            // CustomRichTextBoxStatusProxyRequests
+            // 
+            this.CustomRichTextBoxStatusProxyRequests.AcceptsTab = false;
+            this.CustomRichTextBoxStatusProxyRequests.AutoWordSelection = false;
+            this.CustomRichTextBoxStatusProxyRequests.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRichTextBoxStatusProxyRequests.Border = false;
+            this.CustomRichTextBoxStatusProxyRequests.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRichTextBoxStatusProxyRequests.BorderSize = 1;
+            this.CustomRichTextBoxStatusProxyRequests.BulletIndent = 0;
+            this.CustomRichTextBoxStatusProxyRequests.Cursor = System.Windows.Forms.Cursors.Default;
+            this.CustomRichTextBoxStatusProxyRequests.DetectUrls = true;
+            this.CustomRichTextBoxStatusProxyRequests.EnableAutoDragDrop = false;
+            this.CustomRichTextBoxStatusProxyRequests.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomRichTextBoxStatusProxyRequests.ForeColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusProxyRequests.HideSelection = true;
+            this.CustomRichTextBoxStatusProxyRequests.Location = new System.Drawing.Point(5, 240);
+            this.CustomRichTextBoxStatusProxyRequests.MaxLength = 2147483647;
+            this.CustomRichTextBoxStatusProxyRequests.MinimumSize = new System.Drawing.Size(0, 15);
+            this.CustomRichTextBoxStatusProxyRequests.Multiline = false;
+            this.CustomRichTextBoxStatusProxyRequests.Name = "CustomRichTextBoxStatusProxyRequests";
+            this.CustomRichTextBoxStatusProxyRequests.ReadOnly = true;
+            this.CustomRichTextBoxStatusProxyRequests.RightMargin = 0;
+            this.CustomRichTextBoxStatusProxyRequests.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomRichTextBoxStatusProxyRequests.ScrollToBottom = false;
+            this.CustomRichTextBoxStatusProxyRequests.SelectionColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusProxyRequests.SelectionLength = 0;
+            this.CustomRichTextBoxStatusProxyRequests.SelectionStart = 0;
+            this.CustomRichTextBoxStatusProxyRequests.ShortcutsEnabled = true;
+            this.CustomRichTextBoxStatusProxyRequests.Size = new System.Drawing.Size(170, 23);
+            this.CustomRichTextBoxStatusProxyRequests.TabIndex = 0;
+            this.CustomRichTextBoxStatusProxyRequests.Texts = "Proxy Requests 20000 of 20000";
+            this.CustomRichTextBoxStatusProxyRequests.UnderlinedStyle = false;
+            this.CustomRichTextBoxStatusProxyRequests.WordWrap = false;
+            this.CustomRichTextBoxStatusProxyRequests.ZoomFactor = 1F;
+            // 
+            // CustomRichTextBoxStatusLocalDoHLatency
+            // 
+            this.CustomRichTextBoxStatusLocalDoHLatency.AcceptsTab = false;
+            this.CustomRichTextBoxStatusLocalDoHLatency.AutoWordSelection = false;
+            this.CustomRichTextBoxStatusLocalDoHLatency.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRichTextBoxStatusLocalDoHLatency.Border = false;
+            this.CustomRichTextBoxStatusLocalDoHLatency.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRichTextBoxStatusLocalDoHLatency.BorderSize = 1;
+            this.CustomRichTextBoxStatusLocalDoHLatency.BulletIndent = 0;
+            this.CustomRichTextBoxStatusLocalDoHLatency.Cursor = System.Windows.Forms.Cursors.Default;
+            this.CustomRichTextBoxStatusLocalDoHLatency.DetectUrls = true;
+            this.CustomRichTextBoxStatusLocalDoHLatency.EnableAutoDragDrop = false;
+            this.CustomRichTextBoxStatusLocalDoHLatency.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomRichTextBoxStatusLocalDoHLatency.ForeColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusLocalDoHLatency.HideSelection = true;
+            this.CustomRichTextBoxStatusLocalDoHLatency.Location = new System.Drawing.Point(5, 140);
+            this.CustomRichTextBoxStatusLocalDoHLatency.MaxLength = 2147483647;
+            this.CustomRichTextBoxStatusLocalDoHLatency.MinimumSize = new System.Drawing.Size(0, 15);
+            this.CustomRichTextBoxStatusLocalDoHLatency.Multiline = false;
+            this.CustomRichTextBoxStatusLocalDoHLatency.Name = "CustomRichTextBoxStatusLocalDoHLatency";
+            this.CustomRichTextBoxStatusLocalDoHLatency.ReadOnly = true;
+            this.CustomRichTextBoxStatusLocalDoHLatency.RightMargin = 0;
+            this.CustomRichTextBoxStatusLocalDoHLatency.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomRichTextBoxStatusLocalDoHLatency.ScrollToBottom = false;
+            this.CustomRichTextBoxStatusLocalDoHLatency.SelectionColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusLocalDoHLatency.SelectionLength = 0;
+            this.CustomRichTextBoxStatusLocalDoHLatency.SelectionStart = 0;
+            this.CustomRichTextBoxStatusLocalDoHLatency.ShortcutsEnabled = true;
+            this.CustomRichTextBoxStatusLocalDoHLatency.Size = new System.Drawing.Size(170, 23);
+            this.CustomRichTextBoxStatusLocalDoHLatency.TabIndex = 0;
+            this.CustomRichTextBoxStatusLocalDoHLatency.Texts = "Local DoH Latency: -1";
+            this.CustomRichTextBoxStatusLocalDoHLatency.UnderlinedStyle = false;
+            this.CustomRichTextBoxStatusLocalDoHLatency.WordWrap = false;
+            this.CustomRichTextBoxStatusLocalDoHLatency.ZoomFactor = 1F;
+            // 
+            // CustomRichTextBoxStatusLocalDoH
+            // 
+            this.CustomRichTextBoxStatusLocalDoH.AcceptsTab = false;
+            this.CustomRichTextBoxStatusLocalDoH.AutoWordSelection = false;
+            this.CustomRichTextBoxStatusLocalDoH.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRichTextBoxStatusLocalDoH.Border = false;
+            this.CustomRichTextBoxStatusLocalDoH.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRichTextBoxStatusLocalDoH.BorderSize = 1;
+            this.CustomRichTextBoxStatusLocalDoH.BulletIndent = 0;
+            this.CustomRichTextBoxStatusLocalDoH.Cursor = System.Windows.Forms.Cursors.Default;
+            this.CustomRichTextBoxStatusLocalDoH.DetectUrls = true;
+            this.CustomRichTextBoxStatusLocalDoH.EnableAutoDragDrop = false;
+            this.CustomRichTextBoxStatusLocalDoH.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomRichTextBoxStatusLocalDoH.ForeColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusLocalDoH.HideSelection = true;
+            this.CustomRichTextBoxStatusLocalDoH.Location = new System.Drawing.Point(5, 115);
+            this.CustomRichTextBoxStatusLocalDoH.MaxLength = 2147483647;
+            this.CustomRichTextBoxStatusLocalDoH.MinimumSize = new System.Drawing.Size(0, 15);
+            this.CustomRichTextBoxStatusLocalDoH.Multiline = false;
+            this.CustomRichTextBoxStatusLocalDoH.Name = "CustomRichTextBoxStatusLocalDoH";
+            this.CustomRichTextBoxStatusLocalDoH.ReadOnly = true;
+            this.CustomRichTextBoxStatusLocalDoH.RightMargin = 0;
+            this.CustomRichTextBoxStatusLocalDoH.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomRichTextBoxStatusLocalDoH.ScrollToBottom = false;
+            this.CustomRichTextBoxStatusLocalDoH.SelectionColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusLocalDoH.SelectionLength = 0;
+            this.CustomRichTextBoxStatusLocalDoH.SelectionStart = 0;
+            this.CustomRichTextBoxStatusLocalDoH.ShortcutsEnabled = true;
+            this.CustomRichTextBoxStatusLocalDoH.Size = new System.Drawing.Size(170, 23);
+            this.CustomRichTextBoxStatusLocalDoH.TabIndex = 0;
+            this.CustomRichTextBoxStatusLocalDoH.Texts = "Local DoH: Offline";
+            this.CustomRichTextBoxStatusLocalDoH.UnderlinedStyle = false;
+            this.CustomRichTextBoxStatusLocalDoH.WordWrap = false;
+            this.CustomRichTextBoxStatusLocalDoH.ZoomFactor = 1F;
+            // 
+            // CustomRichTextBoxStatusLocalDnsLatency
+            // 
+            this.CustomRichTextBoxStatusLocalDnsLatency.AcceptsTab = false;
+            this.CustomRichTextBoxStatusLocalDnsLatency.AutoWordSelection = false;
+            this.CustomRichTextBoxStatusLocalDnsLatency.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRichTextBoxStatusLocalDnsLatency.Border = false;
+            this.CustomRichTextBoxStatusLocalDnsLatency.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRichTextBoxStatusLocalDnsLatency.BorderSize = 1;
+            this.CustomRichTextBoxStatusLocalDnsLatency.BulletIndent = 0;
+            this.CustomRichTextBoxStatusLocalDnsLatency.Cursor = System.Windows.Forms.Cursors.Default;
+            this.CustomRichTextBoxStatusLocalDnsLatency.DetectUrls = true;
+            this.CustomRichTextBoxStatusLocalDnsLatency.EnableAutoDragDrop = false;
+            this.CustomRichTextBoxStatusLocalDnsLatency.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomRichTextBoxStatusLocalDnsLatency.ForeColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusLocalDnsLatency.HideSelection = true;
+            this.CustomRichTextBoxStatusLocalDnsLatency.Location = new System.Drawing.Point(5, 90);
+            this.CustomRichTextBoxStatusLocalDnsLatency.MaxLength = 2147483647;
+            this.CustomRichTextBoxStatusLocalDnsLatency.MinimumSize = new System.Drawing.Size(0, 15);
+            this.CustomRichTextBoxStatusLocalDnsLatency.Multiline = false;
+            this.CustomRichTextBoxStatusLocalDnsLatency.Name = "CustomRichTextBoxStatusLocalDnsLatency";
+            this.CustomRichTextBoxStatusLocalDnsLatency.ReadOnly = true;
+            this.CustomRichTextBoxStatusLocalDnsLatency.RightMargin = 0;
+            this.CustomRichTextBoxStatusLocalDnsLatency.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomRichTextBoxStatusLocalDnsLatency.ScrollToBottom = false;
+            this.CustomRichTextBoxStatusLocalDnsLatency.SelectionColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusLocalDnsLatency.SelectionLength = 0;
+            this.CustomRichTextBoxStatusLocalDnsLatency.SelectionStart = 0;
+            this.CustomRichTextBoxStatusLocalDnsLatency.ShortcutsEnabled = true;
+            this.CustomRichTextBoxStatusLocalDnsLatency.Size = new System.Drawing.Size(170, 23);
+            this.CustomRichTextBoxStatusLocalDnsLatency.TabIndex = 0;
+            this.CustomRichTextBoxStatusLocalDnsLatency.Texts = "Local DNS Latency: -1";
+            this.CustomRichTextBoxStatusLocalDnsLatency.UnderlinedStyle = false;
+            this.CustomRichTextBoxStatusLocalDnsLatency.WordWrap = false;
+            this.CustomRichTextBoxStatusLocalDnsLatency.ZoomFactor = 1F;
+            // 
+            // CustomRichTextBoxStatusLocalDNS
+            // 
+            this.CustomRichTextBoxStatusLocalDNS.AcceptsTab = false;
+            this.CustomRichTextBoxStatusLocalDNS.AutoWordSelection = false;
+            this.CustomRichTextBoxStatusLocalDNS.BackColor = System.Drawing.Color.DimGray;
+            this.CustomRichTextBoxStatusLocalDNS.Border = false;
+            this.CustomRichTextBoxStatusLocalDNS.BorderColor = System.Drawing.Color.Blue;
+            this.CustomRichTextBoxStatusLocalDNS.BorderSize = 1;
+            this.CustomRichTextBoxStatusLocalDNS.BulletIndent = 0;
+            this.CustomRichTextBoxStatusLocalDNS.Cursor = System.Windows.Forms.Cursors.Default;
+            this.CustomRichTextBoxStatusLocalDNS.DetectUrls = true;
+            this.CustomRichTextBoxStatusLocalDNS.EnableAutoDragDrop = false;
+            this.CustomRichTextBoxStatusLocalDNS.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomRichTextBoxStatusLocalDNS.ForeColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusLocalDNS.HideSelection = true;
+            this.CustomRichTextBoxStatusLocalDNS.Location = new System.Drawing.Point(5, 65);
+            this.CustomRichTextBoxStatusLocalDNS.MaxLength = 2147483647;
+            this.CustomRichTextBoxStatusLocalDNS.MinimumSize = new System.Drawing.Size(0, 15);
+            this.CustomRichTextBoxStatusLocalDNS.Multiline = false;
+            this.CustomRichTextBoxStatusLocalDNS.Name = "CustomRichTextBoxStatusLocalDNS";
+            this.CustomRichTextBoxStatusLocalDNS.ReadOnly = true;
+            this.CustomRichTextBoxStatusLocalDNS.RightMargin = 0;
+            this.CustomRichTextBoxStatusLocalDNS.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomRichTextBoxStatusLocalDNS.ScrollToBottom = false;
+            this.CustomRichTextBoxStatusLocalDNS.SelectionColor = System.Drawing.Color.White;
+            this.CustomRichTextBoxStatusLocalDNS.SelectionLength = 0;
+            this.CustomRichTextBoxStatusLocalDNS.SelectionStart = 0;
+            this.CustomRichTextBoxStatusLocalDNS.ShortcutsEnabled = true;
+            this.CustomRichTextBoxStatusLocalDNS.Size = new System.Drawing.Size(170, 23);
+            this.CustomRichTextBoxStatusLocalDNS.TabIndex = 0;
+            this.CustomRichTextBoxStatusLocalDNS.Texts = "Local DNS: Offline";
+            this.CustomRichTextBoxStatusLocalDNS.UnderlinedStyle = false;
+            this.CustomRichTextBoxStatusLocalDNS.WordWrap = false;
+            this.CustomRichTextBoxStatusLocalDNS.ZoomFactor = 1F;
             // 
             // CustomRichTextBoxStatusIsProxySet
             // 
@@ -3130,9 +3345,9 @@
             this.CustomRichTextBoxStatusIsProxySet.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsProxySet.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsProxySet.HideSelection = true;
-            this.CustomRichTextBoxStatusIsProxySet.Location = new System.Drawing.Point(579, 13);
+            this.CustomRichTextBoxStatusIsProxySet.Location = new System.Drawing.Point(5, 265);
             this.CustomRichTextBoxStatusIsProxySet.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsProxySet.MinimumSize = new System.Drawing.Size(0, 17);
+            this.CustomRichTextBoxStatusIsProxySet.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusIsProxySet.Multiline = false;
             this.CustomRichTextBoxStatusIsProxySet.Name = "CustomRichTextBoxStatusIsProxySet";
             this.CustomRichTextBoxStatusIsProxySet.ReadOnly = true;
@@ -3143,7 +3358,7 @@
             this.CustomRichTextBoxStatusIsProxySet.SelectionLength = 0;
             this.CustomRichTextBoxStatusIsProxySet.SelectionStart = 0;
             this.CustomRichTextBoxStatusIsProxySet.ShortcutsEnabled = true;
-            this.CustomRichTextBoxStatusIsProxySet.Size = new System.Drawing.Size(95, 23);
+            this.CustomRichTextBoxStatusIsProxySet.Size = new System.Drawing.Size(170, 23);
             this.CustomRichTextBoxStatusIsProxySet.TabIndex = 0;
             this.CustomRichTextBoxStatusIsProxySet.Texts = "Is Proxy Set: Yes";
             this.CustomRichTextBoxStatusIsProxySet.UnderlinedStyle = false;
@@ -3165,9 +3380,9 @@
             this.CustomRichTextBoxStatusIsSharing.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsSharing.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsSharing.HideSelection = true;
-            this.CustomRichTextBoxStatusIsSharing.Location = new System.Drawing.Point(478, 13);
+            this.CustomRichTextBoxStatusIsSharing.Location = new System.Drawing.Point(5, 215);
             this.CustomRichTextBoxStatusIsSharing.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsSharing.MinimumSize = new System.Drawing.Size(0, 17);
+            this.CustomRichTextBoxStatusIsSharing.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusIsSharing.Multiline = false;
             this.CustomRichTextBoxStatusIsSharing.Name = "CustomRichTextBoxStatusIsSharing";
             this.CustomRichTextBoxStatusIsSharing.ReadOnly = true;
@@ -3178,7 +3393,7 @@
             this.CustomRichTextBoxStatusIsSharing.SelectionLength = 0;
             this.CustomRichTextBoxStatusIsSharing.SelectionStart = 0;
             this.CustomRichTextBoxStatusIsSharing.ShortcutsEnabled = true;
-            this.CustomRichTextBoxStatusIsSharing.Size = new System.Drawing.Size(85, 23);
+            this.CustomRichTextBoxStatusIsSharing.Size = new System.Drawing.Size(170, 23);
             this.CustomRichTextBoxStatusIsSharing.TabIndex = 0;
             this.CustomRichTextBoxStatusIsSharing.Texts = "Is Sharing: Yes";
             this.CustomRichTextBoxStatusIsSharing.UnderlinedStyle = false;
@@ -3200,9 +3415,9 @@
             this.CustomRichTextBoxStatusIsDNSSet.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsDNSSet.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsDNSSet.HideSelection = true;
-            this.CustomRichTextBoxStatusIsDNSSet.Location = new System.Drawing.Point(260, 13);
+            this.CustomRichTextBoxStatusIsDNSSet.Location = new System.Drawing.Point(5, 165);
             this.CustomRichTextBoxStatusIsDNSSet.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsDNSSet.MinimumSize = new System.Drawing.Size(0, 17);
+            this.CustomRichTextBoxStatusIsDNSSet.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusIsDNSSet.Multiline = false;
             this.CustomRichTextBoxStatusIsDNSSet.Name = "CustomRichTextBoxStatusIsDNSSet";
             this.CustomRichTextBoxStatusIsDNSSet.ReadOnly = true;
@@ -3213,7 +3428,7 @@
             this.CustomRichTextBoxStatusIsDNSSet.SelectionLength = 0;
             this.CustomRichTextBoxStatusIsDNSSet.SelectionStart = 0;
             this.CustomRichTextBoxStatusIsDNSSet.ShortcutsEnabled = true;
-            this.CustomRichTextBoxStatusIsDNSSet.Size = new System.Drawing.Size(90, 23);
+            this.CustomRichTextBoxStatusIsDNSSet.Size = new System.Drawing.Size(170, 23);
             this.CustomRichTextBoxStatusIsDNSSet.TabIndex = 0;
             this.CustomRichTextBoxStatusIsDNSSet.Texts = "Is DNS Set: Yes";
             this.CustomRichTextBoxStatusIsDNSSet.UnderlinedStyle = false;
@@ -3235,9 +3450,9 @@
             this.CustomRichTextBoxStatusIsDPIActive.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsDPIActive.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsDPIActive.HideSelection = true;
-            this.CustomRichTextBoxStatusIsDPIActive.Location = new System.Drawing.Point(365, 13);
+            this.CustomRichTextBoxStatusIsDPIActive.Location = new System.Drawing.Point(5, 190);
             this.CustomRichTextBoxStatusIsDPIActive.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsDPIActive.MinimumSize = new System.Drawing.Size(0, 17);
+            this.CustomRichTextBoxStatusIsDPIActive.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusIsDPIActive.Multiline = false;
             this.CustomRichTextBoxStatusIsDPIActive.Name = "CustomRichTextBoxStatusIsDPIActive";
             this.CustomRichTextBoxStatusIsDPIActive.ReadOnly = true;
@@ -3248,7 +3463,7 @@
             this.CustomRichTextBoxStatusIsDPIActive.SelectionLength = 0;
             this.CustomRichTextBoxStatusIsDPIActive.SelectionStart = 0;
             this.CustomRichTextBoxStatusIsDPIActive.ShortcutsEnabled = true;
-            this.CustomRichTextBoxStatusIsDPIActive.Size = new System.Drawing.Size(100, 23);
+            this.CustomRichTextBoxStatusIsDPIActive.Size = new System.Drawing.Size(170, 23);
             this.CustomRichTextBoxStatusIsDPIActive.TabIndex = 0;
             this.CustomRichTextBoxStatusIsDPIActive.Texts = "Is DPI Active: Yes";
             this.CustomRichTextBoxStatusIsDPIActive.UnderlinedStyle = false;
@@ -3270,9 +3485,9 @@
             this.CustomRichTextBoxStatusIsConnected.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusIsConnected.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusIsConnected.HideSelection = true;
-            this.CustomRichTextBoxStatusIsConnected.Location = new System.Drawing.Point(144, 13);
+            this.CustomRichTextBoxStatusIsConnected.Location = new System.Drawing.Point(5, 40);
             this.CustomRichTextBoxStatusIsConnected.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusIsConnected.MinimumSize = new System.Drawing.Size(0, 17);
+            this.CustomRichTextBoxStatusIsConnected.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusIsConnected.Multiline = false;
             this.CustomRichTextBoxStatusIsConnected.Name = "CustomRichTextBoxStatusIsConnected";
             this.CustomRichTextBoxStatusIsConnected.ReadOnly = true;
@@ -3283,7 +3498,7 @@
             this.CustomRichTextBoxStatusIsConnected.SelectionLength = 0;
             this.CustomRichTextBoxStatusIsConnected.SelectionStart = 0;
             this.CustomRichTextBoxStatusIsConnected.ShortcutsEnabled = true;
-            this.CustomRichTextBoxStatusIsConnected.Size = new System.Drawing.Size(100, 23);
+            this.CustomRichTextBoxStatusIsConnected.Size = new System.Drawing.Size(170, 23);
             this.CustomRichTextBoxStatusIsConnected.TabIndex = 0;
             this.CustomRichTextBoxStatusIsConnected.Texts = "Is Connected: Yes";
             this.CustomRichTextBoxStatusIsConnected.UnderlinedStyle = false;
@@ -3305,9 +3520,9 @@
             this.CustomRichTextBoxStatusWorkingServers.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomRichTextBoxStatusWorkingServers.ForeColor = System.Drawing.Color.White;
             this.CustomRichTextBoxStatusWorkingServers.HideSelection = true;
-            this.CustomRichTextBoxStatusWorkingServers.Location = new System.Drawing.Point(15, 13);
+            this.CustomRichTextBoxStatusWorkingServers.Location = new System.Drawing.Point(5, 15);
             this.CustomRichTextBoxStatusWorkingServers.MaxLength = 2147483647;
-            this.CustomRichTextBoxStatusWorkingServers.MinimumSize = new System.Drawing.Size(0, 17);
+            this.CustomRichTextBoxStatusWorkingServers.MinimumSize = new System.Drawing.Size(0, 15);
             this.CustomRichTextBoxStatusWorkingServers.Multiline = false;
             this.CustomRichTextBoxStatusWorkingServers.Name = "CustomRichTextBoxStatusWorkingServers";
             this.CustomRichTextBoxStatusWorkingServers.ReadOnly = true;
@@ -3318,29 +3533,64 @@
             this.CustomRichTextBoxStatusWorkingServers.SelectionLength = 0;
             this.CustomRichTextBoxStatusWorkingServers.SelectionStart = 0;
             this.CustomRichTextBoxStatusWorkingServers.ShortcutsEnabled = true;
-            this.CustomRichTextBoxStatusWorkingServers.Size = new System.Drawing.Size(125, 23);
+            this.CustomRichTextBoxStatusWorkingServers.Size = new System.Drawing.Size(170, 23);
             this.CustomRichTextBoxStatusWorkingServers.TabIndex = 0;
             this.CustomRichTextBoxStatusWorkingServers.Texts = "Working Servers: 0000";
             this.CustomRichTextBoxStatusWorkingServers.UnderlinedStyle = false;
             this.CustomRichTextBoxStatusWorkingServers.WordWrap = false;
             this.CustomRichTextBoxStatusWorkingServers.ZoomFactor = 1F;
             // 
+            // SplitContainerMain
+            // 
+            this.SplitContainerMain.Cursor = System.Windows.Forms.Cursors.Default;
+            this.SplitContainerMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.SplitContainerMain.IsSplitterFixed = true;
+            this.SplitContainerMain.Location = new System.Drawing.Point(0, 0);
+            this.SplitContainerMain.Name = "SplitContainerMain";
+            this.SplitContainerMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // SplitContainerMain.Panel1
+            // 
+            this.SplitContainerMain.Panel1.Controls.Add(this.SplitContainerTop);
+            // 
+            // SplitContainerMain.Panel2
+            // 
+            this.SplitContainerMain.Panel2.Controls.Add(this.CustomGroupBoxLog);
+            this.SplitContainerMain.Size = new System.Drawing.Size(884, 581);
+            this.SplitContainerMain.SplitterDistance = 400;
+            this.SplitContainerMain.TabIndex = 9;
+            // 
+            // SplitContainerTop
+            // 
+            this.SplitContainerTop.Cursor = System.Windows.Forms.Cursors.Default;
+            this.SplitContainerTop.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.SplitContainerTop.IsSplitterFixed = true;
+            this.SplitContainerTop.Location = new System.Drawing.Point(0, 0);
+            this.SplitContainerTop.Name = "SplitContainerTop";
+            // 
+            // SplitContainerTop.Panel1
+            // 
+            this.SplitContainerTop.Panel1.Controls.Add(this.CustomTabControlMain);
+            // 
+            // SplitContainerTop.Panel2
+            // 
+            this.SplitContainerTop.Panel2.Controls.Add(this.CustomGroupBoxStatus);
+            this.SplitContainerTop.Size = new System.Drawing.Size(884, 400);
+            this.SplitContainerTop.SplitterDistance = 700;
+            this.SplitContainerTop.TabIndex = 0;
+            // 
             // FormMain
             // 
             this.AcceptButton = this.CustomButtonCheck;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(704, 586);
-            this.Controls.Add(this.CustomGroupBoxStatus);
-            this.Controls.Add(this.CustomStatusStrip1);
-            this.Controls.Add(this.CustomTabControlMain);
-            this.Controls.Add(this.CustomGroupBoxLog);
+            this.ClientSize = new System.Drawing.Size(884, 581);
+            this.Controls.Add(this.SplitContainerMain);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(720, 625);
-            this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(720, 625);
+            this.MaximumSize = new System.Drawing.Size(900, 620);
+            this.MinimumSize = new System.Drawing.Size(900, 435);
             this.Name = "FormMain";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "SecureDNSClient";
@@ -3353,10 +3603,12 @@
             this.TabPageCheck.ResumeLayout(false);
             this.TabPageCheck.PerformLayout();
             this.TabPageConnect.ResumeLayout(false);
+            this.TabPageConnect.PerformLayout();
             this.TabPageSetDNS.ResumeLayout(false);
             this.TabPageSetDNS.PerformLayout();
             this.TabPageShare.ResumeLayout(false);
             this.TabPageShare.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownHTTPProxyHandleRequests)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiFragDelay)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiDataLength)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiFragmentSize)).EndInit();
@@ -3367,6 +3619,7 @@
             this.TabPageDPIBasic.ResumeLayout(false);
             this.TabPageDPIBasic.PerformLayout();
             this.TabPageDPIAdvanced.ResumeLayout(false);
+            this.TabPageDPIAdvanced.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvMaxPayload)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvMinTTL)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownDPIAdvSetTTL)).EndInit();
@@ -3397,11 +3650,17 @@
             this.TabPageAbout.ResumeLayout(false);
             this.TabPageAbout.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBoxAbout)).EndInit();
-            this.CustomStatusStrip1.ResumeLayout(false);
-            this.CustomStatusStrip1.PerformLayout();
             this.CustomGroupBoxStatus.ResumeLayout(false);
+            this.CustomGroupBoxStatus.PerformLayout();
+            this.SplitContainerMain.Panel1.ResumeLayout(false);
+            this.SplitContainerMain.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.SplitContainerMain)).EndInit();
+            this.SplitContainerMain.ResumeLayout(false);
+            this.SplitContainerTop.Panel1.ResumeLayout(false);
+            this.SplitContainerTop.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.SplitContainerTop)).EndInit();
+            this.SplitContainerTop.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
@@ -3417,7 +3676,6 @@
         private CustomControls.CustomTabControl CustomTabControlMain;
         private TabPage TabPageSecureDNS;
         private TabPage TabPageSettings;
-        private CustomControls.CustomStatusStrip CustomStatusStrip1;
         private CustomControls.CustomLabel CustomLabelDPIModes;
         private CustomControls.CustomRadioButton CustomRadioButtonDPIModeLight;
         private CustomControls.CustomRadioButton CustomRadioButtonDPIModeMedium;
@@ -3427,11 +3685,7 @@
         private CustomControls.CustomComboBox CustomComboBoxNICs;
         private CustomControls.CustomLabel CustomLabelSetDNSInfo;
         private CustomControls.CustomButton CustomButtonSetDNS;
-        private ToolStripStatusLabel ToolStripStatusLabelDNS;
-        private ToolStripStatusLabel ToolStripStatusLabelDoH;
         private CustomControls.CustomCheckBox CustomCheckBoxInsecure;
-        private ToolStripStatusLabel ToolStripStatusLabelSpace;
-        private ToolStripStatusLabel ToolStripStatusLabelPercent;
         private CustomControls.CustomTextBox CustomTextBoxHTTPProxy;
         private CustomControls.CustomLabel CustomLabelSSLFragmentSize;
         private TabPage TabPageAbout;
@@ -3569,8 +3823,6 @@
         private CustomControls.CustomLabel CustomLabelPDpiDpiInfo1;
         private CustomControls.CustomButton CustomButtonSetProxy;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusIsProxySet;
-        private ToolStripStatusLabel ToolStripStatusLabelDnsLatency;
-        private ToolStripStatusLabel ToolStripStatusLabelDohLatency;
         private CustomControls.CustomCheckBox CustomCheckBoxPDpiFragModeRandom;
         private CustomControls.CustomCheckBox CustomCheckBoxPDpiDontChunkBigData;
         private CustomControls.CustomLabel CustomLabelPDpiFragDelay;
@@ -3584,5 +3836,15 @@
         private CustomControls.CustomTextBox CustomTextBoxSettingUnsetDns1;
         private CustomControls.CustomButton CustomButtonPDpiApplyChanges;
         private CustomControls.CustomCheckBox CustomCheckBoxHTTPProxyEventShowChunkDetails;
+        private CustomControls.CustomRichTextBox CustomRichTextBoxStatusLocalDoHLatency;
+        private CustomControls.CustomRichTextBox CustomRichTextBoxStatusLocalDoH;
+        private CustomControls.CustomRichTextBox CustomRichTextBoxStatusLocalDnsLatency;
+        private CustomControls.CustomRichTextBox CustomRichTextBoxStatusLocalDNS;
+        private CustomControls.CustomLabel CustomLabelCheckPercent;
+        private CustomControls.CustomRichTextBox CustomRichTextBoxStatusProxyRequests;
+        private CustomControls.CustomNumericUpDown CustomNumericUpDownHTTPProxyHandleRequests;
+        private CustomControls.CustomLabel CustomLabelHTTPProxyHandleRequests;
+        private SplitContainer SplitContainerMain;
+        private SplitContainer SplitContainerTop;
     }
 }

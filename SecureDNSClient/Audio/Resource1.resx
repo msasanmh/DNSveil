@@ -130,4 +130,7 @@
   <data name="Secure_DNS_Online" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>secure-dns-online.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="Warning_Handle_Requests_Exceeded" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>warning-handle-requests-exceeded.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

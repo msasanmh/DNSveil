@@ -43,14 +43,14 @@ namespace MsmhTools.HTTPProxyServer
             }
         }
 
-        private static ProxySettings _Settings = new();
+        internal static ProxySettings _Settings = new();
 
         private static TunnelManager? _TunnelManager;
         private static TcpListener? _TcpListener;
 
         private static CancellationTokenSource? _CancelTokenSource;
         private static CancellationToken _CancelToken;
-        private static int _ActiveThreads = 0;
+        internal static int _ActiveThreads = 0;
 
         public bool IsRunning = false;
         private static bool Cancel = false;
@@ -63,9 +63,14 @@ namespace MsmhTools.HTTPProxyServer
         public event EventHandler<EventArgs>? OnChunkDetailsReceived;
         private static readonly EventWaitHandle Terminator = new(false, EventResetMode.ManualReset);
 
+        private List<string> BlackList = new();
+
         public HTTPProxyServer()
         {
-            
+            // Captive Portal
+            BlackList.Add("ipv6.msftconnecttest.com:80");
+            BlackList.Add("detectportal.firefox.com:80");
+            BlackList.Add("gstatic.com:80");
         }
 
         public void Start(IPAddress ipAddress, int port, int maxThreads)
@@ -108,15 +113,17 @@ namespace MsmhTools.HTTPProxyServer
                 Tunnel.Cancel = true;
                 _TcpListener.Stop();
 
-                //if (_TunnelManager != null)
-                //{
-                //    var t = _TunnelManager.GetFull().ToList();
-                //    for (int n = 0; n < t.Count; n++)
-                //    {
-                //        var kvp = t[n];
-                //        _TunnelManager.Remove(kvp.Key);
-                //    }
-                //}
+                if (_TunnelManager != null)
+                {
+                    var t = _TunnelManager.GetFull().ToList();
+                    Debug.WriteLine(t.Count);
+                    for (int n = 0; n < t.Count; n++)
+                    {
+                        var kvp = t[n];
+                        if (_TunnelManager.Active(kvp.Key))
+                            _TunnelManager.Remove(kvp.Key);
+                    }
+                }
 
                 IsRunning = _TcpListener.Server.IsBound;
                 Goodbye();
@@ -133,12 +140,20 @@ namespace MsmhTools.HTTPProxyServer
             get => BypassProgram.DPIBypassMode != DPIBypass.Mode.Disable;
         }
 
+        public int ActiveRequests
+        {
+            get => _ActiveThreads;
+        }
+
+        public int MaxRequests
+        {
+            get => _Settings != null ? _Settings.MaxThreads : 0;
+        }
+
         public Dictionary<int, Tunnel> GetCurrentConnectTunnels()
         {
             return _TunnelManager != null ? _TunnelManager.GetMetadata() : new Dictionary<int, Tunnel>();
         }
-
-        #region Setup-Methods
 
         private void Welcome()
         {
@@ -155,10 +170,6 @@ namespace MsmhTools.HTTPProxyServer
             OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
             OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
         }
-
-        #endregion
-
-        #region Connection-Handler
 
         private void AcceptConnections()
         {
@@ -197,13 +208,12 @@ namespace MsmhTools.HTTPProxyServer
                 }
             }
         }
-        
+
         private async Task ProcessConnection(TcpClient client)
         {
             if (Cancel) return;
 
             int connectionId = Environment.CurrentManagedThreadId;
-            _ActiveThreads++;
             Debug.WriteLine($"Active Requests: {_ActiveThreads}");
             
             try
@@ -212,14 +222,17 @@ namespace MsmhTools.HTTPProxyServer
                 if (_ActiveThreads >= _Settings.MaxThreads)
                 {
                     // Event
-                    string msgEventErr = $"AcceptConnections connection count {_ActiveThreads} exceeds configured max {_Settings.MaxThreads}, waiting";
+                    string msgEventErr = $"AcceptConnections connection count {_ActiveThreads} exceeds configured max {_Settings.MaxThreads}.";
                     OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
 
-                    while (_ActiveThreads >= _Settings.MaxThreads)
-                    {
-                        Task.Delay(100).Wait();
-                    }
+                    // Kill em
+                    client.Dispose();
+                    Debug.WriteLine($"Active Requests2: {_ActiveThreads}");
+                    Task.Delay(100).Wait();
+                    return;
                 }
+
+                _ActiveThreads++;
 
                 IPEndPoint? clientIpEndpoint = client.Client.RemoteEndPoint as IPEndPoint;
                 IPEndPoint? serverIpEndpoint = client.Client.LocalEndPoint as IPEndPoint;
@@ -248,6 +261,23 @@ namespace MsmhTools.HTTPProxyServer
                 req.DestIp = serverIp;
                 req.DestPort = serverPort;
 
+                // Block Black List
+                for (int n = 0; n < BlackList.Count; n++)
+                {
+                    string website = BlackList[n];
+                    string destWebsite = $"{req.DestHostname}:{req.DestHostPort}";
+                    if (destWebsite == website)
+                    {
+                        // Event
+                        string msgEvent = $"Black list: {req.FullUrl}, request denied.";
+                        OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+
+                        client.Close();
+                        _ActiveThreads--;
+                        return;
+                    }
+                }
+                
                 // Event
                 OnRequestReceived?.Invoke($"{req.DestHostname}:{req.DestHostPort}", EventArgs.Empty);
 
@@ -552,6 +582,5 @@ namespace MsmhTools.HTTPProxyServer
             }
         }
 
-        #endregion
     }
 }
