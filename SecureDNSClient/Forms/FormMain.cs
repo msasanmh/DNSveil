@@ -2448,6 +2448,7 @@ namespace SecureDNSClient
                 if (CustomCheckBoxPDpiEnableDpiBypass.Checked && HTTPProxy.IsRunning)
                 {
                     IsProxyDPIActive = true;
+                    IsDPIActive = true;
                     Task.Delay(100).Wait();
                     // Get and check blocked domain is valid
                     bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
@@ -2567,6 +2568,7 @@ namespace SecureDNSClient
 
                 // Set IsGoodbyeDPIActive true
                 IsGoodbyeDPIActive = true;
+                IsDPIActive = true;
 
                 // Go to SetDNS Tab if it's not already set
                 if (ConnectAllClicked && !IsDNSSet)
@@ -2778,6 +2780,7 @@ namespace SecureDNSClient
 
                 // Set IsGoodbyeDPIActive true
                 IsGoodbyeDPIActive = true;
+                IsDPIActive = true;
 
                 // Go to SetDNS Tab if it's not already set
                 if (ConnectAllClicked && !IsDNSSet)
