@@ -59,6 +59,10 @@ namespace SecureDNSClient
         public static readonly string KeyPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate", "localhost.key"));
         public static readonly string CertPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate", "localhost.crt"));
 
+        // Certificate Subject Names
+        public static readonly string CertIssuerSubjectName = "CN=SecureDNSClient Authority";
+        public static readonly string CertSubjectName = "CN=SecureDNSClient";
+
         /// <summary>
         /// Check DNS and get latency (ms)
         /// </summary>
@@ -246,7 +250,7 @@ namespace SecureDNSClient
 
         public static async Task<string> UrlToCompanyOffline(string url)
         {
-            string host = Network.UrlToHostAndPort(url, 53, out int _);
+            string host = Network.UrlToHostAndPort(url, 53, out int _, out string _, out bool _);
             return await HostToCompanyOffline(host);
         }
 
@@ -282,7 +286,7 @@ namespace SecureDNSClient
         public static async Task<string> UrlToCompanyAsync(string url, string? proxyScheme = null)
         {
             string company = "Couldn't retrieve information.";
-            string? host = Network.UrlToHostAndPort(url, 443, out int _);
+            string? host = Network.UrlToHostAndPort(url, 443, out int _, out string _, out bool _);
             if (!string.IsNullOrWhiteSpace(host))
             {
                 IPAddress? ipAddress = Network.HostToIP(host);
@@ -363,7 +367,7 @@ namespace SecureDNSClient
                     string company = await UrlToCompanyAsync(dns);
                     if (!company.Contains("Couldn't retrieve information."))
                     {
-                        string host = Network.UrlToHostAndPort(dns, 443, out int _);
+                        string host = Network.UrlToHostAndPort(dns, 443, out int _, out string _, out bool _);
                         object hostToCom = host + "|" + company;
                         HostToCompanyList.Add(hostToCom);
                         Debug.WriteLine(hostToCom);

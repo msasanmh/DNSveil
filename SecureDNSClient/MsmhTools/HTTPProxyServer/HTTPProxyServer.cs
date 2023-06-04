@@ -65,11 +65,15 @@ namespace MsmhTools.HTTPProxyServer
 
         private List<string> BlackList = new();
 
+        // Static Settings
+        public bool BlockPort80 { get; set; } = false;
+
         public HTTPProxyServer()
         {
-            // Captive Portal
+            // Captive Portal and others
             BlackList.Add("ipv6.msftconnecttest.com:80");
             BlackList.Add("msedge.b.tlu.dl.delivery.mp.microsoft.com:80");
+            BlackList.Add("edgedl.me.gvt1.com:80");
             BlackList.Add("detectportal.firefox.com:80");
             BlackList.Add("gstatic.com:80");
         }
@@ -227,9 +231,15 @@ namespace MsmhTools.HTTPProxyServer
                     OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
 
                     // Kill em
-                    client.Dispose();
+                    try
+                    {
+                        client.Dispose();
+                    }
+                    catch (Exception)
+                    {
+                        // do nothing
+                    }
                     Debug.WriteLine($"Active Requests2: {_ActiveThreads}");
-                    Task.Delay(100).Wait();
                     return;
                 }
 
@@ -257,10 +267,31 @@ namespace MsmhTools.HTTPProxyServer
                     return;
                 }
 
+                if (string.IsNullOrEmpty(req.DestHostname) || req.DestHostPort == 0)
+                {
+                    // Event Error
+                    string msgEventErr = "Hostname is empty or Port is 0.";
+                    OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                    _ActiveThreads--;
+                    return;
+                }
+
                 req.SourceIp = clientIp;
                 req.SourcePort = clientPort;
                 req.DestIp = serverIp;
                 req.DestPort = serverPort;
+
+                // Block Port 80
+                if (BlockPort80 && req.DestHostPort == 80)
+                {
+                    // Event
+                    string msgEvent = $"Block Port 80: {req.FullUrl}, request denied.";
+                    OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+
+                    client.Close();
+                    _ActiveThreads--;
+                    return;
+                }
 
                 // Block Black List
                 for (int n = 0; n < BlackList.Count; n++)
@@ -522,18 +553,18 @@ namespace MsmhTools.HTTPProxyServer
                 {
                     byte[]? ret = Array.Empty<byte>();
                     string statusLine = resp.ProtocolVersion + " " + resp.StatusCode + " " + resp.StatusDescription + "\r\n";
-                    ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(statusLine));
+                    ret = CommonTools.AppendBytes(ret, Encoding.UTF8.GetBytes(statusLine));
 
                     if (!string.IsNullOrEmpty(resp.ContentType))
                     {
                         string contentTypeLine = "Content-Type: " + resp.ContentType + "\r\n";
-                        ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(contentTypeLine));
+                        ret = CommonTools.AppendBytes(ret, Encoding.UTF8.GetBytes(contentTypeLine));
                     }
 
                     if (resp.ContentLength > 0)
                     {
                         string contentLenLine = "Content-Length: " + resp.ContentLength + "\r\n";
-                        ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(contentLenLine));
+                        ret = CommonTools.AppendBytes(ret, Encoding.UTF8.GetBytes(contentLenLine));
                     }
 
                     if (resp.Headers != null && resp.Headers.Count > 0)
@@ -545,11 +576,11 @@ namespace MsmhTools.HTTPProxyServer
                             if (currHeader.Key.ToLower().Trim().Equals("content-length")) continue;
 
                             string headerLine = currHeader.Key + ": " + currHeader.Value + "\r\n";
-                            ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes(headerLine));
+                            ret = CommonTools.AppendBytes(ret, Encoding.UTF8.GetBytes(headerLine));
                         }
                     }
 
-                    ret = Common.AppendBytes(ret, Encoding.UTF8.GetBytes("\r\n"));
+                    ret = CommonTools.AppendBytes(ret, Encoding.UTF8.GetBytes("\r\n"));
 
                     await ns.WriteAsync(ret);
                     await ns.FlushAsync();

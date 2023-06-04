@@ -44,9 +44,11 @@ namespace MsmhTools
             return null;
         }
 
-        public static string UrlToHostAndPort(string url, int defaultPort, out int port)
+        public static string UrlToHostAndPort(string url, int defaultPort, out int port, out string path, out bool isIPv6)
         {
             url = url.Trim();
+            path = string.Empty;
+            isIPv6 = false;
 
             // Strip xxxx://
             if (url.Contains("//"))
@@ -62,6 +64,16 @@ namespace MsmhTools
                 string[] split = url.Split('/');
                 if (!string.IsNullOrEmpty(split[0]))
                     url = split[0];
+
+                // Get Path
+                string outPath = "/";
+                for (int n = 0; n < split.Length; n++)
+                {
+                    if (n != 0)
+                        outPath += split[n];
+                }
+                if (!outPath.Equals("/"))
+                    path = outPath;
             }
 
             string host = url;
@@ -74,6 +86,7 @@ namespace MsmhTools
                 string[] split = url.Split("]:");
                 if (split.Length == 2)
                 {
+                    isIPv6 = true;
                     host = split[0] + "]";
                     bool isInt = int.TryParse(split[1], out int result);
                     if (isInt) port = result;
@@ -203,171 +216,6 @@ namespace MsmhTools
                 Debug.WriteLine(ex.Message);
             }
             return company;
-        }
-
-        public static void GenerateCertificate(string folderPath, IPAddress gateway, string issuerSubjectName = "CN=MSasanMH Authority", string subjectName = "CN=MSasanMH")
-        {
-            const string CRT_HEADER = "-----BEGIN CERTIFICATE-----\n";
-            const string CRT_FOOTER = "\n-----END CERTIFICATE-----";
-
-            const string KEY_HEADER = "-----BEGIN RSA PRIVATE KEY-----\n";
-            const string KEY_FOOTER = "\n-----END RSA PRIVATE KEY-----";
-
-            // Create X509KeyUsageFlags
-            const X509KeyUsageFlags x509KeyUsageFlags = X509KeyUsageFlags.CrlSign |
-                                                        X509KeyUsageFlags.DataEncipherment |
-                                                        X509KeyUsageFlags.DigitalSignature |
-                                                        X509KeyUsageFlags.KeyAgreement |
-                                                        X509KeyUsageFlags.KeyCertSign |
-                                                        X509KeyUsageFlags.KeyEncipherment |
-                                                        X509KeyUsageFlags.NonRepudiation;
-
-            // Create SubjectAlternativeNameBuilder
-            SubjectAlternativeNameBuilder sanBuilder = new();
-            sanBuilder.AddDnsName("localhost");
-            sanBuilder.AddIpAddress(IPAddress.Parse("127.0.0.1"));
-            sanBuilder.AddIpAddress(IPAddress.Parse("0.0.0.0"));
-            sanBuilder.AddIpAddress(IPAddress.Loopback);
-            sanBuilder.AddIpAddress(IPAddress.IPv6Loopback);
-
-            // Generate IP range for gateway
-            if (IsIPv4(gateway))
-            {
-                string ipString = gateway.ToString();
-                string[] ipSplit = ipString.Split('.');
-                string ip1 = ipSplit[0] + "." + ipSplit[1] + "." + ipSplit[2] + ".";
-                for (int n = 0; n <= 255; n++)
-                {
-                    string ip2 = ip1 + n.ToString();
-                    sanBuilder.AddIpAddress(IPAddress.Parse(ip2));
-                }
-                // Generate local IP range in case a VPN is active.
-                if (!ip1.Equals("192.168.1."))
-                {
-                    string ipLocal1 = "192.168.1.";
-                    for (int n = 0; n <= 255; n++)
-                    {
-                        string ipLocal2 = ipLocal1 + n.ToString();
-                        sanBuilder.AddIpAddress(IPAddress.Parse(ipLocal2));
-                    }
-                }
-            }
-
-            sanBuilder.AddUri(new Uri("https://127.0.0.1"));
-            sanBuilder.Build();
-
-            // Create Oid Collection
-            OidCollection oidCollection = new();
-            oidCollection.Add(new Oid("2.5.29.37.0")); // Any Purpose
-            oidCollection.Add(new Oid("1.3.6.1.5.5.7.3.1")); // Server Authentication
-            oidCollection.Add(new Oid("1.3.6.1.5.5.7.3.2")); // Client Authentication
-            oidCollection.Add(new Oid("1.3.6.1.5.5.7.3.3")); // Code Signing
-            oidCollection.Add(new Oid("1.3.6.1.5.5.7.3.4")); // Email Protection
-            oidCollection.Add(new Oid("1.3.6.1.5.5.7.3.5")); // IPSEC End System Certificate
-            oidCollection.Add(new Oid("1.3.6.1.5.5.7.3.6")); // IPSEC Tunnel
-            oidCollection.Add(new Oid("1.3.6.1.5.5.7.3.7")); // IPSEC User Certificate
-            oidCollection.Add(new Oid("1.3.6.1.5.5.7.3.8")); // Time Stamping
-            oidCollection.Add(new Oid("1.3.6.1.4.1.311.10.3.2")); // Microsoft Time Stamping
-            oidCollection.Add(new Oid("1.3.6.1.4.1.311.10.5.1")); // Digital Rights
-            oidCollection.Add(new Oid("1.3.6.1.4.1.311.64.1.1")); // Domain Name System (DNS) Server Trust
-
-            // Create Issuer RSA Private Key
-            using RSA issuerRsaKey = RSA.Create(4096);
-
-            // Create Issuer Request
-            CertificateRequest issuerReq = new(issuerSubjectName, issuerRsaKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-            issuerReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
-            issuerReq.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(issuerReq.PublicKey, false));
-            issuerReq.CertificateExtensions.Add(new X509KeyUsageExtension(x509KeyUsageFlags, false));
-            issuerReq.CertificateExtensions.Add(sanBuilder.Build());
-            issuerReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(oidCollection, true));
-
-            // Create Issuer Certificate
-            using X509Certificate2 issuerCert = issuerReq.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(10));
-
-            // Create RSA Private Key
-            using RSA rsaKey = RSA.Create(2048);
-
-            // Create Request
-            CertificateRequest req = new(subjectName, rsaKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-            req.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
-            req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
-            req.CertificateExtensions.Add(new X509KeyUsageExtension(x509KeyUsageFlags, false));
-            req.CertificateExtensions.Add(sanBuilder.Build());
-            req.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(oidCollection, true));
-
-            // Create Certificate
-            using X509Certificate2 cert = req.Create(issuerCert, DateTimeOffset.Now, DateTimeOffset.Now.AddYears(9), new byte[] { 1, 2, 3, 4 });
-
-            // Export
-            // Export Issuer Private Key
-            var issuerPrivateKeyExport = issuerRsaKey.ExportRSAPrivateKey();
-            var issuerPrivateKeyData = Convert.ToBase64String(issuerPrivateKeyExport, Base64FormattingOptions.InsertLineBreaks);
-            File.WriteAllText(Path.Combine(folderPath, "rootCA.key"), KEY_HEADER + issuerPrivateKeyData + KEY_FOOTER);
-
-            // Export Issuer Certificate
-            var issuerCertExport = issuerCert.Export(X509ContentType.Cert);
-            var issuerCertData = Convert.ToBase64String(issuerCertExport, Base64FormattingOptions.InsertLineBreaks);
-            File.WriteAllText(Path.Combine(folderPath, "rootCA.crt"), CRT_HEADER + issuerCertData + CRT_FOOTER);
-
-            // Export Private Key
-            var privateKeyExport = rsaKey.ExportRSAPrivateKey();
-            var privateKeyData = Convert.ToBase64String(privateKeyExport, Base64FormattingOptions.InsertLineBreaks);
-            File.WriteAllText(Path.Combine(folderPath, "localhost.key"), KEY_HEADER + privateKeyData + KEY_FOOTER);
-
-            // Export Certificate
-            var certExport = cert.Export(X509ContentType.Cert);
-            var certData = Convert.ToBase64String(certExport, Base64FormattingOptions.InsertLineBreaks);
-            File.WriteAllText(Path.Combine(folderPath, "localhost.crt"), CRT_HEADER + certData + CRT_FOOTER);
-
-        }
-
-        public static void CreateP12(string certPath, string keyPath, string password = "")
-        {
-            string? folderPath = Path.GetDirectoryName(certPath);
-            string fileName = Path.GetFileNameWithoutExtension(certPath);
-            using X509Certificate2 certWithKey = X509Certificate2.CreateFromPemFile(certPath, keyPath);
-            var certWithKeyExport = certWithKey.Export(X509ContentType.Pfx, password);
-            if (!string.IsNullOrEmpty(folderPath))
-                File.WriteAllBytes(Path.Combine(folderPath, fileName + ".p12"), certWithKeyExport);
-        }
-
-        /// <summary>
-        /// Returns false if user don't install certificate, otherwise true.
-        /// </summary>
-        public static bool InstallCertificate(string certPath, StoreName storeName, StoreLocation storeLocation)
-        {
-            try
-            {
-                X509Certificate2 certificate = new(certPath, "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
-                X509Store store = new(storeName, storeLocation);
-                store.Open(OpenFlags.ReadWrite);
-                store.Add(certificate);
-                store.Close();
-                return true;
-            }
-            catch (Exception ex) // Internal.Cryptography.CryptoThrowHelper.WindowsCryptographicException
-            {
-                Debug.WriteLine(ex.Message);
-                // If ex.Message: (The operation was canceled by the user.)
-                return false;
-            }
-        }
-
-        public static bool IsCertificateInstalled(string subjectName, StoreName storeName, StoreLocation storeLocation)
-        {
-            X509Store store = new(storeName, storeLocation);
-            store.Open(OpenFlags.ReadOnly);
-
-            var certificates = store.Certificates.Find(X509FindType.FindBySubjectName, subjectName, false);
-
-            if (certificates != null && certificates.Count > 0)
-            {
-                Debug.WriteLine("Certificate is already installed.");
-                return true;
-            }
-            else
-                return false;
         }
 
         public static IPAddress? GetLocalIPv4(string remoteHostToCheck = "8.8.8.8")
@@ -509,10 +357,7 @@ namespace MsmhTools
 
         public static bool IsIPv6(IPAddress iPAddress)
         {
-            if (iPAddress.AddressFamily == AddressFamily.InterNetworkV6)
-                return true;
-            else
-                return false;
+            return iPAddress.AddressFamily == AddressFamily.InterNetworkV6;
         }
 
         public static bool IsPortOpen(string host, int port, double timeoutSeconds)
@@ -890,11 +735,7 @@ namespace MsmhTools
             return isProxyEnable;
         }
 
-        [DllImport("wininet.dll")]
-        private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
-        private const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
-        private const int INTERNET_OPTION_REFRESH = 37;
-        static bool settingsReturn, refreshReturn;
+        
         public static void SetHttpProxy(string ip, int port)
         {
             RegistryKey? registry = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", true);
@@ -912,13 +753,16 @@ namespace MsmhTools
                     Debug.WriteLine($"Set Http Proxy: {ex.Message}");
                 }
 
-                // They cause the OS to refresh the settings, causing IP to realy update
-                settingsReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
-                refreshReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+                RegistryTool.ApplyRegistryChanges();
             }
         }
 
-        public static void UnsetProxy(bool clearIpPort)
+        /// <summary>
+        /// Unset Internet Options Proxy
+        /// </summary>
+        /// <param name="clearIpPort">Clear IP and Port</param>
+        /// <param name="applyRegistryChanges">Don't apply registry changes on app exit</param>
+        public static void UnsetProxy(bool clearIpPort, bool applyRegistryChanges)
         {
             RegistryKey? registry = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", true);
             if (registry != null)
@@ -934,9 +778,8 @@ namespace MsmhTools
                     Debug.WriteLine($"Unset Proxy: {ex.Message}");
                 }
 
-                // They cause the OS to refresh the settings, causing IP to realy update
-                settingsReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
-                refreshReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+                if (applyRegistryChanges)
+                    RegistryTool.ApplyRegistryChanges();
             }
         }
 

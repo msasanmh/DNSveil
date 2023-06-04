@@ -277,7 +277,7 @@ namespace MsmhTools.HTTPProxyServer
                                     inVal = 0;
 
                                     tempKey = WebUtility.UrlDecode(tempKey);
-                                    QuerystringEntries = Common.AddToDict(tempKey, null, QuerystringEntries);
+                                    QuerystringEntries = CommonTools.AddToDict(tempKey, null, QuerystringEntries);
 
                                     tempKey = "";
                                     tempVal = "";
@@ -310,7 +310,7 @@ namespace MsmhTools.HTTPProxyServer
 
                                 tempKey = WebUtility.UrlDecode(tempKey);
                                 if (!string.IsNullOrEmpty(tempVal)) tempVal = WebUtility.UrlDecode(tempVal);
-                                QuerystringEntries = Common.AddToDict(tempKey, tempVal, QuerystringEntries);
+                                QuerystringEntries = CommonTools.AddToDict(tempKey, tempVal, QuerystringEntries);
 
                                 tempKey = "";
                                 tempVal = "";
@@ -326,7 +326,7 @@ namespace MsmhTools.HTTPProxyServer
                         if (!string.IsNullOrEmpty(tempKey))
                         {
                             tempKey = WebUtility.UrlDecode(tempKey);
-                            QuerystringEntries = Common.AddToDict(tempKey, null, QuerystringEntries);
+                            QuerystringEntries = CommonTools.AddToDict(tempKey, null, QuerystringEntries);
                         }
                     }
 
@@ -336,7 +336,7 @@ namespace MsmhTools.HTTPProxyServer
                         {
                             tempKey = WebUtility.UrlDecode(tempKey);
                             if (!string.IsNullOrEmpty(tempVal)) tempVal = WebUtility.UrlDecode(tempVal);
-                            QuerystringEntries = Common.AddToDict(tempKey, tempVal, QuerystringEntries);
+                            QuerystringEntries = CommonTools.AddToDict(tempKey, tempVal, QuerystringEntries);
                         }
                     }
                 }
@@ -369,7 +369,7 @@ namespace MsmhTools.HTTPProxyServer
             {
                 string key = new(ctx.Request.Headers.GetKey(i));
                 string val = new(ctx.Request.Headers.Get(i));
-                Headers = Common.AddToDict(key, val, Headers);
+                Headers = CommonTools.AddToDict(key, val, Headers);
             }
 
             // Payload
@@ -404,7 +404,7 @@ namespace MsmhTools.HTTPProxyServer
                 }
                 else
                 {
-                    byte[] encodedData = Common.StreamToBytes(bodyStream);
+                    byte[] encodedData = CommonTools.StreamToBytes(bodyStream);
 
                     if (!_Decoder.Decode(encodedData, out byte[]? decodedData))
                     {
@@ -429,7 +429,7 @@ namespace MsmhTools.HTTPProxyServer
                         {
                             Data = new byte[ContentLength];
                             Stream bodyStream = ctx.Request.InputStream;
-                            Data = Common.StreamToBytes(bodyStream);
+                            Data = CommonTools.StreamToBytes(bodyStream);
                         }
                         catch (Exception)
                         {
@@ -1152,7 +1152,7 @@ namespace MsmhTools.HTTPProxyServer
                         else if (keyEval.Equals("content-type"))
                             ret.ContentType = val;
                         else
-                            ret.Headers = Common.AddToDict(key, val, ret.Headers);
+                            ret.Headers = CommonTools.AddToDict(key, val, ret.Headers);
                     }
 
                 }
@@ -1264,7 +1264,7 @@ namespace MsmhTools.HTTPProxyServer
                         inVal = 0;
 
                         if (!string.IsNullOrEmpty(tempVal)) tempVal = WebUtility.UrlEncode(tempVal);
-                        ret = Common.AddToDict(tempKey, tempVal, ret);
+                        ret = CommonTools.AddToDict(tempKey, tempVal, ret);
 
                         tempKey = "";
                         tempVal = "";
@@ -1276,7 +1276,7 @@ namespace MsmhTools.HTTPProxyServer
                 if (inVal == 1)
                 {
                     if (!string.IsNullOrEmpty(tempVal)) tempVal = WebUtility.UrlEncode(tempVal);
-                    ret = Common.AddToDict(tempKey, tempVal, ret);
+                    ret = CommonTools.AddToDict(tempKey, tempVal, ret);
                 }
             }
 

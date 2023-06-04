@@ -22,6 +22,7 @@ namespace SecureDNSClient
         private bool StopChecking = false;
         private bool IsCheckDone = false;
         private bool IsConnecting = false;
+        private bool IsDisconnecting = false;
         private bool IsConnected = false;
         private bool IsDNSConnected = false;
         private bool IsDoHConnected = false;
@@ -85,6 +86,7 @@ namespace SecureDNSClient
             // Startup Defaults
             Text = Info.InfoExecutingAssembly.ProductName + " v" + Info.InfoExecutingAssembly.ProductVersion;
             CustomButtonSetDNS.Enabled = false;
+            CustomButtonSetProxy.Enabled = false;
             CustomTextBoxHTTPProxy.Enabled = false;
             DefaultSettings();
 
@@ -197,8 +199,6 @@ namespace SecureDNSClient
             CustomTextBoxHTTPProxy.Text = string.Empty;
 
             // Share
-            CustomNumericUpDownHTTPProxyPort.Value = (decimal)8080;
-            CustomNumericUpDownHTTPProxyHandleRequests.Value = (decimal)2000;
             CustomCheckBoxHTTPProxyEventShowRequest.Checked = false;
             CustomCheckBoxHTTPProxyEventShowChunkDetails.Checked = false;
             CustomCheckBoxPDpiEnableDpiBypass.Checked = true;
@@ -261,6 +261,12 @@ namespace SecureDNSClient
             // Settings Check
             CustomNumericUpDownSettingCheckTimeout.Value = (decimal)5;
             CustomTextBoxSettingCheckDPIHost.Text = "www.youtube.com";
+            CustomCheckBoxSettingProtocolDoH.Checked = true;
+            CustomCheckBoxSettingProtocolTLS.Checked = true;
+            CustomCheckBoxSettingProtocolDNSCrypt.Checked = true;
+            CustomCheckBoxSettingProtocolDNSCryptRelay.Checked = true;
+            CustomCheckBoxSettingProtocolDoQ.Checked = true;
+            CustomCheckBoxSettingProtocolPlainDNS.Checked = false;
             CustomCheckBoxSettingSdnsDNSSec.Checked = false;
             CustomCheckBoxSettingSdnsNoLog.Checked = false;
             CustomCheckBoxSettingSdnsNoFilter.Checked = true;
@@ -275,6 +281,11 @@ namespace SecureDNSClient
             CustomRadioButtonSettingUnsetDnsToStatic.Checked = true;
             CustomTextBoxSettingUnsetDns1.Text = "8.8.8.8";
             CustomTextBoxSettingUnsetDns2.Text = "8.8.4.4";
+
+            // Settings Share
+            CustomNumericUpDownHTTPProxyPort.Value = (decimal)8080;
+            CustomNumericUpDownHTTPProxyHandleRequests.Value = (decimal)2000;
+            CustomCheckBoxSettingProxyBlockPort80.Checked = true;
 
             // Settings CPU
             CustomRadioButtonSettingCPUHigh.Checked = false;
@@ -559,8 +570,12 @@ namespace SecureDNSClient
                 CustomButtonCheck.Enabled = !IsConnecting;
 
                 // SetDNS Button
-                if (IsConnected)
+                if (IsConnected && (IsDNSConnected || IsDoHConnected))
                     CustomButtonSetDNS.Enabled = true;
+
+                // SetProxy Button
+                if (IsSharing)
+                    CustomButtonSetProxy.Enabled = true;
 
                 // Live Status
                 string statusLocalDNS = IsDNSConnected ? "Online" : "Offline";
@@ -722,17 +737,17 @@ namespace SecureDNSClient
             }
         }
 
-        private void FlushDNS()
+        private void FlushDNS(bool writeToLog = true)
         {
             string? flushDNS = ProcessManager.Execute("ipconfig", "/flushdns");
-            if (!string.IsNullOrWhiteSpace(flushDNS))
+            if (!string.IsNullOrWhiteSpace(flushDNS) && writeToLog)
             {
                 // Write flush DNS message to log
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(flushDNS + NL, Color.LightGray));
             }
         }
 
-        private void FlushDnsOnExit()
+        private static void FlushDnsOnExit()
         {
             ProcessManager.Execute("ipconfig", "/flushdns", true, true);
             ProcessManager.Execute("ipconfig", "/registerdns", true, true);
@@ -911,8 +926,8 @@ namespace SecureDNSClient
         {
             // Create certificate directory
             FileDirectory.CreateEmptyDirectory(SecureDNS.CertificateDirPath);
-            string issuerSubjectName = "CN=SecureDNSClient Authority";
-            string subjectName = "CN=SecureDNSClient";
+            string issuerSubjectName = SecureDNS.CertIssuerSubjectName;
+            string subjectName = SecureDNS.CertSubjectName;
 
             // Generate certificate
             if (!File.Exists(SecureDNS.IssuerCertPath) || !File.Exists(SecureDNS.CertPath) || !File.Exists(SecureDNS.KeyPath))
@@ -920,16 +935,16 @@ namespace SecureDNSClient
                 IPAddress? gateway = Network.GetDefaultGateway();
                 if (gateway != null)
                 {
-                    Network.GenerateCertificate(SecureDNS.CertificateDirPath, gateway, issuerSubjectName, subjectName);
-                    Network.CreateP12(SecureDNS.IssuerCertPath, SecureDNS.IssuerKeyPath);
-                    Network.CreateP12(SecureDNS.CertPath, SecureDNS.KeyPath);
+                    CertificateTool.GenerateCertificate(SecureDNS.CertificateDirPath, gateway, issuerSubjectName, subjectName);
+                    CertificateTool.CreateP12(SecureDNS.IssuerCertPath, SecureDNS.IssuerKeyPath);
+                    CertificateTool.CreateP12(SecureDNS.CertPath, SecureDNS.KeyPath);
                 }
             }
 
             // Install certificate
             if (File.Exists(SecureDNS.IssuerCertPath) && !CustomCheckBoxSettingDontAskCertificate.Checked)
             {
-                bool certInstalled = Network.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
+                bool certInstalled = CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
                 if (!certInstalled)
                 {
                     string msg = "Local DoH Server doesn't work without certificate.\nYou can remove certificate anytime from Windows.\nTry again?";
@@ -937,9 +952,42 @@ namespace SecureDNSClient
                     {
                         DialogResult dr = CustomMessageBox.Show(msg, "Certificate", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (dr == DialogResult.Yes)
-                            Network.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
+                            CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
                     }
                 }
+            }
+        }
+
+        private void UninstallCertificate()
+        {
+            string issuerSubjectName = SecureDNS.CertIssuerSubjectName.Replace("CN=", string.Empty);
+            bool isCertInstalled = CertificateTool.IsCertificateInstalled(issuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+            if (isCertInstalled)
+            {
+                if (IsDoHConnected)
+                {
+                    string msg = "Disconnect local DoH first.";
+                    CustomMessageBox.Show(msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // Uninstall Certs
+                CertificateTool.UninstallCertificate(issuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+
+                // Delete Cert Files
+                try
+                {
+                    Directory.Delete(SecureDNS.CertificateDirPath, true);
+                }
+                catch (Exception)
+                {
+                    // do nothing
+                }
+            }
+            else
+            {
+                string msg = "Certificate is already uninstalled.";
+                CustomMessageBox.Show(msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -982,9 +1030,6 @@ namespace SecureDNSClient
             string blockedDomainNoWww = blockedDomain;
             if (blockedDomainNoWww.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
                 blockedDomainNoWww = blockedDomainNoWww[4..];
-
-            // sdns error message
-            string sdnsErrorMsg = "Couldn't decrypt sdns.";
 
             // Warn users to deactivate DPI before checking servers
             if (IsDPIActive)
@@ -1064,6 +1109,14 @@ namespace SecureDNSClient
             List<string> dnsList = fileContent.SplitToLines();
             int dnsCount = dnsList.Count;
 
+            // Get Protocol Selection
+            bool pDoH = CustomCheckBoxSettingProtocolDoH.Checked;
+            bool pTLS = CustomCheckBoxSettingProtocolTLS.Checked;
+            bool pDNSCrypt = CustomCheckBoxSettingProtocolDNSCrypt.Checked;
+            bool pDNSCryptRelay = CustomCheckBoxSettingProtocolDNSCryptRelay.Checked;
+            bool pDoQ = CustomCheckBoxSettingProtocolDoQ.Checked;
+            bool pPlainDNS = CustomCheckBoxSettingProtocolPlainDNS.Checked;
+
             // Get SDNS Properties
             bool sdnsDNSSec = CustomCheckBoxSettingSdnsDNSSec.Checked;
             bool sdnsNoLog = CustomCheckBoxSettingSdnsNoLog.Checked;
@@ -1094,55 +1147,23 @@ namespace SecureDNSClient
 
                 if (!string.IsNullOrEmpty(dns) && !string.IsNullOrWhiteSpace(dns) && IsDnsProtocolSupported(dns))
                 {
-                    // Define company name
-                    string company;
+                    // Get DNS Details
+                    DnsReader dnsReader = new(dns);
                     
-                    // SDNS
-                    DNSCryptStampReader? dnsCryptStampReader = null;
-                    if (dns.ToLower().StartsWith("sdns://"))
+                    // Apply Protocol Selection
+                    if ((!pDoH && dnsReader.Protocol == DnsReader.DnsProtocol.DoH) ||
+                        (!pTLS && dnsReader.Protocol == DnsReader.DnsProtocol.TLS) ||
+                        (!pDNSCrypt && dnsReader.Protocol == DnsReader.DnsProtocol.DnsCrypt) ||
+                        (!pDNSCryptRelay && dnsReader.Protocol == DnsReader.DnsProtocol.DNSCryptRelay) ||
+                        (!pDoQ && dnsReader.Protocol == DnsReader.DnsProtocol.DoQ) ||
+                        (!pPlainDNS && dnsReader.Protocol == DnsReader.DnsProtocol.PlainDNS)) continue;
+                    
+                    if (dnsReader.IsDnsCryptStamp)
                     {
-                        // Decode Stamp
-                        dnsCryptStampReader = new(dns);
-
-                        if (dnsCryptStampReader != null)
-                        {
-                            // Apply SDNS rules
-                            if ((sdnsDNSSec == true && !dnsCryptStampReader.IsDnsSec) ||
-                                (sdnsNoLog == true && !dnsCryptStampReader.IsNoLog) ||
-                                (sdnsNoFilter == true && !dnsCryptStampReader.IsNoFilter)) continue;
-
-                            // Get Company Name (SDNS)
-                            string stampHost = dnsCryptStampReader.Host;
-                            if (string.IsNullOrEmpty(stampHost))
-                                stampHost = dnsCryptStampReader.IP;
-                            company = await SecureDNS.HostToCompanyOffline(stampHost);
-
-                            //test1();
-                            //void test1()
-                            //{
-                            //    if (company.ToString() == "Couldn't retrieve information.")
-                            //    {
-                            //        CustomMessageBox.Show(stampHost);
-                            //        company = stampHost;
-                            //    }
-                            //    string test = $"IP: {dnsCryptStampReader.IP}{NL}";
-                            //    test += $"Port: {dnsCryptStampReader.Port}{NL}";
-                            //    test += $"Host: {dnsCryptStampReader.Host}{NL}";
-                            //    test += $"Path: {dnsCryptStampReader.Path}{NL}";
-                            //    test += $"Protocol: {dnsCryptStampReader.ProtocolName}{NL}";
-                            //    test += $"DNSSec: {dnsCryptStampReader.IsDnsSec}{NL}";
-                            //    test += $"No Log: {dnsCryptStampReader.IsNoLog}{NL}";
-                            //    test += $"No Filter: {dnsCryptStampReader.IsNoFilter}{NL}";
-                            //    CustomMessageBox.Show(test);
-                            //}
-                        }
-                        else
-                            company = sdnsErrorMsg;
-                    }
-                    else
-                    {
-                        // Get Company Name (Not SDNS)
-                        company = await SecureDNS.UrlToCompanyOffline(dns);
+                        // Apply SDNS rules
+                        if ((sdnsDNSSec && !dnsReader.StampProperties.IsDnsSec) ||
+                            (sdnsNoLog && !dnsReader.StampProperties.IsNoLog) ||
+                            (sdnsNoFilter && !dnsReader.StampProperties.IsNoFilter)) continue;
                     }
 
                     // Get Check timeout value
@@ -1174,31 +1195,41 @@ namespace SecureDNSClient
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultLatency, Color.DodgerBlue));
 
                         // Write host to log
-                        string resultHost = $" {dns}";
-                        if (dnsCryptStampReader == null)
+                        if (dnsReader.IsDnsCryptStamp)
                         {
-                            if (!builtInMode)
-                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost, Color.LightGray));
+                            string sdnsHostMsg1 = $" [SDNS: ";
+                            string sdnsHostMsg2 = $"{dnsReader.ProtocolName}";
+                            string sdnsHostMsg3 = "]";
+                            if (dnsReader.StampProperties.IsDnsSec)
+                                sdnsHostMsg2 += $", DNSSec";
+                            if (dnsReader.StampProperties.IsNoLog)
+                                sdnsHostMsg2 += $", No Log";
+                            if (dnsReader.StampProperties.IsNoFilter)
+                                sdnsHostMsg2 += $", No Filter";
+
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg1, Color.LightGray));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg2, Color.Orange));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg3, Color.LightGray));
                         }
                         else
                         {
-                            string sdnsHostMsg1 = $" SDNS: ";
-                            string sdnsHostMsg2 = $"{dnsCryptStampReader.ProtocolName}";
-                            if (dnsCryptStampReader.IsDnsSec)
-                                sdnsHostMsg2 += $", DNSSec";
-                            if (dnsCryptStampReader.IsNoLog)
-                                sdnsHostMsg2 += $", No Log";
-                            if (dnsCryptStampReader.IsNoFilter)
-                                sdnsHostMsg2 += $", No Filter";
+                            // Write host to log
+                            if (!builtInMode)
+                            {
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(" [Host: ", Color.LightGray));
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(dns, Color.DodgerBlue));
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText("]", Color.LightGray));
+                            }
 
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg1, Color.Orange));
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg2, Color.LightGray));
+                            // Write protocol name to log
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(" [Protocol: ", Color.LightGray));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(dnsReader.ProtocolName, Color.Orange));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText("]", Color.LightGray));
                         }
 
                         // Write company name to log
-                        string resultCompany = $" [{company}]";
+                        string resultCompany = $" [{dnsReader.CompanyName}]";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany + NL, Color.Gray));
-
                     }
 
                     // Add working DNS to list
@@ -1243,34 +1274,9 @@ namespace SecureDNSClient
                 string host = latencyHost.Item2;
                 string dns = host;
 
-                // Define Company Name
-                string company;
+                // Get DNS Details
+                DnsReader dnsReader = new(dns);
 
-                // SDNS
-                DNSCryptStampReader? dnsCryptStampReader = null;
-                if (dns.StartsWith("sdns://"))
-                {
-                    // Decode Stamp
-                    dnsCryptStampReader = new(dns);
-
-                    if (dnsCryptStampReader != null)
-                    {
-                        // Get Company Name (SDNS)
-                        string stampHost = dnsCryptStampReader.Host;
-                        if (string.IsNullOrEmpty(stampHost))
-                            stampHost = dnsCryptStampReader.IP;
-                        company = await SecureDNS.HostToCompanyOffline(stampHost);
-                    }
-                    else
-                        company = sdnsErrorMsg;
-
-                }
-                else
-                {
-                    // Get Company Name (Not SDNS)
-                    company = await SecureDNS.UrlToCompanyOffline(dns);
-                }
-                
                 // write sorted result to log
                 writeSortedStatusToLog();
                 void writeSortedStatusToLog()
@@ -1284,8 +1290,25 @@ namespace SecureDNSClient
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultLatency3, Color.LightGray));
 
                     // Write host to log
-                    if (dnsCryptStampReader == null)
+                    if (dnsReader.IsDnsCryptStamp)
                     {
+                        string sdnsHostMsg1 = $" [SDNS: ";
+                        string sdnsHostMsg2 = $"{dnsReader.ProtocolName}";
+                        string sdnsHostMsg3 = "]";
+                        if (dnsReader.StampProperties.IsDnsSec)
+                            sdnsHostMsg2 += $", DNSSec";
+                        if (dnsReader.StampProperties.IsNoLog)
+                            sdnsHostMsg2 += $", No Log";
+                        if (dnsReader.StampProperties.IsNoFilter)
+                            sdnsHostMsg2 += $", No Filter";
+
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg1, Color.LightGray));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg2, Color.Orange));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg3, Color.LightGray));
+                    }
+                    else
+                    {
+                        // Write host to log
                         if (!builtInMode)
                         {
                             string resultHost1 = " [Host:";
@@ -1295,25 +1318,19 @@ namespace SecureDNSClient
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost2, Color.DodgerBlue));
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost3, Color.LightGray));
                         }
-                    }
-                    else
-                    {
-                        string sdnsHostMsg1 = $" SDNS: ";
-                        string sdnsHostMsg2 = $"{dnsCryptStampReader.ProtocolName}";
-                        if (dnsCryptStampReader.IsDnsSec)
-                            sdnsHostMsg2 += $", DNSSec";
-                        if (dnsCryptStampReader.IsNoLog)
-                            sdnsHostMsg2 += $", No Log";
-                        if (dnsCryptStampReader.IsNoFilter)
-                            sdnsHostMsg2 += $", No Filter";
 
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg1, Color.Orange));
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg2, Color.LightGray));
+                        // Write protocol to log
+                        string resultProtocol1 = " [Protocol:";
+                        string resultProtocol2 = $" {dnsReader.ProtocolName}";
+                        string resultProtocol3 = "]";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol1, Color.LightGray));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol2, Color.Orange));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol3, Color.LightGray));
                     }
 
                     // Write company name to log
                     string resultCompany1 = " [Company:";
-                    string resultCompany2 = $" {company}";
+                    string resultCompany2 = $" {dnsReader.CompanyName}";
                     string resultCompany3 = "]";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany1, Color.LightGray));
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany2, Color.DodgerBlue));
@@ -1325,10 +1342,10 @@ namespace SecureDNSClient
 
         //============================== Connect
 
-        private void Connect()
+        private async Task Connect()
         {
             // Write Connecting message to log
-            string msgConnecting = "Connecting... Please wait..." + NL;
+            string msgConnecting = "Connecting... Please wait..." + NL + NL;
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnecting, Color.MediumSeaGreen));
 
             // Check open ports
@@ -1354,7 +1371,7 @@ namespace SecureDNSClient
             }
 
             // Flush DNS
-            FlushDNS();
+            FlushDNS(false);
 
             // Generate Certificate for DoH
             if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
@@ -1364,9 +1381,35 @@ namespace SecureDNSClient
             if (CustomRadioButtonConnectCheckedServers.Checked)
             {
                 //=== Connect DNSProxy (With working servers)
-                ConnectDNSProxy();
-                if (ProcessManager.FindProcessByName("dnsproxy"))
+                int countUsingServers = ConnectDNSProxy();
+
+                // Wait Until DNS gets Online
+                await Task.Run(async () =>
                 {
+                    Stopwatch stopwatch = new();
+                    stopwatch.Start();
+                    while (!IsDNSConnected)
+                    {
+                        if (IsDNSConnected || stopwatch.ElapsedMilliseconds > 30000 || !ProcessManager.FindProcessByID(PIDDNSProxy))
+                        {
+                            stopwatch.Stop();
+                            return Task.CompletedTask;
+                        }
+                        await Task.Delay(100);
+                    }
+                    return Task.CompletedTask;
+                });
+
+                // Write dnsproxy message to log
+                string msgDnsProxy = string.Empty;
+                if (ProcessManager.FindProcessByID(PIDDNSProxy))
+                {
+                    if (countUsingServers > 1)
+                        msgDnsProxy = "Local DNS Server started using " + countUsingServers + " fastest servers in parallel." + NL;
+                    else
+                        msgDnsProxy = "Local DNS Server started using " + countUsingServers + " server." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy, Color.MediumSeaGreen));
+
                     // Connected with DNSProxy
                     internalConnect();
 
@@ -1375,9 +1418,9 @@ namespace SecureDNSClient
                 }
                 else
                 {
-                    // Write DNSProxy Error to log
-                    string msg = "DNSProxy couldn't connect, try again.";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed));
+                    msgDnsProxy = "Error: Couldn't start DNSProxy!" + NL;
+                    if (!IsDisconnecting)
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy, Color.IndianRed));
                 }
             }
             else if (CustomRadioButtonConnectCloudflare.Checked)
@@ -1461,14 +1504,14 @@ namespace SecureDNSClient
         }
 
         //---------------------------- Connect: DNSProxy (With working servers)
-        private void ConnectDNSProxy()
+        private int ConnectDNSProxy()
         {
             // Write Check first to log
             if (NumberOfWorkingServers < 1)
             {
                 string msgCheck = "Check servers first." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCheck, Color.IndianRed));
-                return;
+                return -1;
             }
 
             // Get Bootstrap IP and Port
@@ -1540,21 +1583,7 @@ namespace SecureDNSClient
             // Execute DnsProxy
             PIDDNSProxy = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, false, Info.CurrentPath, GetCPUPriority());
 
-            // Write dnsproxy message to log
-            string msgDnsProxy = string.Empty;
-            if (ProcessManager.FindProcessByID(PIDDNSProxy))
-            {
-                if (countUsingServers > 1)
-                    msgDnsProxy = "Local DNS Server started using " + countUsingServers + " fastest servers in parallel." + NL;
-                else
-                    msgDnsProxy = "Local DNS Server started using " + countUsingServers + " server." + NL;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy, Color.MediumSeaGreen));
-            }
-            else
-            {
-                msgDnsProxy = "Error: Couldn't start DNSProxy!";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy, Color.IndianRed));
-            }
+            return countUsingServers;
         }
 
         //---------------------------- Connect: DNSCrypt
@@ -1577,7 +1606,7 @@ namespace SecureDNSClient
             }
 
             // Get Host and Port of Proxy
-            string host = Network.UrlToHostAndPort(proxyScheme, 0, out int port);
+            string host = Network.UrlToHostAndPort(proxyScheme, 0, out int port, out string _, out bool _);
 
             // Check if proxy works
             bool canPing = Network.CanPing(host, port, 15);
@@ -2056,13 +2085,16 @@ namespace SecureDNSClient
             {
                 // Set DNS
                 // Write Connect first to log
-                if (!IsDNSConnected)
+                string msgConnect = string.Empty;
+                if (!IsConnected)
                 {
-                    string msgConnect = string.Empty;
-                    if (!IsDoHConnected)
-                        msgConnect = "Wait until DNS gets online." + NL;
-                    else
-                        msgConnect = "Activate legacy DNS Server first." + NL;
+                    msgConnect = "Connect first." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
+                    return;
+                }
+                else if (!IsDNSConnected)
+                {
+                    msgConnect = "Wait until DNS gets online." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
                     return;
                 }
@@ -2193,11 +2225,14 @@ namespace SecureDNSClient
                     HTTPProxy.OnChunkDetailsReceived += HTTPProxy_OnChunkDetailsReceived;
                     HTTPProxy.OnErrorOccurred -= HTTPProxy_OnErrorOccurred;
                     HTTPProxy.OnErrorOccurred += HTTPProxy_OnErrorOccurred;
-
+                    
                     ApplyPDpiChanges();
 
                     // Get number of handle requests
                     int handleReq = int.Parse(CustomNumericUpDownHTTPProxyHandleRequests.Value.ToString());
+
+                    // Get and set block port 80 setting
+                    HTTPProxy.BlockPort80 = CustomCheckBoxSettingProxyBlockPort80.Checked;
 
                     HTTPProxy.Start(IPAddress.Any, SettingsWindow.GetHTTPProxyPort(CustomNumericUpDownHTTPProxyPort), handleReq);
                     Task.Delay(500).Wait();
@@ -2304,7 +2339,7 @@ namespace SecureDNSClient
                         // Unset Proxy First
                         if (IsProxySet) SetProxy();
                         Task.Delay(100).Wait();
-                        Network.UnsetProxy(false);
+                        if (IsProxySet) Network.UnsetProxy(false, true);
 
                         HTTPProxy.Stop();
                         Task.Delay(500).Wait();
@@ -2400,7 +2435,7 @@ namespace SecureDNSClient
             else
             {
                 // Unset Proxy
-                Network.UnsetProxy(false);
+                Network.UnsetProxy(false, true);
 
                 Task.Delay(300).Wait(); // Wait a moment
 
@@ -2853,8 +2888,12 @@ namespace SecureDNSClient
                         string url = $"https://{host}/";
                         Uri uri = new(url, UriKind.Absolute);
 
-                        if (IsProxyDPIActive)
+                        bool isProxyPortOpen = Network.IsPortOpen(IPAddress.Loopback.ToString(), LastProxyPort, 5);
+                        Debug.WriteLine($"Is Proxy Port Open: {isProxyPortOpen}");
+
+                        if (IsProxyDPIActive && isProxyPortOpen)
                         {
+                            Debug.WriteLine("Proxy");
                             string proxyScheme = $"http://{IPAddress.Loopback}:{LastProxyPort}";
                             using SocketsHttpHandler socketsHttpHandler = new();
                             socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true);
@@ -2874,6 +2913,7 @@ namespace SecureDNSClient
                         }
                         else
                         {
+                            Debug.WriteLine("No Proxy");
                             using HttpClient httpClient = new();
                             httpClient.Timeout = new TimeSpan(0, 0, timeoutSec);
 
@@ -3169,7 +3209,7 @@ namespace SecureDNSClient
                     // Update NICs
                     SecureDNS.UpdateNICs(CustomComboBoxNICs);
 
-                    Task taskConnect = Task.Run(() =>
+                    Task taskConnect = Task.Run(async () =>
                     {
                         // Stop Check
                         if (IsCheckingStarted)
@@ -3182,7 +3222,7 @@ namespace SecureDNSClient
                         }
 
                         IsConnecting = true;
-                        Connect();
+                        await Connect();
                     });
 
                     taskConnect.ContinueWith(_ =>
@@ -3201,6 +3241,7 @@ namespace SecureDNSClient
                 try
                 {
                     // Disconnect
+                    IsDisconnecting = true;
                     // Write Disconnecting message to log
                     string msgDisconnecting = "Disconnecting..." + NL;
                     CustomRichTextBoxLog.AppendText(msgDisconnecting, Color.MediumSeaGreen);
@@ -3226,7 +3267,8 @@ namespace SecureDNSClient
                         HTTPProxy.Stop();
 
                     // Unset Proxy
-                    Network.UnsetProxy(false);
+                    if (IsProxySet)
+                        Network.UnsetProxy(false, false);
 
                     Task.Delay(500).Wait();
 
@@ -3242,6 +3284,8 @@ namespace SecureDNSClient
                         () => UpdateBoolDnsOnce(1000),
                         () => UpdateBoolDohOnce(1000)
                     );
+
+                    IsDisconnecting = false;
                 }
                 catch (Exception ex)
                 {
@@ -3301,7 +3345,12 @@ namespace SecureDNSClient
             ApplyPDpiChanges();
         }
 
-        private void CustomButtonRestoreDefault_Click(object sender, EventArgs e)
+        private void CustomButtonSettingUninstallCertificate_Click(object sender, EventArgs e)
+        {
+            UninstallCertificate();
+        }
+
+        private void CustomButtonSettingRestoreDefault_Click(object sender, EventArgs e)
         {
             if (IsCheckingStarted)
             {
@@ -3333,6 +3382,8 @@ namespace SecureDNSClient
         //============================== Events
         private void SecureDNSClient_CheckedChanged(object sender, EventArgs e)
         {
+            if (AppSettings == null) return;
+
             if (sender is CustomRadioButton crbBuiltIn && crbBuiltIn.Name == CustomRadioButtonBuiltIn.Name)
             {
                 AppSettings.AddSetting(CustomRadioButtonBuiltIn, nameof(CustomRadioButtonBuiltIn.Checked), CustomRadioButtonBuiltIn.Checked);
@@ -3406,7 +3457,8 @@ namespace SecureDNSClient
                 HTTPProxy.Stop();
 
             // Unset Proxy
-            Network.UnsetProxy(false);
+            if (IsProxySet)
+                Network.UnsetProxy(false, false);
 
             // Kill processes and set DNS to dynamic
             KillAll();

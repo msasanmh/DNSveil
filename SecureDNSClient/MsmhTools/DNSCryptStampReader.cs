@@ -36,7 +36,7 @@ namespace MsmhTools
             public string PlainDNS = "Plain DNS";
             public string DnsCrypt = "DNSCrypt";
             public string DoH = "DNS-Over-HTTPS";
-            public string TLS = "TLS";
+            public string TLS = "DNS-Over-TLS";
             public string DNSCryptRelay = "DNSCrypt Relay";
             public string Unknown = "Unknown";
         }
