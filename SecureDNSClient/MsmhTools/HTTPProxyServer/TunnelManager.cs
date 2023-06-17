@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Net.Sockets;
 
 namespace MsmhTools.HTTPProxyServer
 {    
     internal class TunnelManager
     {
-        private Dictionary<int, Tunnel> _Tunnels = new();
-        private readonly object _TunnelsLock = new();
+        private Dictionary<int, Tunnel> Tunnels = new();
 
         /// <summary>
         /// Construct the tunnel manager.
@@ -17,69 +17,32 @@ namespace MsmhTools.HTTPProxyServer
 
         internal void Add(int threadId, Tunnel curr)
         {
-            lock (_TunnelsLock)
-            {
-                if (_Tunnels.ContainsKey(threadId)) _Tunnels.Remove(threadId);
-                _Tunnels.Add(threadId, curr);
-            }
+            if (!Tunnels.ContainsKey(threadId))
+                Tunnels.Add(threadId, curr);
         }
          
         internal void Remove(int threadId)
         {
-            lock (_TunnelsLock)
+            if (Tunnels.ContainsKey(threadId))
             {
-                if (_Tunnels.ContainsKey(threadId))
-                {
-                    Tunnel curr = _Tunnels[threadId];
-                    _Tunnels.Remove(threadId);
-                    curr.Dispose();
-                }
+                Tunnel curr = Tunnels[threadId];
+                if (curr.ClientTcpClient.Connected)
+                    curr.ClientTcpClient.Dispose();
+                if (curr.ServerTcpClient.Connected)
+                    curr.ServerTcpClient.Dispose();
+                Tunnels.Remove(threadId);
+                curr.Dispose();
             }
         }
-         
-        internal Dictionary<int, Tunnel> GetMetadata()
+        
+        internal Dictionary<int, Tunnel> GetTunnels()
         {
-            Dictionary<int, Tunnel> ret = new();
-
-            lock (_TunnelsLock)
-            {
-                foreach (KeyValuePair<int, Tunnel> curr in _Tunnels)
-                {
-                    ret.Add(curr.Key, curr.Value.Metadata());
-                }
-            }
-
-            return ret;
+            return Tunnels;
         }
-         
-        internal Dictionary<int, Tunnel> GetFull()
+        
+        public int Count
         {
-            Dictionary<int, Tunnel> ret = new();
-
-            lock (_TunnelsLock)
-            {
-                ret = new Dictionary<int, Tunnel>(_Tunnels);
-            }
-
-            return ret;
-        }
-         
-        internal bool Active(int threadId)
-        {
-            lock (_TunnelsLock)
-            {
-                if (_Tunnels.ContainsKey(threadId)) return true;
-            }
-
-            return false;
-        }
-         
-        internal int Count()
-        {
-            lock (_TunnelsLock)
-            {
-                return _Tunnels.Count;
-            }
+            get => Tunnels.ToList().Count;
         }
     }
 }

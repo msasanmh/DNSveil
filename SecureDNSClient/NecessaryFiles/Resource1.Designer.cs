@@ -63,6 +63,16 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
+        internal static byte[] dnscrypt_proxy_cloudflareTOML {
+            get {
+                object obj = ResourceManager.GetObject("dnscrypt_proxy_cloudflareTOML", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
         internal static byte[] dnscrypt_proxyEXE {
             get {
                 object obj = ResourceManager.GetObject("dnscrypt_proxyEXE", resourceCulture);

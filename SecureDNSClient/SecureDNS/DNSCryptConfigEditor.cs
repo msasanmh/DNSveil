@@ -7,7 +7,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DNSCrypt
+namespace SecureDNSClient.DNSCrypt
 {
     public class DNSCryptConfigEditor
     {
@@ -19,6 +19,23 @@ namespace DNSCrypt
             ConfigList.Clear();
             string text = File.ReadAllText(configPath);
             ConfigList = text.SplitToLines();
+        }
+
+        public void EditDnsCache(bool enable)
+        {
+            for (int n = 0; n < ConfigList.Count; n++)
+            {
+                string line = ConfigList[n].Trim();
+                if (line.Contains("cache = true") || line.Contains("cache = false"))
+                {
+                    // e.g. cache = true
+                    if (enable)
+                        ConfigList[n] = "cache = true";
+                    else
+                        ConfigList[n] = "cache = false";
+                    break;
+                }
+            }
         }
 
         public void EditHTTPProxy(string proxyScheme)

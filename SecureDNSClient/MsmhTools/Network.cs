@@ -812,35 +812,50 @@ namespace MsmhTools
 
         public static bool CanPing(string host, int timeoutMS)
         {
-            Ping ping = new();
-
-            try
+            var task = Task.Run(() =>
             {
-                PingReply reply = ping.Send(host, timeoutMS);
-                if (reply == null) return false;
+                try
+                {
+                    Ping ping = new();
+                    PingReply reply = ping.Send(host, timeoutMS);
+                    if (reply == null) return false;
 
-                return reply.Status == IPStatus.Success;
-            }
-            catch (PingException ex)
-            {
-                Debug.WriteLine($"Ping: {ex.Message}");
+                    return reply.Status == IPStatus.Success;
+                }
+                catch (PingException ex)
+                {
+                    Debug.WriteLine($"Ping: {ex.Message}");
+                    return false;
+                }
+            });
+
+            if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
+                return task.Result;
+            else
                 return false;
-            }
         }
 
         public static bool CanPing(string host, int port, int timeoutMS)
         {
-            try
+            var task = Task.Run(() =>
             {
-                using var client = new TcpClient(host, port);
-                client.SendTimeout = timeoutMS;
-                return true;
-            }
-            catch (SocketException ex)
-            {
-                Debug.WriteLine($"Ping: {ex.Message}");
+                try
+                {
+                    using var client = new TcpClient(host, port);
+                    client.SendTimeout = timeoutMS;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Ping: {ex.Message}");
+                    return false;
+                }
+            });
+
+            if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
+                return task.Result;
+            else
                 return false;
-            }
         }
 
     }

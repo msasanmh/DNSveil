@@ -73,7 +73,28 @@
     <Compile Update="CustomControls\CustomVScrollBar.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Update="Forms\FormIpScanner.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\GoodbyeDPI.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\Share.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\TryToBypassCfUsingGoodbyeDPI.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\TryToBypassCfUsingProxyDPI.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\FormMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\CheckServers.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="SecureDNS\SettingsWindow.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

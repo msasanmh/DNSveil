@@ -10,13 +10,15 @@ namespace SecureDNSClient
 {
     public class CamouflageDNSServer
     {
+        public string CfCleanIP { get; set; }
         public bool IsRunning { get; private set; } = false;
         public int Port { get; set; } = 5380;
         private DnsServer? DNSServer;
 
-        public CamouflageDNSServer(int port)
+        public CamouflageDNSServer(int port, string cfCleanIP)
         {
             Port = port;
+            CfCleanIP = cfCleanIP;
         }
 
         public void Start()
@@ -73,10 +75,8 @@ namespace SecureDNSClient
                         response.AnswerRecords.Clear();
                         if (message.Questions[0].RecordType == RecordType.A)
                         {
-                            ARecord aRecord1 = new(DomainName.Parse("dns.cloudflare.com"), 60, IPAddress.Parse("104.16.132.229"));
-                            ARecord aRecord2 = new(DomainName.Parse("dns.cloudflare.com"), 60, IPAddress.Parse("104.16.133.229"));
+                            ARecord aRecord1 = new(DomainName.Parse("dns.cloudflare.com"), 60, IPAddress.Parse(CfCleanIP));
                             response.AnswerRecords.Add(aRecord1);
-                            response.AnswerRecords.Add(aRecord2);
                         }
                     }
 
@@ -86,10 +86,8 @@ namespace SecureDNSClient
 
                         if (message.Questions[0].RecordType == RecordType.A)
                         {
-                            ARecord aRecord1 = new(DomainName.Parse("dns.cloudflare-dns.com"), 60, IPAddress.Parse("104.18.106.66"));
-                            ARecord aRecord2 = new(DomainName.Parse("dns.cloudflare-dns.com"), 60, IPAddress.Parse("104.18.107.66"));
+                            ARecord aRecord1 = new(DomainName.Parse("dns.cloudflare-dns.com"), 60, IPAddress.Parse(CfCleanIP));
                             response.AnswerRecords.Add(aRecord1);
-                            response.AnswerRecords.Add(aRecord2);
                         }
 
                         if (message.Questions[0].RecordType == RecordType.CName)
@@ -105,10 +103,8 @@ namespace SecureDNSClient
 
                         if (message.Questions[0].RecordType == RecordType.A)
                         {
-                            ARecord aRecord1 = new(DomainName.Parse("every1dns.com"), 60, IPAddress.Parse("104.18.106.66"));
-                            ARecord aRecord2 = new(DomainName.Parse("every1dns.com"), 60, IPAddress.Parse("104.18.107.66"));
+                            ARecord aRecord1 = new(DomainName.Parse("every1dns.com"), 60, IPAddress.Parse(CfCleanIP));
                             response.AnswerRecords.Add(aRecord1);
-                            response.AnswerRecords.Add(aRecord2);
                         }
                     }
 

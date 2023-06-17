@@ -67,19 +67,9 @@ namespace MsmhTools.HTTPProxyServer
         public Stream ServerStream { get; set; }
 
         private bool _Active = true;
-        public static bool Cancel { get; set; } = false;
 
         public event EventHandler<EventArgs>? OnErrorOccurred;
         public event EventHandler<EventArgs>? OnDebugInfoReceived;
-        public event EventHandler<EventArgs>? OnChunkDetailsReceived;
-
-        /// <summary>
-        /// Construct a Tunnel object.
-        /// </summary>
-        public Tunnel()
-        {
-
-        }
 
         /// <summary>
         /// Construct a Tunnel object.
@@ -109,7 +99,7 @@ namespace MsmhTools.HTTPProxyServer
             if (sourcePort < 0) throw new ArgumentOutOfRangeException(nameof(sourcePort));
             if (destPort < 0) throw new ArgumentOutOfRangeException(nameof(destPort));
             if (destHostPort < 0) throw new ArgumentOutOfRangeException(nameof(destHostPort));
-
+            
             TimestampUtc = DateTime.Now.ToUniversalTime();
             SourceIp = sourceIp;
             SourcePort = sourcePort; 
@@ -128,9 +118,11 @@ namespace MsmhTools.HTTPProxyServer
             
             ClientStream = client.GetStream();
             ServerStream = server.GetStream();
-             
-            Task.Run(() => ClientReaderAsync());
-            Task.Run(() => ServerReaderAsync());
+            
+            Parallel.Invoke(
+                () => ClientReaderAsync(),
+                () => ServerReaderAsync()
+                );
 
             _Active = true;
         }
@@ -168,8 +160,6 @@ namespace MsmhTools.HTTPProxyServer
         /// <returns>True if both connections are active.</returns>
         public bool IsActive()
         {
-            if (Cancel) return false;
-
             bool clientActive = false;
             bool serverActive = false;
             bool clientSocketActive = false;
@@ -224,23 +214,6 @@ namespace MsmhTools.HTTPProxyServer
         }
 
         /// <summary>
-        /// Returns the metadata of the tunnel.
-        /// </summary>
-        /// <returns>Tunnel object without TCP instances or streams.</returns>
-        public Tunnel Metadata()
-        {
-            Tunnel ret = new();
-            ret.DestHostname = DestHostname;
-            ret.DestHostPort = DestHostPort;
-            ret.DestIp = DestIp;
-            ret.DestPort = DestPort;
-            ret.SourceIp = SourceIp;
-            ret.SourcePort = SourcePort;
-            ret.TimestampUtc = TimestampUtc;
-            return ret;
-        }
-
-        /// <summary>
         /// Tear down the tunnel object and resources.
         /// </summary>
         public void Dispose()
@@ -272,7 +245,6 @@ namespace MsmhTools.HTTPProxyServer
         private bool StreamReadSync(TcpClient client, out byte[]? data)
         {
             data = null;
-            if (Cancel) return false;
 
             try
             { 
@@ -323,13 +295,12 @@ namespace MsmhTools.HTTPProxyServer
             }
             finally
             {
-
+                // do nothing
             }
         }
 
         private async Task<byte[]?> StreamReadAsync(TcpClient client)
         {
-            if (Cancel) return null;
             try
             {
                 Stream stream = client.GetStream();
@@ -376,34 +347,84 @@ namespace MsmhTools.HTTPProxyServer
             }
             finally
             {
-
+                // do nothing
             }
         }
 
         private TcpState GetTcpLocalState(TcpClient tcpClient)
         {
-            if (Cancel) return TcpState.Unknown;
-            var state = IPGlobalProperties.GetIPGlobalProperties()
-              .GetActiveTcpConnections()
-              .FirstOrDefault(x => x.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint));
-            return state != null ? state.State : TcpState.Unknown;
+            try
+            {
+                if (tcpClient.Client == null)
+                    return TcpState.Unknown;
+
+                IPGlobalProperties ipgp = IPGlobalProperties.GetIPGlobalProperties();
+                if (ipgp != null)
+                {
+                    TcpConnectionInformation[]? tcis = ipgp.GetActiveTcpConnections();
+                    if (tcis != null)
+                    {
+                        for (int n = 0; n < tcis.Length; n++)
+                        {
+                            TcpConnectionInformation? tci = tcis[n];
+                            if (tci != null)
+                            {
+                                if (tcpClient.Client != null)
+                                {
+                                    if (tci.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint))
+                                        return tci.State;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return TcpState.Unknown;
+            }
+            catch (Exception)
+            {
+                return TcpState.Unknown;
+            }
         }
 
         private TcpState GetTcpRemoteState(TcpClient tcpClient)
         {
-            if (tcpClient.Client == null || Cancel)
-                return TcpState.Unknown;
+            try
+            {
+                if (tcpClient.Client == null)
+                    return TcpState.Unknown;
 
-            Socket socket = tcpClient.Client;
-            var state = IPGlobalProperties.GetIPGlobalProperties()
-                      .GetActiveTcpConnections()
-                      .FirstOrDefault(x => x.RemoteEndPoint.Equals(socket.RemoteEndPoint));
-            return state != null ? state.State : TcpState.Unknown;
+                IPGlobalProperties ipgp = IPGlobalProperties.GetIPGlobalProperties();
+                if (ipgp != null)
+                {
+                    TcpConnectionInformation[]? tcis = ipgp.GetActiveTcpConnections();
+                    if (tcis != null)
+                    {
+                        for (int n = 0; n < tcis.Length; n++)
+                        {
+                            TcpConnectionInformation? tci = tcis[n];
+                            if (tci != null)
+                            {
+                                if (tcpClient.Client != null)
+                                {
+                                    if (tci.RemoteEndPoint.Equals(tcpClient.Client.RemoteEndPoint))
+                                        return tci.State;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return TcpState.Unknown;
+            }
+            catch (Exception)
+            {
+                return TcpState.Unknown;
+            }
         }
 
         private void ClientReaderSync()
         {
-            if (Cancel) return;
             try
             {
                 // Event
@@ -458,7 +479,6 @@ namespace MsmhTools.HTTPProxyServer
 
         private void ServerReaderSync()
         {
-            if (Cancel) return;
             try
             {
                 // Event
@@ -513,7 +533,6 @@ namespace MsmhTools.HTTPProxyServer
 
         private async void ClientReaderAsync()
         {
-            if (Cancel) return;
             try
             {
                 // Event
@@ -558,7 +577,6 @@ namespace MsmhTools.HTTPProxyServer
 
         private async void ServerReaderAsync()
         {
-            if (Cancel) return;
             try
             {
                 // Event
@@ -610,38 +628,37 @@ namespace MsmhTools.HTTPProxyServer
         {
             Send(data, ServerTcpClient.Client);
         }
-
+        public HTTPProxyServer.Program.DPIBypass ConstantDPIBypass { get; set; } = new();
+        public void EnableDPIBypass(HTTPProxyServer.Program.DPIBypass dpiBypass)
+        {
+            ConstantDPIBypass = dpiBypass;
+            ConstantDPIBypass.DestHostname = DestHostname;
+            ConstantDPIBypass.DestPort = DestHostPort;
+        }
         private void Send(byte[] data, Socket? socket)
         {
-            if (Cancel) return;
-            if (HTTPProxyServer._ActiveThreads >= HTTPProxyServer._Settings.MaxThreads) return;
             if (socket != null)
             {
-                HTTPProxyServer.DPIBypassProgram bp = HTTPProxyServer.BypassProgram;
-                if (bp.DPIBypassMode == DPIBypass.Mode.Program)
+                if (ConstantDPIBypass.DPIBypassMode == HTTPProxyServer.Program.DPIBypass.Mode.Disable)
                 {
-                    DPIBypass.ProgramMode programMode = new(data, socket);
-                    programMode.OnChunkDetailsReceived -= ProgramMode_OnChunkDetailsReceived;
-                    programMode.OnChunkDetailsReceived += ProgramMode_OnChunkDetailsReceived;
-                    programMode.DontChunkTheBiggestRequest = bp.DontChunkTheBiggestRequest;
-                    programMode.SendInRandom = bp.SendInRandom;
-                    programMode.Send(bp.FirstPartOfDataLength, bp.FragmentSize, bp.FragmentChunks, bp.FragmentDelay);
+                    HTTPProxyServer.Program.DPIBypass bp = HTTPProxyServer.StaticDPIBypassProgram;
+                    bp.DestHostname = DestHostname;
+                    bp.DestPort = DestHostPort;
+                    if (bp.DPIBypassMode == HTTPProxyServer.Program.DPIBypass.Mode.Program)
+                    {
+                        HTTPProxyServer.Program.DPIBypass.ProgramMode programMode = new(data, socket);
+                        programMode.Send(bp);
+                    }
+                    else
+                        socket.Send(data);
                 }
                 else
-                    socket.Send(data);
+                {
+                    HTTPProxyServer.Program.DPIBypass.ProgramMode programMode = new(data, socket);
+                    programMode.Send(ConstantDPIBypass);
+                }
+                
             }
-        }
-
-        private void ProgramMode_OnChunkDetailsReceived(object? sender, EventArgs e)
-        {
-            if (sender is string msg)
-                OnChunkDetailsReceived?.Invoke(msg, EventArgs.Empty);
-        }
-
-        private void RandomMode_OnChunkDetailsReceived(object? sender, EventArgs e)
-        {
-            if (sender is string msg)
-                OnChunkDetailsReceived?.Invoke(msg, EventArgs.Empty);
         }
 
     }

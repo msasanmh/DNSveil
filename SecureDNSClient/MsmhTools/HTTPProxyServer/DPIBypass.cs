@@ -5,281 +5,306 @@ using System.Threading.Tasks;
 
 namespace MsmhTools.HTTPProxyServer
 {
-    public class DPIBypass
+    public partial class HTTPProxyServer
     {
-        // Max Data Length = 65536
-        private readonly int MaxDataLength = 65536;
-        public enum Mode
+        public partial class Program
         {
-            Program,
-            Disable
-        }
-
-        public class ProgramMode : DPIBypass
-        {
-            private byte[] Data;
-            private Socket Socket;
-
-            /// <summary>
-            /// Don't chunk the request when size is 65536.
-            /// </summary>
-            public bool DontChunkTheBiggestRequest { get; set; } = false;
-
-            public bool SendInRandom { get; set; } = false;
-
-            public event EventHandler<EventArgs>? OnChunkDetailsReceived;
-
-            public ProgramMode(byte[] data, Socket socket)
+            //======================================= DPI Bypass Support
+            public class DPIBypass
             {
-                Data = data;
-                Socket = socket;
-            }
+                public Mode DPIBypassMode { get; private set; } = Mode.Disable;
+                public int FirstPartOfDataLength { get; private set; } = 0;
+                public int FragmentSize { get; private set; } = 0;
+                public int FragmentChunks { get; private set; } = 0;
+                public int FragmentDelay { get; private set; } = 0;
 
-            public void Send(int firstPartOfDataLength, int fragmentSize, int fragmentChunks, int fragmentDelay = 0)
-            {
-                if (!SendInRandom)
+                /// <summary>
+                /// Don't chunk the request when size is 65536.
+                /// </summary>
+                public bool DontChunkTheBiggestRequest { get; set; } = false;
+                public bool SendInRandom { get; set; } = false;
+                public string? DestHostname { get; set; }
+                public int DestPort { get; set; }
+
+                public event EventHandler<EventArgs>? OnChunkDetailsReceived;
+
+                public DPIBypass() { }
+
+                public void Set(Mode mode, int firstPartOfDataLength, int fragmentSize, int fragmentChunks, int fragmentDelay)
                 {
-                    int fragmentSizeOut;
-                    if (Data.Length <= firstPartOfDataLength)
-                        fragmentSizeOut = Math.Min(fragmentSize, Data.Length);
-                    else
-                        fragmentSizeOut = Data.Length / fragmentChunks;
-
-                    if (fragmentSizeOut == 0) fragmentSizeOut = 1;
-                    if (fragmentSizeOut > MaxDataLength) fragmentSizeOut = MaxDataLength;
-
-                    if (DontChunkTheBiggestRequest)
-                        if (Data.Length == MaxDataLength) fragmentSizeOut = MaxDataLength;
-
-                    SendDataInNormalFragment1(Data, Socket, fragmentSizeOut, fragmentDelay, OnChunkDetailsReceived);
+                    DPIBypassMode = mode;
+                    FirstPartOfDataLength = firstPartOfDataLength;
+                    FragmentSize = fragmentSize;
+                    FragmentChunks = fragmentChunks;
+                    FragmentDelay = fragmentDelay;
                 }
-                else
+
+                // Max Data Length = 65536
+                private readonly int MaxDataLength = 65536;
+                public enum Mode
                 {
-                    if (Data.Length <= firstPartOfDataLength)
+                    Program,
+                    Disable
+                }
+
+                public class ProgramMode
+                {
+                    private byte[] Data;
+                    private Socket Socket;
+
+                    public ProgramMode(byte[] data, Socket socket)
                     {
-                        int fragmentSizeOut = Math.Min(fragmentSize, Data.Length);
-                        SendDataInNormalFragment1(Data, Socket, fragmentSizeOut, fragmentDelay, OnChunkDetailsReceived);
+                        Data = data;
+                        Socket = socket;
                     }
-                    else
+
+                    public void Send(DPIBypass bp)
                     {
-                        int offset = 5;
-                        Random random = new();
-                        fragmentChunks = random.Next(fragmentChunks - offset, fragmentChunks + offset);
+                        if (!bp.SendInRandom)
+                        {
+                            int fragmentSizeOut;
+                            if (Data.Length <= bp.FirstPartOfDataLength)
+                                fragmentSizeOut = Math.Min(bp.FragmentSize, Data.Length);
+                            else
+                                fragmentSizeOut = Data.Length / bp.FragmentChunks;
 
-                        if (fragmentChunks == 0) fragmentChunks = 1;
-                        if (fragmentChunks > Data.Length) fragmentChunks = Data.Length;
+                            if (fragmentSizeOut == 0) fragmentSizeOut = 1;
+                            if (fragmentSizeOut > bp.MaxDataLength) fragmentSizeOut = bp.MaxDataLength;
 
-                        SendDataInRandomFragment(Data, Socket, fragmentChunks, fragmentDelay, OnChunkDetailsReceived);
+                            if (bp.DontChunkTheBiggestRequest)
+                                if (Data.Length == bp.MaxDataLength) fragmentSizeOut = bp.MaxDataLength;
+
+                            SendDataInNormalFragment1(Data, Socket, fragmentSizeOut, bp);
+                        }
+                        else
+                        {
+                            if (Data.Length <= bp.FirstPartOfDataLength)
+                            {
+                                int fragmentSizeOut = Math.Min(bp.FragmentSize, Data.Length);
+                                SendDataInNormalFragment1(Data, Socket, fragmentSizeOut, bp);
+                            }
+                            else
+                            {
+                                int offset = 5;
+                                Random random = new();
+                                bp.FragmentChunks = random.Next(bp.FragmentChunks - offset, bp.FragmentChunks + offset);
+
+                                if (bp.FragmentChunks == 0) bp.FragmentChunks = 1;
+                                if (bp.FragmentChunks > Data.Length) bp.FragmentChunks = Data.Length;
+
+                                SendDataInRandomFragment(Data, Socket, bp);
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        private static void SendDataInNormalFragment1(byte[] data, Socket socket, int fragmentSize, int fragmentDelay, EventHandler<EventArgs>? onChunkDetailsReceived)
-        {
-            // Create packets
-            List<byte[]> packets = new();
-            packets.Clear();
-            int prevIndex = 0;
-            for (int n = 0; n < data.Length; n += fragmentSize)
-            {
-                try
+                private static void SendDataInNormalFragment1(byte[] data, Socket socket, int fragmentSize, DPIBypass bp)
                 {
-                    fragmentSize = Math.Min(fragmentSize, data.Length - n);
-                    byte[] fragmentData = new byte[fragmentSize];
-                    prevIndex = n;
-                    Buffer.BlockCopy(data, n, fragmentData, 0, fragmentSize);
-                    packets.Add(fragmentData);
-                }
-                catch (Exception ex)
-                {
+                    // Create packets
+                    List<byte[]> packets = new();
                     packets.Clear();
-                    string msgEvent = $"Error, Creating normal packets: {ex.Message}";
-                    Console.WriteLine(msgEvent);
-                    return;
-                }
-            }
+                    int prevIndex = 0;
+                    for (int n = 0; n < data.Length; n += fragmentSize)
+                    {
+                        try
+                        {
+                            fragmentSize = Math.Min(fragmentSize, data.Length - n);
+                            byte[] fragmentData = new byte[fragmentSize];
+                            prevIndex = n;
+                            Buffer.BlockCopy(data, n, fragmentData, 0, fragmentSize);
+                            packets.Add(fragmentData);
+                        }
+                        catch (Exception ex)
+                        {
+                            packets.Clear();
+                            string msgEvent = $"Error, Creating normal packets: {ex.Message}";
+                            Console.WriteLine(msgEvent);
+                            return;
+                        }
+                    }
 
-            // Send packets
-            for (int i = 0; i < packets.Count; i++)
-            {
-                try
-                {
-                    byte[] fragmentData = packets[i];
-                    if (socket == null) return;
-                    socket.Send(fragmentData);
-                    if (fragmentDelay > 0)
-                        Task.Delay(fragmentDelay).Wait();
-                }
-                catch (Exception ex)
-                {
-                    string msgEvent = $"Error, SendDataInFragment1: {ex.Message}";
-                    Console.WriteLine(msgEvent);
-                    return;
-                }
-            }
+                    // Send packets
+                    for (int i = 0; i < packets.Count; i++)
+                    {
+                        try
+                        {
+                            byte[] fragmentData = packets[i];
+                            if (socket == null) return;
+                            socket.Send(fragmentData);
+                            if (bp.FragmentDelay > 0)
+                                Task.Delay(bp.FragmentDelay).Wait();
+                        }
+                        catch (Exception ex)
+                        {
+                            string msgEvent = $"Error, SendDataInFragment1: {ex.Message}";
+                            Console.WriteLine(msgEvent);
+                            return;
+                        }
+                    }
 
-            string chunkDetailsEvent = $"Length: {data.Length}, Chunks: {packets.Count}";
-            onChunkDetailsReceived?.Invoke(chunkDetailsEvent, EventArgs.Empty);
+                    string chunkDetailsEvent = $"{bp.DestHostname}:{bp.DestPort} Length: {data.Length}, Chunks: {packets.Count}";
+                    bp.OnChunkDetailsReceived?.Invoke(chunkDetailsEvent, EventArgs.Empty);
 
-            int outLength = prevIndex + fragmentSize;
-            Debug.WriteLine($"{outLength} = {data.Length}, Chunks: {packets.Count}");
-        }
+                    int outLength = prevIndex + fragmentSize;
+                    //Debug.WriteLine($"{outLength} = {data.Length}, Chunks: {packets.Count}");
+                }
 
-        private static void SendDataInNormalFragment2(byte[] data, Socket socket, int fragmentSize, int fragmentDelay)
-        {
-            // Send data
-            int prevIndex = 0;
-            var fragments = data.Chunk(fragmentSize);
-            for (int n = 0; n < fragments.Count(); n++)
-            {
-                try
+                private static void SendDataInNormalFragment2(byte[] data, Socket socket, int fragmentSize, int fragmentDelay)
                 {
-                    byte[] fragment = fragments.ToArray()[n];
-                    prevIndex += fragment.Length;
-                    if (socket == null) return;
-                    socket.Send(fragment);
-                    if (fragmentDelay > 0)
-                        Task.Delay(fragmentDelay).Wait();
-                }
-                catch (Exception ex)
-                {
-                    string msgEvent = $"Error, SendDataInFragment2: {ex.Message}";
-                    Console.WriteLine(msgEvent);
-                    return;
-                }
-            }
-            
-            int outLength = prevIndex;
-            Debug.WriteLine($"{outLength} = {data.Length}");
-        }
+                    // Send data
+                    int prevIndex = 0;
+                    var fragments = data.Chunk(fragmentSize);
+                    for (int n = 0; n < fragments.Count(); n++)
+                    {
+                        try
+                        {
+                            byte[] fragment = fragments.ToArray()[n];
+                            prevIndex += fragment.Length;
+                            if (socket == null) return;
+                            socket.Send(fragment);
+                            if (fragmentDelay > 0)
+                                Task.Delay(fragmentDelay).Wait();
+                        }
+                        catch (Exception ex)
+                        {
+                            string msgEvent = $"Error, SendDataInFragment2: {ex.Message}";
+                            Console.WriteLine(msgEvent);
+                            return;
+                        }
+                    }
 
-        private static void SendDataInNormalFragment3(byte[] data, Socket socket, int fragmentSize, int fragmentDelay)
-        {
-            // Send data
-            int prevIndex = 0;
-            var fragments = ChunkViaMemory(data, fragmentSize);
-            for (int n = 0; n < fragments.Count(); n++)
-            {
-                try
-                {
-                    byte[] fragment = fragments.ToArray()[n].ToArray();
-                    prevIndex += fragment.Length;
-                    if (socket == null) return;
-                    socket.Send(fragment);
-                    if (fragmentDelay > 0)
-                        Task.Delay(fragmentDelay).Wait();
+                    int outLength = prevIndex;
+                    Debug.WriteLine($"{outLength} = {data.Length}");
                 }
-                catch (Exception ex)
-                {
-                    string msgEvent = $"Error, SendDataInFragment3: {ex.Message}";
-                    Console.WriteLine(msgEvent);
-                    return;
-                }
-            }
 
-            int outLength = prevIndex;
-            Debug.WriteLine($"{outLength} = {data.Length}");
-        }
+                private static void SendDataInNormalFragment3(byte[] data, Socket socket, int fragmentSize, int fragmentDelay)
+                {
+                    // Send data
+                    int prevIndex = 0;
+                    var fragments = ChunkViaMemory(data, fragmentSize);
+                    for (int n = 0; n < fragments.Count(); n++)
+                    {
+                        try
+                        {
+                            byte[] fragment = fragments.ToArray()[n].ToArray();
+                            prevIndex += fragment.Length;
+                            if (socket == null) return;
+                            socket.Send(fragment);
+                            if (fragmentDelay > 0)
+                                Task.Delay(fragmentDelay).Wait();
+                        }
+                        catch (Exception ex)
+                        {
+                            string msgEvent = $"Error, SendDataInFragment3: {ex.Message}";
+                            Console.WriteLine(msgEvent);
+                            return;
+                        }
+                    }
 
-        private static void SendDataInRandomFragment(byte[] data, Socket socket, int fragmentChunks, int fragmentDelay, EventHandler<EventArgs>? onChunkDetailsReceived)
-        {
-            // Create packets
-            List<byte[]> packets = new();
-            packets.Clear();
-            fragmentChunks = Math.Min(fragmentChunks, data.Length);
-            List<int> indices;
-            if (fragmentChunks < data.Length)
-                indices = GenerateRandomIndices(1, data.Length - 1, fragmentChunks - 1);
-            else
-                indices = Enumerable.Range(0, data.Length - 1).ToList();
-            indices.Sort();
-            
-            int prevIndex = 0;
-            for (int n = 0; n < indices.Count; n++)
-            {
-                try
-                {
-                    int index = indices[n];
-                    byte[] fragmentData = new byte[index - prevIndex];
-                    Buffer.BlockCopy(data, prevIndex, fragmentData, 0, fragmentData.Length);
-                    packets.Add(fragmentData);
-                    prevIndex = index;
+                    int outLength = prevIndex;
+                    Debug.WriteLine($"{outLength} = {data.Length}");
                 }
-                catch (Exception ex)
+
+                private static void SendDataInRandomFragment(byte[] data, Socket socket, DPIBypass bp)
                 {
+                    // Create packets
+                    List<byte[]> packets = new();
                     packets.Clear();
-                    string msgEvent = $"Error, Creating random packets: {ex.Message}";
-                    Console.WriteLine(msgEvent);
-                    return;
+                    bp.FragmentChunks = Math.Min(bp.FragmentChunks, data.Length);
+                    List<int> indices;
+                    if (bp.FragmentChunks < data.Length)
+                        indices = GenerateRandomIndices(1, data.Length - 1, bp.FragmentChunks - 1);
+                    else
+                        indices = Enumerable.Range(0, data.Length - 1).ToList();
+                    indices.Sort();
+
+                    int prevIndex = 0;
+                    for (int n = 0; n < indices.Count; n++)
+                    {
+                        try
+                        {
+                            int index = indices[n];
+                            byte[] fragmentData = new byte[index - prevIndex];
+                            Buffer.BlockCopy(data, prevIndex, fragmentData, 0, fragmentData.Length);
+                            packets.Add(fragmentData);
+                            prevIndex = index;
+                        }
+                        catch (Exception ex)
+                        {
+                            packets.Clear();
+                            string msgEvent = $"Error, Creating random packets: {ex.Message}";
+                            Console.WriteLine(msgEvent);
+                            return;
+                        }
+                    }
+
+                    try
+                    {
+                        byte[] lastFragmentData = new byte[data.Length - prevIndex];
+                        Buffer.BlockCopy(data, prevIndex, lastFragmentData, 0, lastFragmentData.Length);
+                        packets.Add(lastFragmentData);
+
+                        int outLength = prevIndex + lastFragmentData.Length;
+                        //Debug.WriteLine($"{outLength} = {data.Length}, Chunks: {packets.Count}");
+                    }
+                    catch (Exception ex)
+                    {
+                        packets.Clear();
+                        string msgEvent = $"Error, Creating last random packet: {ex.Message}";
+                        Console.WriteLine(msgEvent);
+                    }
+
+                    // Send packets
+                    for (int i = 0; i < packets.Count; i++)
+                    {
+                        try
+                        {
+                            byte[] fragmentData = packets[i];
+                            if (socket == null) return;
+                            socket.Send(fragmentData);
+                            if (bp.FragmentDelay > 0)
+                                Task.Delay(bp.FragmentDelay).Wait();
+                        }
+                        catch (Exception ex)
+                        {
+                            string msgEvent = $"Error, SendDataInRandomFragment: {ex.Message}";
+                            Console.WriteLine(msgEvent);
+                            return;
+                        }
+                    }
+
+                    string chunkDetailsEvent = $"{bp.DestHostname}:{bp.DestPort} Length: {data.Length}, Chunks: {packets.Count}";
+                    bp.OnChunkDetailsReceived?.Invoke(chunkDetailsEvent, EventArgs.Empty);
                 }
-            }
 
-            try
-            {
-                byte[] lastFragmentData = new byte[data.Length - prevIndex];
-                Buffer.BlockCopy(data, prevIndex, lastFragmentData, 0, lastFragmentData.Length);
-                packets.Add(lastFragmentData);
-
-                int outLength = prevIndex + lastFragmentData.Length;
-                Debug.WriteLine($"{outLength} = {data.Length}, Chunks: {packets.Count}");
-            }
-            catch (Exception ex)
-            {
-                packets.Clear();
-                string msgEvent = $"Error, Creating last random packet: {ex.Message}";
-                Console.WriteLine(msgEvent);
-            }
-
-            // Send packets
-            for (int i = 0; i < packets.Count; i++)
-            {
-                try
+                private static List<int> GenerateRandomIndices(int minValue, int maxValue, int count)
                 {
-                    byte[] fragmentData = packets[i];
-                    if (socket == null) return;
-                    socket.Send(fragmentData);
-                    if (fragmentDelay > 0)
-                        Task.Delay(fragmentDelay).Wait();
+                    Random random = new();
+                    HashSet<int> indicesSet = new();
+
+                    while (indicesSet.Count < count)
+                    {
+                        indicesSet.Add(random.Next(minValue, maxValue));
+                    }
+
+                    return new List<int>(indicesSet);
                 }
-                catch (Exception ex)
+
+                private static IEnumerable<Memory<T>> ChunkViaMemory<T>(T[] data, int size)
                 {
-                    string msgEvent = $"Error, SendDataInRandomFragment: {ex.Message}";
-                    Console.WriteLine(msgEvent);
-                    return;
+                    var chunks = data.Length / size;
+                    for (int i = 0; i < chunks; i++)
+                    {
+                        yield return data.AsMemory(i * size, size);
+                    }
+                    var leftOver = data.Length % size;
+                    if (leftOver > 0)
+                    {
+                        yield return data.AsMemory(chunks * size, leftOver);
+                    }
                 }
-            }
 
-            string chunkDetailsEvent = $"Length: {data.Length}, Chunks: {packets.Count}";
-            onChunkDetailsReceived?.Invoke(chunkDetailsEvent, EventArgs.Empty);
-        }
-
-        private static List<int> GenerateRandomIndices(int minValue, int maxValue, int count)
-        {
-            Random random = new();
-            HashSet<int> indicesSet = new();
-
-            while (indicesSet.Count < count)
-            {
-                indicesSet.Add(random.Next(minValue, maxValue));
-            }
-
-            return new List<int>(indicesSet);
-        }
-
-        private static IEnumerable<Memory<T>> ChunkViaMemory<T>(T[] data, int size)
-        {
-            var chunks = data.Length / size;
-            for (int i = 0; i < chunks; i++)
-            {
-                yield return data.AsMemory(i * size, size);
-            }
-            var leftOver = data.Length % size;
-            if (leftOver > 0)
-            {
-                yield return data.AsMemory(chunks * size, leftOver);
             }
         }
-
     }
 }

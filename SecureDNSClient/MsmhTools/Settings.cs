@@ -203,13 +203,21 @@ namespace MsmhTools
 
         public async Task SaveAsync(string xmlFilePath)
         {
-            XmlWriterSettings xmlWriterSettings = new();
-            xmlWriterSettings.Async = true;
-            xmlWriterSettings.Indent = true;
-            xmlWriterSettings.OmitXmlDeclaration = true;
-            xmlWriterSettings.Encoding = new UTF8Encoding(false);
-            using XmlWriter xmlWriter = XmlWriter.Create(xmlFilePath, xmlWriterSettings);
-            await XDoc.SaveAsync(xmlWriter, CancellationToken.None);
+            try
+            {
+                XmlWriterSettings xmlWriterSettings = new();
+                xmlWriterSettings.WriteEndDocumentOnClose = true;
+                xmlWriterSettings.Async = true;
+                xmlWriterSettings.Indent = true;
+                xmlWriterSettings.OmitXmlDeclaration = true;
+                xmlWriterSettings.Encoding = new UTF8Encoding(false);
+                using XmlWriter xmlWriter = XmlWriter.Create(xmlFilePath, xmlWriterSettings);
+                await XDoc.SaveAsync(xmlWriter, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Save Settings: {ex.Message}");
+            }
         }
 
         private void SaveToFileAsTXT(string txtFilePath)
@@ -389,6 +397,7 @@ namespace MsmhTools
                     catch (Exception ex)
                     {
                         Debug.WriteLine("SaveAllSettings: " + ex.Message);
+                        continue;
                     }
                 }
             }

@@ -34,7 +34,7 @@ max_clients = 250
 ## Require servers (from remote sources) to satisfy specific properties
 
 # Use servers reachable over IPv4
-ipv4_servers = true
+ipv4_servers = false
 
 # Use servers reachable over IPv6 -- Do not enable if you don't have IPv6 connectivity
 ipv6_servers = false
@@ -90,7 +90,7 @@ http3 = false
 ## HTTP/HTTPS proxy
 ## Only for DoH servers
 
-http_proxy = 'https://ca.epicbrowser.net:8888'
+http_proxy = ''
 
 
 ## How long a DNS query will wait for a response, in milliseconds.
@@ -267,8 +267,8 @@ path = '/dns-query'
 ## Certificate file and key - Note that the certificate has to be trusted.
 ## See the documentation (wiki) for more information.
 
-cert_file = 'C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\bin\Debug\net6.0-windows\certificate\localhost.crt'
-cert_key_file = 'C:\Users\MSMH\Documents\Visual Studio 2022\Projects\SecureDNSClient\SecureDNSClient\bin\Debug\net6.0-windows\certificate\localhost.key'
+cert_file = ''
+cert_key_file = ''
 
 
 #########################################

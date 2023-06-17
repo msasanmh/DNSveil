@@ -101,7 +101,7 @@ namespace CustomControls
         private void Application_Idle(object? sender, EventArgs e)
         {
             ApplicationIdle = true;
-            if (Parent != null && FindForm() != null)
+            if (Parent != null && FindForm() != null && !DesignMode)
             {
                 if (once)
                 {

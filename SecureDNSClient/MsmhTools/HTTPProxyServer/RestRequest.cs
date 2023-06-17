@@ -65,7 +65,7 @@ namespace MsmhTools.HTTPProxyServer
         /// <summary>
         /// The HTTP method to use, also known as a verb (GET, PUT, POST, DELETE, etc).
         /// </summary>
-        public HttpMethod Method = HttpMethod.GET;
+        public HttpMethodReq Method = HttpMethodReq.GET;
 
 
         private AuthorizationHeader _Authorization = new();
@@ -178,7 +178,7 @@ namespace MsmhTools.HTTPProxyServer
             if (string.IsNullOrEmpty(url)) throw new ArgumentNullException(nameof(url));
 
             Url = url;
-            Method = HttpMethod.GET;
+            Method = HttpMethodReq.GET;
         }
 
         /// <summary>
@@ -186,7 +186,7 @@ namespace MsmhTools.HTTPProxyServer
         /// </summary>
         /// <param name="url">URL to access on the server.</param> 
         /// <param name="method">HTTP method to use.</param>
-        public RestRequest(string url, HttpMethod method)
+        public RestRequest(string url, HttpMethodReq method)
         {
             if (string.IsNullOrEmpty(url)) throw new ArgumentNullException(nameof(url));
 
@@ -202,7 +202,7 @@ namespace MsmhTools.HTTPProxyServer
         /// <param name="contentType">Content type to use.</param>
         public RestRequest(
             string url,
-            HttpMethod method,
+            HttpMethodReq method,
             string contentType)
         {
             if (string.IsNullOrEmpty(url)) throw new ArgumentNullException(nameof(url));
@@ -221,7 +221,7 @@ namespace MsmhTools.HTTPProxyServer
         /// <param name="contentType">Content type to use.</param>
         public RestRequest(
             string url,
-            HttpMethod method,
+            HttpMethodReq method,
             Dictionary<string, string>? headers,
             string? contentType)
         {
@@ -525,7 +525,7 @@ namespace MsmhTools.HTTPProxyServer
                 }
 
                 // Write-Request-Body-Data
-                if (Method != HttpMethod.GET && Method != HttpMethod.HEAD)
+                if (Method != HttpMethodReq.GET && Method != HttpMethodReq.HEAD)
                 {
                     if (contentLength > 0 && stream != null)
                     {

@@ -50,7 +50,7 @@ namespace MsmhTools.HTTPProxyServer
         /// <summary>
         /// The destination hostname as found in the request line, if present.
         /// </summary>
-        public string? DestHostname;
+        public string? DestHostname { get; set; }
 
         /// <summary>
         /// The destination host port as found in the request line, if present.
@@ -65,7 +65,7 @@ namespace MsmhTools.HTTPProxyServer
         /// <summary>
         /// The HTTP method used in the request.
         /// </summary>
-        public HttpMethod Method;
+        public HttpMethodReq Method;
 
         /// <summary>
         /// The full URL as sent by the requestor (client).
@@ -179,7 +179,7 @@ namespace MsmhTools.HTTPProxyServer
             SourcePort = ctx.Request.RemoteEndPoint.Port;
             DestIp = ctx.Request.LocalEndPoint.Address.ToString();
             DestPort = ctx.Request.LocalEndPoint.Port;
-            Method = (HttpMethod)Enum.Parse(typeof(HttpMethod), ctx.Request.HttpMethod, true);
+            Method = (HttpMethodReq)Enum.Parse(typeof(HttpMethodReq), ctx.Request.HttpMethod, true);
             FullUrl = ctx.Request.Url != null ? new string(ctx.Request.Url.ToString().Trim()) : null;
             RawUrlWithQuery = ctx.Request.RawUrl != null ? new string(ctx.Request.RawUrl.ToString().Trim()) : null;
             RawUrlWithoutQuery = ctx.Request.RawUrl != null ? new string(ctx.Request.RawUrl.ToString().Trim()) : null;
@@ -385,8 +385,8 @@ namespace MsmhTools.HTTPProxyServer
             }
 
             if (chunkedXfer
-                && Method != HttpMethod.GET
-                && Method != HttpMethod.HEAD)
+                && Method != HttpMethodReq.GET
+                && Method != HttpMethodReq.HEAD)
             {
                 Stream bodyStream = ctx.Request.InputStream;
 
@@ -423,7 +423,7 @@ namespace MsmhTools.HTTPProxyServer
             {
                 if (readStreamFully)
                 {
-                    if (Method != HttpMethod.GET && Method != HttpMethod.HEAD)
+                    if (Method != HttpMethodReq.GET && Method != HttpMethodReq.HEAD)
                     {
                         try
                         {

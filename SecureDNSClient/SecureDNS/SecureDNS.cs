@@ -43,15 +43,6 @@ namespace SecureDNSClient
         public static readonly IPAddress FallbackDnsIPv6 = IPAddress.Parse("2001:4860:4860::8888");
         public static readonly int FallbackDnsPort = 53;
 
-        // Others
-        public static readonly string DNSCryptConfigPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "dnscrypt-proxy.toml"));
-        public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "CustomServers.txt"));
-        public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "CustomServers_Working.txt"));
-        public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "DPIBlacklist.txt"));
-        public static readonly string DPIBlacklistCFPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "DPIBlacklistCF.txt"));
-        public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "NicName.txt"));
-        public static readonly string HTTPProxyServerErrorLogPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "HTTPProxyServerError.log"));
-        
         // Certificates path
         public static readonly string CertificateDirPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate"));
         public static readonly string IssuerKeyPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "certificate", "rootCA.key"));
@@ -62,6 +53,20 @@ namespace SecureDNSClient
         // Certificate Subject Names
         public static readonly string CertIssuerSubjectName = "CN=SecureDNSClient Authority";
         public static readonly string CertSubjectName = "CN=SecureDNSClient";
+
+        // HTTP Proxy Programs
+        public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "FakeDnsRules.txt"));
+        public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "BlackWhiteList.txt"));
+
+        // Others
+        public static readonly string DNSCryptConfigPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "dnscrypt-proxy.toml"));
+        public static readonly string DNSCryptConfigCloudflarePath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "dnscrypt-proxy-cloudflare.toml"));
+        public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "CustomServers.txt"));
+        public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "CustomServers_Working.txt"));
+        public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "DPIBlacklist.txt"));
+        public static readonly string DPIBlacklistCFPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "DPIBlacklistCF.txt"));
+        public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "NicName.txt"));
+        public static readonly string HTTPProxyServerErrorLogPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "HTTPProxyServerError.log"));
 
         /// <summary>
         /// Check DNS and get latency (ms)

@@ -1,4 +1,4 @@
 dnscrypt-proxy 2.1.4
 dnslookup 1.9.1
-dnsproxy 0.49.1
+dnsproxy 0.50.2
 goodbyedpi 0.2.2
