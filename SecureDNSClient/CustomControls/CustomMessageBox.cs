@@ -36,7 +36,7 @@ namespace CustomControls
         public CustomMessageBox(string text, string? caption, MessageBoxButtons? buttons, MessageBoxIcon? icon) : base()
         {
             FormBorderStyle = FormBorderStyle.None;
-            ShowInTaskbar = false;
+            ShowInTaskbar = true;
             TopMost = true;
 
             int iconOffset = 5;
@@ -480,6 +480,8 @@ namespace CustomControls
                     customButton.SelectionColor = BorderColor;
                     customButton.Invalidate();
                 }
+
+            BringToFront();
         }
 
         /// <summary>Displays a message box with specified text.</summary>

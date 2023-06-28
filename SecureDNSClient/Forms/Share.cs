@@ -17,7 +17,7 @@ namespace SecureDNSClient
         /// <returns>Returns True if everything's ok.</returns>
         public bool ApplyFakeProxy(HTTPProxyServer proxy)
         {
-            // Get Clean Ip
+            // Get DoH Clean Ip
             string dohCleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text;
             bool isValid = Network.IsIPv4Valid(dohCleanIP, out IPAddress _);
             if (!isValid)
@@ -29,7 +29,7 @@ namespace SecureDNSClient
 
             // Check IP is Clean
             bool isDohIpClean1 = Network.CanPing(dohCleanIP, 5000);
-            bool isDohIpClean2 = Network.CanPing(dohCleanIP, 443, 5000);
+            bool isDohIpClean2 = Network.CanTcpConnect(dohCleanIP, 443, 5000);
             if (!isDohIpClean1 || !isDohIpClean2)
             {
                 // CF Clean IP is not valid
@@ -92,9 +92,42 @@ namespace SecureDNSClient
                 bool isPortOk = GetListeningPort(httpProxyPort, "Change HTTP Proxy port from settings.", Color.IndianRed);
                 if (!isPortOk) return;
 
-                //HTTPProxy = new();
+                if (HTTPProxy.IsRunning)
+                    HTTPProxy.Stop();
+
+                HTTPProxy = new();
                 if (!HTTPProxy.IsRunning)
                 {
+                    // Delete request log on > 100KB
+                    try
+                    {
+                        if (File.Exists(SecureDNS.HTTPProxyServerRequestLogPath))
+                        {
+                            long lenth = new FileInfo(SecureDNS.HTTPProxyServerRequestLogPath).Length;
+                            if (FileDirectory.ConvertSize(lenth, FileDirectory.SizeUnits.Byte, FileDirectory.SizeUnits.KB) > 100)
+                                File.Delete(SecureDNS.HTTPProxyServerRequestLogPath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Delete HTTP Proxy Request log file: {ex.Message}");
+                    }
+
+                    // Delete error log on > 100KB
+                    try
+                    {
+                        if (File.Exists(SecureDNS.HTTPProxyServerErrorLogPath))
+                        {
+                            long lenth = new FileInfo(SecureDNS.HTTPProxyServerErrorLogPath).Length;
+                            if (FileDirectory.ConvertSize(lenth, FileDirectory.SizeUnits.Byte, FileDirectory.SizeUnits.KB) > 100)
+                                File.Delete(SecureDNS.HTTPProxyServerErrorLogPath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Delete HTTP Proxy Error log file: {ex.Message}");
+                    }
+
                     HTTPProxy.OnRequestReceived -= HTTPProxy_OnRequestReceived;
                     HTTPProxy.OnRequestReceived += HTTPProxy_OnRequestReceived;
                     StaticDPIBypassProgram.OnChunkDetailsReceived -= StaticDPIBypassProgram_OnChunkDetailsReceived;
@@ -104,6 +137,10 @@ namespace SecureDNSClient
 
                     // Apply DPI Bypass Support
                     ApplyPDpiChanges(HTTPProxy);
+
+                    // Apply UpStream Proxy Support
+                    bool isUpstreamOK = await ApplyPUpStreamProxy(HTTPProxy);
+                    if (!isUpstreamOK) return;
 
                     // Apply DNS Support
                     bool isDnsOk = ApplyPDNS(HTTPProxy);
@@ -133,31 +170,13 @@ namespace SecureDNSClient
                     }
 
                     // Get number of handle requests
-                    int handleReq = int.Parse(CustomNumericUpDownSettingHTTPProxyHandleRequests.Value.ToString());
+                    int handleReq = Convert.ToInt32(CustomNumericUpDownSettingHTTPProxyHandleRequests.Value);
 
                     // Get and set block port 80 setting
                     HTTPProxy.BlockPort80 = CustomCheckBoxSettingProxyBlockPort80.Checked;
 
-                    if (HTTPProxy.IsRunning)
-                        HTTPProxy.Stop();
-
                     HTTPProxy.Start(IPAddress.Any, httpProxyPort, handleReq);
-                    Task.Delay(500).Wait();
-
-                    // Delete error log on > 1MB
-                    if (File.Exists(SecureDNS.HTTPProxyServerErrorLogPath))
-                    {
-                        try
-                        {
-                            long lenth = new FileInfo(SecureDNS.HTTPProxyServerErrorLogPath).Length;
-                            if (FileDirectory.ConvertSize(lenth, FileDirectory.SizeUnits.Byte, FileDirectory.SizeUnits.MB) > 1)
-                                File.Delete(SecureDNS.HTTPProxyServerErrorLogPath);
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Delete HTTP Proxy log file: {ex.Message}");
-                        }
-                    }
+                    await Task.Delay(500);
 
                     // Proxy Event Requests
                     void HTTPProxy_OnRequestReceived(object? sender, EventArgs e)
@@ -169,10 +188,20 @@ namespace SecureDNSClient
                                 if (!IsCheckingStarted && !IsConnecting)
                                 {
                                     if (!StopWatchShowRequests.IsRunning) StopWatchShowRequests.Start();
-                                    if (StopWatchShowRequests.ElapsedMilliseconds > 20)
+                                    if (StopWatchShowRequests.ElapsedMilliseconds > 5)
                                     {
-                                        req += NL; // Adding an additional line break.
-                                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(req, Color.Gray));
+                                        // Write to log
+                                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(req + NL, Color.Gray));
+
+                                        // Write to file
+                                        try
+                                        {
+                                            FileDirectory.AppendTextLine(SecureDNS.HTTPProxyServerRequestLogPath, req, new UTF8Encoding(false));
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Debug.WriteLine($"Write HTTP Proxy Request log file: {ex.Message}");
+                                        }
 
                                         StopWatchShowRequests.Stop();
                                         StopWatchShowRequests.Reset();
@@ -192,7 +221,7 @@ namespace SecureDNSClient
                                 if (!IsCheckingStarted && !IsConnecting)
                                 {
                                     if (!StopWatchShowChunkDetails.IsRunning) StopWatchShowChunkDetails.Start();
-                                    if (StopWatchShowChunkDetails.ElapsedMilliseconds > 200)
+                                    if (StopWatchShowChunkDetails.ElapsedMilliseconds > 500)
                                     {
                                         msg += NL; // Adding an additional line break.
                                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
@@ -210,8 +239,15 @@ namespace SecureDNSClient
                     {
                         if (sender is string error)
                         {
-                            error += NL; // Adding an additional line break.
-                            FileDirectory.AppendTextLine(SecureDNS.HTTPProxyServerErrorLogPath, error, new UTF8Encoding(false));
+                            // Write to file
+                            try
+                            {
+                                FileDirectory.AppendTextLine(SecureDNS.HTTPProxyServerErrorLogPath, error, new UTF8Encoding(false));
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Write HTTP Proxy Error log file: {ex.Message}");
+                            }
                         }
                     }
 
@@ -294,111 +330,207 @@ namespace SecureDNSClient
             }
         }
 
+        public async Task<bool> ApplyPUpStreamProxy(HTTPProxyServer httpProxy)
+        {
+            if (!CustomCheckBoxSettingHTTPProxyUpstream.Checked) return true;
+
+            // Get Upstream Settings
+            // Upstream Mode
+            string? upstreamModeString = CustomComboBoxSettingHttpProxyUpstreamMode.SelectedItem as string;
+
+            // Check if Mode is empty
+            if (string.IsNullOrEmpty(upstreamModeString))
+            {
+                string msg = "Select the mode of upstream proxy." + NL;
+                CustomRichTextBoxLog.AppendText(msg, Color.IndianRed);
+                return false;
+            }
+
+            HTTPProxyServer.Program.UpStreamProxy.Mode upstreamMode = HTTPProxyServer.Program.UpStreamProxy.Mode.Disable;
+            if (upstreamModeString.Equals("HTTP"))
+                upstreamMode = HTTPProxyServer.Program.UpStreamProxy.Mode.HTTP;
+            else if (upstreamModeString.Equals("SOCKS5"))
+                upstreamMode = HTTPProxyServer.Program.UpStreamProxy.Mode.SOCKS5;
+
+            // Upstream Host
+            string upstreamHost = CustomTextBoxSettingHTTPProxyUpstreamHost.Text;
+
+            // Check if Host is empty
+            if (string.IsNullOrWhiteSpace(upstreamHost))
+            {
+                string msg = "Upstream proxy host cannot be empty." + NL;
+                CustomRichTextBoxLog.AppendText(msg, Color.IndianRed);
+                return false;
+            }
+
+            // Upstream Port
+            int upstreamPort = Convert.ToInt32(CustomNumericUpDownSettingHTTPProxyUpstreamPort.Value);
+
+            // Get blocked domain
+            string blockedDomain = GetBlockedDomainSetting(out string _);
+            if (string.IsNullOrEmpty(blockedDomain)) return false;
+
+            // Get Upstream Proxy Scheme
+            string upstreamProxyScheme = string.Empty;
+            if (upstreamMode == HTTPProxyServer.Program.UpStreamProxy.Mode.HTTP)
+                upstreamProxyScheme += "http";
+            if (upstreamMode == HTTPProxyServer.Program.UpStreamProxy.Mode.SOCKS5)
+                upstreamProxyScheme += "socks5";
+            upstreamProxyScheme += $"://{upstreamHost}:{upstreamPort}";
+
+            // Check Upstream Proxy Works
+            bool isUpstreamProxyOk = await Network.CheckProxyWorks($"https://{blockedDomain}", upstreamProxyScheme, 15);
+            if (!isUpstreamProxyOk)
+            {
+                string msg = $"Upstream proxy cannot open {blockedDomain}." + NL;
+                CustomRichTextBoxLog.AppendText(msg, Color.IndianRed);
+                return false;
+            }
+
+            HTTPProxyServer.Program.UpStreamProxy upStreamProxyProgram = new();
+            upStreamProxyProgram.Set(upstreamMode, upstreamHost, upstreamPort, true);
+
+            // Apply UpStream Proxy Program to HTTP Proxy
+            httpProxy.EnableUpStreamProxy(upStreamProxyProgram);
+
+            return true;
+        }
+
         public bool ApplyPDNS(HTTPProxyServer httpProxy)
         {
-            if (!CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Checked) return true;
-
-            // Start msg
-            string msgStart = $"Starting Fake Proxy server...{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStart, Color.Orange));
-
-            // Get Fake Proxy DoH Address
-            string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
+            // Create DNS Program
+            HTTPProxyServer.Program.Dns dnsProgram = new();
 
             // Set timeout
             int timeoutSec = 5;
 
-            // Get loopback
-            string loopback = IPAddress.Loopback.ToString();
-
-            int getNextPort(int currentPort)
+            if (CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Checked)
             {
-                currentPort = currentPort < 65535 ? currentPort + 1 : currentPort - 1;
-                if (currentPort == GetHTTPProxyPortSetting())
+                // Start msg
+                string msgStart = $"Starting Fake Proxy server...{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStart, Color.Orange));
+
+                // Get Fake Proxy DoH Address
+                string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
+
+                // Get Clean Ip
+                string dohCleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text;
+
+                // Get loopback
+                string loopback = IPAddress.Loopback.ToString();
+
+                int getNextPort(int currentPort)
+                {
                     currentPort = currentPort < 65535 ? currentPort + 1 : currentPort - 1;
-                return currentPort;
-            }
+                    if (currentPort == GetHTTPProxyPortSetting())
+                        currentPort = currentPort < 65535 ? currentPort + 1 : currentPort - 1;
+                    return currentPort;
+                }
 
-            // Check port
-            int fakeProxyPort = GetFakeProxyPortSetting();
-            bool isPortOk = GetListeningPort(fakeProxyPort, string.Empty, Color.Orange);
-            if (!isPortOk)
-            {
-                fakeProxyPort = getNextPort(fakeProxyPort);
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Trying Port {fakeProxyPort}...{NL}", Color.MediumSeaGreen));
-                bool isPort2Ok = GetListeningPort(fakeProxyPort, string.Empty, Color.Orange);
-                if (!isPort2Ok)
+                // Check port
+                int fakeProxyPort = GetFakeProxyPortSetting();
+                bool isPortOk = GetListeningPort(fakeProxyPort, string.Empty, Color.Orange);
+                if (!isPortOk)
                 {
                     fakeProxyPort = getNextPort(fakeProxyPort);
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Trying Port {fakeProxyPort}...{NL}", Color.MediumSeaGreen));
-                    bool isPort3Ok = GetListeningPort(fakeProxyPort, "Change Fake Proxy port from settings.", Color.IndianRed);
-                    if (!isPort3Ok)
+                    bool isPort2Ok = GetListeningPort(fakeProxyPort, string.Empty, Color.Orange);
+                    if (!isPort2Ok)
                     {
-                        return false;
+                        fakeProxyPort = getNextPort(fakeProxyPort);
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Trying Port {fakeProxyPort}...{NL}", Color.MediumSeaGreen));
+                        bool isPort3Ok = GetListeningPort(fakeProxyPort, "Change Fake Proxy port from settings.", Color.IndianRed);
+                        if (!isPort3Ok)
+                        {
+                            return false;
+                        }
                     }
                 }
+
+                // Get Fake Proxy Scheme
+                string fakeProxyScheme = $"http://{loopback}:{fakeProxyPort}";
+
+                //============================== Start FakeProxy
+                if (FakeProxy.IsRunning)
+                    FakeProxy.Stop();
+
+                FakeProxy = new();
+                bool isFpOk = ApplyFakeProxy(FakeProxy);
+                if (!isFpOk) return false;
+
+                // Apply DPI Bypass Support to Fake Proxy
+                ApplyPDpiChanges(FakeProxy);
+
+                FakeProxy.Start(IPAddress.Loopback, fakeProxyPort, 20000);
+                Task.Delay(500).Wait();
+                //============================== End FakeProxy
+
+                // Set Dns Program
+                dnsProgram.Set(HTTPProxyServer.Program.Dns.Mode.DoH, dohUrl, dohCleanIP, timeoutSec, fakeProxyScheme);
+
+                bool isSetCfOk = setCloudflareIPs();
+                if (!isSetCfOk) return false;
+
+                // Apply DNS Program to HTTP Proxy
+                httpProxy.EnableDNS(dnsProgram);
+
+                // End msg
+                string msgEnd = $"Fake Proxy Server activated. Port: {fakeProxyPort}{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgEnd, Color.MediumSeaGreen));
+
+                return true;
             }
-
-            // Get Fake Proxy Scheme
-            string fakeProxyScheme = $"http://{loopback}:{fakeProxyPort}";
-
-            //============================== Start FakeProxy
-            bool isFpOk = ApplyFakeProxy(FakeProxy);
-            if (!isFpOk) return false;
-
-            // Apply DPI Bypass Support to Fake Proxy
-            ApplyPDpiChanges(FakeProxy);
-
-            if (FakeProxy.IsRunning)
-                FakeProxy.Stop();
-
-            FakeProxy.Start(IPAddress.Loopback, fakeProxyPort, 20000);
-            Task.Delay(500).Wait();
-            //============================== End FakeProxy
-
-            // Create DNS Program
-            HTTPProxyServer.Program.Dns dnsProgram = new();
-            dnsProgram.Set(HTTPProxyServer.Program.Dns.Mode.DoH, dohUrl, timeoutSec, fakeProxyScheme);
-
-            // Add redirect all Cloudflare IPs to a clean IP
-            if (CustomCheckBoxSettingHTTPProxyCfCleanIP.Checked)
+            else
             {
-                // Get CF Clean IP
-                string cleanIP = CustomTextBoxSettingHTTPProxyCfCleanIP.Text;
+                // Set Dns Program (System)
+                dnsProgram.Set(HTTPProxyServer.Program.Dns.Mode.System, null, null, 0);
 
-                // Check CF IP is valid
-                bool isCleanIpValid = Network.IsIPv4Valid(cleanIP, out IPAddress _);
-                if (!isCleanIpValid)
-                {
-                    // CF Clean IP is not valid
-                    string msg = $"Cloudflare clean IP is not valid.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    return false;
-                }
+                bool isSetCfOk = setCloudflareIPs();
+                if (!isSetCfOk) return false;
 
-                // Check IP is Clean
-                bool isClean1 = Network.CanPing(cleanIP, timeoutSec * 1000);
-                bool isClean2 = Network.CanPing(cleanIP, 443, timeoutSec * 1000);
-                if (!isClean1 || !isClean2)
-                {
-                    // CF Clean IP is not valid
-                    string msg = $"Cloudflare clean IP is not clean.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    return false;
-                }
+                // Apply DNS Program to HTTP Proxy
+                httpProxy.EnableDNS(dnsProgram);
 
-                // Add to program
-                dnsProgram.SetCloudflareIPs(cleanIP);
+                return true;
             }
 
-            // Apply DNS Program to HTTP Proxy
-            httpProxy.EnableDNS(dnsProgram);
+            bool setCloudflareIPs()
+            {
+                // Add redirect all Cloudflare IPs to a clean IP
+                if (CustomCheckBoxSettingHTTPProxyCfCleanIP.Checked)
+                {
+                    // Get CF Clean IP
+                    string cleanIP = CustomTextBoxSettingHTTPProxyCfCleanIP.Text;
 
-            // End msg
-            string msgEnd = $"Fake Proxy Server activated. Port: {fakeProxyPort}{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgEnd, Color.MediumSeaGreen));
+                    // Check CF IP is valid
+                    bool isCleanIpValid = Network.IsIPv4Valid(cleanIP, out IPAddress _);
+                    if (!isCleanIpValid)
+                    {
+                        // CF Clean IP is not valid
+                        string msg = $"Cloudflare clean IP is not valid.{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                        return false;
+                    }
 
-            return true;
+                    // Check IP is Clean
+                    bool isClean1 = Network.CanPing(cleanIP, timeoutSec * 1000);
+                    bool isClean2 = Network.CanTcpConnect(cleanIP, 443, timeoutSec * 1000);
+                    if (!isClean1 || !isClean2)
+                    {
+                        // CF Clean IP is not valid
+                        string msg = $"Cloudflare clean IP is not clean.{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                        return false;
+                    }
+
+                    // Add to program
+                    dnsProgram.SetCloudflareIPs(cleanIP);
+
+                    return true;
+                }
+                else
+                    return true;
+            }
         }
 
         public async Task<bool> ApplyPFakeDNS(HTTPProxyServer httpProxy)

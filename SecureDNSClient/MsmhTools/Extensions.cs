@@ -12,6 +12,7 @@ using CustomControls;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
+using System.Diagnostics;
 
 namespace MsmhTools
 {
@@ -32,6 +33,18 @@ namespace MsmhTools
             richTextBox.SelectionColor = richTextBox.ForeColor;
         }
         //-----------------------------------------------------------------------------------
+        public static List<List<T>> SplitToLists<T>(this List<T> list, int nSize)
+        {
+            var listOut = new List<List<T>>();
+
+            for (int n = 0; n < list.Count; n += nSize)
+            {
+                listOut.Add(list.GetRange(n, Math.Min(nSize, list.Count - n)));
+            }
+
+            return listOut;
+        }
+        //-----------------------------------------------------------------------------------
         public static List<string> SplitToLines(this string s)
         {
             // Original non-optimized version: return source.Replace("\r\r\n", "\n").Replace("\r\n", "\n").Replace('\r', '\n').Replace('\u2028', '\n').Split('\n');
@@ -47,6 +60,54 @@ namespace MsmhTools
                     if (i < s.Length - 2 && s[i + 1] == '\r' && s[i + 2] == '\n') // \r\r\n
                     {
                         lines.Add(start < i ? s[start..i] : string.Empty); // s[start..i] = s.Substring(start, i - start)
+                        i += 3;
+                        start = i;
+                        continue;
+                    }
+
+                    if (i < s.Length - 1 && s[i + 1] == '\n') // \r\n
+                    {
+                        lines.Add(start < i ? s[start..i] : string.Empty);
+                        i += 2;
+                        start = i;
+                        continue;
+                    }
+
+                    lines.Add(start < i ? s[start..i] : string.Empty);
+                    i++;
+                    start = i;
+                    continue;
+                }
+
+                if (ch == '\n' || ch == '\u2028')
+                {
+                    lines.Add(start < i ? s[start..i] : string.Empty);
+                    i++;
+                    start = i;
+                    continue;
+                }
+
+                i++;
+            }
+
+            lines.Add(start < i ? s[start..i] : string.Empty);
+            return lines;
+        }
+
+        public static List<string> SplitToLines(this string s, int maxCount)
+        {
+            var lines = new List<string>();
+            int start = 0;
+            int max = Math.Min(maxCount, s.Length);
+            int i = 0;
+            while (i < max)
+            {
+                var ch = s[i];
+                if (ch == '\r')
+                {
+                    if (i < s.Length - 2 && s[i + 1] == '\r' && s[i + 2] == '\n') // \r\r\n
+                    {
+                        lines.Add(start < i ? s[start..i] : string.Empty);
                         i += 3;
                         start = i;
                         continue;
@@ -461,12 +522,24 @@ namespace MsmhTools
         //-----------------------------------------------------------------------------------
         public static void SaveToFile<T>(this List<T> list, string filePath)
         {
-            using StreamWriter file = new(filePath, false);
-            for (int n = 0; n < list.Count; n++)
-                if (list[n] != null)
-                {
-                    file.WriteLine(list[n]);
-                }
+            try
+            {
+                FileStreamOptions streamOptions = new();
+                streamOptions.Access = FileAccess.ReadWrite;
+                streamOptions.Share = FileShare.ReadWrite;
+                streamOptions.Mode = FileMode.Create;
+                streamOptions.Options = FileOptions.RandomAccess;
+                using StreamWriter file = new(filePath, streamOptions);
+                for (int n = 0; n < list.Count; n++)
+                    if (list[n] != null)
+                    {
+                        file.WriteLine(list[n]);
+                    }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Save List to File: {ex.Message}");
+            }
         }
         //-----------------------------------------------------------------------------------
         public static void LoadFromFile(this List<string> list, string filePath, bool ignoreEmptyLines, bool trimLines)

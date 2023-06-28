@@ -52,6 +52,8 @@ namespace MsmhTools.HTTPProxyServer
         /// </summary>
         public string? DestHostname { get; set; }
 
+        public bool IsDestBlocked { get; set; } = false;
+
         /// <summary>
         /// The destination host port as found in the request line, if present.
         /// </summary>
@@ -126,6 +128,11 @@ namespace MsmhTools.HTTPProxyServer
         /// The stream from which to read the request body sent by the requestor (client).
         /// </summary>
         public Stream? DataStream;
+
+        /// <summary>
+        /// The request headers as sent by the requestor (client).
+        /// </summary>
+        public byte[]? HeadersData;
 
         /// <summary>
         /// The original HttpListenerContext from which the HttpRequest was constructed.
@@ -523,6 +530,7 @@ namespace MsmhTools.HTTPProxyServer
                 }
 
                 ret = BuildHeaders(headerBytes);
+                ret.HeadersData = headerBytes;
 
                 // Read-Data
                 ret.Data = null;
@@ -530,7 +538,7 @@ namespace MsmhTools.HTTPProxyServer
                 {
                     // Read-from-Stream
                     ret.Data = new byte[ret.ContentLength];
-
+                    
                     using (MemoryStream dataMs = new())
                     {
                         long bytesRemaining = ret.ContentLength;

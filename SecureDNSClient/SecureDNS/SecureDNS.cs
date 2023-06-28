@@ -67,6 +67,26 @@ namespace SecureDNSClient
         public static readonly string DPIBlacklistCFPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "DPIBlacklistCF.txt"));
         public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "NicName.txt"));
         public static readonly string HTTPProxyServerErrorLogPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "HTTPProxyServerError.log"));
+        public static readonly string HTTPProxyServerRequestLogPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "HTTPProxyServerRequest.log"));
+        public static readonly string SavedEncodedDnsPath = Path.GetFullPath(Path.Combine(Info.CurrentPath, "SavedEncodedDns.txt"));
+
+        /// <summary>
+        /// Check DNS and get latency (ms)
+        /// </summary>
+        /// <param name="domain"></param>
+        /// <param name="dnsServer"></param>
+        /// <param name="timeoutMS"></param>
+        /// <param name="processPriorityClass"></param>
+        /// <returns>Returns -1 if DNS fail</returns>
+        public static async Task<int> CheckDnsAsync(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
+        {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+            bool isDnsOK = await CheckDnsWorkAsync(domain, dnsServer, timeoutMS, processPriorityClass);
+            stopwatch.Stop();
+
+            return isDnsOK ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
+        }
 
         /// <summary>
         /// Check DNS and get latency (ms)
@@ -123,6 +143,34 @@ namespace SecureDNSClient
                 return task.Result;
             else
                 return false;
+        }
+
+        private static async Task<bool> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
+        {
+            try
+            {
+                var task = Task.Run(() =>
+                    {
+                        string args = domain + " " + dnsServer;
+                        string? result = ProcessManager.Execute(DnsLookup, args, true, false, Info.CurrentPath, processPriorityClass);
+
+                        if (!string.IsNullOrEmpty(result))
+                        {
+                            return result.Contains("ANSWER SECTION");
+                        }
+                        else
+                            return false;
+                    });
+
+                if (await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS)))
+                    return task.Result;
+                else
+                    return false;
+            }
+            catch (TimeoutException)
+            {
+                return false;
+            }
         }
 
         private static bool CheckDnsWork(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)

@@ -115,18 +115,25 @@ namespace MsmhTools
         //-----------------------------------------------------------------------------------
         public static void AppendTextLine(string filePath, string textToAppend, Encoding encoding)
         {
-            if (!File.Exists(filePath))
-                CreateEmptyFile(filePath);
+            try
+            {
+                if (!File.Exists(filePath))
+                    CreateEmptyFile(filePath);
 
-            string fileContent = File.ReadAllText(filePath);
-            List<string> splitByLine = fileContent.SplitToLines();
-            int count = splitByLine.Count;
-            using FileStream fileStream = new(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-            using StreamWriter writer = new(fileStream, encoding);
-            if (count == 0)
-                writer.Write(textToAppend);
-            else
-                writer.WriteLine(textToAppend);
+                string fileContent = File.ReadAllText(filePath);
+                List<string> splitByLine = fileContent.SplitToLines();
+                int count = splitByLine.Count;
+                using FileStream fileStream = new(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                using StreamWriter writer = new(fileStream, encoding);
+                if (count == 0)
+                    writer.Write(textToAppend);
+                else
+                    writer.WriteLine(textToAppend);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
         }
         //-----------------------------------------------------------------------------------
         public static async Task AppendTextLineAsync(string filePath, string textToAppend, Encoding encoding)
@@ -134,7 +141,7 @@ namespace MsmhTools
             if (!File.Exists(filePath))
                 CreateEmptyFile(filePath);
             
-            string fileContent = File.ReadAllText(filePath);
+            string fileContent = await File.ReadAllTextAsync(filePath);
             List<string> splitByLine = fileContent.SplitToLines();
             int count = splitByLine.Count;
             using FileStream fileStream = new(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);

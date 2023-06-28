@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Force.Crc32;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,6 +10,26 @@ namespace MsmhTools
 {
     public class EncodingTool
     {
+        public static string GetCRC32(string text)
+        {
+            var bytes = Encoding.UTF8.GetBytes(text);
+            uint crc32 = Crc32Algorithm.Compute(bytes);
+            return crc32.ToString();
+        }
+
+        public static string GetSHA512(string text)
+        {
+            var bytes = Encoding.UTF8.GetBytes(text);
+            using var hash = SHA512.Create();
+            var hashedInputBytes = hash.ComputeHash(bytes);
+            // Convert to text
+            // StringBuilder Capacity is 128, because 512 bits / 8 bits in byte * 2 symbols for byte 
+            var hashedInputStringBuilder = new StringBuilder(128);
+            foreach (var b in hashedInputBytes)
+                hashedInputStringBuilder.Append(b.ToString("X2"));
+            return hashedInputStringBuilder.ToString();
+        }
+
         public static string Base64Encode(string plainText)
         {
             byte[] data = Encoding.UTF8.GetBytes(plainText);

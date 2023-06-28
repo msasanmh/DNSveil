@@ -11,6 +11,7 @@ namespace MsmhTools.DnsTool
     {
         public string? IP { get; private set; }
         public int Port { get; private set; }
+        public string Dns { get; private set; }
         public string Host { get; private set; } = string.Empty;
         public string Path { get; private set; } = string.Empty;
         public string CompanyName { get; private set; } = string.Empty;
@@ -34,6 +35,8 @@ namespace MsmhTools.DnsTool
         /// <param name="companyNameDataFileContent">File content to get company name. each line e.g. 8.8.8.8|Google Inc.</param>
         public DnsReader(string dns, string? companyNameDataFileContent)
         {
+            Dns = dns;
+
             if (!string.IsNullOrEmpty(companyNameDataFileContent))
                 CompanyNameDataFileContent = companyNameDataFileContent;
 

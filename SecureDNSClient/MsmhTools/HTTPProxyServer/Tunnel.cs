@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text;
 
 namespace MsmhTools.HTTPProxyServer
 { 
@@ -15,6 +16,8 @@ namespace MsmhTools.HTTPProxyServer
         /// UTC timestamp when the session was started.
         /// </summary>
         public DateTime TimestampUtc { get; set; }
+
+        public Request Request { get; set; }
 
         /// <summary>
         /// Source IP address.
@@ -74,39 +77,30 @@ namespace MsmhTools.HTTPProxyServer
         /// <summary>
         /// Construct a Tunnel object.
         /// </summary>
-        /// <param name="logging">Logging module instance.</param>
-        /// <param name="sourceIp">Source IP address.</param>
-        /// <param name="sourcePort">Source TCP port.</param>
-        /// <param name="destIp">Destination IP address.</param>
-        /// <param name="destPort">Destination TCP port.</param>
-        /// <param name="destHostname">Destination hostname.</param>
-        /// <param name="destHostPort">Destination host port.</param>
+        /// <param name="request">Request.</param>
         /// <param name="client">TCP client instance of the client.</param>
         /// <param name="server">TCP client instance of the server.</param>
         public Tunnel(
-            string sourceIp, 
-            int sourcePort, 
-            string destIp, 
-            int destPort, 
-            string destHostname,
-            int destHostPort,
+            Request request,
             TcpClient client, 
             TcpClient server)
         {
-            if (string.IsNullOrEmpty(sourceIp)) throw new ArgumentNullException(nameof(sourceIp));
-            if (string.IsNullOrEmpty(destIp)) throw new ArgumentNullException(nameof(destIp));
-            if (string.IsNullOrEmpty(destHostname)) throw new ArgumentNullException(nameof(destHostname));
-            if (sourcePort < 0) throw new ArgumentOutOfRangeException(nameof(sourcePort));
-            if (destPort < 0) throw new ArgumentOutOfRangeException(nameof(destPort));
-            if (destHostPort < 0) throw new ArgumentOutOfRangeException(nameof(destHostPort));
-            
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrEmpty(request.SourceIp)) throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrEmpty(request.DestIp)) throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrEmpty(request.DestHostname)) throw new ArgumentNullException(nameof(request));
+            if (request.SourcePort < 0) throw new ArgumentOutOfRangeException(nameof(request));
+            if (request.DestPort < 0) throw new ArgumentOutOfRangeException(nameof(request));
+            if (request.DestHostPort < 0) throw new ArgumentOutOfRangeException(nameof(request));
+
+            Request = request;
             TimestampUtc = DateTime.Now.ToUniversalTime();
-            SourceIp = sourceIp;
-            SourcePort = sourcePort; 
-            DestIp = destIp;
-            DestPort = destPort;
-            DestHostname = destHostname;
-            DestHostPort = destHostPort;
+            SourceIp = request.SourceIp;
+            SourcePort = request.SourcePort; 
+            DestIp = request.DestIp;
+            DestPort = request.DestPort;
+            DestHostname = request.DestHostname;
+            DestHostPort = request.DestHostPort;
 
             ClientTcpClient = client ?? throw new ArgumentNullException(nameof(client));
             ClientTcpClient.NoDelay = true;
@@ -219,6 +213,7 @@ namespace MsmhTools.HTTPProxyServer
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -587,7 +582,7 @@ namespace MsmhTools.HTTPProxyServer
                 while (true)
                 {
                     data = await StreamReadAsync(ServerTcpClient);
-
+                    
                     if (data != null && data.Length > 0)
                     {
                         // Event
@@ -621,13 +616,15 @@ namespace MsmhTools.HTTPProxyServer
 
         private void ClientSend(byte[] data)
         {
-            Send(data, ClientTcpClient.Client);
+            //Send(data, ClientTcpClient.Client);
+            ClientTcpClient.Client.Send(data);
         }
 
         private void ServerSend(byte[] data)
         {
             Send(data, ServerTcpClient.Client);
         }
+
         public HTTPProxyServer.Program.DPIBypass ConstantDPIBypass { get; set; } = new();
         public void EnableDPIBypass(HTTPProxyServer.Program.DPIBypass dpiBypass)
         {
@@ -635,6 +632,7 @@ namespace MsmhTools.HTTPProxyServer
             ConstantDPIBypass.DestHostname = DestHostname;
             ConstantDPIBypass.DestPort = DestHostPort;
         }
+
         private void Send(byte[] data, Socket? socket)
         {
             if (socket != null)

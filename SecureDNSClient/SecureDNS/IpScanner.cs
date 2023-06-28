@@ -191,74 +191,103 @@ namespace SecureDNSClient
                     OnNewIpCheck?.Invoke(ipOut, EventArgs.Empty);
                     OnFullReportChanged?.Invoke($"Checking: {ipOut} ({n} of {AllIPs.Count}) {percent}%", EventArgs.Empty);
 
+                    // Real Delay
+                    int realDelayOut = -1;
                     try
                     {
-                        Stopwatch pingDelay = new();
-                        pingDelay.Start();
-                        bool canPing = Network.CanPing(ipOut, Timeout);
-                        pingDelay.Stop();
+                        // Real Delay
+                        string urlScheme = string.Empty;
+                        if (CheckWebsite.Contains("://"))
+                        {
+                            string[] split = CheckWebsite.Split("://");
+                            urlScheme = $"{split[0].Trim().ToLower()}://";
+                        }
+                        string host = Network.UrlToHostAndPort(CheckWebsite, CheckPort, out int _, out string _, out bool _);
+                        string url = $"{urlScheme}{host}:{CheckPort}";
+                        
+                        Uri uri = new(url, UriKind.Absolute);
 
-                        if (canPing)
+                        HTTPProxyServer.Program.BlackWhiteList wList = new();
+                        wList.Set(HTTPProxyServer.Program.BlackWhiteList.Mode.WhiteListText, host);
+                        ProxyServer.EnableBlackWhiteList(wList);
+
+                        HTTPProxyServer.Program.FakeDns fakeDns = new();
+                        fakeDns.Set(HTTPProxyServer.Program.FakeDns.Mode.Text, $"{host}|{ipOut}");
+                        ProxyServer.EnableFakeDNS(fakeDns);
+
+                        ProxyServer.KillAll();
+                        await Task.Delay(100);
+
+                        string proxyScheme = $"http://{IPAddress.Loopback}:{ProxyServerPort}";
+
+                        using SocketsHttpHandler socketsHttpHandler = new();
+                        socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true);
+
+                        using HttpClient httpClientWithProxy = new(socketsHttpHandler);
+                        httpClientWithProxy.Timeout = TimeSpan.FromMilliseconds(Timeout);
+
+                        Stopwatch realDelay = new();
+                        realDelay.Start();
+                        await httpClientWithProxy.GetAsync(uri);
+                        realDelay.Stop();
+
+                        realDelayOut = Convert.ToInt32(realDelay.ElapsedMilliseconds);
+                        realDelay.Reset();
+                    }
+                    catch (Exception)
+                    {
+                        realDelayOut = -1;
+                    }
+
+                    Debug.WriteLine(realDelayOut);
+
+                    if (realDelayOut != -1)
+                    {
+                        // Ping Delay
+                        int pingDelayOut = -1;
+                        try
+                        {
+                            Stopwatch pingDelay = new();
+                            pingDelay.Start();
+                            Network.CanPing(ipOut, Timeout);
+                            pingDelay.Stop();
+
+                            pingDelayOut = Convert.ToInt32(pingDelay.ElapsedMilliseconds);
+                            pingDelay.Reset();
+                        }
+                        catch (Exception)
+                        {
+                            pingDelayOut = -1;
+                        }
+
+                        // Tcp delay
+                        int tcpDelayOut = -1;
+                        try
                         {
                             Stopwatch tcpDelay = new();
                             tcpDelay.Start();
-                            bool canConnectToPort = Network.CanPing(ipOut, CheckPort, Timeout);
+                            Network.CanTcpConnect(ipOut, CheckPort, Timeout);
                             tcpDelay.Stop();
 
-                            if (canConnectToPort)
-                            {
-                                string url = CheckWebsite;
-                                var host = Network.UrlToHostAndPort(url, CheckPort, out int _, out string _, out bool _);
-                                Uri uri = new(url, UriKind.Absolute);
-
-                                HTTPProxyServer.Program.BlackWhiteList wList = new();
-                                wList.Set(HTTPProxyServer.Program.BlackWhiteList.Mode.WhiteListText, host);
-
-                                ProxyServer.EnableBlackWhiteList(wList);
-
-                                HTTPProxyServer.Program.FakeDns fakeDns = new();
-                                fakeDns.Set(HTTPProxyServer.Program.FakeDns.Mode.Text, $"{host}|{ipOut}");
-
-                                ProxyServer.EnableFakeDNS(fakeDns);
-
-                                ProxyServer.KillAll();
-                                await Task.Delay(100);
-
-                                string proxyScheme = $"http://{IPAddress.Loopback}:{ProxyServerPort}";
-
-                                using SocketsHttpHandler socketsHttpHandler = new();
-                                socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true);
-
-                                using HttpClient httpClientWithProxy = new(socketsHttpHandler);
-                                httpClientWithProxy.Timeout = TimeSpan.FromMilliseconds(Timeout);
-
-                                Stopwatch realDelay = new();
-                                realDelay.Start();
-                                HttpResponseMessage r = await httpClientWithProxy.GetAsync(uri);
-                                realDelay.Stop();
-
-                                if (r.IsSuccessStatusCode || r.StatusCode == HttpStatusCode.Forbidden ||
-                                                             r.StatusCode == HttpStatusCode.NotFound)
-                                {
-                                    IpScannerResult scannerResult = new();
-                                    scannerResult.IP = ipOut;
-                                    scannerResult.RealDelay = Convert.ToInt32(realDelay.ElapsedMilliseconds);
-                                    scannerResult.TcpDelay = Convert.ToInt32(tcpDelay.ElapsedMilliseconds);
-                                    scannerResult.PingDelay = Convert.ToInt32(pingDelay.ElapsedMilliseconds);
-
-                                    OnWorkingIpReceived?.Invoke(scannerResult, EventArgs.Empty);
-                                    WorkingIPs.Add(scannerResult);
-                                }
-                                realDelay.Reset();
-                            }
+                            tcpDelayOut = Convert.ToInt32(tcpDelay.ElapsedMilliseconds);
                             tcpDelay.Reset();
                         }
-                        pingDelay.Reset();
+                        catch (Exception)
+                        {
+                            tcpDelayOut = -1;
+                        }
+
+                        // Result
+                        IpScannerResult scannerResult = new();
+                        scannerResult.IP = ipOut;
+                        scannerResult.RealDelay = realDelayOut;
+                        scannerResult.TcpDelay = tcpDelayOut;
+                        scannerResult.PingDelay = pingDelayOut;
+
+                        OnWorkingIpReceived?.Invoke(scannerResult, EventArgs.Empty);
+                        WorkingIPs.Add(scannerResult);
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"IP Scanner: {ex.Message}");
-                    }
+
                 }
 
             });

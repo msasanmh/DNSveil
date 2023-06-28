@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
 using MsmhTools.DnsTool;
+using MsmhTools.ProxifiedTcpClient;
 
 namespace MsmhTools.HTTPProxyServer
 {
@@ -23,6 +24,13 @@ namespace MsmhTools.HTTPProxyServer
         public void EnableDPIBypass(Program.DPIBypass dpiBypassProgram)
         {
             DPIBypassProgram = dpiBypassProgram;
+        }
+
+        //======================================= UpStream Proxy Support
+        internal Program.UpStreamProxy UpStreamProxyProgram = new();
+        public void EnableUpStreamProxy(Program.UpStreamProxy upStreamProxyProgram)
+        {
+            UpStreamProxyProgram = upStreamProxyProgram;
         }
 
         //======================================= DNS Support
@@ -101,7 +109,7 @@ namespace MsmhTools.HTTPProxyServer
                 _CancelToken = _CancelTokenSource.Token;
 
                 Cancel = false;
-                
+
                 KillOnOverloadTimer.Elapsed += KillOnOverloadTimer_Elapsed;
                 KillOnOverloadTimer.Start();
 
@@ -192,7 +200,7 @@ namespace MsmhTools.HTTPProxyServer
             OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
         }
 
-        private void AcceptConnections()
+        private async void AcceptConnections()
         {
             if (Cancel) return;
 
@@ -211,7 +219,7 @@ namespace MsmhTools.HTTPProxyServer
                         TcpClient tcpClient = _TcpListener.AcceptTcpClient();
                         if (tcpClient.Connected)
                             ProcessConnection(tcpClient);
-                        Task.Delay(1000).Wait();
+                        await Task.Delay(1000);
                         if (_CancelToken.IsCancellationRequested || Cancel)
                             break;
                     }
@@ -315,7 +323,7 @@ namespace MsmhTools.HTTPProxyServer
                     return;
                 }
 
-                // Block Built-in Black List
+                //// Block Built-in Black List
                 for (int n = 0; n < BlackList.Count; n++)
                 {
                     string website = BlackList[n];
@@ -331,12 +339,16 @@ namespace MsmhTools.HTTPProxyServer
                     }
                 }
 
-                // Black White List Program
+                //// Black White List Program
                 if (BWListProgram.ListMode != Program.BlackWhiteList.Mode.Disable)
                 {
                     bool isMatch = BWListProgram.IsMatch(req.DestHostname);
                     if (isMatch)
                     {
+                        // Event
+                        string msgEvent = $"Black White list: {req.FullUrl}, request denied.";
+                        OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+
                         client.Close();
                         return;
                     }
@@ -345,32 +357,59 @@ namespace MsmhTools.HTTPProxyServer
                 // Save Orig Hostname
                 string origHostname = req.DestHostname;
 
-                // FakeDNS Program
+                //// FakeDNS Program
                 if (FakeDNSProgram.FakeDnsMode != Program.FakeDns.Mode.Disable)
                     req.DestHostname = FakeDNSProgram.Get(req.DestHostname);
 
-                // DNS Program
-                if (!req.DestHostname.Equals(DNSProgram.Host) && origHostname.Equals(req.DestHostname))
+                //// DNS Program
+                if (origHostname.Equals(req.DestHostname))
                 {
                     if (DNSProgram.DNSMode != Program.Dns.Mode.Disable)
-                        req.DestHostname = await DNSProgram.Get(req.DestHostname);
+                    {
+                        string ipStr = await DNSProgram.Get(req.DestHostname);
+                        if (!ipStr.StartsWith("10.") && !ipStr.StartsWith("127.0.") && !ipStr.StartsWith("172.16.") && !ipStr.StartsWith("192.168."))
+                            req.DestHostname = ipStr;
+                    }
                 }
 
-                Debug.WriteLine($"({origHostname}) => ({req.DestHostname})");
+                // Check if Dest Host or IP is blocked
+                bool isIp = IPAddress.TryParse(req.DestHostname, out IPAddress _);
+                if (isIp)
+                    req.IsDestBlocked = await CommonTools.IsIpBlocked(req.DestHostname, req.DestHostPort, 2000);
+                else
+                    req.IsDestBlocked = await CommonTools.IsHostBlocked(req.DestHostname, req.DestHostPort, 2000);
 
                 // Event
                 string msgReqEvent = $"{origHostname}:{req.DestHostPort}";
                 if (!origHostname.Equals(req.DestHostname))
                     msgReqEvent = $"{origHostname}:{req.DestHostPort} => {req.DestHostname}";
+                if (req.IsDestBlocked && isIp)
+                    msgReqEvent += " (IP is blocked)";
+                if (req.IsDestBlocked && !isIp)
+                    msgReqEvent += " (Host is blocked)";
+
+                // Apply upstream?
+                bool applyUpStreamProxy = false;
+                bool isUpStreamProgramActive = UpStreamProxyProgram.UpStreamMode != Program.UpStreamProxy.Mode.Disable;
+
+                if ((isUpStreamProgramActive && !UpStreamProxyProgram.OnlyApplyToBlockedIps) ||
+                    (isUpStreamProgramActive && UpStreamProxyProgram.OnlyApplyToBlockedIps && req.IsDestBlocked))
+                    applyUpStreamProxy = true;
+
+                if (applyUpStreamProxy)
+                    msgReqEvent += " (Bypassing through Upstream Proxy)";
+
+                Debug.WriteLine(msgReqEvent);
                 OnRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
 
+                // Begin Connect
                 if (req.Method == HttpMethodReq.CONNECT)
                 {
                     // Event
                     string msgEvent = $"{clientEndpoint} proxying request via CONNECT to {req.FullUrl}";
                     OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
-                    await Task.Run(() => ConnectHttpsRequest(connectionId, client, req));
+                    await Task.Run(() => ConnectHttpsRequest(connectionId, client, req, applyUpStreamProxy));
                 }
                 else
                 {
@@ -381,41 +420,65 @@ namespace MsmhTools.HTTPProxyServer
                     await ConnectHttpRequestAsync(req, client);
                 }
 
-                client.Dispose();
+                try
+                {
+                    client.Dispose();
+                }
+                catch (NullReferenceException)
+                {
+                    // do nothing
+                }
             }
             catch (IOException)
             {
                 // Do nothing
             }
-            catch (Exception eInner)
+            catch (Exception ex)
             {
                 // Event Error
-                string msgEventErr = $"Process Connection: {eInner.Message}";
+                string msgEventErr = $"Process Connection: {ex.Message}";
                 OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
             }
         }
 
         //======================================== Connect HTTPS Request
 
-        private void ConnectHttpsRequest(int connectionId, TcpClient client, Request req)
+        private void ConnectHttpsRequest(int connectionId, TcpClient client, Request req, bool applyUpStreamProxy = false)
         {
             if (Cancel) return;
             if (client.Client == null) return;
-
-            TcpClient? server = null;
+            
+            TcpClient server = new();
 
             try
             {
                 client.NoDelay = true;
                 client.Client.NoDelay = true;
 
-                server = new();
-
                 try
                 {
                     if (!string.IsNullOrEmpty(req.DestHostname))
                     {
-                        server.Connect(req.DestHostname, req.DestHostPort);
+                        if (applyUpStreamProxy)
+                        {
+                            TcpClient? proxifiedTcpClient = UpStreamProxyProgram.Connect(req.DestHostname, req.DestHostPort);
+                            if (proxifiedTcpClient != null)
+                            {
+                                server = proxifiedTcpClient;
+                            }
+                            else
+                            {
+                                // Event Error
+                                string msgEventErr = $"Couldn't connect to upstream proxy.";
+                                OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+
+                                server.Connect(req.DestHostname, req.DestHostPort);
+                            }
+                        }
+                        else
+                        {
+                            server.Connect(req.DestHostname, req.DestHostPort);
+                        }
                     }
                     else
                     {
@@ -432,7 +495,7 @@ namespace MsmhTools.HTTPProxyServer
                     OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
                     return;
                 }
-
+                
                 server.NoDelay = true;
                 server.Client.NoDelay = true;
 
@@ -454,16 +517,8 @@ namespace MsmhTools.HTTPProxyServer
                 }
 
                 // Create Tunnel
-                Tunnel currentTunnel = new(
-                    req.SourceIp,
-                    req.SourcePort,
-                    req.DestIp,
-                    req.DestPort,
-                    req.DestHostname,
-                    req.DestHostPort,
-                    client,
-                    server);
-
+                Tunnel currentTunnel = new(req, client, server);
+                
                 currentTunnel.EnableDPIBypass(DPIBypassProgram);
 
                 // Tunnel Event OnDebugInfoReceived

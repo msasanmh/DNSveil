@@ -13,6 +13,42 @@ namespace SecureDNSClient
 {
     public partial class FormMain
     {
+        private bool CheckDnsMatchRules(DnsReader dnsReader)
+        {
+            bool matchRules = true;
+
+            // Get Protocol Selection
+            bool pDoH = CustomCheckBoxSettingProtocolDoH.Checked;
+            bool pTLS = CustomCheckBoxSettingProtocolTLS.Checked;
+            bool pDNSCrypt = CustomCheckBoxSettingProtocolDNSCrypt.Checked;
+            bool pDNSCryptRelay = CustomCheckBoxSettingProtocolDNSCryptRelay.Checked;
+            bool pDoQ = CustomCheckBoxSettingProtocolDoQ.Checked;
+            bool pPlainDNS = CustomCheckBoxSettingProtocolPlainDNS.Checked;
+
+            // Get SDNS Properties
+            bool sdnsDNSSec = CustomCheckBoxSettingSdnsDNSSec.Checked;
+            bool sdnsNoLog = CustomCheckBoxSettingSdnsNoLog.Checked;
+            bool sdnsNoFilter = CustomCheckBoxSettingSdnsNoFilter.Checked;
+
+            // Apply Protocol Selection
+            if ((!pDoH && dnsReader.Protocol == DnsReader.DnsProtocol.DoH) ||
+                (!pTLS && dnsReader.Protocol == DnsReader.DnsProtocol.TLS) ||
+                (!pDNSCrypt && dnsReader.Protocol == DnsReader.DnsProtocol.DnsCrypt) ||
+                (!pDNSCryptRelay && dnsReader.Protocol == DnsReader.DnsProtocol.DNSCryptRelay) ||
+                (!pDoQ && dnsReader.Protocol == DnsReader.DnsProtocol.DoQ) ||
+                (!pPlainDNS && dnsReader.Protocol == DnsReader.DnsProtocol.PlainDNS)) matchRules = false;
+
+            if (dnsReader.IsDnsCryptStamp)
+            {
+                // Apply SDNS rules
+                if ((sdnsDNSSec && !dnsReader.StampProperties.IsDnsSec) ||
+                    (sdnsNoLog && !dnsReader.StampProperties.IsNoLog) ||
+                    (sdnsNoFilter && !dnsReader.StampProperties.IsNoFilter)) matchRules = false;
+            }
+
+            return matchRules;
+        }
+
         private async Task CheckServers()
         {
             // Get blocked domain
@@ -36,14 +72,7 @@ namespace SecureDNSClient
             }
 
             // Get Bootstrap IP and Port
-            string bootstrap = SecureDNS.BootstrapDnsIPv4.ToString();
-            int bootstrapPort = SecureDNS.BootstrapDnsPort;
-            bool isBootstrap = Network.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? bootstrapIP);
-            if (isBootstrap && bootstrapIP != null)
-            {
-                bootstrap = bootstrapIP.ToString();
-                bootstrapPort = int.Parse(CustomNumericUpDownSettingBootstrapDnsPort.Value.ToString());
-            }
+            string bootstrap = GetBootstrapSetting(out int bootstrapPort).ToString();
 
             // Get insecure state
             bool insecure = CustomCheckBoxInsecure.Checked;
@@ -62,7 +91,7 @@ namespace SecureDNSClient
                     return;
                 }
             }
-
+            
             // Check servers comment
             string checkingServers = "Checking servers:" + NL + NL;
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(checkingServers, Color.MediumSeaGreen));
@@ -73,9 +102,12 @@ namespace SecureDNSClient
             // Clear working list to file on new check
             WorkingDnsListToFile.Clear();
 
+            // Clear Log on new Check
+            this.InvokeIt(() => CustomRichTextBoxLog.ResetText());
+
             string? fileContent = string.Empty;
             if (builtInMode)
-                fileContent = Resource.GetResourceTextFile("SecureDNSClient.DNS-Servers.txt");
+                fileContent = await Resource.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.txt");
             else
             {
                 FileDirectory.CreateEmptyFile(SecureDNS.CustomServersPath);
@@ -96,19 +128,6 @@ namespace SecureDNSClient
             // Add Servers to list
             List<string> dnsList = fileContent.SplitToLines();
             int dnsCount = dnsList.Count;
-
-            // Get Protocol Selection
-            bool pDoH = CustomCheckBoxSettingProtocolDoH.Checked;
-            bool pTLS = CustomCheckBoxSettingProtocolTLS.Checked;
-            bool pDNSCrypt = CustomCheckBoxSettingProtocolDNSCrypt.Checked;
-            bool pDNSCryptRelay = CustomCheckBoxSettingProtocolDNSCryptRelay.Checked;
-            bool pDoQ = CustomCheckBoxSettingProtocolDoQ.Checked;
-            bool pPlainDNS = CustomCheckBoxSettingProtocolPlainDNS.Checked;
-
-            // Get SDNS Properties
-            bool sdnsDNSSec = CustomCheckBoxSettingSdnsDNSSec.Checked;
-            bool sdnsNoLog = CustomCheckBoxSettingSdnsNoLog.Checked;
-            bool sdnsNoFilter = CustomCheckBoxSettingSdnsNoFilter.Checked;
 
             // Check if servers exist 2
             if (dnsCount < 1)
@@ -131,15 +150,27 @@ namespace SecureDNSClient
             int numberOfAllSupportedServers = 0;
             int numberOfCheckedServers = 0;
 
-            for (int n = 0; n < dnsCount; n++)
+            // Dummy check to fix first run
+            SecureDNS.CheckDns(blockedDomainNoWww, dnsList[0], 100, GetCPUPriority());
+            SecureDNS.CheckDns(blockedDomainNoWww, dnsList[0], 100, GetCPUPriority());
+            SecureDNS.CheckDns(blockedDomainNoWww, dnsList[0], 100, GetCPUPriority());
+
+            // Series or Parallel
+            bool checkInParallel = CustomCheckBoxCheckInParallel.Checked;
+
+            if (insecure)
+                checkSeries();
+            else
             {
-                // Percentage
-                int persent = n * 100 / dnsCount;
-                this.InvokeIt(() => CustomLabelCheckPercent.Text = persent.ToString() + "%");
+                if (checkInParallel)
+                    await checkParallel();
+                else
+                    checkSeries();
+            }
 
-                string dns = dnsList[n].Trim();
-
-                if (!string.IsNullOrEmpty(dns) && !string.IsNullOrWhiteSpace(dns))
+            void checkSeries()
+            {
+                for (int n = 0; n < dnsCount; n++)
                 {
                     if (StopChecking)
                     {
@@ -149,6 +180,80 @@ namespace SecureDNSClient
                         break;
                     }
 
+                    // Percentage
+                    int persent = n * 100 / dnsCount;
+                    string checkDetail = $"{n + 1} of {dnsCount} ({persent}%)";
+                    this.InvokeIt(() => CustomLabelCheckDetail.Text = checkDetail);
+
+                    string dns = dnsList[n].Trim();
+                    checkOne(dns);
+
+                    // Percentage (100%)
+                    if (n == dnsCount - 1)
+                    {
+                        checkDetail = $"{n + 1} of {dnsCount} (100%)";
+                        this.InvokeIt(() => CustomLabelCheckDetail.Text = checkDetail);
+                    }
+                }
+            }
+
+            async Task checkParallel()
+            {
+                await Task.Run(async () =>
+                {
+                    int splitSize = 5;
+                    var lists = dnsList.SplitToLists(splitSize);
+                    int count = 0;
+
+                    for (int n = 0; n < lists.Count; n++)
+                    {
+                        if (StopChecking)
+                        {
+                            string msg = NL + "Canceling Check operation..." + NL;
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+
+                            break;
+                        }
+
+                        List<string> list = lists[n];
+
+                        // Percentage
+                        int persent = n * 100 / lists.Count;
+                        count += list.Count;
+                        string checkDetail = $"{count} of {dnsCount} ({persent}%)";
+                        this.InvokeIt(() => CustomLabelCheckDetail.Text = checkDetail);
+
+                        var parallelLoopResult = Parallel.For(0, list.Count, i =>
+                        {
+                            string dns = list[i].Trim();
+                            checkOne(dns);
+                        });
+
+                        await Task.Run(async () =>
+                        {
+                            while (!parallelLoopResult.IsCompleted)
+                            {
+                                if (parallelLoopResult.IsCompleted)
+                                    return Task.CompletedTask;
+                                await Task.Delay(500);
+                            }
+                            return Task.CompletedTask;
+                        });
+
+                        // Percentage (100%)
+                        if (n == lists.Count - 1)
+                        {
+                            checkDetail = $"{dnsCount} of {dnsCount} (100%)";
+                            this.InvokeIt(() => CustomLabelCheckDetail.Text = checkDetail);
+                        }
+                    }
+                });
+            }
+
+            void checkOne(string dns)
+            {
+                if (!string.IsNullOrEmpty(dns) && !string.IsNullOrWhiteSpace(dns))
+                {
                     // All servers ++
                     numberOfAllServers++;
 
@@ -161,32 +266,23 @@ namespace SecureDNSClient
                         DnsReader dnsReader = new(dns, companyDataContent);
 
                         // Apply Protocol Selection
-                        if ((!pDoH && dnsReader.Protocol == DnsReader.DnsProtocol.DoH) ||
-                            (!pTLS && dnsReader.Protocol == DnsReader.DnsProtocol.TLS) ||
-                            (!pDNSCrypt && dnsReader.Protocol == DnsReader.DnsProtocol.DnsCrypt) ||
-                            (!pDNSCryptRelay && dnsReader.Protocol == DnsReader.DnsProtocol.DNSCryptRelay) ||
-                            (!pDoQ && dnsReader.Protocol == DnsReader.DnsProtocol.DoQ) ||
-                            (!pPlainDNS && dnsReader.Protocol == DnsReader.DnsProtocol.PlainDNS)) continue;
-
-                        if (dnsReader.IsDnsCryptStamp)
-                        {
-                            // Apply SDNS rules
-                            if ((sdnsDNSSec && !dnsReader.StampProperties.IsDnsSec) ||
-                                (sdnsNoLog && !dnsReader.StampProperties.IsNoLog) ||
-                                (sdnsNoFilter && !dnsReader.StampProperties.IsNoFilter)) continue;
-                        }
+                        bool matchRules = CheckDnsMatchRules(dnsReader);
+                        if (!matchRules) return;
 
                         // Get Check timeout value
-                        decimal timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value;
-                        int timeoutMS = (int)(timeoutSec * 1000);
+                        decimal timeoutSec = 1;
+                        this.InvokeIt(() =>timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value);
+                        int timeoutMS = decimal.ToInt32(timeoutSec * 1000);
 
                         // Get Status and Latency
                         bool dnsOK = false;
                         int latency = -1;
+
                         if (insecure)
                             latency = SecureDNS.CheckDns(true, blockedDomainNoWww, dns, timeoutMS, localPortInsecure, bootstrap, bootstrapPort, GetCPUPriority());
                         else
                             latency = SecureDNS.CheckDns(blockedDomainNoWww, dns, timeoutMS, GetCPUPriority());
+
                         dnsOK = latency != -1;
 
                         // Add working DNS to list
@@ -202,7 +298,50 @@ namespace SecureDNSClient
                         // Checked servers ++
                         numberOfCheckedServers++;
 
-                        writeStatusToLog();
+                        if (checkInParallel)
+                        {
+                            // Write short status to log
+                            string status = dnsOK ? "OK" : "Failed";
+                            Color color = dnsOK ? Color.MediumSeaGreen : Color.IndianRed;
+
+                            // Write host to log
+                            string host = string.Empty;
+                            string protocol = string.Empty;
+                            if (dnsReader.IsDnsCryptStamp)
+                            {
+                                string sdnsHostMsg1 = $" [SDNS: ";
+                                string sdnsHostMsg2 = $"{dnsReader.ProtocolName}";
+                                string sdnsHostMsg3 = "]";
+                                if (dnsReader.StampProperties.IsDnsSec)
+                                    sdnsHostMsg2 += $", DNSSec";
+                                if (dnsReader.StampProperties.IsNoLog)
+                                    sdnsHostMsg2 += $", No Log";
+                                if (dnsReader.StampProperties.IsNoFilter)
+                                    sdnsHostMsg2 += $", No Filter";
+
+                                host = sdnsHostMsg1 + sdnsHostMsg2 + sdnsHostMsg3;
+                            }
+                            else
+                            {
+                                // Write host to log
+                                if (!builtInMode)
+                                {
+                                    host = $" [Host: {dns}]";
+                                }
+
+                                // Write protocol name to log
+                                protocol = $" [Protocol: {dnsReader.ProtocolName}]";
+                            }
+
+                            // Write company name to log
+                            string resultCompany = $" [{dnsReader.CompanyName}]";
+
+                            string msgShort = $"[{status}] [{latency}]{host}{protocol}{resultCompany}{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgShort, color));
+                        }
+                        else
+                            writeStatusToLog();
+
                         void writeStatusToLog()
                         {
                             // Write status to log
@@ -255,9 +394,6 @@ namespace SecureDNSClient
                     }
                 }
 
-                // Percentage (100%)
-                if (n == dnsCount - 1)
-                    this.InvokeIt(() => CustomLabelCheckPercent.Text = "100%");
             }
 
             // Return if there is no working server
@@ -278,12 +414,17 @@ namespace SecureDNSClient
             if (WorkingDnsList.Count > 1)
                 WorkingDnsList = WorkingDnsList.OrderByDescending(t => t.Item1).ToList();
 
+            // All Latencies (to get average delay)
+            long allLatencies = 0;
+
             for (int n = 0; n < WorkingDnsList.Count; n++)
             {
                 var latencyHost = WorkingDnsList[n];
                 long latency = latencyHost.Item1;
                 string host = latencyHost.Item2;
                 string dns = host;
+
+                allLatencies += latency;
 
                 // Get DNS Details
                 DnsReader dnsReader = new(dns, companyDataContent);
@@ -386,6 +527,18 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgIgnoredByWrongProtocol, Color.LightGray));
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfNotSupported.ToString() + NL, Color.MediumSeaGreen));
             }
+
+            // Wite average delay to log
+            if (WorkingDnsList.Count > 1)
+            {
+                string msgAL1 = "Average Latency: ";
+                string msgAL2 = " ms.";
+                long averageLatency = allLatencies / WorkingDnsList.Count;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAL1, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{averageLatency}", Color.DodgerBlue));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAL2 + NL, Color.LightGray));
+            }
+
         }
     }
 }

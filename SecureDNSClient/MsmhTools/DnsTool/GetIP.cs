@@ -14,6 +14,58 @@ namespace MsmhTools.DnsTool
 {
     public static class GetIP
     {
+        //================================================= Get From System
+
+        /// <summary>
+        /// Get First IP in Answer Section
+        /// </summary>
+        /// <param name="host">Host</param>
+        /// <param name="getIPv6">Look for IPv6</param>
+        /// <returns>Returns string.Empty if fail</returns>
+        public static string GetIpFromSystem(string host, bool getIPv6 = false)
+        {
+            string result = string.Empty;
+
+            try
+            {
+                //IPAddress[] ipAddresses = Dns.GetHostEntry(host).AddressList;
+                IPAddress[] ipAddresses = Dns.GetHostAddresses(host);
+
+                if (ipAddresses == null || ipAddresses.Length == 0)
+                    return string.Empty;
+
+                if (!getIPv6)
+                {
+                    for (int n = 0; n < ipAddresses.Length; n++)
+                    {
+                        var addressFamily = ipAddresses[n].AddressFamily;
+                        if (addressFamily == AddressFamily.InterNetwork)
+                        {
+                            result = ipAddresses[n].ToString();
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int n = 0; n < ipAddresses.Length; n++)
+                    {
+                        var addressFamily = ipAddresses[n].AddressFamily;
+                        if (addressFamily == AddressFamily.InterNetworkV6)
+                        {
+                            result = ipAddresses[n].ToString();
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+            return result;
+        }
+
         //================================================= Get From DoH: Try Wire Format First, Then Try Json Format
 
         /// <summary>

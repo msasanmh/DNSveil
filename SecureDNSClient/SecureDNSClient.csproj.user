@@ -73,6 +73,18 @@
     <Compile Update="CustomControls\CustomVScrollBar.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Update="Forms\Connect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\ConnectToFakeProxy.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\ConnectToServersUsingProxy.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\ConnectToWorkingServers.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\FormIpScanner.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -82,10 +94,10 @@
     <Compile Update="Forms\Share.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\TryToBypassCfUsingGoodbyeDPI.cs">
+    <Compile Update="Forms\TryToBypassFPUsingGoodbyeDPI.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\TryToBypassCfUsingProxyDPI.cs">
+    <Compile Update="Forms\TryToBypassFPUsingProxyDPI.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\FormMain.cs">

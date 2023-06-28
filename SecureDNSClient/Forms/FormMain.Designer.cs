@@ -51,10 +51,12 @@
             this.TabPageSecureDNS = new System.Windows.Forms.TabPage();
             this.CustomTabControlSecureDNS = new CustomControls.CustomTabControl();
             this.TabPageCheck = new System.Windows.Forms.TabPage();
-            this.CustomLabelCheckPercent = new CustomControls.CustomLabel();
+            this.CustomCheckBoxCheckInParallel = new CustomControls.CustomCheckBox();
+            this.CustomLabelCheckDetail = new CustomControls.CustomLabel();
             this.CustomButtonConnectAll = new CustomControls.CustomButton();
             this.CustomButtonViewWorkingServers = new CustomControls.CustomButton();
             this.TabPageConnect = new System.Windows.Forms.TabPage();
+            this.CustomButtonWriteSavedServersDelay = new CustomControls.CustomButton();
             this.CustomRadioButtonConnectFakeProxyDohViaProxyDPI = new CustomControls.CustomRadioButton();
             this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI = new CustomControls.CustomRadioButton();
             this.CustomRadioButtonConnectCheckedServers = new CustomControls.CustomRadioButton();
@@ -65,6 +67,8 @@
             this.CustomLabelSetDNSInfo = new CustomControls.CustomLabel();
             this.CustomComboBoxNICs = new CustomControls.CustomComboBox();
             this.TabPageShare = new System.Windows.Forms.TabPage();
+            this.CustomNumericUpDownPDpiAntiPatternOffset = new CustomControls.CustomNumericUpDown();
+            this.CustomLabelPDpiAntiPatternOffset = new CustomControls.CustomLabel();
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails = new CustomControls.CustomCheckBox();
             this.CustomButtonPDpiApplyChanges = new CustomControls.CustomButton();
             this.CustomNumericUpDownPDpiFragDelay = new CustomControls.CustomNumericUpDown();
@@ -171,25 +175,31 @@
             this.CustomRadioButtonSettingUnsetDnsToStatic = new CustomControls.CustomRadioButton();
             this.CustomRadioButtonSettingUnsetDnsToDhcp = new CustomControls.CustomRadioButton();
             this.TabPageSettingsShare = new System.Windows.Forms.TabPage();
-            this.SplitContainerSettingHTTPProxy = new System.Windows.Forms.SplitContainer();
-            this.CustomGroupBoxSettingHTTPProxyBasic = new CustomControls.CustomGroupBox();
+            this.CustomTabControlSettingHttpProxy = new CustomControls.CustomTabControl();
+            this.TabPageSettingHttpProxyBasic = new System.Windows.Forms.TabPage();
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort = new CustomControls.CustomNumericUpDown();
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost = new CustomControls.CustomTextBox();
+            this.CustomLabelSettingHTTPProxyUpstreamPort = new CustomControls.CustomLabel();
+            this.CustomLabelSettingHTTPProxyUpstreamHost = new CustomControls.CustomLabel();
+            this.CustomComboBoxSettingHttpProxyUpstreamMode = new CustomControls.CustomComboBox();
+            this.CustomCheckBoxSettingHTTPProxyUpstream = new CustomControls.CustomCheckBox();
             this.CustomLabelSettingHTTPProxyPort = new CustomControls.CustomLabel();
             this.CustomCheckBoxSettingProxyBlockPort80 = new CustomControls.CustomCheckBox();
+            this.CustomLabelSettingHTTPProxyHandleRequests = new CustomControls.CustomLabel();
             this.CustomNumericUpDownSettingHTTPProxyPort = new CustomControls.CustomNumericUpDown();
             this.CustomNumericUpDownSettingHTTPProxyHandleRequests = new CustomControls.CustomNumericUpDown();
-            this.CustomLabelSettingHTTPProxyHandleRequests = new CustomControls.CustomLabel();
-            this.CustomGroupBoxSettingHTTPProxyAdvanced = new CustomControls.CustomGroupBox();
+            this.TabPageSettingHttpProxyAdvanced = new System.Windows.Forms.TabPage();
             this.CustomButtonSettingHTTPProxyBlackWhiteList = new CustomControls.CustomButton();
-            this.CustomLabelSettingHTTPProxyBlackWhiteList = new CustomControls.CustomLabel();
-            this.CustomLabelSettingShareSeparator2 = new CustomControls.CustomLabel();
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList = new CustomControls.CustomCheckBox();
-            this.CustomLabelSettingShareSeparator1 = new CustomControls.CustomLabel();
-            this.CustomButtonSettingHTTPProxyFakeDNS = new CustomControls.CustomButton();
-            this.CustomLabelSettingHTTPProxyFakeDNS = new CustomControls.CustomLabel();
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS = new CustomControls.CustomCheckBox();
-            this.CustomTextBoxSettingHTTPProxyCfCleanIP = new CustomControls.CustomTextBox();
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP = new CustomControls.CustomCheckBox();
             this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy = new CustomControls.CustomCheckBox();
+            this.CustomLabelSettingHTTPProxyBlackWhiteList = new CustomControls.CustomLabel();
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP = new CustomControls.CustomCheckBox();
+            this.CustomLabelSettingShareSeparator2 = new CustomControls.CustomLabel();
+            this.CustomTextBoxSettingHTTPProxyCfCleanIP = new CustomControls.CustomTextBox();
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList = new CustomControls.CustomCheckBox();
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS = new CustomControls.CustomCheckBox();
+            this.CustomLabelSettingShareSeparator1 = new CustomControls.CustomLabel();
+            this.CustomLabelSettingHTTPProxyFakeDNS = new CustomControls.CustomLabel();
+            this.CustomButtonSettingHTTPProxyFakeDNS = new CustomControls.CustomButton();
             this.TabPageSettingsFakeProxy = new System.Windows.Forms.TabPage();
             this.CustomTextBoxSettingFakeProxyDohCleanIP = new CustomControls.CustomTextBox();
             this.CustomTextBoxSettingFakeProxyDohAddress = new CustomControls.CustomTextBox();
@@ -257,6 +267,7 @@
             this.TabPageConnect.SuspendLayout();
             this.TabPageSetDNS.SuspendLayout();
             this.TabPageShare.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiAntiPatternOffset)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiFragDelay)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiDataLength)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiFragmentSize)).BeginInit();
@@ -285,14 +296,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingMaxServers)).BeginInit();
             this.TabPageSettingsSetUnsetDNS.SuspendLayout();
             this.TabPageSettingsShare.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.SplitContainerSettingHTTPProxy)).BeginInit();
-            this.SplitContainerSettingHTTPProxy.Panel1.SuspendLayout();
-            this.SplitContainerSettingHTTPProxy.Panel2.SuspendLayout();
-            this.SplitContainerSettingHTTPProxy.SuspendLayout();
-            this.CustomGroupBoxSettingHTTPProxyBasic.SuspendLayout();
+            this.CustomTabControlSettingHttpProxy.SuspendLayout();
+            this.TabPageSettingHttpProxyBasic.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingHTTPProxyUpstreamPort)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingHTTPProxyPort)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingHTTPProxyHandleRequests)).BeginInit();
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.SuspendLayout();
+            this.TabPageSettingHttpProxyAdvanced.SuspendLayout();
             this.TabPageSettingsFakeProxy.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingFakeProxyPort)).BeginInit();
             this.TabPageSettingsCPU.SuspendLayout();
@@ -385,7 +394,7 @@
             this.CustomCheckBoxInsecure.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxInsecure.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxInsecure.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxInsecure.Location = new System.Drawing.Point(25, 190);
+            this.CustomCheckBoxInsecure.Location = new System.Drawing.Point(25, 220);
             this.CustomCheckBoxInsecure.Name = "CustomCheckBoxInsecure";
             this.CustomCheckBoxInsecure.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxInsecure.Size = new System.Drawing.Size(211, 17);
@@ -638,7 +647,7 @@
             this.CustomTabControlMain.Size = new System.Drawing.Size(700, 400);
             this.CustomTabControlMain.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             this.CustomTabControlMain.TabIndex = 6;
-            this.CustomTabControlMain.Tag = 2;
+            this.CustomTabControlMain.Tag = 0;
             // 
             // TabPageSecureDNS
             // 
@@ -668,12 +677,13 @@
             this.CustomTabControlSecureDNS.SelectedIndex = 0;
             this.CustomTabControlSecureDNS.Size = new System.Drawing.Size(686, 365);
             this.CustomTabControlSecureDNS.TabIndex = 0;
-            this.CustomTabControlSecureDNS.Tag = 0;
+            this.CustomTabControlSecureDNS.Tag = 1;
             // 
             // TabPageCheck
             // 
             this.TabPageCheck.BackColor = System.Drawing.Color.Transparent;
-            this.TabPageCheck.Controls.Add(this.CustomLabelCheckPercent);
+            this.TabPageCheck.Controls.Add(this.CustomCheckBoxCheckInParallel);
+            this.TabPageCheck.Controls.Add(this.CustomLabelCheckDetail);
             this.TabPageCheck.Controls.Add(this.CustomButtonConnectAll);
             this.TabPageCheck.Controls.Add(this.CustomButtonViewWorkingServers);
             this.TabPageCheck.Controls.Add(this.CustomButtonCheck);
@@ -690,21 +700,35 @@
             this.TabPageCheck.Tag = 0;
             this.TabPageCheck.Text = "1. Check";
             // 
-            // CustomLabelCheckPercent
+            // CustomCheckBoxCheckInParallel
             // 
-            this.CustomLabelCheckPercent.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.CustomLabelCheckPercent.AutoSize = true;
-            this.CustomLabelCheckPercent.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelCheckPercent.Border = false;
-            this.CustomLabelCheckPercent.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelCheckPercent.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelCheckPercent.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelCheckPercent.Location = new System.Drawing.Point(415, 309);
-            this.CustomLabelCheckPercent.Name = "CustomLabelCheckPercent";
-            this.CustomLabelCheckPercent.RoundedCorners = 0;
-            this.CustomLabelCheckPercent.Size = new System.Drawing.Size(25, 17);
-            this.CustomLabelCheckPercent.TabIndex = 11;
-            this.CustomLabelCheckPercent.Text = "0%";
+            this.CustomCheckBoxCheckInParallel.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxCheckInParallel.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxCheckInParallel.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxCheckInParallel.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxCheckInParallel.Location = new System.Drawing.Point(25, 190);
+            this.CustomCheckBoxCheckInParallel.Name = "CustomCheckBoxCheckInParallel";
+            this.CustomCheckBoxCheckInParallel.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxCheckInParallel.Size = new System.Drawing.Size(110, 17);
+            this.CustomCheckBoxCheckInParallel.TabIndex = 12;
+            this.CustomCheckBoxCheckInParallel.Text = "Check in parallel";
+            this.CustomCheckBoxCheckInParallel.UseVisualStyleBackColor = false;
+            // 
+            // CustomLabelCheckDetail
+            // 
+            this.CustomLabelCheckDetail.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.CustomLabelCheckDetail.AutoSize = true;
+            this.CustomLabelCheckDetail.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelCheckDetail.Border = false;
+            this.CustomLabelCheckDetail.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelCheckDetail.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelCheckDetail.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelCheckDetail.Location = new System.Drawing.Point(415, 309);
+            this.CustomLabelCheckDetail.Name = "CustomLabelCheckDetail";
+            this.CustomLabelCheckDetail.RoundedCorners = 0;
+            this.CustomLabelCheckDetail.Size = new System.Drawing.Size(25, 17);
+            this.CustomLabelCheckDetail.TabIndex = 11;
+            this.CustomLabelCheckDetail.Text = "0%";
             // 
             // CustomButtonConnectAll
             // 
@@ -712,7 +736,7 @@
             this.CustomButtonConnectAll.AutoSize = true;
             this.CustomButtonConnectAll.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonConnectAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonConnectAll.Location = new System.Drawing.Point(517, 303);
+            this.CustomButtonConnectAll.Location = new System.Drawing.Point(514, 255);
             this.CustomButtonConnectAll.Name = "CustomButtonConnectAll";
             this.CustomButtonConnectAll.RoundedCorners = 0;
             this.CustomButtonConnectAll.SelectionColor = System.Drawing.Color.LightBlue;
@@ -742,6 +766,7 @@
             // TabPageConnect
             // 
             this.TabPageConnect.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageConnect.Controls.Add(this.CustomButtonWriteSavedServersDelay);
             this.TabPageConnect.Controls.Add(this.CustomRadioButtonConnectFakeProxyDohViaProxyDPI);
             this.TabPageConnect.Controls.Add(this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI);
             this.TabPageConnect.Controls.Add(this.CustomRadioButtonConnectCheckedServers);
@@ -755,6 +780,21 @@
             this.TabPageConnect.TabIndex = 1;
             this.TabPageConnect.Tag = 1;
             this.TabPageConnect.Text = "2. Connect";
+            // 
+            // CustomButtonWriteSavedServersDelay
+            // 
+            this.CustomButtonWriteSavedServersDelay.AutoSize = true;
+            this.CustomButtonWriteSavedServersDelay.BorderColor = System.Drawing.Color.Blue;
+            this.CustomButtonWriteSavedServersDelay.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomButtonWriteSavedServersDelay.Location = new System.Drawing.Point(200, 29);
+            this.CustomButtonWriteSavedServersDelay.Name = "CustomButtonWriteSavedServersDelay";
+            this.CustomButtonWriteSavedServersDelay.RoundedCorners = 0;
+            this.CustomButtonWriteSavedServersDelay.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomButtonWriteSavedServersDelay.Size = new System.Drawing.Size(140, 27);
+            this.CustomButtonWriteSavedServersDelay.TabIndex = 19;
+            this.CustomButtonWriteSavedServersDelay.Text = "Get saved servers delay";
+            this.CustomButtonWriteSavedServersDelay.UseVisualStyleBackColor = true;
+            this.CustomButtonWriteSavedServersDelay.Click += new System.EventHandler(this.CustomButtonWriteSavedServersDelay_Click);
             // 
             // CustomRadioButtonConnectFakeProxyDohViaProxyDPI
             // 
@@ -780,9 +820,9 @@
             this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Location = new System.Drawing.Point(25, 125);
             this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Name = "CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI";
             this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Size = new System.Drawing.Size(373, 17);
+            this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Size = new System.Drawing.Size(376, 17);
             this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.TabIndex = 15;
-            this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Text = "Connect to Cloudflare DoH using GoodbyeDPI (Light & Medium)";
+            this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Text = "Connect to Fake Proxy DoH using GoodbyeDPI (Light & Medium)";
             this.CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.UseVisualStyleBackColor = false;
             // 
             // CustomRadioButtonConnectCheckedServers
@@ -895,6 +935,8 @@
             // TabPageShare
             // 
             this.TabPageShare.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageShare.Controls.Add(this.CustomNumericUpDownPDpiAntiPatternOffset);
+            this.TabPageShare.Controls.Add(this.CustomLabelPDpiAntiPatternOffset);
             this.TabPageShare.Controls.Add(this.CustomCheckBoxHTTPProxyEventShowChunkDetails);
             this.TabPageShare.Controls.Add(this.CustomButtonPDpiApplyChanges);
             this.TabPageShare.Controls.Add(this.CustomNumericUpDownPDpiFragDelay);
@@ -921,13 +963,48 @@
             this.TabPageShare.Tag = 3;
             this.TabPageShare.Text = "4. Share + Bypass DPI";
             // 
+            // CustomNumericUpDownPDpiAntiPatternOffset
+            // 
+            this.CustomNumericUpDownPDpiAntiPatternOffset.BackColor = System.Drawing.Color.DimGray;
+            this.CustomNumericUpDownPDpiAntiPatternOffset.BorderColor = System.Drawing.Color.Blue;
+            this.CustomNumericUpDownPDpiAntiPatternOffset.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CustomNumericUpDownPDpiAntiPatternOffset.Location = new System.Drawing.Point(159, 188);
+            this.CustomNumericUpDownPDpiAntiPatternOffset.Maximum = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownPDpiAntiPatternOffset.Name = "CustomNumericUpDownPDpiAntiPatternOffset";
+            this.CustomNumericUpDownPDpiAntiPatternOffset.Size = new System.Drawing.Size(45, 23);
+            this.CustomNumericUpDownPDpiAntiPatternOffset.TabIndex = 40;
+            this.CustomNumericUpDownPDpiAntiPatternOffset.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            // 
+            // CustomLabelPDpiAntiPatternOffset
+            // 
+            this.CustomLabelPDpiAntiPatternOffset.AutoSize = true;
+            this.CustomLabelPDpiAntiPatternOffset.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelPDpiAntiPatternOffset.Border = false;
+            this.CustomLabelPDpiAntiPatternOffset.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelPDpiAntiPatternOffset.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelPDpiAntiPatternOffset.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelPDpiAntiPatternOffset.Location = new System.Drawing.Point(50, 190);
+            this.CustomLabelPDpiAntiPatternOffset.Name = "CustomLabelPDpiAntiPatternOffset";
+            this.CustomLabelPDpiAntiPatternOffset.RoundedCorners = 0;
+            this.CustomLabelPDpiAntiPatternOffset.Size = new System.Drawing.Size(106, 15);
+            this.CustomLabelPDpiAntiPatternOffset.TabIndex = 39;
+            this.CustomLabelPDpiAntiPatternOffset.Text = "Anti pattern offset:";
+            // 
             // CustomCheckBoxHTTPProxyEventShowChunkDetails
             // 
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.BackColor = System.Drawing.Color.DimGray;
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxHTTPProxyEventShowChunkDetails.Location = new System.Drawing.Point(190, 55);
+            this.CustomCheckBoxHTTPProxyEventShowChunkDetails.Location = new System.Drawing.Point(190, 40);
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.Name = "CustomCheckBoxHTTPProxyEventShowChunkDetails";
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxHTTPProxyEventShowChunkDetails.Size = new System.Drawing.Size(161, 17);
@@ -956,9 +1033,9 @@
             this.CustomNumericUpDownPDpiFragDelay.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownPDpiFragDelay.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownPDpiFragDelay.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownPDpiFragDelay.Location = new System.Drawing.Point(363, 218);
+            this.CustomNumericUpDownPDpiFragDelay.Location = new System.Drawing.Point(363, 228);
             this.CustomNumericUpDownPDpiFragDelay.Name = "CustomNumericUpDownPDpiFragDelay";
-            this.CustomNumericUpDownPDpiFragDelay.Size = new System.Drawing.Size(43, 23);
+            this.CustomNumericUpDownPDpiFragDelay.Size = new System.Drawing.Size(45, 23);
             this.CustomNumericUpDownPDpiFragDelay.TabIndex = 36;
             // 
             // CustomLabelPDpiFragDelay
@@ -969,7 +1046,7 @@
             this.CustomLabelPDpiFragDelay.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelPDpiFragDelay.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelPDpiFragDelay.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelPDpiFragDelay.Location = new System.Drawing.Point(240, 220);
+            this.CustomLabelPDpiFragDelay.Location = new System.Drawing.Point(240, 230);
             this.CustomLabelPDpiFragDelay.Name = "CustomLabelPDpiFragDelay";
             this.CustomLabelPDpiFragDelay.RoundedCorners = 0;
             this.CustomLabelPDpiFragDelay.Size = new System.Drawing.Size(119, 15);
@@ -982,7 +1059,7 @@
             this.CustomCheckBoxPDpiDontChunkBigData.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxPDpiDontChunkBigData.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxPDpiDontChunkBigData.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxPDpiDontChunkBigData.Location = new System.Drawing.Point(50, 220);
+            this.CustomCheckBoxPDpiDontChunkBigData.Location = new System.Drawing.Point(50, 230);
             this.CustomCheckBoxPDpiDontChunkBigData.Name = "CustomCheckBoxPDpiDontChunkBigData";
             this.CustomCheckBoxPDpiDontChunkBigData.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxPDpiDontChunkBigData.Size = new System.Drawing.Size(182, 17);
@@ -996,7 +1073,7 @@
             this.CustomCheckBoxPDpiFragModeRandom.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxPDpiFragModeRandom.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxPDpiFragModeRandom.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxPDpiFragModeRandom.Location = new System.Drawing.Point(285, 180);
+            this.CustomCheckBoxPDpiFragModeRandom.Location = new System.Drawing.Point(285, 150);
             this.CustomCheckBoxPDpiFragModeRandom.Name = "CustomCheckBoxPDpiFragModeRandom";
             this.CustomCheckBoxPDpiFragModeRandom.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxPDpiFragModeRandom.Size = new System.Drawing.Size(101, 17);
@@ -1025,7 +1102,7 @@
             this.CustomNumericUpDownPDpiDataLength.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownPDpiDataLength.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownPDpiDataLength.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownPDpiDataLength.Location = new System.Drawing.Point(159, 138);
+            this.CustomNumericUpDownPDpiDataLength.Location = new System.Drawing.Point(159, 108);
             this.CustomNumericUpDownPDpiDataLength.Maximum = new decimal(new int[] {
             65536,
             0,
@@ -1040,7 +1117,7 @@
             this.CustomNumericUpDownPDpiDataLength.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownPDpiDataLength.TabIndex = 31;
             this.CustomNumericUpDownPDpiDataLength.Value = new decimal(new int[] {
-            60,
+            100,
             0,
             0,
             0});
@@ -1053,7 +1130,7 @@
             this.CustomLabelPDpiDpiInfo1.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelPDpiDpiInfo1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelPDpiDpiInfo1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelPDpiDpiInfo1.Location = new System.Drawing.Point(50, 140);
+            this.CustomLabelPDpiDpiInfo1.Location = new System.Drawing.Point(50, 110);
             this.CustomLabelPDpiDpiInfo1.Name = "CustomLabelPDpiDpiInfo1";
             this.CustomLabelPDpiDpiInfo1.RoundedCorners = 0;
             this.CustomLabelPDpiDpiInfo1.Size = new System.Drawing.Size(107, 15);
@@ -1065,7 +1142,7 @@
             this.CustomNumericUpDownPDpiFragmentSize.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownPDpiFragmentSize.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownPDpiFragmentSize.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownPDpiFragmentSize.Location = new System.Drawing.Point(333, 138);
+            this.CustomNumericUpDownPDpiFragmentSize.Location = new System.Drawing.Point(335, 108);
             this.CustomNumericUpDownPDpiFragmentSize.Maximum = new decimal(new int[] {
             65536,
             0,
@@ -1093,7 +1170,7 @@
             this.CustomLabelPDpiDpiInfo2.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelPDpiDpiInfo2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelPDpiDpiInfo2.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelPDpiDpiInfo2.Location = new System.Drawing.Point(218, 140);
+            this.CustomLabelPDpiDpiInfo2.Location = new System.Drawing.Point(220, 110);
             this.CustomLabelPDpiDpiInfo2.Name = "CustomLabelPDpiDpiInfo2";
             this.CustomLabelPDpiDpiInfo2.RoundedCorners = 0;
             this.CustomLabelPDpiDpiInfo2.Size = new System.Drawing.Size(110, 15);
@@ -1107,7 +1184,7 @@
             this.CustomLabelShareSeparator1.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelShareSeparator1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelShareSeparator1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelShareSeparator1.Location = new System.Drawing.Point(20, 89);
+            this.CustomLabelShareSeparator1.Location = new System.Drawing.Point(20, 65);
             this.CustomLabelShareSeparator1.Name = "CustomLabelShareSeparator1";
             this.CustomLabelShareSeparator1.RoundedCorners = 0;
             this.CustomLabelShareSeparator1.Size = new System.Drawing.Size(609, 1);
@@ -1119,7 +1196,7 @@
             this.CustomCheckBoxHTTPProxyEventShowRequest.BorderColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxHTTPProxyEventShowRequest.CheckColor = System.Drawing.Color.Blue;
             this.CustomCheckBoxHTTPProxyEventShowRequest.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxHTTPProxyEventShowRequest.Location = new System.Drawing.Point(25, 55);
+            this.CustomCheckBoxHTTPProxyEventShowRequest.Location = new System.Drawing.Point(25, 40);
             this.CustomCheckBoxHTTPProxyEventShowRequest.Name = "CustomCheckBoxHTTPProxyEventShowRequest";
             this.CustomCheckBoxHTTPProxyEventShowRequest.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxHTTPProxyEventShowRequest.Size = new System.Drawing.Size(135, 17);
@@ -1132,7 +1209,7 @@
             this.CustomNumericUpDownPDpiFragmentChunks.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownPDpiFragmentChunks.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownPDpiFragmentChunks.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownPDpiFragmentChunks.Location = new System.Drawing.Point(218, 178);
+            this.CustomNumericUpDownPDpiFragmentChunks.Location = new System.Drawing.Point(218, 148);
             this.CustomNumericUpDownPDpiFragmentChunks.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -1144,10 +1221,10 @@
             0,
             0});
             this.CustomNumericUpDownPDpiFragmentChunks.Name = "CustomNumericUpDownPDpiFragmentChunks";
-            this.CustomNumericUpDownPDpiFragmentChunks.Size = new System.Drawing.Size(47, 23);
+            this.CustomNumericUpDownPDpiFragmentChunks.Size = new System.Drawing.Size(53, 23);
             this.CustomNumericUpDownPDpiFragmentChunks.TabIndex = 19;
             this.CustomNumericUpDownPDpiFragmentChunks.Value = new decimal(new int[] {
-            60,
+            100,
             0,
             0,
             0});
@@ -1160,7 +1237,7 @@
             this.CustomLabelPDpiDpiInfo3.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelPDpiDpiInfo3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelPDpiDpiInfo3.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelPDpiDpiInfo3.Location = new System.Drawing.Point(50, 180);
+            this.CustomLabelPDpiDpiInfo3.Location = new System.Drawing.Point(50, 150);
             this.CustomLabelPDpiDpiInfo3.Name = "CustomLabelPDpiDpiInfo3";
             this.CustomLabelPDpiDpiInfo3.RoundedCorners = 0;
             this.CustomLabelPDpiDpiInfo3.Size = new System.Drawing.Size(162, 15);
@@ -1175,7 +1252,7 @@
             this.CustomCheckBoxPDpiEnableDpiBypass.Checked = true;
             this.CustomCheckBoxPDpiEnableDpiBypass.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxPDpiEnableDpiBypass.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxPDpiEnableDpiBypass.Location = new System.Drawing.Point(25, 110);
+            this.CustomCheckBoxPDpiEnableDpiBypass.Location = new System.Drawing.Point(25, 80);
             this.CustomCheckBoxPDpiEnableDpiBypass.Name = "CustomCheckBoxPDpiEnableDpiBypass";
             this.CustomCheckBoxPDpiEnableDpiBypass.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxPDpiEnableDpiBypass.Size = new System.Drawing.Size(120, 17);
@@ -2159,7 +2236,7 @@
             this.CustomLabelSettingInfoWorkingMode2.Location = new System.Drawing.Point(50, 334);
             this.CustomLabelSettingInfoWorkingMode2.Name = "CustomLabelSettingInfoWorkingMode2";
             this.CustomLabelSettingInfoWorkingMode2.RoundedCorners = 0;
-            this.CustomLabelSettingInfoWorkingMode2.Size = new System.Drawing.Size(264, 17);
+            this.CustomLabelSettingInfoWorkingMode2.Size = new System.Drawing.Size(262, 15);
             this.CustomLabelSettingInfoWorkingMode2.TabIndex = 3;
             this.CustomLabelSettingInfoWorkingMode2.Text = "* Reconnect is require for changes to take effect.";
             // 
@@ -2205,7 +2282,7 @@
             this.CustomLabelSettingInfoWorkingMode1.Location = new System.Drawing.Point(50, 35);
             this.CustomLabelSettingInfoWorkingMode1.Name = "CustomLabelSettingInfoWorkingMode1";
             this.CustomLabelSettingInfoWorkingMode1.RoundedCorners = 0;
-            this.CustomLabelSettingInfoWorkingMode1.Size = new System.Drawing.Size(396, 32);
+            this.CustomLabelSettingInfoWorkingMode1.Size = new System.Drawing.Size(394, 30);
             this.CustomLabelSettingInfoWorkingMode1.TabIndex = 0;
             this.CustomLabelSettingInfoWorkingMode1.Text = "Legacy DNS Server: You can set and unset DNS easily.\r\nDNS Over HTTPS Server: You " +
     "need to install certificate and set it manually.";
@@ -2576,7 +2653,7 @@
             0,
             0});
             this.CustomNumericUpDownSettingMaxServers.Name = "CustomNumericUpDownSettingMaxServers";
-            this.CustomNumericUpDownSettingMaxServers.Size = new System.Drawing.Size(47, 23);
+            this.CustomNumericUpDownSettingMaxServers.Size = new System.Drawing.Size(45, 23);
             this.CustomNumericUpDownSettingMaxServers.TabIndex = 7;
             this.CustomNumericUpDownSettingMaxServers.Value = new decimal(new int[] {
             5,
@@ -2733,7 +2810,7 @@
             // TabPageSettingsShare
             // 
             this.TabPageSettingsShare.BackColor = System.Drawing.Color.Transparent;
-            this.TabPageSettingsShare.Controls.Add(this.SplitContainerSettingHTTPProxy);
+            this.TabPageSettingsShare.Controls.Add(this.CustomTabControlSettingHttpProxy);
             this.TabPageSettingsShare.Location = new System.Drawing.Point(94, 4);
             this.TabPageSettingsShare.Name = "TabPageSettingsShare";
             this.TabPageSettingsShare.Padding = new System.Windows.Forms.Padding(3);
@@ -2742,41 +2819,154 @@
             this.TabPageSettingsShare.Tag = 4;
             this.TabPageSettingsShare.Text = "Share";
             // 
-            // SplitContainerSettingHTTPProxy
+            // CustomTabControlSettingHttpProxy
             // 
-            this.SplitContainerSettingHTTPProxy.Cursor = System.Windows.Forms.Cursors.Arrow;
-            this.SplitContainerSettingHTTPProxy.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.SplitContainerSettingHTTPProxy.IsSplitterFixed = true;
-            this.SplitContainerSettingHTTPProxy.Location = new System.Drawing.Point(3, 3);
-            this.SplitContainerSettingHTTPProxy.Name = "SplitContainerSettingHTTPProxy";
-            this.SplitContainerSettingHTTPProxy.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            this.CustomTabControlSettingHttpProxy.BorderColor = System.Drawing.Color.Blue;
+            this.CustomTabControlSettingHttpProxy.Controls.Add(this.TabPageSettingHttpProxyBasic);
+            this.CustomTabControlSettingHttpProxy.Controls.Add(this.TabPageSettingHttpProxyAdvanced);
+            this.CustomTabControlSettingHttpProxy.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.CustomTabControlSettingHttpProxy.HideTabHeader = false;
+            this.CustomTabControlSettingHttpProxy.Location = new System.Drawing.Point(3, 3);
+            this.CustomTabControlSettingHttpProxy.Name = "CustomTabControlSettingHttpProxy";
+            this.CustomTabControlSettingHttpProxy.SelectedIndex = 0;
+            this.CustomTabControlSettingHttpProxy.Size = new System.Drawing.Size(582, 351);
+            this.CustomTabControlSettingHttpProxy.TabIndex = 49;
+            this.CustomTabControlSettingHttpProxy.Tag = 0;
             // 
-            // SplitContainerSettingHTTPProxy.Panel1
+            // TabPageSettingHttpProxyBasic
             // 
-            this.SplitContainerSettingHTTPProxy.Panel1.Controls.Add(this.CustomGroupBoxSettingHTTPProxyBasic);
+            this.TabPageSettingHttpProxyBasic.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomNumericUpDownSettingHTTPProxyUpstreamPort);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomTextBoxSettingHTTPProxyUpstreamHost);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomLabelSettingHTTPProxyUpstreamPort);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomLabelSettingHTTPProxyUpstreamHost);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomComboBoxSettingHttpProxyUpstreamMode);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomCheckBoxSettingHTTPProxyUpstream);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomLabelSettingHTTPProxyPort);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomCheckBoxSettingProxyBlockPort80);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomLabelSettingHTTPProxyHandleRequests);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomNumericUpDownSettingHTTPProxyPort);
+            this.TabPageSettingHttpProxyBasic.Controls.Add(this.CustomNumericUpDownSettingHTTPProxyHandleRequests);
+            this.TabPageSettingHttpProxyBasic.Location = new System.Drawing.Point(4, 25);
+            this.TabPageSettingHttpProxyBasic.Name = "TabPageSettingHttpProxyBasic";
+            this.TabPageSettingHttpProxyBasic.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageSettingHttpProxyBasic.Size = new System.Drawing.Size(574, 322);
+            this.TabPageSettingHttpProxyBasic.TabIndex = 0;
+            this.TabPageSettingHttpProxyBasic.Tag = 0;
+            this.TabPageSettingHttpProxyBasic.Text = "Basic";
             // 
-            // SplitContainerSettingHTTPProxy.Panel2
+            // CustomNumericUpDownSettingHTTPProxyUpstreamPort
             // 
-            this.SplitContainerSettingHTTPProxy.Panel2.Controls.Add(this.CustomGroupBoxSettingHTTPProxyAdvanced);
-            this.SplitContainerSettingHTTPProxy.Size = new System.Drawing.Size(582, 351);
-            this.SplitContainerSettingHTTPProxy.SplitterDistance = 70;
-            this.SplitContainerSettingHTTPProxy.TabIndex = 48;
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.BackColor = System.Drawing.Color.DimGray;
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.BorderColor = System.Drawing.Color.Blue;
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.Location = new System.Drawing.Point(370, 115);
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.Maximum = new decimal(new int[] {
+            65535,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.Name = "CustomNumericUpDownSettingHTTPProxyUpstreamPort";
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.Size = new System.Drawing.Size(55, 23);
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.TabIndex = 51;
+            this.CustomNumericUpDownSettingHTTPProxyUpstreamPort.Value = new decimal(new int[] {
+            1090,
+            0,
+            0,
+            0});
             // 
-            // CustomGroupBoxSettingHTTPProxyBasic
+            // CustomTextBoxSettingHTTPProxyUpstreamHost
             // 
-            this.CustomGroupBoxSettingHTTPProxyBasic.BorderColor = System.Drawing.Color.Blue;
-            this.CustomGroupBoxSettingHTTPProxyBasic.Controls.Add(this.CustomLabelSettingHTTPProxyPort);
-            this.CustomGroupBoxSettingHTTPProxyBasic.Controls.Add(this.CustomCheckBoxSettingProxyBlockPort80);
-            this.CustomGroupBoxSettingHTTPProxyBasic.Controls.Add(this.CustomNumericUpDownSettingHTTPProxyPort);
-            this.CustomGroupBoxSettingHTTPProxyBasic.Controls.Add(this.CustomNumericUpDownSettingHTTPProxyHandleRequests);
-            this.CustomGroupBoxSettingHTTPProxyBasic.Controls.Add(this.CustomLabelSettingHTTPProxyHandleRequests);
-            this.CustomGroupBoxSettingHTTPProxyBasic.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.CustomGroupBoxSettingHTTPProxyBasic.Location = new System.Drawing.Point(0, 0);
-            this.CustomGroupBoxSettingHTTPProxyBasic.Name = "CustomGroupBoxSettingHTTPProxyBasic";
-            this.CustomGroupBoxSettingHTTPProxyBasic.Size = new System.Drawing.Size(582, 70);
-            this.CustomGroupBoxSettingHTTPProxyBasic.TabIndex = 46;
-            this.CustomGroupBoxSettingHTTPProxyBasic.TabStop = false;
-            this.CustomGroupBoxSettingHTTPProxyBasic.Text = "Basic";
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.AcceptsReturn = false;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.AcceptsTab = false;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.BackColor = System.Drawing.Color.DimGray;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.Border = true;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.BorderColor = System.Drawing.Color.Blue;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.BorderSize = 1;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.ForeColor = System.Drawing.Color.White;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.HideSelection = true;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.Location = new System.Drawing.Point(156, 115);
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.MaxLength = 32767;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.Multiline = false;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.Name = "CustomTextBoxSettingHTTPProxyUpstreamHost";
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.ReadOnly = false;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.ShortcutsEnabled = true;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.Size = new System.Drawing.Size(150, 23);
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.TabIndex = 0;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.Texts = "127.0.0.1";
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.UnderlinedStyle = false;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.UsePasswordChar = false;
+            this.CustomTextBoxSettingHTTPProxyUpstreamHost.WordWrap = true;
+            // 
+            // CustomLabelSettingHTTPProxyUpstreamPort
+            // 
+            this.CustomLabelSettingHTTPProxyUpstreamPort.AutoSize = true;
+            this.CustomLabelSettingHTTPProxyUpstreamPort.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSettingHTTPProxyUpstreamPort.Border = false;
+            this.CustomLabelSettingHTTPProxyUpstreamPort.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSettingHTTPProxyUpstreamPort.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSettingHTTPProxyUpstreamPort.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSettingHTTPProxyUpstreamPort.Location = new System.Drawing.Point(330, 118);
+            this.CustomLabelSettingHTTPProxyUpstreamPort.Name = "CustomLabelSettingHTTPProxyUpstreamPort";
+            this.CustomLabelSettingHTTPProxyUpstreamPort.RoundedCorners = 0;
+            this.CustomLabelSettingHTTPProxyUpstreamPort.Size = new System.Drawing.Size(32, 15);
+            this.CustomLabelSettingHTTPProxyUpstreamPort.TabIndex = 49;
+            this.CustomLabelSettingHTTPProxyUpstreamPort.Text = "Port:";
+            // 
+            // CustomLabelSettingHTTPProxyUpstreamHost
+            // 
+            this.CustomLabelSettingHTTPProxyUpstreamHost.AutoSize = true;
+            this.CustomLabelSettingHTTPProxyUpstreamHost.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSettingHTTPProxyUpstreamHost.Border = false;
+            this.CustomLabelSettingHTTPProxyUpstreamHost.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSettingHTTPProxyUpstreamHost.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSettingHTTPProxyUpstreamHost.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSettingHTTPProxyUpstreamHost.Location = new System.Drawing.Point(113, 118);
+            this.CustomLabelSettingHTTPProxyUpstreamHost.Name = "CustomLabelSettingHTTPProxyUpstreamHost";
+            this.CustomLabelSettingHTTPProxyUpstreamHost.RoundedCorners = 0;
+            this.CustomLabelSettingHTTPProxyUpstreamHost.Size = new System.Drawing.Size(35, 15);
+            this.CustomLabelSettingHTTPProxyUpstreamHost.TabIndex = 48;
+            this.CustomLabelSettingHTTPProxyUpstreamHost.Text = "Host:";
+            // 
+            // CustomComboBoxSettingHttpProxyUpstreamMode
+            // 
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.BackColor = System.Drawing.Color.DimGray;
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.BorderColor = System.Drawing.Color.Blue;
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.ForeColor = System.Drawing.Color.White;
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.FormattingEnabled = true;
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.ItemHeight = 17;
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.Items.AddRange(new object[] {
+            "HTTP",
+            "SOCKS5"});
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.Location = new System.Drawing.Point(25, 115);
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.Name = "CustomComboBoxSettingHttpProxyUpstreamMode";
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.SelectionColor = System.Drawing.Color.DodgerBlue;
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.Size = new System.Drawing.Size(70, 23);
+            this.CustomComboBoxSettingHttpProxyUpstreamMode.TabIndex = 47;
+            // 
+            // CustomCheckBoxSettingHTTPProxyUpstream
+            // 
+            this.CustomCheckBoxSettingHTTPProxyUpstream.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxSettingHTTPProxyUpstream.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyUpstream.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyUpstream.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxSettingHTTPProxyUpstream.Location = new System.Drawing.Point(6, 80);
+            this.CustomCheckBoxSettingHTTPProxyUpstream.Name = "CustomCheckBoxSettingHTTPProxyUpstream";
+            this.CustomCheckBoxSettingHTTPProxyUpstream.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxSettingHTTPProxyUpstream.Size = new System.Drawing.Size(213, 17);
+            this.CustomCheckBoxSettingHTTPProxyUpstream.TabIndex = 46;
+            this.CustomCheckBoxSettingHTTPProxyUpstream.Text = "Use upstream proxy for blocked IPs";
+            this.CustomCheckBoxSettingHTTPProxyUpstream.UseVisualStyleBackColor = false;
             // 
             // CustomLabelSettingHTTPProxyPort
             // 
@@ -2786,10 +2976,10 @@
             this.CustomLabelSettingHTTPProxyPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingHTTPProxyPort.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingHTTPProxyPort.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingHTTPProxyPort.Location = new System.Drawing.Point(6, 30);
+            this.CustomLabelSettingHTTPProxyPort.Location = new System.Drawing.Point(6, 27);
             this.CustomLabelSettingHTTPProxyPort.Name = "CustomLabelSettingHTTPProxyPort";
             this.CustomLabelSettingHTTPProxyPort.RoundedCorners = 0;
-            this.CustomLabelSettingHTTPProxyPort.Size = new System.Drawing.Size(101, 17);
+            this.CustomLabelSettingHTTPProxyPort.Size = new System.Drawing.Size(99, 15);
             this.CustomLabelSettingHTTPProxyPort.TabIndex = 42;
             this.CustomLabelSettingHTTPProxyPort.Text = "HTTP Proxy. Port:";
             // 
@@ -2801,7 +2991,7 @@
             this.CustomCheckBoxSettingProxyBlockPort80.Checked = true;
             this.CustomCheckBoxSettingProxyBlockPort80.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CustomCheckBoxSettingProxyBlockPort80.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingProxyBlockPort80.Location = new System.Drawing.Point(390, 30);
+            this.CustomCheckBoxSettingProxyBlockPort80.Location = new System.Drawing.Point(390, 27);
             this.CustomCheckBoxSettingProxyBlockPort80.Name = "CustomCheckBoxSettingProxyBlockPort80";
             this.CustomCheckBoxSettingProxyBlockPort80.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomCheckBoxSettingProxyBlockPort80.Size = new System.Drawing.Size(93, 17);
@@ -2809,12 +2999,27 @@
             this.CustomCheckBoxSettingProxyBlockPort80.Text = "Block port 80";
             this.CustomCheckBoxSettingProxyBlockPort80.UseVisualStyleBackColor = false;
             // 
+            // CustomLabelSettingHTTPProxyHandleRequests
+            // 
+            this.CustomLabelSettingHTTPProxyHandleRequests.AutoSize = true;
+            this.CustomLabelSettingHTTPProxyHandleRequests.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSettingHTTPProxyHandleRequests.Border = false;
+            this.CustomLabelSettingHTTPProxyHandleRequests.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSettingHTTPProxyHandleRequests.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSettingHTTPProxyHandleRequests.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSettingHTTPProxyHandleRequests.Location = new System.Drawing.Point(190, 27);
+            this.CustomLabelSettingHTTPProxyHandleRequests.Name = "CustomLabelSettingHTTPProxyHandleRequests";
+            this.CustomLabelSettingHTTPProxyHandleRequests.RoundedCorners = 0;
+            this.CustomLabelSettingHTTPProxyHandleRequests.Size = new System.Drawing.Size(95, 15);
+            this.CustomLabelSettingHTTPProxyHandleRequests.TabIndex = 43;
+            this.CustomLabelSettingHTTPProxyHandleRequests.Text = "Handle requests:";
+            // 
             // CustomNumericUpDownSettingHTTPProxyPort
             // 
             this.CustomNumericUpDownSettingHTTPProxyPort.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownSettingHTTPProxyPort.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownSettingHTTPProxyPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownSettingHTTPProxyPort.Location = new System.Drawing.Point(113, 28);
+            this.CustomNumericUpDownSettingHTTPProxyPort.Location = new System.Drawing.Point(113, 25);
             this.CustomNumericUpDownSettingHTTPProxyPort.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -2826,7 +3031,7 @@
             0,
             0});
             this.CustomNumericUpDownSettingHTTPProxyPort.Name = "CustomNumericUpDownSettingHTTPProxyPort";
-            this.CustomNumericUpDownSettingHTTPProxyPort.Size = new System.Drawing.Size(53, 23);
+            this.CustomNumericUpDownSettingHTTPProxyPort.Size = new System.Drawing.Size(55, 23);
             this.CustomNumericUpDownSettingHTTPProxyPort.TabIndex = 41;
             this.CustomNumericUpDownSettingHTTPProxyPort.Value = new decimal(new int[] {
             8080,
@@ -2839,7 +3044,7 @@
             this.CustomNumericUpDownSettingHTTPProxyHandleRequests.BackColor = System.Drawing.Color.DimGray;
             this.CustomNumericUpDownSettingHTTPProxyHandleRequests.BorderColor = System.Drawing.Color.Blue;
             this.CustomNumericUpDownSettingHTTPProxyHandleRequests.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CustomNumericUpDownSettingHTTPProxyHandleRequests.Location = new System.Drawing.Point(297, 28);
+            this.CustomNumericUpDownSettingHTTPProxyHandleRequests.Location = new System.Drawing.Point(297, 25);
             this.CustomNumericUpDownSettingHTTPProxyHandleRequests.Maximum = new decimal(new int[] {
             50000,
             0,
@@ -2851,7 +3056,7 @@
             0,
             0});
             this.CustomNumericUpDownSettingHTTPProxyHandleRequests.Name = "CustomNumericUpDownSettingHTTPProxyHandleRequests";
-            this.CustomNumericUpDownSettingHTTPProxyHandleRequests.Size = new System.Drawing.Size(53, 23);
+            this.CustomNumericUpDownSettingHTTPProxyHandleRequests.Size = new System.Drawing.Size(55, 23);
             this.CustomNumericUpDownSettingHTTPProxyHandleRequests.TabIndex = 44;
             this.CustomNumericUpDownSettingHTTPProxyHandleRequests.Value = new decimal(new int[] {
             2000,
@@ -2859,49 +3064,34 @@
             0,
             0});
             // 
-            // CustomLabelSettingHTTPProxyHandleRequests
+            // TabPageSettingHttpProxyAdvanced
             // 
-            this.CustomLabelSettingHTTPProxyHandleRequests.AutoSize = true;
-            this.CustomLabelSettingHTTPProxyHandleRequests.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelSettingHTTPProxyHandleRequests.Border = false;
-            this.CustomLabelSettingHTTPProxyHandleRequests.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelSettingHTTPProxyHandleRequests.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelSettingHTTPProxyHandleRequests.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingHTTPProxyHandleRequests.Location = new System.Drawing.Point(190, 30);
-            this.CustomLabelSettingHTTPProxyHandleRequests.Name = "CustomLabelSettingHTTPProxyHandleRequests";
-            this.CustomLabelSettingHTTPProxyHandleRequests.RoundedCorners = 0;
-            this.CustomLabelSettingHTTPProxyHandleRequests.Size = new System.Drawing.Size(97, 17);
-            this.CustomLabelSettingHTTPProxyHandleRequests.TabIndex = 43;
-            this.CustomLabelSettingHTTPProxyHandleRequests.Text = "Handle requests:";
-            // 
-            // CustomGroupBoxSettingHTTPProxyAdvanced
-            // 
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.BorderColor = System.Drawing.Color.Blue;
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomButtonSettingHTTPProxyBlackWhiteList);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomLabelSettingHTTPProxyBlackWhiteList);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomLabelSettingShareSeparator2);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomLabelSettingShareSeparator1);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomButtonSettingHTTPProxyFakeDNS);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomLabelSettingHTTPProxyFakeDNS);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomTextBoxSettingHTTPProxyCfCleanIP);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomCheckBoxSettingHTTPProxyCfCleanIP);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Controls.Add(this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Location = new System.Drawing.Point(0, 0);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Name = "CustomGroupBoxSettingHTTPProxyAdvanced";
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Size = new System.Drawing.Size(582, 277);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.TabIndex = 47;
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.TabStop = false;
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.Text = "Advanced";
+            this.TabPageSettingHttpProxyAdvanced.BackColor = System.Drawing.Color.Transparent;
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomButtonSettingHTTPProxyBlackWhiteList);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomLabelSettingHTTPProxyBlackWhiteList);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomCheckBoxSettingHTTPProxyCfCleanIP);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomLabelSettingShareSeparator2);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomTextBoxSettingHTTPProxyCfCleanIP);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomLabelSettingShareSeparator1);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomLabelSettingHTTPProxyFakeDNS);
+            this.TabPageSettingHttpProxyAdvanced.Controls.Add(this.CustomButtonSettingHTTPProxyFakeDNS);
+            this.TabPageSettingHttpProxyAdvanced.Location = new System.Drawing.Point(4, 25);
+            this.TabPageSettingHttpProxyAdvanced.Name = "TabPageSettingHttpProxyAdvanced";
+            this.TabPageSettingHttpProxyAdvanced.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageSettingHttpProxyAdvanced.Size = new System.Drawing.Size(574, 322);
+            this.TabPageSettingHttpProxyAdvanced.TabIndex = 1;
+            this.TabPageSettingHttpProxyAdvanced.Tag = 1;
+            this.TabPageSettingHttpProxyAdvanced.Text = "Advanced";
             // 
             // CustomButtonSettingHTTPProxyBlackWhiteList
             // 
             this.CustomButtonSettingHTTPProxyBlackWhiteList.AutoSize = true;
             this.CustomButtonSettingHTTPProxyBlackWhiteList.BorderColor = System.Drawing.Color.Blue;
             this.CustomButtonSettingHTTPProxyBlackWhiteList.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonSettingHTTPProxyBlackWhiteList.Location = new System.Drawing.Point(224, 194);
+            this.CustomButtonSettingHTTPProxyBlackWhiteList.Location = new System.Drawing.Point(224, 179);
             this.CustomButtonSettingHTTPProxyBlackWhiteList.Name = "CustomButtonSettingHTTPProxyBlackWhiteList";
             this.CustomButtonSettingHTTPProxyBlackWhiteList.RoundedCorners = 0;
             this.CustomButtonSettingHTTPProxyBlackWhiteList.SelectionColor = System.Drawing.Color.LightBlue;
@@ -2911,6 +3101,20 @@
             this.CustomButtonSettingHTTPProxyBlackWhiteList.UseVisualStyleBackColor = true;
             this.CustomButtonSettingHTTPProxyBlackWhiteList.Click += new System.EventHandler(this.CustomButtonSettingHTTPProxyBlackWhiteList_Click);
             // 
+            // CustomCheckBoxSettingHTTPProxyEnableFakeProxy
+            // 
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Location = new System.Drawing.Point(6, 15);
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Name = "CustomCheckBoxSettingHTTPProxyEnableFakeProxy";
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Size = new System.Drawing.Size(119, 17);
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.TabIndex = 0;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Text = "Enable Fake Proxy";
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.UseVisualStyleBackColor = false;
+            // 
             // CustomLabelSettingHTTPProxyBlackWhiteList
             // 
             this.CustomLabelSettingHTTPProxyBlackWhiteList.AutoSize = true;
@@ -2919,12 +3123,26 @@
             this.CustomLabelSettingHTTPProxyBlackWhiteList.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingHTTPProxyBlackWhiteList.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingHTTPProxyBlackWhiteList.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingHTTPProxyBlackWhiteList.Location = new System.Drawing.Point(22, 200);
+            this.CustomLabelSettingHTTPProxyBlackWhiteList.Location = new System.Drawing.Point(22, 185);
             this.CustomLabelSettingHTTPProxyBlackWhiteList.Name = "CustomLabelSettingHTTPProxyBlackWhiteList";
             this.CustomLabelSettingHTTPProxyBlackWhiteList.RoundedCorners = 0;
-            this.CustomLabelSettingHTTPProxyBlackWhiteList.Size = new System.Drawing.Size(148, 32);
+            this.CustomLabelSettingHTTPProxyBlackWhiteList.Size = new System.Drawing.Size(146, 30);
             this.CustomLabelSettingHTTPProxyBlackWhiteList.TabIndex = 10;
             this.CustomLabelSettingHTTPProxyBlackWhiteList.Text = "Each line one domain. e.g:\r\n google.com";
+            // 
+            // CustomCheckBoxSettingHTTPProxyCfCleanIP
+            // 
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.Location = new System.Drawing.Point(6, 45);
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.Name = "CustomCheckBoxSettingHTTPProxyCfCleanIP";
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.Size = new System.Drawing.Size(232, 17);
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.TabIndex = 1;
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.Text = "Redirect all Cloudflare IPs to a clean IP:";
+            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.UseVisualStyleBackColor = false;
             // 
             // CustomLabelSettingShareSeparator2
             // 
@@ -2933,82 +3151,11 @@
             this.CustomLabelSettingShareSeparator2.BorderColor = System.Drawing.Color.Blue;
             this.CustomLabelSettingShareSeparator2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomLabelSettingShareSeparator2.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingShareSeparator2.Location = new System.Drawing.Point(12, 169);
+            this.CustomLabelSettingShareSeparator2.Location = new System.Drawing.Point(12, 154);
             this.CustomLabelSettingShareSeparator2.Name = "CustomLabelSettingShareSeparator2";
             this.CustomLabelSettingShareSeparator2.RoundedCorners = 0;
             this.CustomLabelSettingShareSeparator2.Size = new System.Drawing.Size(550, 1);
             this.CustomLabelSettingShareSeparator2.TabIndex = 9;
-            // 
-            // CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList
-            // 
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.BackColor = System.Drawing.Color.DimGray;
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.BorderColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.CheckColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.Location = new System.Drawing.Point(6, 180);
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.Name = "CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList";
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.Size = new System.Drawing.Size(110, 17);
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.TabIndex = 8;
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.Text = "Enable Black List";
-            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.UseVisualStyleBackColor = false;
-            // 
-            // CustomLabelSettingShareSeparator1
-            // 
-            this.CustomLabelSettingShareSeparator1.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelSettingShareSeparator1.Border = true;
-            this.CustomLabelSettingShareSeparator1.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelSettingShareSeparator1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelSettingShareSeparator1.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingShareSeparator1.Location = new System.Drawing.Point(12, 90);
-            this.CustomLabelSettingShareSeparator1.Name = "CustomLabelSettingShareSeparator1";
-            this.CustomLabelSettingShareSeparator1.RoundedCorners = 0;
-            this.CustomLabelSettingShareSeparator1.Size = new System.Drawing.Size(550, 1);
-            this.CustomLabelSettingShareSeparator1.TabIndex = 6;
-            // 
-            // CustomButtonSettingHTTPProxyFakeDNS
-            // 
-            this.CustomButtonSettingHTTPProxyFakeDNS.AutoSize = true;
-            this.CustomButtonSettingHTTPProxyFakeDNS.BorderColor = System.Drawing.Color.Blue;
-            this.CustomButtonSettingHTTPProxyFakeDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonSettingHTTPProxyFakeDNS.Location = new System.Drawing.Point(210, 115);
-            this.CustomButtonSettingHTTPProxyFakeDNS.Name = "CustomButtonSettingHTTPProxyFakeDNS";
-            this.CustomButtonSettingHTTPProxyFakeDNS.RoundedCorners = 0;
-            this.CustomButtonSettingHTTPProxyFakeDNS.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonSettingHTTPProxyFakeDNS.Size = new System.Drawing.Size(120, 27);
-            this.CustomButtonSettingHTTPProxyFakeDNS.TabIndex = 5;
-            this.CustomButtonSettingHTTPProxyFakeDNS.Text = "Edit Fake DNS rules";
-            this.CustomButtonSettingHTTPProxyFakeDNS.UseVisualStyleBackColor = true;
-            this.CustomButtonSettingHTTPProxyFakeDNS.Click += new System.EventHandler(this.CustomButtonSettingHTTPProxyFakeDNS_Click);
-            // 
-            // CustomLabelSettingHTTPProxyFakeDNS
-            // 
-            this.CustomLabelSettingHTTPProxyFakeDNS.AutoSize = true;
-            this.CustomLabelSettingHTTPProxyFakeDNS.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelSettingHTTPProxyFakeDNS.Border = false;
-            this.CustomLabelSettingHTTPProxyFakeDNS.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelSettingHTTPProxyFakeDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelSettingHTTPProxyFakeDNS.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelSettingHTTPProxyFakeDNS.Location = new System.Drawing.Point(22, 125);
-            this.CustomLabelSettingHTTPProxyFakeDNS.Name = "CustomLabelSettingHTTPProxyFakeDNS";
-            this.CustomLabelSettingHTTPProxyFakeDNS.RoundedCorners = 0;
-            this.CustomLabelSettingHTTPProxyFakeDNS.Size = new System.Drawing.Size(134, 32);
-            this.CustomLabelSettingHTTPProxyFakeDNS.TabIndex = 4;
-            this.CustomLabelSettingHTTPProxyFakeDNS.Text = "Each line one rule. e.g:\r\n dns.google.com|8.8.8.8";
-            // 
-            // CustomCheckBoxSettingHTTPProxyEnableFakeDNS
-            // 
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.BackColor = System.Drawing.Color.DimGray;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.BorderColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.CheckColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.Location = new System.Drawing.Point(6, 105);
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.Name = "CustomCheckBoxSettingHTTPProxyEnableFakeDNS";
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.Size = new System.Drawing.Size(113, 17);
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.TabIndex = 3;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.Text = "Enable Fake DNS";
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.UseVisualStyleBackColor = false;
             // 
             // CustomTextBoxSettingHTTPProxyCfCleanIP
             // 
@@ -3022,7 +3169,7 @@
             this.CustomTextBoxSettingHTTPProxyCfCleanIP.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.CustomTextBoxSettingHTTPProxyCfCleanIP.ForeColor = System.Drawing.Color.White;
             this.CustomTextBoxSettingHTTPProxyCfCleanIP.HideSelection = true;
-            this.CustomTextBoxSettingHTTPProxyCfCleanIP.Location = new System.Drawing.Point(278, 58);
+            this.CustomTextBoxSettingHTTPProxyCfCleanIP.Location = new System.Drawing.Point(244, 43);
             this.CustomTextBoxSettingHTTPProxyCfCleanIP.MaxLength = 32767;
             this.CustomTextBoxSettingHTTPProxyCfCleanIP.Multiline = false;
             this.CustomTextBoxSettingHTTPProxyCfCleanIP.Name = "CustomTextBoxSettingHTTPProxyCfCleanIP";
@@ -3037,33 +3184,76 @@
             this.CustomTextBoxSettingHTTPProxyCfCleanIP.UsePasswordChar = false;
             this.CustomTextBoxSettingHTTPProxyCfCleanIP.WordWrap = true;
             // 
-            // CustomCheckBoxSettingHTTPProxyCfCleanIP
+            // CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList
             // 
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.BackColor = System.Drawing.Color.DimGray;
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.BorderColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.CheckColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.Location = new System.Drawing.Point(50, 60);
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.Name = "CustomCheckBoxSettingHTTPProxyCfCleanIP";
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.Size = new System.Drawing.Size(232, 17);
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.TabIndex = 1;
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.Text = "Redirect all Cloudflare IPs to a clean IP:";
-            this.CustomCheckBoxSettingHTTPProxyCfCleanIP.UseVisualStyleBackColor = false;
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.Location = new System.Drawing.Point(6, 165);
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.Name = "CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList";
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.Size = new System.Drawing.Size(110, 17);
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.TabIndex = 8;
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.Text = "Enable Black List";
+            this.CustomCheckBoxSettingHTTPProxyEnableBlackWhiteList.UseVisualStyleBackColor = false;
             // 
-            // CustomCheckBoxSettingHTTPProxyEnableFakeProxy
+            // CustomCheckBoxSettingHTTPProxyEnableFakeDNS
             // 
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.BackColor = System.Drawing.Color.DimGray;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.BorderColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.CheckColor = System.Drawing.Color.Blue;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.ForeColor = System.Drawing.Color.White;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Location = new System.Drawing.Point(6, 30);
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Name = "CustomCheckBoxSettingHTTPProxyEnableFakeProxy";
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Size = new System.Drawing.Size(119, 17);
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.TabIndex = 0;
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.Text = "Enable Fake Proxy";
-            this.CustomCheckBoxSettingHTTPProxyEnableFakeProxy.UseVisualStyleBackColor = false;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.Location = new System.Drawing.Point(6, 90);
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.Name = "CustomCheckBoxSettingHTTPProxyEnableFakeDNS";
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.Size = new System.Drawing.Size(113, 17);
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.TabIndex = 3;
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.Text = "Enable Fake DNS";
+            this.CustomCheckBoxSettingHTTPProxyEnableFakeDNS.UseVisualStyleBackColor = false;
+            // 
+            // CustomLabelSettingShareSeparator1
+            // 
+            this.CustomLabelSettingShareSeparator1.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSettingShareSeparator1.Border = true;
+            this.CustomLabelSettingShareSeparator1.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSettingShareSeparator1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSettingShareSeparator1.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSettingShareSeparator1.Location = new System.Drawing.Point(12, 75);
+            this.CustomLabelSettingShareSeparator1.Name = "CustomLabelSettingShareSeparator1";
+            this.CustomLabelSettingShareSeparator1.RoundedCorners = 0;
+            this.CustomLabelSettingShareSeparator1.Size = new System.Drawing.Size(550, 1);
+            this.CustomLabelSettingShareSeparator1.TabIndex = 6;
+            // 
+            // CustomLabelSettingHTTPProxyFakeDNS
+            // 
+            this.CustomLabelSettingHTTPProxyFakeDNS.AutoSize = true;
+            this.CustomLabelSettingHTTPProxyFakeDNS.BackColor = System.Drawing.Color.DimGray;
+            this.CustomLabelSettingHTTPProxyFakeDNS.Border = false;
+            this.CustomLabelSettingHTTPProxyFakeDNS.BorderColor = System.Drawing.Color.Blue;
+            this.CustomLabelSettingHTTPProxyFakeDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomLabelSettingHTTPProxyFakeDNS.ForeColor = System.Drawing.Color.White;
+            this.CustomLabelSettingHTTPProxyFakeDNS.Location = new System.Drawing.Point(22, 110);
+            this.CustomLabelSettingHTTPProxyFakeDNS.Name = "CustomLabelSettingHTTPProxyFakeDNS";
+            this.CustomLabelSettingHTTPProxyFakeDNS.RoundedCorners = 0;
+            this.CustomLabelSettingHTTPProxyFakeDNS.Size = new System.Drawing.Size(132, 30);
+            this.CustomLabelSettingHTTPProxyFakeDNS.TabIndex = 4;
+            this.CustomLabelSettingHTTPProxyFakeDNS.Text = "Each line one rule. e.g:\r\n dns.google.com|8.8.8.8";
+            // 
+            // CustomButtonSettingHTTPProxyFakeDNS
+            // 
+            this.CustomButtonSettingHTTPProxyFakeDNS.AutoSize = true;
+            this.CustomButtonSettingHTTPProxyFakeDNS.BorderColor = System.Drawing.Color.Blue;
+            this.CustomButtonSettingHTTPProxyFakeDNS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CustomButtonSettingHTTPProxyFakeDNS.Location = new System.Drawing.Point(210, 100);
+            this.CustomButtonSettingHTTPProxyFakeDNS.Name = "CustomButtonSettingHTTPProxyFakeDNS";
+            this.CustomButtonSettingHTTPProxyFakeDNS.RoundedCorners = 0;
+            this.CustomButtonSettingHTTPProxyFakeDNS.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomButtonSettingHTTPProxyFakeDNS.Size = new System.Drawing.Size(120, 27);
+            this.CustomButtonSettingHTTPProxyFakeDNS.TabIndex = 5;
+            this.CustomButtonSettingHTTPProxyFakeDNS.Text = "Edit Fake DNS rules";
+            this.CustomButtonSettingHTTPProxyFakeDNS.UseVisualStyleBackColor = true;
+            this.CustomButtonSettingHTTPProxyFakeDNS.Click += new System.EventHandler(this.CustomButtonSettingHTTPProxyFakeDNS_Click);
             // 
             // TabPageSettingsFakeProxy
             // 
@@ -4293,6 +4483,7 @@
             this.TabPageSetDNS.PerformLayout();
             this.TabPageShare.ResumeLayout(false);
             this.TabPageShare.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiAntiPatternOffset)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiFragDelay)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiDataLength)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownPDpiFragmentSize)).EndInit();
@@ -4328,16 +4519,14 @@
             this.TabPageSettingsSetUnsetDNS.ResumeLayout(false);
             this.TabPageSettingsSetUnsetDNS.PerformLayout();
             this.TabPageSettingsShare.ResumeLayout(false);
-            this.SplitContainerSettingHTTPProxy.Panel1.ResumeLayout(false);
-            this.SplitContainerSettingHTTPProxy.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.SplitContainerSettingHTTPProxy)).EndInit();
-            this.SplitContainerSettingHTTPProxy.ResumeLayout(false);
-            this.CustomGroupBoxSettingHTTPProxyBasic.ResumeLayout(false);
-            this.CustomGroupBoxSettingHTTPProxyBasic.PerformLayout();
+            this.CustomTabControlSettingHttpProxy.ResumeLayout(false);
+            this.TabPageSettingHttpProxyBasic.ResumeLayout(false);
+            this.TabPageSettingHttpProxyBasic.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingHTTPProxyUpstreamPort)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingHTTPProxyPort)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingHTTPProxyHandleRequests)).EndInit();
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.ResumeLayout(false);
-            this.CustomGroupBoxSettingHTTPProxyAdvanced.PerformLayout();
+            this.TabPageSettingHttpProxyAdvanced.ResumeLayout(false);
+            this.TabPageSettingHttpProxyAdvanced.PerformLayout();
             this.TabPageSettingsFakeProxy.ResumeLayout(false);
             this.TabPageSettingsFakeProxy.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.CustomNumericUpDownSettingFakeProxyPort)).EndInit();
@@ -4538,7 +4727,7 @@
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusLocalDoH;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusLocalDnsLatency;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusLocalDNS;
-        private CustomControls.CustomLabel CustomLabelCheckPercent;
+        private CustomControls.CustomLabel CustomLabelCheckDetail;
         private CustomControls.CustomRichTextBox CustomRichTextBoxStatusProxyRequests;
         private SplitContainer SplitContainerMain;
         private SplitContainer SplitContainerTop;
@@ -4559,9 +4748,6 @@
         private CustomControls.CustomButton CustomButtonSettingUninstallCertificate;
         private CustomControls.CustomLabel CustomLabelAboutCopyright;
         private CustomControls.CustomRadioButton CustomRadioButtonConnectFakeProxyDohViaProxyDPI;
-        private CustomControls.CustomGroupBox CustomGroupBoxSettingHTTPProxyBasic;
-        private CustomControls.CustomGroupBox CustomGroupBoxSettingHTTPProxyAdvanced;
-        private SplitContainer SplitContainerSettingHTTPProxy;
         private CustomControls.CustomCheckBox CustomCheckBoxSettingHTTPProxyEnableFakeProxy;
         private CustomControls.CustomTextBox CustomTextBoxSettingHTTPProxyCfCleanIP;
         private CustomControls.CustomCheckBox CustomCheckBoxSettingHTTPProxyCfCleanIP;
@@ -4583,5 +4769,18 @@
         private CustomControls.CustomLabel CustomLabelSettingHTTPProxyBlackWhiteList;
         private CustomControls.CustomLabel CustomLabelSettingShareSeparator2;
         private CustomControls.CustomButton CustomButtonSettingHTTPProxyBlackWhiteList;
+        private CustomControls.CustomButton CustomButtonWriteSavedServersDelay;
+        private CustomControls.CustomCheckBox CustomCheckBoxCheckInParallel;
+        private CustomControls.CustomLabel CustomLabelPDpiAntiPatternOffset;
+        private CustomControls.CustomNumericUpDown CustomNumericUpDownPDpiAntiPatternOffset;
+        private CustomControls.CustomTabControl CustomTabControlSettingHttpProxy;
+        private TabPage TabPageSettingHttpProxyBasic;
+        private TabPage TabPageSettingHttpProxyAdvanced;
+        private CustomControls.CustomCheckBox CustomCheckBoxSettingHTTPProxyUpstream;
+        private CustomControls.CustomComboBox CustomComboBoxSettingHttpProxyUpstreamMode;
+        private CustomControls.CustomLabel CustomLabelSettingHTTPProxyUpstreamPort;
+        private CustomControls.CustomLabel CustomLabelSettingHTTPProxyUpstreamHost;
+        private CustomControls.CustomNumericUpDown CustomNumericUpDownSettingHTTPProxyUpstreamPort;
+        private CustomControls.CustomTextBox CustomTextBoxSettingHTTPProxyUpstreamHost;
     }
 }

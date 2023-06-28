@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace MsmhTools.HTTPProxyServer
@@ -16,6 +17,7 @@ namespace MsmhTools.HTTPProxyServer
                 public int FirstPartOfDataLength { get; private set; } = 0;
                 public int FragmentSize { get; private set; } = 0;
                 public int FragmentChunks { get; private set; } = 0;
+                public int AntiPatternOffset { get; set; } = 5;
                 public int FragmentDelay { get; private set; } = 0;
 
                 /// <summary>
@@ -60,67 +62,135 @@ namespace MsmhTools.HTTPProxyServer
 
                     public void Send(DPIBypass bp)
                     {
+                        int offset = bp.AntiPatternOffset;
+                        Random random = new();
+
                         if (!bp.SendInRandom)
                         {
+                            // Normal Mode
                             int fragmentSizeOut;
-                            if (Data.Length <= bp.FirstPartOfDataLength)
-                                fragmentSizeOut = Math.Min(bp.FragmentSize, Data.Length);
-                            else
-                                fragmentSizeOut = Data.Length / bp.FragmentChunks;
 
-                            if (fragmentSizeOut == 0) fragmentSizeOut = 1;
+                            if (Data.Length <= bp.FirstPartOfDataLength)
+                            {
+                                // Anti Pattern Fragment Size
+                                int fragmentSize = 1;
+                                if (bp.FragmentSize > 1)
+                                    fragmentSize = random.Next(bp.FragmentSize - offset, bp.FragmentSize + offset);
+                                else
+                                    offset = 0;
+
+                                if (fragmentSize <= 0) fragmentSize = 1;
+                                if (fragmentSize > Data.Length) fragmentSize = Data.Length;
+
+                                fragmentSizeOut = Math.Min(fragmentSize, Data.Length);
+                            }
+                            else
+                            {
+                                // Anti Pattern Fragment Chunks
+                                int fragmentChunks = random.Next(bp.FragmentChunks - offset, bp.FragmentChunks + offset);
+
+                                if (fragmentChunks <= 0) fragmentChunks = 1;
+                                if (fragmentChunks > Data.Length) fragmentChunks = Data.Length;
+
+                                fragmentSizeOut = Data.Length / fragmentChunks;
+                            }
+
+                            if (fragmentSizeOut <= 0) fragmentSizeOut = 1;
                             if (fragmentSizeOut > bp.MaxDataLength) fragmentSizeOut = bp.MaxDataLength;
 
                             if (bp.DontChunkTheBiggestRequest)
                                 if (Data.Length == bp.MaxDataLength) fragmentSizeOut = bp.MaxDataLength;
 
-                            SendDataInNormalFragment1(Data, Socket, fragmentSizeOut, bp);
+                            SendDataInNormalFragment1(Data, Socket, fragmentSizeOut, offset, bp);
                         }
                         else
                         {
+                            // Random Mode
                             if (Data.Length <= bp.FirstPartOfDataLength)
                             {
-                                int fragmentSizeOut = Math.Min(bp.FragmentSize, Data.Length);
-                                SendDataInNormalFragment1(Data, Socket, fragmentSizeOut, bp);
+                                // Anti Pattern Fragment Size
+                                int fragmentSize = 1;
+                                if (bp.FragmentSize > 1)
+                                    fragmentSize = random.Next(bp.FragmentSize - offset, bp.FragmentSize + offset);
+                                else
+                                    offset = 0;
+
+                                if (fragmentSize <= 0) fragmentSize = 1;
+                                if (fragmentSize > Data.Length) fragmentSize = Data.Length;
+
+                                int fragmentSizeOut = Math.Min(fragmentSize, Data.Length);
+
+                                if (fragmentSizeOut <= 0) fragmentSizeOut = 1;
+                                if (fragmentSizeOut > bp.MaxDataLength) fragmentSizeOut = bp.MaxDataLength;
+
+                                SendDataInNormalFragment1(Data, Socket, fragmentSizeOut, offset, bp);
                             }
                             else
                             {
-                                int offset = 5;
-                                Random random = new();
-                                bp.FragmentChunks = random.Next(bp.FragmentChunks - offset, bp.FragmentChunks + offset);
+                                // Anti Pattern Fragment Chunks
+                                int fragmentChunks = random.Next(bp.FragmentChunks - offset, bp.FragmentChunks + offset);
 
-                                if (bp.FragmentChunks == 0) bp.FragmentChunks = 1;
-                                if (bp.FragmentChunks > Data.Length) bp.FragmentChunks = Data.Length;
+                                if (fragmentChunks <= 0) fragmentChunks = 1;
+                                if (fragmentChunks > Data.Length) fragmentChunks = Data.Length;
 
-                                SendDataInRandomFragment(Data, Socket, bp);
+                                SendDataInRandomFragment(Data, Socket, fragmentChunks, bp);
                             }
                         }
                     }
                 }
 
-                private static void SendDataInNormalFragment1(byte[] data, Socket socket, int fragmentSize, DPIBypass bp)
+                private static void SendDataInNormalFragment1(byte[] data, Socket socket, int fragmentSize, int offset, DPIBypass bp)
                 {
                     // Create packets
+                    Random random = new();
                     List<byte[]> packets = new();
                     packets.Clear();
                     int prevIndex = 0;
-                    for (int n = 0; n < data.Length; n += fragmentSize)
+                    int nn = 0;
+                    int sum = 0;
+                    for (int n = 0; n < data.Length; n++)
                     {
                         try
                         {
-                            fragmentSize = Math.Min(fragmentSize, data.Length - n);
-                            byte[] fragmentData = new byte[fragmentSize];
-                            prevIndex = n;
-                            Buffer.BlockCopy(data, n, fragmentData, 0, fragmentSize);
+                            // Anti Pattern Fragment Size
+                            int fragmentSizeOut = random.Next(fragmentSize - offset, fragmentSize + offset);
+                            if (fragmentSizeOut <= 0) fragmentSizeOut = 1;
+                            if (fragmentSizeOut > data.Length) fragmentSizeOut = data.Length;
+                            nn += fragmentSizeOut;
+
+                            if (nn > data.Length)
+                            {
+                                fragmentSizeOut = data.Length - (nn - fragmentSizeOut);
+                                //Debug.WriteLine(fragmentSizeOut);
+                            }
+                            //Debug.WriteLine(fragmentSizeOut);
+                            
+                            sum += fragmentSizeOut;
+                            byte[] fragmentData = new byte[fragmentSizeOut];
+                            prevIndex = sum - fragmentSizeOut;
+                            Buffer.BlockCopy(data, prevIndex, fragmentData, 0, fragmentSizeOut);
                             packets.Add(fragmentData);
+
+                            if (sum >= data.Length) break;
                         }
                         catch (Exception ex)
                         {
                             packets.Clear();
                             string msgEvent = $"Error, Creating normal packets: {ex.Message}";
-                            Console.WriteLine(msgEvent);
+                            Debug.WriteLine(msgEvent);
                             return;
                         }
+                    }
+
+                    // Check packets
+                    int allLength = 0;
+                    for (int i = 0; i < packets.Count; i++)
+                        allLength += packets[i].Length;
+                    Debug.WriteLine($"{allLength} == {data.Length}, Chunks: {packets.Count}");
+                    if (allLength != data.Length)
+                    {
+                        packets.Clear();
+                        return;
                     }
 
                     // Send packets
@@ -137,16 +207,13 @@ namespace MsmhTools.HTTPProxyServer
                         catch (Exception ex)
                         {
                             string msgEvent = $"Error, SendDataInFragment1: {ex.Message}";
-                            Console.WriteLine(msgEvent);
+                            Debug.WriteLine(msgEvent);
                             return;
                         }
                     }
 
                     string chunkDetailsEvent = $"{bp.DestHostname}:{bp.DestPort} Length: {data.Length}, Chunks: {packets.Count}";
                     bp.OnChunkDetailsReceived?.Invoke(chunkDetailsEvent, EventArgs.Empty);
-
-                    int outLength = prevIndex + fragmentSize;
-                    //Debug.WriteLine($"{outLength} = {data.Length}, Chunks: {packets.Count}");
                 }
 
                 private static void SendDataInNormalFragment2(byte[] data, Socket socket, int fragmentSize, int fragmentDelay)
@@ -205,15 +272,15 @@ namespace MsmhTools.HTTPProxyServer
                     Debug.WriteLine($"{outLength} = {data.Length}");
                 }
 
-                private static void SendDataInRandomFragment(byte[] data, Socket socket, DPIBypass bp)
+                private static void SendDataInRandomFragment(byte[] data, Socket socket, int fragmentChunks, DPIBypass bp)
                 {
                     // Create packets
                     List<byte[]> packets = new();
                     packets.Clear();
-                    bp.FragmentChunks = Math.Min(bp.FragmentChunks, data.Length);
+                    fragmentChunks = Math.Min(fragmentChunks, data.Length);
                     List<int> indices;
-                    if (bp.FragmentChunks < data.Length)
-                        indices = GenerateRandomIndices(1, data.Length - 1, bp.FragmentChunks - 1);
+                    if (fragmentChunks < data.Length)
+                        indices = GenerateRandomIndices(1, data.Length - 1, fragmentChunks - 1);
                     else
                         indices = Enumerable.Range(0, data.Length - 1).ToList();
                     indices.Sort();
@@ -233,7 +300,7 @@ namespace MsmhTools.HTTPProxyServer
                         {
                             packets.Clear();
                             string msgEvent = $"Error, Creating random packets: {ex.Message}";
-                            Console.WriteLine(msgEvent);
+                            Debug.WriteLine(msgEvent);
                             return;
                         }
                     }
@@ -243,15 +310,24 @@ namespace MsmhTools.HTTPProxyServer
                         byte[] lastFragmentData = new byte[data.Length - prevIndex];
                         Buffer.BlockCopy(data, prevIndex, lastFragmentData, 0, lastFragmentData.Length);
                         packets.Add(lastFragmentData);
-
-                        int outLength = prevIndex + lastFragmentData.Length;
-                        //Debug.WriteLine($"{outLength} = {data.Length}, Chunks: {packets.Count}");
                     }
                     catch (Exception ex)
                     {
                         packets.Clear();
                         string msgEvent = $"Error, Creating last random packet: {ex.Message}";
-                        Console.WriteLine(msgEvent);
+                        Debug.WriteLine(msgEvent);
+                        return;
+                    }
+
+                    // Check packets
+                    int allLength = 0;
+                    for (int i = 0; i < packets.Count; i++)
+                        allLength += packets[i].Length;
+                    Debug.WriteLine($"{allLength} == {data.Length}, Chunks: {packets.Count}");
+                    if (allLength != data.Length)
+                    {
+                        packets.Clear();
+                        return;
                     }
 
                     // Send packets
@@ -268,7 +344,7 @@ namespace MsmhTools.HTTPProxyServer
                         catch (Exception ex)
                         {
                             string msgEvent = $"Error, SendDataInRandomFragment: {ex.Message}";
-                            Console.WriteLine(msgEvent);
+                            Debug.WriteLine(msgEvent);
                             return;
                         }
                     }

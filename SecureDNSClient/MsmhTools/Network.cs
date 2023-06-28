@@ -18,6 +18,12 @@ namespace MsmhTools
 {
     public static class Network
     {
+        public static int GetNextPort(int currentPort)
+        {
+            currentPort = currentPort < 65535 ? currentPort + 1 : currentPort - 1;
+            return currentPort;
+        }
+
         public static Uri? UrlToUri(string url)
         {
             try
@@ -370,7 +376,7 @@ namespace MsmhTools
                 client.EndConnect(result);
                 return success;
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
@@ -829,30 +835,58 @@ namespace MsmhTools
                 }
             });
 
-            if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
+            if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS + 500)))
                 return task.Result;
             else
                 return false;
         }
 
-        public static bool CanPing(string host, int port, int timeoutMS)
+        public static bool CanTcpConnect(string host, int port, int timeoutMS)
         {
             var task = Task.Run(() =>
             {
                 try
                 {
-                    using var client = new TcpClient(host, port);
+                    using TcpClient client = new(host, port);
                     client.SendTimeout = timeoutMS;
                     return true;
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Ping: {ex.Message}");
+                    Debug.WriteLine($"CanTcpConnect: {ex.Message}");
                     return false;
                 }
             });
 
-            if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
+            if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS + 500)))
+                return task.Result;
+            else
+                return false;
+        }
+
+        public static async Task<bool> CanConnect(string host, int port, int timeoutMS)
+        {
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    string url = $"https://{host}:{port}";
+                    Uri uri = new(url, UriKind.Absolute);
+
+                    using HttpClient httpClient = new();
+                    httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMS);
+
+                    await httpClient.GetAsync(uri);
+
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            });
+
+            if (await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 500)))
                 return task.Result;
             else
                 return false;
