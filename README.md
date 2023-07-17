@@ -15,7 +15,7 @@ Download App: [Click here](https://github.com/msasanmh/SecureDNSClient/releases)
 *some antivirus apps raise alert as PUA (Potentially Unwanted Application) for WinDivert which is used by GoodbyeDPI.*
 *If your antivirus detects WinDivert as a threat, add it to your exclusion list to ensure SDC functions as expected.*
 
-![SDCv2 3 0](https://github.com/msasanmh/SecureDNSClient/assets/1586825/97817126-d1e8-45da-b875-b1c68a136879)
+![SDCv2 3 0](https://github.com/msasanmh/SecureDNSClient/assets/1586825/e3112c22-b0a2-4f23-8e17-3c30042a7b13)
 
 ---
 How to use:
@@ -26,4 +26,5 @@ https://user-images.githubusercontent.com/1586825/235309203-317fd69b-1e2d-475d-9
 How to help v2Ray to bypass filtered SNI:
 
 https://user-images.githubusercontent.com/1586825/235309572-f4ac8b63-b510-42f6-8fab-bf8a1eeff9d6.mp4
+
 
