@@ -118,7 +118,7 @@
             this.CustomButtonStartStop.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.CustomButtonStartStop.Location = new System.Drawing.Point(276, 8);
             this.CustomButtonStartStop.Name = "CustomButtonStartStop";
-            this.CustomButtonStartStop.RoundedCorners = 0;
+            this.CustomButtonStartStop.RoundedCorners = 5;
             this.CustomButtonStartStop.SelectionColor = System.Drawing.Color.LightBlue;
             this.CustomButtonStartStop.Size = new System.Drawing.Size(75, 27);
             this.CustomButtonStartStop.TabIndex = 3;
@@ -273,7 +273,7 @@
             this.CustomTextBoxCheckWebsite.TabIndex = 0;
             this.CustomTextBoxCheckWebsite.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             this.CustomTextBoxCheckWebsite.Texts = "https://www.cloudflare.com";
-            this.CustomTextBoxCheckWebsite.UnderlinedStyle = false;
+            this.CustomTextBoxCheckWebsite.UnderlinedStyle = true;
             this.CustomTextBoxCheckWebsite.UsePasswordChar = false;
             this.CustomTextBoxCheckWebsite.WordWrap = true;
             // 

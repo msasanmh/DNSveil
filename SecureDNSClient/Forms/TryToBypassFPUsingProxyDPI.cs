@@ -1,7 +1,8 @@
 ﻿using MsmhTools;
+using MsmhTools.DnsTool;
 using MsmhTools.HTTPProxyServer;
-using SecureDNSClient.DNSCrypt;
 using System;
+using System.Diagnostics;
 using System.Net;
 
 namespace SecureDNSClient
@@ -15,29 +16,33 @@ namespace SecureDNSClient
 
             // Get Fake Proxy DoH Address
             string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
-            string dohHost = Network.UrlToHostAndPort(dohUrl, 443, out int _, out string _, out bool _);
-
+            Network.GetUrlDetails(dohUrl, 443, out string dohHost, out int _, out string _, out bool _);
+            
             // It's blocked message
             string msgBlocked = $"It's blocked.{NL}";
             msgBlocked += $"Trying to bypass {dohHost}{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgBlocked, Color.Orange));
-
+            
             // Get fragment settings
-            int dataLength = Convert.ToInt32(CustomNumericUpDownPDpiDataLength.Value);
-            int fragmentSize = Convert.ToInt32(CustomNumericUpDownPDpiFragmentSize.Value);
-            int fragmentChunks = Convert.ToInt32(CustomNumericUpDownPDpiFragmentChunks.Value);
-            bool randomMode = CustomCheckBoxPDpiFragModeRandom.Checked;
+            int beforSniChunks = Convert.ToInt32(CustomNumericUpDownPDpiBeforeSniChunks.Value);
+            int chunkModeInt = -1;
+            this.InvokeIt(() => chunkModeInt = CustomComboBoxPDpiSniChunkMode.SelectedIndex);
+            HTTPProxyServer.Program.DPIBypass.ChunkMode chunkMode = chunkModeInt switch
+            {
+                0 => HTTPProxyServer.Program.DPIBypass.ChunkMode.SNI,
+                1 => HTTPProxyServer.Program.DPIBypass.ChunkMode.SniExtension,
+                2 => HTTPProxyServer.Program.DPIBypass.ChunkMode.AllExtensions,
+                _ => HTTPProxyServer.Program.DPIBypass.ChunkMode.AllExtensions,
+            };
+            
+            int sniChunks = Convert.ToInt32(CustomNumericUpDownPDpiSniChunks.Value);
             int antiPatternOffset = Convert.ToInt32(CustomNumericUpDownPDpiAntiPatternOffset.Value);
-            bool dontChunkBigdata = CustomCheckBoxPDpiDontChunkBigData.Checked;
             int fragmentDelay = Convert.ToInt32(CustomNumericUpDownPDpiFragDelay.Value);
-
+            
             // DPI Bypass Program
             HTTPProxyServer.Program.DPIBypass dpiBypassProgram = new();
-            dpiBypassProgram.Set(HTTPProxyServer.Program.DPIBypass.Mode.Program, dataLength, fragmentSize, fragmentChunks, fragmentDelay);
-            dpiBypassProgram.AntiPatternOffset = antiPatternOffset;
-            dpiBypassProgram.DontChunkTheBiggestRequest = dontChunkBigdata;
-            dpiBypassProgram.SendInRandom = randomMode;
-
+            dpiBypassProgram.Set(HTTPProxyServer.Program.DPIBypass.Mode.Program, beforSniChunks, chunkMode, sniChunks, antiPatternOffset, fragmentDelay);
+            
             //// Test Only
             //dpiBypassProgram.OnChunkDetailsReceived += DpiBypassProgram_OnChunkDetailsReceived;
             //void DpiBypassProgram_OnChunkDetailsReceived(object? sender, EventArgs e)
@@ -49,12 +54,12 @@ namespace SecureDNSClient
             // Add Programs to Proxy
             if (CamouflageProxyServer.IsRunning)
                 CamouflageProxyServer.Stop();
-
+            
             CamouflageProxyServer = new();
             CamouflageProxyServer.EnableDPIBypass(dpiBypassProgram);
             bool isOk = ApplyFakeProxy(CamouflageProxyServer);
             if (!isOk) return false;
-
+            
             //// Test Only
             //CamouflageProxyServer.OnRequestReceived += CamouflageProxyServer_OnRequestReceived;
             //void CamouflageProxyServer_OnRequestReceived(object? sender, EventArgs e)
@@ -106,7 +111,13 @@ namespace SecureDNSClient
                 {
                     if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
                     {
-                        dnsCryptConfig.EnableDoH();
+                        // Get DoH Port
+                        int dohPort = GetDohPortSetting();
+
+                        // Set Connected DoH Port
+                        ConnectedDohPort = dohPort;
+
+                        dnsCryptConfig.EnableDoH(dohPort);
                         dnsCryptConfig.EditCertKeyPath(SecureDNS.KeyPath);
                         dnsCryptConfig.EditCertPath(SecureDNS.CertPath);
                     }
@@ -116,9 +127,16 @@ namespace SecureDNSClient
                 else
                     dnsCryptConfig.DisableDoH();
 
+                // Generate SDNS
+                Network.GetUrlDetails(dohUrl, 443, out string host, out int port, out string path, out bool _);
+                DNSCryptStampGenerator stampGenerator = new();
+                string sdns = stampGenerator.GenerateDoH(cleanIP, null, $"{host}:{port}", path, null, true, true, true);
+                if (!string.IsNullOrEmpty(sdns))
+                    dnsCryptConfig.ChangePersonalServer(sdns);
+                
                 // Save DNSCrypt Config File
                 await dnsCryptConfig.WriteAsync();
-                Task.Delay(500).Wait();
+                await Task.Delay(500);
 
                 // Args
                 string args = $"-config {SecureDNS.DNSCryptConfigCloudflarePath}";
@@ -126,14 +144,26 @@ namespace SecureDNSClient
                 if (IsDisconnecting) return false;
 
                 // Execute DNSCrypt
-                PIDDNSCryptBypass = ProcessManager.ExecuteOnly(SecureDNS.DNSCrypt, args, true, true);
-                await Task.Delay(1000);
+                PIDDNSCryptBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DNSCrypt, args, true, true);
 
-                if (ProcessManager.FindProcessByID(PIDDNSCryptBypass))
+               // Wait for DNSCrypt
+               Task wait1 = Task.Run(async () =>
+               {
+                   while (!ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
+                   {
+                       if (ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
+                           break;
+                       await Task.Delay(100);
+                   }
+                   return Task.CompletedTask;
+               });
+               await wait1.WaitAsync(TimeSpan.FromSeconds(5));
+
+                if (ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
                 {
                     IsConnected = true;
 
-                    bool success = CheckBypassWorks(timeoutMS, 15);
+                    bool success = CheckBypassWorks(timeoutMS, 15, PIDDNSCryptBypass);
                     if (success)
                     {
                         // Success message

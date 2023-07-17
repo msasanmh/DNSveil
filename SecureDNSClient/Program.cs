@@ -1,4 +1,5 @@
 using MsmhTools;
+using System.Reflection;
 
 namespace SecureDNSClient
 {
@@ -15,10 +16,10 @@ namespace SecureDNSClient
             ApplicationConfiguration.Initialize();
 
             // Prevent multiple instances
-            using Mutex mutex = new(false, Info.InfoExecutingAssembly.ProductName);
+            using Mutex mutex = new(false, Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName);
             if (!mutex.WaitOne(0, true))
             {
-                MessageBox.Show($"{Info.InfoExecutingAssembly.ProductName} is already running.");
+                MessageBox.Show($"{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName} is already running.");
                 Environment.Exit(0);
                 Application.Exit();
                 return;

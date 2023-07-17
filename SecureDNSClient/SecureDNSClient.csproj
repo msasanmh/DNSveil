@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Copyright>MSasanMH</Copyright>
     <Product>SDC - Secure DNS Client</Product>
-    <Version>$(VersionPrefix)2.2.2</Version>
+    <Version>$(VersionPrefix)2.3.0</Version>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
   </PropertyGroup>
@@ -18,18 +18,6 @@
     <None Remove="DNS-Servers.txt" />
     <None Remove="DoH-Servers.txt" />
     <None Remove="HostToCompany.txt" />
-    <None Remove="Library\Ae.Dns.AppMetrics.dll" />
-    <None Remove="Library\Ae.Dns.AppMetrics.xml" />
-    <None Remove="Library\Ae.Dns.Client.dll" />
-    <None Remove="Library\Ae.Dns.Client.xml" />
-    <None Remove="Library\Ae.Dns.Protocol.dll" />
-    <None Remove="Library\Ae.Dns.Protocol.xml" />
-    <None Remove="Library\Ae.Dns.Server.dll" />
-    <None Remove="Library\Ae.Dns.Server.Http.dll" />
-    <None Remove="Library\Ae.Dns.Server.Http.xml" />
-    <None Remove="Library\Ae.Dns.Server.xml" />
-    <None Remove="Library\ARSoft.Tools.Net.dll" />
-    <None Remove="Library\ARSoft.Tools.Net.xml" />
     <None Remove="NecessaryFiles\dnscrypt-proxy.exe" />
     <None Remove="NecessaryFiles\dnscrypt-proxy.toml" />
     <None Remove="NecessaryFiles\dnslookup.exe" />
@@ -69,23 +57,17 @@
   <ItemGroup>
     <PackageReference Include="Ae.Dns.Client" Version="1.0.0" />
     <PackageReference Include="Ae.Dns.Server" Version="1.0.0" />
-    <PackageReference Include="ARSoft.Tools.Net" Version="3.3.0" />
-    <PackageReference Include="DnsCrypt.Stamps" Version="0.2.2" />
+    <PackageReference Include="ARSoft.Tools.Net" Version="3.5.0" />
     <PackageReference Include="System.Management" Version="8.0.0-preview.4.23259.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MsmhTools\MsmhTools.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="ARSoft.Tools.Net">
       <HintPath>Library\ARSoft.Tools.Net.dll</HintPath>
-    </Reference>
-    <Reference Include="Crc32.NET">
-      <HintPath>Library\Crc32.NET.dll</HintPath>
-    </Reference>
-    <Reference Include="libse">
-      <HintPath>Library\libse.dll</HintPath>
-    </Reference>
-    <Reference Include="UtfUnknown">
-      <HintPath>Library\UtfUnknown.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -1,5 +1,5 @@
 ﻿using MsmhTools;
-using SecureDNSClient.DNSCrypt;
+using MsmhTools.DnsTool;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,7 +31,7 @@ namespace SecureDNSClient
             }
 
             // Get Host and Port of Proxy
-            string host = Network.UrlToHostAndPort(proxyScheme, 0, out int port, out string _, out bool _);
+            Network.GetUrlDetails(proxyScheme, 0, out string host, out int port, out string _, out bool _);
 
             // Convert proxy host to IP
             bool isIP = IPAddress.TryParse(host, out IPAddress? _);
@@ -72,7 +72,13 @@ namespace SecureDNSClient
             {
                 if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
                 {
-                    dnsCryptConfig.EnableDoH();
+                    // Get DoH Port
+                    int dohPort = GetDohPortSetting();
+
+                    // Set Connected DoH Port
+                    ConnectedDohPort = dohPort;
+
+                    dnsCryptConfig.EnableDoH(dohPort);
                     dnsCryptConfig.EditCertKeyPath(SecureDNS.KeyPath);
                     dnsCryptConfig.EditCertPath(SecureDNS.CertPath);
                 }
@@ -100,7 +106,7 @@ namespace SecureDNSClient
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.WorkingDirectory = Info.CurrentPath;
+            process.StartInfo.WorkingDirectory = SecureDNS.CurrentPath;
 
             process.OutputDataReceived += (sender, args) =>
             {

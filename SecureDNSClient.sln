@@ -10,6 +10,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureDNSClient", "SecureDN
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureDNSClientPortable", "SecureDNSClientPortable\SecureDNSClientPortable.csproj", "{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsmhTools", "MsmhTools\MsmhTools.csproj", "{6E69CE41-523D-4BD0-A826-A778CE41BE34}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDCHttpProxy", "SDCHttpProxy\SDCHttpProxy.csproj", "{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,6 +28,14 @@ Global
 		{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E69CE41-523D-4BD0-A826-A778CE41BE34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E69CE41-523D-4BD0-A826-A778CE41BE34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E69CE41-523D-4BD0-A826-A778CE41BE34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E69CE41-523D-4BD0-A826-A778CE41BE34}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

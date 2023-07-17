@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using MsmhTools;
 using SecureDNSClient.DPIBasic;
@@ -8,13 +9,13 @@ namespace SecureDNSClient
     public partial class FormMain
     {
         //---------------------------- Connect: Bypass Cloudflare, via GoodbyeDPI
-        public bool TryToBypassFakeProxyDohUsingGoodbyeDPI(string cleanIP, int camouflageDnsPort, int timeoutMS)
+        public async Task<bool> TryToBypassFakeProxyDohUsingGoodbyeDPIAsync(string cleanIP, int camouflageDnsPort, int timeoutMS)
         {
             if (IsDisconnecting) return false;
 
             // Get Fake Proxy DoH Address
             string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
-            string dohHost = Network.UrlToHostAndPort(dohUrl, 443, out int _, out string _, out bool _);
+            Network.GetUrlDetails(dohUrl, 443, out string dohHost, out int _, out string _, out bool _);
 
             // It's blocked message
             string msgBlocked = $"It's blocked.{NL}";
@@ -56,7 +57,15 @@ namespace SecureDNSClient
                 if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
                 {
                     if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
-                        dnsproxyArgs += " --https-port=443 --tls-crt=\"" + SecureDNS.CertPath + "\" --tls-key=\"" + SecureDNS.KeyPath + "\"";
+                    {
+                        // Get DoH Port
+                        int dohPort = GetDohPortSetting();
+
+                        // Set Connected DoH Port
+                        ConnectedDohPort = dohPort;
+
+                        dnsproxyArgs += " --https-port=" + dohPort + " --tls-crt=\"" + SecureDNS.CertPath + "\" --tls-key=\"" + SecureDNS.KeyPath + "\"";
+                    }
                 }
 
                 // Add Cache args
@@ -72,13 +81,24 @@ namespace SecureDNSClient
                 if (IsDisconnecting) return false;
 
                 // Execute DNSProxy
-                PIDDNSProxyBypass = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, true, Info.CurrentPath, GetCPUPriority());
-                Task.Delay(500).Wait();
+                PIDDNSProxyBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
+
+                Task wait1 = Task.Run(async () =>
+                {
+                    while (!ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
+                    {
+                        if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
+                            break;
+                        await Task.Delay(100);
+                    }
+                    return Task.CompletedTask;
+                });
+                await wait1.WaitAsync(TimeSpan.FromSeconds(5));
 
                 // Create blacklist file for GoodbyeDPI
                 File.WriteAllText(SecureDNS.DPIBlacklistCFPath, dohHost);
 
-                if (ProcessManager.FindProcessByID(PIDDNSProxyBypass))
+                if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
                 {
                     IsConnected = true;
 
@@ -143,12 +163,12 @@ namespace SecureDNSClient
                         // Start GoodbyeDPI
                         DPIBasicBypass dpiBypass = new(bypassMode, CustomNumericUpDownSSLFragmentSize.Value, bootstrap, bootstrapPort);
                         string args = $"{dpiBypass.Args} --blacklist {SecureDNS.DPIBlacklistCFPath}";
-                        PIDGoodbyeDPIBypass = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+                        PIDGoodbyeDPIBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
                         Task.Delay(500).Wait();
 
-                        if (ProcessManager.FindProcessByID(PIDGoodbyeDPIBypass))
+                        if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
                         {
-                            return CheckBypassWorks(timeoutMS, 10);
+                            return CheckBypassWorks(timeoutMS, 10, PIDGoodbyeDPIBypass);
                         }
                         else
                         {

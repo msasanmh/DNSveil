@@ -1,25 +1,17 @@
 ﻿using CustomControls;
 using MsmhTools;
 using MsmhTools.Themes;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace SecureDNSClient
 {
     public partial class FormIpScanner : Form
     {
         // Settings XML path
-        private static readonly string SettingsXmlPath = Path.GetFullPath(Info.CurrentPath + "IpScannerSettings.xml");
-        private Settings AppSettings;
+        private static readonly string SettingsXmlPath = Path.GetFullPath(SecureDNS.CurrentPath + "IpScannerSettings.xml");
+        private readonly Settings AppSettings;
 
-        private IpScanner Scanner = new();
+        private readonly IpScanner Scanner = new();
         private readonly ToolStripMenuItem ToolStripMenuItemCopy = new();
         public FormIpScanner()
         {
@@ -27,7 +19,7 @@ namespace SecureDNSClient
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
-
+            
             CustomLabelChecking.Text = "Checking: ";
 
             ToolStripMenuItemCopy.Text = "Copy IP";

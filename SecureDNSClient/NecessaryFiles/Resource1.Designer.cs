@@ -63,9 +63,9 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] dnscrypt_proxy_cloudflareTOML {
+        internal static byte[] dnscrypt_proxy_fakeproxyTOML {
             get {
-                object obj = ResourceManager.GetObject("dnscrypt_proxy_cloudflareTOML", resourceCulture);
+                object obj = ResourceManager.GetObject("dnscrypt_proxy_fakeproxyTOML", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -121,9 +121,20 @@ namespace SecureDNSClient.NecessaryFiles {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] SDCHttpProxy {
+            get {
+                object obj = ResourceManager.GetObject("SDCHttpProxy", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to dnscrypt-proxy 2.1.4
         ///dnslookup 1.9.1
-        ///dnsproxy 0.49.1
+        ///dnsproxy 0.50.2
+        ///sdchttpproxy 2.2.5
         ///goodbyedpi 0.2.2.
         /// </summary>
         internal static string versions {

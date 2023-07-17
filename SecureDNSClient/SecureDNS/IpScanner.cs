@@ -202,7 +202,7 @@ namespace SecureDNSClient
                             string[] split = CheckWebsite.Split("://");
                             urlScheme = $"{split[0].Trim().ToLower()}://";
                         }
-                        string host = Network.UrlToHostAndPort(CheckWebsite, CheckPort, out int _, out string _, out bool _);
+                        Network.GetUrlDetails(CheckWebsite, CheckPort, out string host, out int _, out string _, out bool _);
                         string url = $"{urlScheme}{host}:{CheckPort}";
                         
                         Uri uri = new(url, UriKind.Absolute);

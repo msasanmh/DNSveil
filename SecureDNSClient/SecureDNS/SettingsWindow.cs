@@ -19,7 +19,7 @@ namespace SecureDNSClient
             if (isBootstrap && bootstrapIP != null)
             {
                 bootstrap = bootstrapIP;
-                bootstrapPortD = int.Parse(CustomNumericUpDownSettingBootstrapDnsPort.Value.ToString());
+                bootstrapPortD = Convert.ToInt32(CustomNumericUpDownSettingBootstrapDnsPort.Value);
             }
             bootstrapPort = bootstrapPortD;
             return bootstrap;
@@ -44,19 +44,24 @@ namespace SecureDNSClient
             return blockedDomain;
         }
 
+        public int GetDohPortSetting()
+        {
+            return Convert.ToInt32(CustomNumericUpDownSettingWorkingModeSetDohPort.Value);
+        }
+
         public int GetHTTPProxyPortSetting()
         {
-            return int.Parse(CustomNumericUpDownSettingHTTPProxyPort.Value.ToString());
+            return Convert.ToInt32(CustomNumericUpDownSettingHTTPProxyPort.Value);
         }
 
         public int GetFakeProxyPortSetting()
         {
-            return int.Parse(CustomNumericUpDownSettingFakeProxyPort.Value.ToString());
+            return Convert.ToInt32(CustomNumericUpDownSettingFakeProxyPort.Value);
         }
 
         public int GetCamouflageDnsPortSetting()
         {
-            return int.Parse(CustomNumericUpDownSettingCamouflageDnsPort.Value.ToString());
+            return Convert.ToInt32(CustomNumericUpDownSettingCamouflageDnsPort.Value);
         }
 
         /// <summary>

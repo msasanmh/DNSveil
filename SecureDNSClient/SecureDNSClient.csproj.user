@@ -4,74 +4,8 @@
     <_LastSelectedProfileId>D:\PPWin\SecureDNSClient\SecureDNSClient\Properties\PublishProfiles\FolderProfile.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Update="CustomControls\CustomButton.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomCheckBox.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomComboBox.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomContextMenuStrip.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomDataGridView.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomGroupBox.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomInputBox.cs">
+    <Compile Update="Forms\CheckServers.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomLabel.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomMenuStrip.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomMessageBox.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomNumericUpDown.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomPanel.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomProgressBar.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomRadioButton.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomRichTextBox.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomStatusStrip.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomTabControl.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomTextBox.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomTimeUpDown.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomToolStrip.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomToolStripComboBox.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomToolStripTextBox.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="CustomControls\CustomVScrollBar.cs">
-      <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="Forms\Connect.cs">
       <SubType>Form</SubType>
@@ -85,10 +19,28 @@
     <Compile Update="Forms\ConnectToWorkingServers.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\FormDnsLookup.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\FormIpScanner.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\FormMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FormStampGenerator.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FormStampReader.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\GoodbyeDPI.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\SetDNS.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\SetProxy.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\Share.cs">
@@ -98,12 +50,6 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\TryToBypassFPUsingProxyDPI.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Forms\FormMain.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Forms\CheckServers.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="SecureDNS\SettingsWindow.cs">

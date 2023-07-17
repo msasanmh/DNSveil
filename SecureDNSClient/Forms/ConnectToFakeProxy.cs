@@ -1,6 +1,7 @@
 ﻿using MsmhTools;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -54,7 +55,7 @@ namespace SecureDNSClient
 
             // Get Fake Proxy DoH Address
             string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
-            string dohHost = Network.UrlToHostAndPort(dohUrl, 443, out int _, out string _, out bool _);
+            Network.GetUrlDetails(dohUrl, 443, out string dohHost, out int _, out string _, out bool _);
 
             if (IsDisconnecting) return false;
 
@@ -86,7 +87,7 @@ namespace SecureDNSClient
                 if (connectMode == ConnectMode.ConnectToFakeProxyDohViaProxyDPI)
                     return await TryToBypassFakeProxyDohUsingProxyDPIAsync(cleanIP, camouflagePort, timeoutMS);
                 else
-                    return TryToBypassFakeProxyDohUsingGoodbyeDPI(cleanIP, camouflagePort, timeoutMS);
+                    return await TryToBypassFakeProxyDohUsingGoodbyeDPIAsync(cleanIP, camouflagePort, timeoutMS);
             }
 
             bool connectToFakeProxyDohNormally()
@@ -110,7 +111,15 @@ namespace SecureDNSClient
                 if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
                 {
                     if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
-                        dnsproxyArgs += " --https-port=443 --tls-crt=\"" + SecureDNS.CertPath + "\" --tls-key=\"" + SecureDNS.KeyPath + "\"";
+                    {
+                        // Get DoH Port
+                        int dohPort = GetDohPortSetting();
+
+                        // Set Connected DoH Port
+                        ConnectedDohPort = dohPort;
+
+                        dnsproxyArgs += " --https-port=" + dohPort + " --tls-crt=\"" + SecureDNS.CertPath + "\" --tls-key=\"" + SecureDNS.KeyPath + "\"";
+                    }
                 }
 
                 // Add Cache args
@@ -129,10 +138,10 @@ namespace SecureDNSClient
                 if (IsDisconnecting) return false;
 
                 // Execute DNSProxy
-                PIDDNSProxyBypass = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, true, Info.CurrentPath, GetCPUPriority());
+                PIDDNSProxyBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
                 Task.Delay(500).Wait();
 
-                if (ProcessManager.FindProcessByID(PIDDNSProxyBypass))
+                if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
                 {
                     // Set domain to check
                     string domainToCheck = "google.com";
@@ -166,7 +175,7 @@ namespace SecureDNSClient
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(connectNormallyFailed, Color.IndianRed));
 
                         // Kill DNSProxy
-                        ProcessManager.KillProcessByID(PIDDNSProxyBypass);
+                        ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
                         return false;
                     }
                 }
@@ -196,19 +205,19 @@ namespace SecureDNSClient
                 IsBypassDNSActive = false;
             }
 
-            if (stopDNSProxyOrDNSCrypt && ProcessManager.FindProcessByID(PIDDNSCryptBypass))
-                ProcessManager.KillProcessByID(PIDDNSCryptBypass);
+            if (stopDNSProxyOrDNSCrypt)
+                ProcessManager.KillProcessByPID(PIDDNSCryptBypass);
 
-            if (stopDNSProxyOrDNSCrypt && ProcessManager.FindProcessByID(PIDDNSProxyBypass))
-                ProcessManager.KillProcessByID(PIDDNSProxyBypass);
+            if (stopDNSProxyOrDNSCrypt)
+                ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
 
-            if (stopDPI && ProcessManager.FindProcessByID(PIDGoodbyeDPIBypass))
-                ProcessManager.KillProcessByID(PIDGoodbyeDPIBypass);
+            if (stopDPI)
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
 
             if (writeToLog)
             {
-                string msg = $"Camouflage mode deactivated.{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                string msg = $"{NL}Camouflage mode deactivated.{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Orange));
             }
         }
 

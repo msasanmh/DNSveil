@@ -1,13 +1,14 @@
 ﻿using MsmhTools;
 using SecureDNSClient.DPIBasic;
 using System;
+using System.Diagnostics;
 using System.Net;
 
 namespace SecureDNSClient
 {
     public partial class FormMain
     {
-        private async void DPIBasic()
+        private void DPIBasic()
         {
             //// Write Connect first to log
             //if (!IsDNSConnected && !IsDoHConnected)
@@ -20,13 +21,16 @@ namespace SecureDNSClient
             // Check Internet Connectivity
             if (!IsInternetAlive()) return;
 
+            // If user changing DPI mode fast, return.
+            if (StopWatchCheckDPIWorks.IsRunning)
+                return;
+
             // Get blocked domain
             string blockedDomain = GetBlockedDomainSetting(out string _);
             if (string.IsNullOrEmpty(blockedDomain)) return;
 
             // Kill GoodbyeDPI
-            if (ProcessManager.FindProcessByID(PIDGoodbyeDPI))
-                ProcessManager.KillProcessByID(PIDGoodbyeDPI);
+            ProcessManager.KillProcessByPID(PIDGoodbyeDPI);
 
             string args = string.Empty;
             string text = string.Empty;
@@ -101,9 +105,9 @@ namespace SecureDNSClient
             }
 
             // Execute GoodByeDPI
-            PIDGoodbyeDPI = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+            PIDGoodbyeDPI = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
 
-            if (ProcessManager.FindProcessByID(PIDGoodbyeDPI))
+            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPI))
             {
                 // Write DPI Mode to log
                 string msg = "DPI bypass is active, mode: ";
@@ -125,7 +129,7 @@ namespace SecureDNSClient
                 }
 
                 // Check DPI works
-                await CheckDPIWorks(blockedDomain);
+                CheckDPIWorks(blockedDomain);
             }
             else
             {
@@ -147,6 +151,10 @@ namespace SecureDNSClient
 
             // Check Internet Connectivity
             if (!IsInternetAlive()) return;
+
+            // If user changing DPI mode fast, return.
+            if (StopWatchCheckDPIWorks.IsRunning)
+                return;
 
             // Get blocked domain
             string blockedDomain = GetBlockedDomainSetting(out string _);
@@ -304,18 +312,16 @@ namespace SecureDNSClient
             }
 
             // Kill GoodbyeDPI
-            if (ProcessManager.FindProcessByID(PIDGoodbyeDPI))
-            {
-                ProcessManager.KillProcessByID(PIDGoodbyeDPI);
-                Task.Delay(100).Wait();
-            }
+            ProcessManager.KillProcessByPID(PIDGoodbyeDPI);
+            await Task.Delay(100);
 
             string text = "Advanced";
 
             // Execute GoodByeDPI
-            PIDGoodbyeDPI = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+            PIDGoodbyeDPI = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+            await Task.Delay(100);
 
-            if (ProcessManager.FindProcessByID(PIDGoodbyeDPI))
+            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPI))
             {
                 // Write DPI Mode to log
                 string msg = "DPI bypass is active, mode: ";
@@ -337,7 +343,7 @@ namespace SecureDNSClient
                 }
 
                 // Check DPI works
-                await CheckDPIWorks(blockedDomain);
+                CheckDPIWorks(blockedDomain);
             }
             else
             {
@@ -349,16 +355,16 @@ namespace SecureDNSClient
 
         private void DPIDeactive()
         {
-            if (ProcessManager.FindProcessByID(PIDGoodbyeDPI))
+            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPI))
             {
                 // Kill GoodbyeDPI
-                ProcessManager.KillProcessByID(PIDGoodbyeDPI);
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPI);
 
                 // Update Groupbox Status
                 UpdateStatusLong();
 
                 // Write to log
-                if (ProcessManager.FindProcessByID(PIDGoodbyeDPI))
+                if (ProcessManager.FindProcessByPID(PIDGoodbyeDPI))
                 {
                     string msgDC = "Couldn't deactivate DPI Bypass. Try again." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.IndianRed));

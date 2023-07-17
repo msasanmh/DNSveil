@@ -1,6 +1,7 @@
 ﻿using MsmhTools;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -73,7 +74,15 @@ namespace SecureDNSClient
             if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
             {
                 if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
-                    dnsproxyArgs += " --https-port=443 --tls-crt=\"" + SecureDNS.CertPath + "\" --tls-key=\"" + SecureDNS.KeyPath + "\"";
+                {
+                    // Get DoH Port
+                    int dohPort = GetDohPortSetting();
+
+                    // Set Connected DoH Port
+                    ConnectedDohPort = dohPort;
+
+                    dnsproxyArgs += " --https-port=" + dohPort + " --tls-crt=\"" + SecureDNS.CertPath + "\" --tls-key=\"" + SecureDNS.KeyPath + "\"";
+                }
             }
 
             // Add Cache args
@@ -95,7 +104,7 @@ namespace SecureDNSClient
             if (IsDisconnecting) return -1;
 
             // Execute DnsProxy
-            PIDDNSProxy = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, false, Info.CurrentPath, GetCPUPriority());
+            PIDDNSProxy = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, false, SecureDNS.CurrentPath, GetCPUPriority());
 
             return countUsingServers;
         }
