@@ -4,6 +4,7 @@ A GUI for [DNSLookup](https://github.com/ameshkov/dnslookup), [DNSProxy](https:/
 - *Find and use fastest DNS Over HTTPS servers.*
 - *Hide SNI and website addresses from ISP.*
 - *Bypass YouTube, Twitter and any SNI/DNS based blocked websites.*
+- *Encode and decode DNSCrypt STAMP (sdns://).*
 
 Requirements: .Net Destop Runtime 6.<br>
 Download Runtime x64: [runtime-desktop-6.0.16-windows-x64-installer](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.16-windows-x64-installer)<br>
