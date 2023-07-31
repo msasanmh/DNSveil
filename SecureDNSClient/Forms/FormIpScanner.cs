@@ -8,7 +8,7 @@ namespace SecureDNSClient
     public partial class FormIpScanner : Form
     {
         // Settings XML path
-        private static readonly string SettingsXmlPath = Path.GetFullPath(SecureDNS.CurrentPath + "IpScannerSettings.xml");
+        private static readonly string SettingsXmlPath = SecureDNS.SettingsXmlIpScanner;
         private readonly Settings AppSettings;
 
         private readonly IpScanner Scanner = new();

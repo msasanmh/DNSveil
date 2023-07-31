@@ -1,11 +1,7 @@
 ﻿using MsmhTools;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SecureDNSClient
 {
@@ -68,12 +64,13 @@ namespace SecureDNSClient
             if (string.IsNullOrEmpty(blockedDomain)) return false;
 
             // Set timeout (ms)
-            int timeoutMS = 5000;
+            int timeoutMS = 10000;
 
             // Check Fake Proxy DoH
-            int latency = SecureDNS.CheckDns(blockedDomainNoWww, dohUrl, timeoutMS, GetCPUPriority());
-            bool isCfOpen = latency != -1;
-            if (isCfOpen)
+            CheckDns checkDns = new(false, GetCPUPriority());
+            checkDns.CheckDNS(blockedDomainNoWww, dohUrl, timeoutMS / 2);
+            
+            if (checkDns.IsDnsOnline)
             {
                 // Not blocked, connect normally
                 return connectToFakeProxyDohNormally();
@@ -146,10 +143,10 @@ namespace SecureDNSClient
                     // Set domain to check
                     string domainToCheck = "google.com";
 
-                    // Delay
-                    int latency = SecureDNS.CheckDns(domainToCheck, dohUrl, timeoutMS * 10, GetCPUPriority());
-                    bool result = latency != -1;
-                    if (result)
+                    // Check DNS
+                    checkDns.CheckDNS(domainToCheck, dohUrl, timeoutMS * 10);
+                    
+                    if (checkDns.IsDnsOnline)
                     {
                         if (IsDisconnecting) return false;
 
@@ -161,7 +158,7 @@ namespace SecureDNSClient
                         string msgDelay1 = "Server delay: ";
                         string msgDelay2 = $" ms.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay1, Color.Orange));
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(latency.ToString(), Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(checkDns.DnsLatency.ToString(), Color.DodgerBlue));
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay2, Color.Orange));
 
                         return true;

@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Text;
 
 namespace MsmhTools.DnsTool
 {
@@ -95,31 +91,21 @@ namespace MsmhTools.DnsTool
                     Protocol = DnsProtocol.DoQ;
                     ProtocolName = DnsProtocolName.DoQ;
                 }
+                else if (dns.ToLower().StartsWith("tcp://") || dns.ToLower().StartsWith("udp://"))
+                {
+                    // Plain DNS
+                    SetIpPortHostPath(dns, 53);
+
+                    Protocol = DnsProtocol.PlainDNS;
+                    ProtocolName = DnsProtocolName.PlainDNS;
+                }
                 else
                 {
-                    if (dns.Contains(':'))
-                    {
-                        string[] split = dns.Split(':');
-                        string ip = split[0];
-                        string port = split[1];
-                        if (Network.IsIPv4Valid(ip, out IPAddress _))
-                        {
-                            if (!string.IsNullOrEmpty(port))
-                            {
-                                bool isPortValid = int.TryParse(port, out int outPort);
-                                if (isPortValid && outPort >= 1 && outPort <= 65535)
-                                {
-                                    // Plain DNS
-                                    IP = ip;
-                                    if (!string.IsNullOrEmpty(CompanyNameDataFileContent))
-                                        CompanyName = GetCompanyName(ip, CompanyNameDataFileContent);
-                                    Port = outPort;
-                                    Protocol = DnsProtocol.PlainDNS;
-                                    ProtocolName = DnsProtocolName.PlainDNS;
-                                }
-                            }
-                        }
-                    }
+                    // Plain DNS
+                    SetIpPortHost(dns, 53);
+
+                    Protocol = DnsProtocol.PlainDNS;
+                    ProtocolName = DnsProtocolName.PlainDNS;
                 }
             }
         }
@@ -142,7 +128,37 @@ namespace MsmhTools.DnsTool
                     IP = ip.ToString();
             }
             if (!string.IsNullOrEmpty(CompanyNameDataFileContent))
-                CompanyName = GetCompanyName(host, CompanyNameDataFileContent);
+            {
+                string? ipOrHost = Host;
+                if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = IP;
+                if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = host;
+                CompanyName = GetCompanyName(ipOrHost, CompanyNameDataFileContent);
+            }
+        }
+
+        private void SetIpPortHost(string hostIpPort, int defaultPort)
+        {
+            Network.GetHostDetails(hostIpPort, defaultPort, out string host, out int port, out string _, out bool isIPv6);
+            Port = port;
+            bool isIPv4 = Network.IsIPv4Valid(host, out IPAddress? _);
+            if (isIPv6 || isIPv4)
+            {
+                IP = host;
+            }
+            else
+            {
+                Host = host;
+                IPAddress? ip = Network.HostToIP(host);
+                if (ip != null)
+                    IP = ip.ToString();
+            }
+            if (!string.IsNullOrEmpty(CompanyNameDataFileContent))
+            {
+                string? ipOrHost = Host;
+                if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = IP;
+                if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = host;
+                CompanyName = GetCompanyName(ipOrHost, CompanyNameDataFileContent);
+            }
         }
 
         private static string GetCompanyName(string host, string fileContent)

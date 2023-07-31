@@ -30,7 +30,7 @@ namespace MsmhTools.HTTPProxyServer
                     bool canConnect;
                     try
                     {
-                        canConnect = await CanConnect(false, ip, port, timeoutMS);
+                        canConnect = await CanConnect(ip, port, timeoutMS);
                     }
                     catch (Exception)
                     {
@@ -66,7 +66,7 @@ namespace MsmhTools.HTTPProxyServer
                 bool canConnect;
                 try
                 {
-                    canConnect = await CanConnect(true, host, port, timeoutMS);
+                    canConnect = await CanConnect(host, port, timeoutMS);
                 }
                 catch (Exception)
                 {
@@ -125,19 +125,25 @@ namespace MsmhTools.HTTPProxyServer
                 return false;
         }
 
-        private static async Task<bool> CanConnect(bool https, string host, int port, int timeoutMS)
+        public static async Task<bool> CanConnect(string host, int port, int timeoutMS)
         {
             var task = Task.Run(async () =>
             {
                 try
                 {
-                    string url;
-                    if (https) url = $"https://{host}:{port}";
-                    else url = $"http://{host}";
+                    string url = $"https://{host}:{port}";
+                    if (port == 80) url = $"http://{host}";
 
                     Uri uri = new(url, UriKind.Absolute);
 
-                    using HttpClient httpClient = new();
+                    // Ignore Cert
+                    using HttpClientHandler handler = new();
+                    handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                    handler.ServerCertificateCustomValidationCallback =
+                        (httpRequestMessage, cert, cetChain, policyErrors) => true;
+                    using HttpClient httpClient = new(handler);
+
+                    //using HttpClient httpClient = new();
                     httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMS);
 
                     await httpClient.GetAsync(uri);
@@ -145,6 +151,26 @@ namespace MsmhTools.HTTPProxyServer
                 }
                 catch (Exception)
                 {
+                    try
+                    {
+                        if (port != 80)
+                        {
+                            string url = $"http://{host}";
+
+                            Uri uri = new(url, UriKind.Absolute);
+
+                            using HttpClient httpClient = new();
+                            httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMS);
+
+                            await httpClient.GetAsync(uri);
+                            return true;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        return false;
+                    }
+
                     return false;
                 }
             });

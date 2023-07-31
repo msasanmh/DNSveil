@@ -8,6 +8,21 @@ namespace SecureDNSClient
 {
     public partial class FormMain
     {
+        public DPIBasicBypassMode GetGoodbyeDpiModeBasic()
+        {
+            if (CustomRadioButtonDPIMode1.Checked) return DPIBasicBypassMode.Mode1;
+            else if (CustomRadioButtonDPIMode2.Checked) return DPIBasicBypassMode.Mode2;
+            else if (CustomRadioButtonDPIMode3.Checked) return DPIBasicBypassMode.Mode3;
+            else if (CustomRadioButtonDPIMode4.Checked) return DPIBasicBypassMode.Mode4;
+            else if (CustomRadioButtonDPIMode5.Checked) return DPIBasicBypassMode.Mode5;
+            else if (CustomRadioButtonDPIMode6.Checked) return DPIBasicBypassMode.Mode6;
+            else if (CustomRadioButtonDPIModeLight.Checked) return DPIBasicBypassMode.Light;
+            else if (CustomRadioButtonDPIModeMedium.Checked) return DPIBasicBypassMode.Medium;
+            else if (CustomRadioButtonDPIModeHigh.Checked) return DPIBasicBypassMode.High;
+            else if (CustomRadioButtonDPIModeExtreme.Checked) return DPIBasicBypassMode.Extreme;
+            else return DPIBasicBypassMode.Light;
+        }
+
         private void DPIBasic()
         {
             //// Write Connect first to log
@@ -43,66 +58,12 @@ namespace SecureDNSClient
                 fallbackDnsPort = int.Parse(CustomNumericUpDownSettingBootstrapDnsPort.Value.ToString());
             }
 
-            if (CustomRadioButtonDPIMode1.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Mode1, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIMode2.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Mode2, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIMode3.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Mode3, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIMode4.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Mode4, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIMode5.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Mode5, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIMode6.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Mode6, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIModeLight.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Light, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIModeMedium.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Medium, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIModeHigh.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.High, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
-            else if (CustomRadioButtonDPIModeExtreme.Checked)
-            {
-                DPIBasicBypass dpiBypass = new(DPIBasicBypassMode.Extreme, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
-                args = dpiBypass.Args;
-                text = dpiBypass.Text;
-            }
+            // Get User Mode
+            DPIBasicBypassMode mode = GetGoodbyeDpiModeBasic();
+
+            DPIBasicBypass dpiBypass = new(mode, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
+            args = dpiBypass.Args;
+            text = dpiBypass.Text;
 
             // Execute GoodByeDPI
             PIDGoodbyeDPI = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());

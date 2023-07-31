@@ -281,24 +281,26 @@ namespace SDCHttpProxy
                 else if (input.ToLower().StartsWith("fakednsprogram"))
                 {
                     // fakednsprogram -disable/-text/-file -filePathOrText
-                    string[] split = input.Split(" -", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    if (split.Length != 3)
-                    {
-                        WrongCommand();
-                        continue;
-                    }
-
+                    string separator = " -";
+                    string[] split = input.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+                    
                     HTTPProxyServer.Program.FakeDns.Mode mode = HTTPProxyServer.Program.FakeDns.Mode.Disable;
                     if (split[1].ToLower().Equals("text")) mode = HTTPProxyServer.Program.FakeDns.Mode.Text;
                     else if (split[1].ToLower().Equals("file")) mode = HTTPProxyServer.Program.FakeDns.Mode.File;
                     else if (split[1].ToLower().Equals("disable")) mode = HTTPProxyServer.Program.FakeDns.Mode.Disable;
-
+                    
                     string filePathOrText = split[2];
                     if (mode == HTTPProxyServer.Program.FakeDns.Mode.File)
-                        filePathOrText = Path.GetFullPath(split[2]);
+                    {
+                        string filePath = string.Empty;
+                        for (int n = 2; n < split.Length; n++)
+                            filePath += $"{split[n]}{separator}";
+                        if (filePath.EndsWith(separator)) filePath = filePath[0..^2];
+                        filePathOrText = Path.GetFullPath(filePath);
+                    }
                     if (mode == HTTPProxyServer.Program.FakeDns.Mode.Text)
                         filePathOrText = split[2].ToLower().Replace(@"\n", Environment.NewLine);
-
+                    
                     FakeDnsProgram.Set(mode, filePathOrText);
                     HTTPProxy.EnableFakeDNS(FakeDnsProgram);
                     WriteToStdout($"Done (FakeDNSProgram). Mode: {mode}.");
@@ -308,13 +310,9 @@ namespace SDCHttpProxy
                 else if (input.ToLower().StartsWith("bwlistprogram"))
                 {
                     // bwlistprogram -disable/-blacklistfile/-blacklisttext/-whitelistfile/-whitelisttext -filePathOrText
-                    string[] split = input.Split(" -", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    if (split.Length != 3)
-                    {
-                        WrongCommand();
-                        continue;
-                    }
-
+                    string separator = " -";
+                    string[] split = input.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+                    
                     HTTPProxyServer.Program.BlackWhiteList.Mode mode = HTTPProxyServer.Program.BlackWhiteList.Mode.Disable;
                     if (split[1].ToLower().Equals("blacklistfile")) mode = HTTPProxyServer.Program.BlackWhiteList.Mode.BlackListFile;
                     else if (split[1].ToLower().Equals("blacklisttext")) mode = HTTPProxyServer.Program.BlackWhiteList.Mode.BlackListText;
@@ -324,7 +322,13 @@ namespace SDCHttpProxy
 
                     string filePathOrText = split[2];
                     if (mode == HTTPProxyServer.Program.BlackWhiteList.Mode.BlackListFile || mode == HTTPProxyServer.Program.BlackWhiteList.Mode.WhiteListFile)
-                        filePathOrText = Path.GetFullPath(split[2]); // Path
+                    {
+                        string filePath = string.Empty;
+                        for (int n = 2; n < split.Length; n++)
+                            filePath += $"{split[n]}{separator}";
+                        if (filePath.EndsWith(separator)) filePath = filePath[0..^2];
+                        filePathOrText = Path.GetFullPath(filePath);
+                    }
                     else if (mode == HTTPProxyServer.Program.BlackWhiteList.Mode.BlackListText || mode == HTTPProxyServer.Program.BlackWhiteList.Mode.WhiteListText)
                         filePathOrText = split[2].ToLower().Replace(@"\n", Environment.NewLine); // Text
 
@@ -337,13 +341,9 @@ namespace SDCHttpProxy
                 else if (input.ToLower().StartsWith("dontbypassprogram"))
                 {
                     // dontbypassprogram -disable/-text/-file -filePathOrText
-                    string[] split = input.Split(" -", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    if (split.Length != 3)
-                    {
-                        WrongCommand();
-                        continue;
-                    }
-
+                    string separator = " -";
+                    string[] split = input.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+                    
                     HTTPProxyServer.Program.DontBypass.Mode mode = HTTPProxyServer.Program.DontBypass.Mode.Disable;
                     if (split[1].ToLower().Equals("file")) mode = HTTPProxyServer.Program.DontBypass.Mode.File;
                     else if (split[1].ToLower().Equals("text")) mode = HTTPProxyServer.Program.DontBypass.Mode.Text;
@@ -351,7 +351,13 @@ namespace SDCHttpProxy
 
                     string filePathOrText = split[2];
                     if (mode == HTTPProxyServer.Program.DontBypass.Mode.File)
-                        filePathOrText = Path.GetFullPath(split[2]); // Path
+                    {
+                        string filePath = string.Empty;
+                        for (int n = 2; n < split.Length; n++)
+                            filePath += $"{split[n]}{separator}";
+                        if (filePath.EndsWith(separator)) filePath = filePath[0..^2];
+                        filePathOrText = Path.GetFullPath(filePath);
+                    }
                     else if (mode == HTTPProxyServer.Program.DontBypass.Mode.Text)
                         filePathOrText = split[2].ToLower().Replace(@"\n", Environment.NewLine); // Text
 
@@ -398,6 +404,21 @@ namespace SDCHttpProxy
                     int percent = int.Parse(split[1]);
                     HTTPProxy.KillOnCpuUsage = percent;
                     WriteToStdout($"Done (KillOnCpuUsage). {percent}%.");
+                }
+
+                else if (input.ToLower().StartsWith("requesttimeout"))
+                {
+                    // requesttimeout -sec
+                    string[] split = input.ToLower().Split(" -", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    if (split.Length != 2)
+                    {
+                        WrongCommand();
+                        continue;
+                    }
+
+                    int reqTimeoutSec = int.Parse(split[1]);
+                    HTTPProxy.RequestTimeoutSec = reqTimeoutSec;
+                    WriteToStdout($"Done (RequestTimeout). {reqTimeoutSec} Second.");
                 }
 
                 // WriteRequestsToLog
@@ -547,6 +568,9 @@ namespace SDCHttpProxy
 
             help += $"{NL}Kill On CPU Usage. Command:{NL}";
             help += $"killoncpuusage -percent{NL}";
+            
+            help += $"{NL}Kill Request On Timeout (Sec). Command:{NL}";
+            help += $"requesttimeout -sec{NL}";
 
             help += $"{NL}Write Requests to Stderr. Command:{NL}";
             help += $"writerequests -true/-false{NL}";

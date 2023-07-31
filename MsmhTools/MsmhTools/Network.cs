@@ -661,7 +661,7 @@ namespace MsmhTools
                 }
                 catch(Exception ex)
                 {
-                    Debug.WriteLine(ex.Message);
+                    Debug.WriteLine("IsInternetAlive: " + ex.Message);
                     return false;
                 }
             }

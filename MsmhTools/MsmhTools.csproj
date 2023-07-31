@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>$(VersionPrefix)1.1.0</Version>
+    <Version>$(VersionPrefix)1.2.0</Version>
     <Company>$(Authors)MSasanMH</Company>
     <Copyright>MSasanMH</Copyright>
   </PropertyGroup>

@@ -1,12 +1,8 @@
 ﻿using CustomControls;
 using MsmhTools;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SecureDNSClient
 {
@@ -140,7 +136,7 @@ namespace SecureDNSClient
                     // Unset to DHCP
                     await Task.Run(() => Network.UnsetDNS(nic));
                     Task.Delay(200).Wait();
-                    UnsetSavedDnsDHCP();
+                    await UnsetSavedDnsDHCP();
                 }
                 else
                 {
@@ -149,7 +145,7 @@ namespace SecureDNSClient
                     string dns2 = CustomTextBoxSettingUnsetDns2.Text;
                     await Task.Run(() => Network.UnsetDNS(nic, dns1, dns2));
                     Task.Delay(200).Wait();
-                    UnsetSavedDnsStatic(dns1, dns2);
+                    await UnsetSavedDnsStatic(dns1, dns2);
                 }
 
                 IsDNSUnsetting = false;
@@ -173,5 +169,64 @@ namespace SecureDNSClient
                 CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
             }
         }
+
+        private async Task UnsetSavedDNS()
+        {
+            bool unsetToDHCP = CustomRadioButtonSettingUnsetDnsToDhcp.Checked;
+            if (unsetToDHCP)
+            {
+                // Unset to DHCP
+                await UnsetSavedDnsDHCP();
+            }
+            else
+            {
+                // Unset to Static
+                string dns1 = CustomTextBoxSettingUnsetDns1.Text;
+                string dns2 = CustomTextBoxSettingUnsetDns2.Text;
+                await UnsetSavedDnsStatic(dns1, dns2);
+            }
+        }
+
+        // Unset to DHCP
+        private async Task UnsetSavedDnsDHCP()
+        {
+            if (File.Exists(SecureDNS.NicNamePath))
+            {
+                string nicName = File.ReadAllText(SecureDNS.NicNamePath).Replace(NL, string.Empty);
+                if (nicName.Length > 0)
+                {
+                    NetworkInterface? nic = Network.GetNICByName(nicName);
+                    if (nic != null)
+                    {
+                        await Task.Run(() => Network.UnsetDNS(nic));
+                        IsDNSSet = false;
+                    }
+                }
+            }
+        }
+
+        // Unset to Static
+        private async Task UnsetSavedDnsStatic(string dns1, string dns2)
+        {
+            if (File.Exists(SecureDNS.NicNamePath))
+            {
+                string nicName = File.ReadAllText(SecureDNS.NicNamePath).Replace(NL, string.Empty);
+                if (nicName.Length > 0)
+                {
+                    NetworkInterface? nic = Network.GetNICByName(nicName);
+                    if (nic != null)
+                    {
+                        dns1 = dns1.Trim();
+                        dns2 = dns2.Trim();
+                        if (Network.IsIPv4Valid(dns1, out IPAddress _) && Network.IsIPv4Valid(dns2, out IPAddress _))
+                        {
+                            await Task.Run(() => Network.UnsetDNS(nic, dns1, dns2));
+                            IsDNSSet = false;
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }

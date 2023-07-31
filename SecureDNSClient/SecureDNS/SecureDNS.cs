@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Net;
 using System.Diagnostics;
-using MsmhTools;
-using System.Net.Sockets;
 using CustomControls;
 using System.Net.NetworkInformation;
 using System.Reflection;
+using System.Text.Json;
+using MsmhTools;
 using MsmhTools.DnsTool;
 
 namespace SecureDNSClient
@@ -13,10 +13,7 @@ namespace SecureDNSClient
     public class SecureDNS
     {
         // App Directory Path
-        public static readonly string CurrentPath = AppContext.BaseDirectory;
-
-        // Settings XML path
-        public static readonly string SettingsXmlPath = Path.GetFullPath(Info.ApplicationFullPathWithoutExtension + ".xml");
+        public static readonly string CurrentPath = Path.GetFullPath(AppContext.BaseDirectory);
 
         // Binaries path
         public static readonly string BinaryDirPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary"));
@@ -24,6 +21,7 @@ namespace SecureDNSClient
         public static readonly string DnsProxy = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "dnsproxy.exe"));
         public string DnsProxyDll = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
         public static readonly string DNSCrypt = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "dnscrypt-proxy.exe"));
+        public static readonly string HttpProxyPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "SDCHttpProxy.exe"));
         public static readonly string GoodbyeDpi = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "goodbyedpi.exe"));
         public static readonly string WinDivert = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "WinDivert.dll"));
         public static readonly string WinDivert32 = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "WinDivert32.sys"));
@@ -31,14 +29,6 @@ namespace SecureDNSClient
 
         // Binaries file version path
         public static readonly string BinariesVersionPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "versions.txt"));
-
-        // Bootstrap and Fallback
-        public static readonly IPAddress BootstrapDnsIPv4 = IPAddress.Parse("8.8.8.8");
-        public static readonly IPAddress BootstrapDnsIPv6 = IPAddress.Parse("2001:4860:4860::8888");
-        public static readonly int BootstrapDnsPort = 53;
-        public static readonly IPAddress FallbackDnsIPv4 = IPAddress.Parse("8.8.8.8");
-        public static readonly IPAddress FallbackDnsIPv6 = IPAddress.Parse("2001:4860:4860::8888");
-        public static readonly int FallbackDnsPort = 53;
 
         // Certificates path
         public static readonly string CertificateDirPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate"));
@@ -51,237 +41,94 @@ namespace SecureDNSClient
         public static readonly string CertIssuerSubjectName = "CN=SecureDNSClient Authority";
         public static readonly string CertSubjectName = "CN=SecureDNSClient";
 
-        // HTTP Proxy & Programs
-        public static readonly string HttpProxyPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "SDCHttpProxy.exe"));
-        public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(CurrentPath, "FakeDnsRules.txt"));
-        public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(CurrentPath, "BlackWhiteList.txt"));
-        public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(CurrentPath, "DontBypassList.txt"));
-
         // Others
         public static readonly string DNSCryptConfigPath = Path.GetFullPath(Path.Combine(CurrentPath, "dnscrypt-proxy.toml"));
         public static readonly string DNSCryptConfigCloudflarePath = Path.GetFullPath(Path.Combine(CurrentPath, "dnscrypt-proxy-fakeproxy.toml"));
-        public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(CurrentPath, "CustomServers.txt"));
-        public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(CurrentPath, "CustomServers_Working.txt"));
-        public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(CurrentPath, "DPIBlacklist.txt"));
-        public static readonly string DPIBlacklistCFPath = Path.GetFullPath(Path.Combine(CurrentPath, "DPIBlacklistCF.txt"));
-        public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(CurrentPath, "NicName.txt"));
+        public static readonly string DPIBlacklistFPPath = Path.GetFullPath(Path.Combine(CurrentPath, "DPIBlacklistFP.txt"));
         public static readonly string HTTPProxyServerErrorLogPath = Path.GetFullPath(Path.Combine(CurrentPath, "HTTPProxyServerError.log"));
         public static readonly string HTTPProxyServerRequestLogPath = Path.GetFullPath(Path.Combine(CurrentPath, "HTTPProxyServerRequest.log"));
-        public static readonly string SavedEncodedDnsPath = Path.GetFullPath(Path.Combine(CurrentPath, "SavedEncodedDns.txt"));
 
-        /// <summary>
-        /// Check DNS and get latency (ms)
-        /// </summary>
-        /// <param name="domain"></param>
-        /// <param name="dnsServer"></param>
-        /// <param name="timeoutMS"></param>
-        /// <param name="processPriorityClass"></param>
-        /// <returns>Returns -1 if DNS fail</returns>
-        public static int CheckDns(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
+        // User Data
+        private const string UDN = "user";
+        public static readonly string UserDataDirPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN));
+        public static readonly string SettingsXmlPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, Info.ApplicationNameWithoutExtension + ".xml")); // Settings XML path
+        public static readonly string SettingsXmlDnsLookup = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DnsLookupSettings.xml"));
+        public static readonly string SettingsXmlIpScanner = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "IpScannerSettings.xml"));
+        public static readonly string UserIdPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "uid.txt"));
+        public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "FakeDnsRules.txt"));
+        public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "BlackWhiteList.txt"));
+        public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DontBypassList.txt"));
+        public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CustomServers.txt"));
+        public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CustomServers_Working.txt"));
+        public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DPIBlacklist.txt"));
+        public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "NicName.txt"));
+        public static readonly string SavedEncodedDnsPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "SavedEncodedDns.txt"));
+
+        // User Data Old Path
+        public static readonly string OldSettingsXmlPath = Path.GetFullPath(Info.ApplicationFullPathWithoutExtension + ".xml");
+        public static readonly string OldSettingsXmlDnsLookup = Path.GetFullPath(CurrentPath + "DnsLookupSettings.xml");
+        public static readonly string OldSettingsXmlIpScanner = Path.GetFullPath(CurrentPath + "IpScannerSettings.xml");
+        public static readonly string OldUserIdPath = Path.GetFullPath(Path.Combine(CurrentPath, "uid.txt"));
+        public static readonly string OldFakeDnsRulesPath = Path.GetFullPath(Path.Combine(CurrentPath, "FakeDnsRules.txt"));
+        public static readonly string OldBlackWhiteListPath = Path.GetFullPath(Path.Combine(CurrentPath, "BlackWhiteList.txt"));
+        public static readonly string OldDontBypassListPath = Path.GetFullPath(Path.Combine(CurrentPath, "DontBypassList.txt"));
+        public static readonly string OldCustomServersPath = Path.GetFullPath(Path.Combine(CurrentPath, "CustomServers.txt"));
+        public static readonly string OldWorkingServersPath = Path.GetFullPath(Path.Combine(CurrentPath, "CustomServers_Working.txt"));
+        public static readonly string OldDPIBlacklistPath = Path.GetFullPath(Path.Combine(CurrentPath, "DPIBlacklist.txt"));
+        public static readonly string OldNicNamePath = Path.GetFullPath(Path.Combine(CurrentPath, "NicName.txt"));
+        public static readonly string OldSavedEncodedDnsPath = Path.GetFullPath(Path.Combine(CurrentPath, "SavedEncodedDns.txt"));
+
+        // Bootstrap and Fallback
+        public static readonly IPAddress BootstrapDnsIPv4 = IPAddress.Parse("8.8.8.8");
+        public static readonly IPAddress BootstrapDnsIPv6 = IPAddress.Parse("2001:4860:4860::8888");
+        public static readonly int BootstrapDnsPort = 53;
+        public static readonly IPAddress FallbackDnsIPv4 = IPAddress.Parse("8.8.8.8");
+        public static readonly IPAddress FallbackDnsIPv6 = IPAddress.Parse("2001:4860:4860::8888");
+        public static readonly int FallbackDnsPort = 53;
+
+        public static void GenerateUid(Control control)
         {
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-            bool isDnsOK = CheckDnsWork(domain, dnsServer, timeoutMS, processPriorityClass);
-            stopwatch.Stop();
-
-            return isDnsOK ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
-        }
-
-        /// <summary>
-        /// Check DNS and get latency (ms)
-        /// </summary>
-        /// <param name="domain"></param>
-        /// <param name="dnsServer"></param>
-        /// <param name="timeoutMS"></param>
-        /// <param name="processPriorityClass"></param>
-        /// <returns>Returns -1 if DNS fail</returns>
-        public static int CheckDns(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
-        {
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-            bool isDnsOK = CheckDnsWork(insecure, domain, dnsServer, timeoutMS, localPort, bootstrap, bootsratPort, processPriorityClass);
-            stopwatch.Stop();
-
-            return isDnsOK ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
-        }
-
-        /// <summary>
-        /// Check DNS and get latency (ms)
-        /// </summary>
-        /// <param name="domain"></param>
-        /// <param name="dnsServer"></param>
-        /// <param name="timeoutMS"></param>
-        /// <param name="processPriorityClass"></param>
-        /// <returns>Returns -1 if DNS fail</returns>
-        public static async Task<int> CheckDnsAsync(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
-        {
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-            bool isDnsOK = await CheckDnsWorkAsync(domain, dnsServer, timeoutMS, processPriorityClass);
-            stopwatch.Stop();
-
-            return isDnsOK ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
-        }
-
-        /// <summary>
-        /// Check DNS and get latency (ms)
-        /// </summary>
-        /// <param name="domain"></param>
-        /// <param name="dnsServer"></param>
-        /// <param name="timeoutMS"></param>
-        /// <param name="processPriorityClass"></param>
-        /// <returns>Returns -1 if DNS fail</returns>
-        public static async Task<int> CheckDnsAsync(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
-        {
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-            bool isDnsOK = await CheckDnsWorkAsync(insecure, domain, dnsServer, timeoutMS, localPort, bootstrap, bootsratPort, processPriorityClass);
-            stopwatch.Stop();
-
-            return isDnsOK ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
-        }
-
-        private static bool CheckDnsWork(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
-        {
-            var task = Task.Run(() =>
+            Task.Run(() =>
             {
-                string args = domain + " " + dnsServer;
-                string? result = ProcessManager.Execute(out Process _, DnsLookup, args, true, false, CurrentPath, processPriorityClass);
-
-                if (!string.IsNullOrEmpty(result))
+                try
                 {
-                    return result.Contains("ANSWER SECTION");
-                }
-                else
-                    return false;
-            });
-
-            if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
-                return task.Result;
-            else
-                return false;
-        }
-
-        private static bool CheckDnsWork(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
-        {
-            Task<bool> task = Task.Run(async () =>
-            {
-                // Start local server
-                string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
-                if (insecure) dnsProxyArgs += "--insecure ";
-                dnsProxyArgs += $"-u {dnsServer} -b {bootstrap}:{bootsratPort}";
-                int localServerPID = ProcessManager.ExecuteOnly(out Process _, DnsProxy, dnsProxyArgs, true, false, CurrentPath, processPriorityClass);
-
-                // Wait for DNSProxy
-                Task wait1 = Task.Run(() =>
-                {
-                    while (!ProcessManager.FindProcessByPID(localServerPID))
+                    string uid;
+                    if (File.Exists(UserIdPath))
+                        uid = File.ReadAllText(UserIdPath);
+                    else
                     {
-                        if (ProcessManager.FindProcessByPID(localServerPID))
-                            break;
+                        uid = Info.GetUniqueIdString(true);
+                        File.WriteAllText(UserIdPath, uid);
                     }
-                    return Task.CompletedTask;
-                });
-                await wait1.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS));
 
-                string args = $"{domain} {IPAddress.Loopback}:{localPort}";
-                string? result = ProcessManager.Execute(out Process _, DnsLookup, args, true, false, CurrentPath, processPriorityClass);
+                    uid = uid.Trim();
+                    if (string.IsNullOrEmpty(uid)) return;
+                    string counterUrl = "https://msmh.html-5.me/counter.php";
+                    string productVersion = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion ?? "0.0.0";
+                    string args = $"{counterUrl}?uid={uid}&sdcver={productVersion}";
 
-                if (!string.IsNullOrEmpty(result))
-                {
-                    ProcessManager.KillProcessByPID(localServerPID);
-
-                    // Wait for DNSProxy to exit
-                    Task wait2 = Task.Run(() =>
+                    if (!Network.IsInternetAlive()) return;
+                    
+                    control.InvokeIt(() =>
                     {
-                        while (ProcessManager.FindProcessByPID(localServerPID))
+                        WebBrowser webBrowser = new();
+                        webBrowser.Navigate(new Uri(args));
+                        webBrowser.Refresh(WebBrowserRefreshOption.Completely);
+                        webBrowser.DocumentCompleted -= WebBrowser_DocumentCompleted;
+                        webBrowser.DocumentCompleted += WebBrowser_DocumentCompleted;
+                        void WebBrowser_DocumentCompleted(object? sender, WebBrowserDocumentCompletedEventArgs e)
                         {
-                            if (!ProcessManager.FindProcessByPID(localServerPID))
-                                break;
+                            // To make sure page is fully loaded
+                            webBrowser.Dispose();
+                            Debug.WriteLine("Counter Success.");
                         }
-                        return Task.CompletedTask;
                     });
-                    await wait2.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS));
-
-                    return result.Contains("ANSWER SECTION");
                 }
-                else
-                    return false;
-            });
-
-            if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
-                return task.Result;
-            else
-                return false;
-        }
-
-        private static async Task<bool> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
-        {
-            try
-            {
-                var task = Task.Run(() =>
-                    {
-                        string args = domain + " " + dnsServer;
-                        string? result = ProcessManager.Execute(out Process _, DnsLookup, args, true, false, CurrentPath, processPriorityClass);
-
-                        if (!string.IsNullOrEmpty(result))
-                        {
-                            return result.Contains("ANSWER SECTION");
-                        }
-                        else
-                            return false;
-                    });
-
-                if (await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS)))
-                    return task.Result;
-                else
-                    return false;
-            }
-            catch (TimeoutException)
-            {
-                return false;
-            }
-        }
-
-        private static async Task<bool> CheckDnsWorkAsync(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
-        {
-            // Start local server
-            string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
-            if (insecure) dnsProxyArgs += "--insecure ";
-            dnsProxyArgs += $"-u {dnsServer} -b {bootstrap}:{bootsratPort}";
-            int localServerPID = ProcessManager.ExecuteOnly(out Process _, DnsProxy, dnsProxyArgs, true, false, CurrentPath, processPriorityClass);
-
-            // Wait for DNSProxy
-            await Task.Run(() =>
-            {
-                while (!ProcessManager.FindProcessByPID(localServerPID))
+                catch (Exception ex)
                 {
-                    if (ProcessManager.FindProcessByPID(localServerPID))
-                        break;
+                    Debug.WriteLine("GenerateUid: " + ex.Message);
                 }
             });
-
-            string args = $"{domain} {IPAddress.Loopback}:{localPort}";
-            string? result = ProcessManager.Execute(out Process _, DnsLookup, args, true, false, CurrentPath, processPriorityClass);
-
-            if (!string.IsNullOrEmpty(result))
-            {
-                ProcessManager.KillProcessByPID(localServerPID);
-
-                // Wait for DNSProxy to exit
-                await Task.Run(() =>
-                {
-                    while (ProcessManager.FindProcessByPID(localServerPID))
-                    {
-                        if (!ProcessManager.FindProcessByPID(localServerPID))
-                            break;
-                    }
-                });
-
-                return result.Contains("ANSWER SECTION");
-            }
-            else
-                return false;
         }
 
         public static bool IsDomainValid(string domain)

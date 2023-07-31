@@ -22,36 +22,6 @@ namespace MsmhTools.HTTPProxyServer
         public Request Request { get; set; }
 
         /// <summary>
-        /// Source IP address.
-        /// </summary>
-        public string SourceIp { get; set; }
-
-        /// <summary>
-        /// Source TCP port.
-        /// </summary>
-        public int SourcePort { get; set; } 
-
-        /// <summary>
-        /// Destination IP address.
-        /// </summary>
-        public string DestIp { get; set; }
-
-        /// <summary>
-        /// Destination TCP port.
-        /// </summary>
-        public int DestPort { get; set; }
-
-        /// <summary>
-        /// Destination hostname.
-        /// </summary>
-        public string DestHostname { get; set; }
-
-        /// <summary>
-        /// Destination host port.
-        /// </summary>
-        public int DestHostPort { get; set; }
-
-        /// <summary>
         /// The TCP client instance for the requestor.
         /// </summary>
         public TcpClient ClientTcpClient { get; set; }
@@ -72,6 +42,7 @@ namespace MsmhTools.HTTPProxyServer
         public Stream ServerStream { get; set; }
 
         private bool _Active = true;
+        private readonly Stopwatch KillOnTimeout = new();
 
         public event EventHandler<EventArgs>? OnErrorOccurred;
         public event EventHandler<EventArgs>? OnDebugInfoReceived;
@@ -97,12 +68,6 @@ namespace MsmhTools.HTTPProxyServer
 
             Request = request;
             TimestampUtc = DateTime.Now.ToUniversalTime();
-            SourceIp = request.SourceIp;
-            SourcePort = request.SourcePort; 
-            DestIp = request.DestIp;
-            DestPort = request.DestPort;
-            DestHostname = request.DestHostname;
-            DestHostPort = request.DestHostPort;
 
             ClientTcpClient = client ?? throw new ArgumentNullException(nameof(client));
             ClientTcpClient.NoDelay = true;
@@ -141,7 +106,7 @@ namespace MsmhTools.HTTPProxyServer
         /// <returns>String.</returns>
         public string Source()
         {
-            return SourceIp + ":" + SourcePort;
+            return Request.SourceIp + ":" + Request.SourcePort;
         }
 
         /// <summary>
@@ -150,7 +115,7 @@ namespace MsmhTools.HTTPProxyServer
         /// <returns>String.</returns>
         public string Destination()
         {
-            return DestIp + ":" + DestPort + " [" + DestHostname + ":" + DestHostPort + "]";
+            return Request.DestIp + ":" + Request.DestPort + " [" + Request.DestHostname + ":" + Request.DestHostPort + "]";
         }
 
         /// <summary>
@@ -170,7 +135,7 @@ namespace MsmhTools.HTTPProxyServer
 
                 if (ClientTcpClient.Client != null)
                 {
-                    TcpState clientState = GetTcpRemoteState(ClientTcpClient); 
+                    TcpState clientState = GetTcpRemoteState(ClientTcpClient);
 
                     if (clientState == TcpState.Established
                         || clientState == TcpState.Listen
@@ -208,7 +173,17 @@ namespace MsmhTools.HTTPProxyServer
                 }
             }
 
-            _Active = _Active && clientActive && clientSocketActive && serverActive && serverSocketActive;
+            if (Request.TimeoutSec != 0 &&
+                KillOnTimeout.ElapsedMilliseconds > TimeSpan.FromSeconds(Request.TimeoutSec).TotalMilliseconds)
+            {
+                string msg = $"Killed Request On Timeout({Request.TimeoutSec} Sec): {Request.DestHostname}:{Request.DestHostPort}";
+                OnDebugInfoReceived?.Invoke(msg, EventArgs.Empty);
+                Debug.WriteLine(msg);
+                _Active = false;
+                KillOnTimeout.Stop();
+            }
+            else
+                _Active = clientActive && clientSocketActive && serverActive && serverSocketActive;
             return _Active;
         }
 
@@ -535,7 +510,7 @@ namespace MsmhTools.HTTPProxyServer
                 _Active = false;
             }
         }
-
+        
         private async void ClientReaderAsync()
         {
             await Task.Run(async () =>
@@ -553,15 +528,19 @@ namespace MsmhTools.HTTPProxyServer
 
                         if (data != null && data.Length > 0)
                         {
+                            if (!KillOnTimeout.IsRunning) KillOnTimeout.Start();
+                            KillOnTimeout.Restart();
+
                             // Event
                             msgEvent = $"ClientReaderAsync {Source()} to {Destination()} read {data.Length} bytes.";
                             OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
-                            ServerSend(data);
-
+                            if (ClientTcpClient.Connected)
+                                ServerSend(data);
+                            
                             data = null;
                         }
-
+                        
                         if (!_Active) break;
                     }
                 }
@@ -604,7 +583,8 @@ namespace MsmhTools.HTTPProxyServer
                             msgEvent = $"ServerReaderAsync {Destination()} to {Source()} read {data.Length} bytes.";
                             OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
-                            ClientSend(data);
+                            if (ServerTcpClient.Connected)
+                                ClientSend(data);
 
                             data = null;
                         }
@@ -632,14 +612,17 @@ namespace MsmhTools.HTTPProxyServer
 
         private void ClientSend(byte[] data)
         {
+            // We don't have TLS Handshake here
             if (ClientTcpClient.Client == null) return;
-            //Send(data, ClientTcpClient.Client);
+            if (!ClientTcpClient.Connected) return;
             ClientTcpClient.Client.Send(data);
         }
 
         private void ServerSend(byte[] data)
         {
+            // We do have TLS Handshake here
             if (ServerTcpClient.Client == null) return;
+            if (!ServerTcpClient.Connected) return;
             if (Request.ApplyDpiBypass)
                 Send(data, ServerTcpClient.Client);
             else
@@ -650,8 +633,8 @@ namespace MsmhTools.HTTPProxyServer
         public void EnableDPIBypass(HTTPProxyServer.Program.DPIBypass dpiBypass)
         {
             ConstantDPIBypass = dpiBypass;
-            ConstantDPIBypass.DestHostname = DestHostname;
-            ConstantDPIBypass.DestPort = DestHostPort;
+            ConstantDPIBypass.DestHostname = Request.DestHostname;
+            ConstantDPIBypass.DestPort = Request.DestHostPort;
         }
 
         private void Send(byte[] data, Socket? socket)
@@ -661,8 +644,8 @@ namespace MsmhTools.HTTPProxyServer
                 if (ConstantDPIBypass.DPIBypassMode == HTTPProxyServer.Program.DPIBypass.Mode.Disable)
                 {
                     HTTPProxyServer.Program.DPIBypass bp = HTTPProxyServer.StaticDPIBypassProgram;
-                    bp.DestHostname = DestHostname;
-                    bp.DestPort = DestHostPort;
+                    bp.DestHostname = Request.DestHostname;
+                    bp.DestPort = Request.DestHostPort;
                     if (bp.DPIBypassMode == HTTPProxyServer.Program.DPIBypass.Mode.Program)
                     {
                         HTTPProxyServer.Program.DPIBypass.ProgramMode programMode = new(data, socket);

@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SecureDNSClient
 {
@@ -17,6 +16,56 @@ namespace SecureDNSClient
         /// <returns>Returns True if everything's ok.</returns>
         public bool ApplyFakeProxy(HTTPProxyServer proxy)
         {
+            bool isOk = ApplyFakeProxyOut(out HTTPProxyServer.Program.BlackWhiteList? wListProgram, out HTTPProxyServer.Program.FakeDns? fakeDNSProgram);
+            if (!isOk) return false;
+            if (wListProgram == null) return false;
+            if (fakeDNSProgram == null) return false;
+
+            // Add Programs to Proxy
+            proxy.BlockPort80 = true;
+            proxy.RequestTimeoutSec = 0; // 0 = Disable
+            proxy.EnableBlackWhiteList(wListProgram);
+            proxy.EnableFakeDNS(fakeDNSProgram);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Apply Fake Proxy (Fake DNS and White List)
+        /// </summary>
+        /// <param name="fakeProcess">Process</param>
+        /// <returns>Returns True if everything's ok.</returns>
+        public async Task<bool> ApplyFakeProxy(Process fakeProcess)
+        {
+            bool isOk = ApplyFakeProxyOut(out HTTPProxyServer.Program.BlackWhiteList? wListProgram, out HTTPProxyServer.Program.FakeDns? fakeDNSProgram);
+            if (!isOk) return false;
+            if (wListProgram == null) return false;
+            if (fakeDNSProgram == null) return false;
+
+            // Add Programs to Proxy
+            // Get and set block port 80 setting
+            string blockPort80Command = $"blockport80 -true";
+            Debug.WriteLine(blockPort80Command);
+            await ProcessManager.SendCommandAsync(fakeProcess, blockPort80Command);
+
+            // Kill Request on Timeout (Sec)
+            string killOnRequestTimeoutCommand = $"requesttimeout -0";
+            Debug.WriteLine(killOnRequestTimeoutCommand);
+            await ProcessManager.SendCommandAsync(fakeProcess, killOnRequestTimeoutCommand);
+
+            string wlCommand = $"bwlistprogram -{wListProgram.ListMode} -{ConvertNewLineToN(wListProgram.TextContent)}";
+            Debug.WriteLine(wlCommand);
+            await ProcessManager.SendCommandAsync(fakeProcess, wlCommand);
+
+            string fdCommand = $"fakednsprogram -{fakeDNSProgram.FakeDnsMode} -{ConvertNewLineToN(fakeDNSProgram.TextContent)}";
+            Debug.WriteLine(fdCommand);
+            await ProcessManager.SendCommandAsync(fakeProcess, fdCommand);
+
+            return true;
+        }
+
+        public bool ApplyFakeProxyOut(out HTTPProxyServer.Program.BlackWhiteList? blackWhiteList, out HTTPProxyServer.Program.FakeDns? fakeDns)
+        {
             // Get DoH Clean Ip
             string dohCleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text;
             bool isValid = Network.IsIPv4Valid(dohCleanIP, out IPAddress _);
@@ -24,6 +73,8 @@ namespace SecureDNSClient
             {
                 string msg = $"Fake Proxy clean IP is not valid, check Settings.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                blackWhiteList = null;
+                fakeDns = null;
                 return false;
             }
 
@@ -35,6 +86,8 @@ namespace SecureDNSClient
                 // CF Clean IP is not valid
                 string msg = $"Fake Proxy clean IP is not clean.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                blackWhiteList = null;
+                fakeDns = null;
                 return false;
             }
 
@@ -46,15 +99,15 @@ namespace SecureDNSClient
             string host3 = "every1dns.com";
 
             // Set White List and Fake DNS Content (Rules)
-            string wlContent = $"{host}";
+            string wlContent = $"{host}\n{dohCleanIP}";
             string fdContent = $"{host}|{dohCleanIP}";
 
             if (host.Equals(host1) || host.Equals(host2) || host.Equals(host3))
             {
-                wlContent = $"{host1}\n{host2}\n{host3}";
+                wlContent = $"{host1}\n{host2}\n{host3}\n{dohCleanIP}";
                 fdContent = $"{host1}|{dohCleanIP}\n{host2}|{dohCleanIP}\n{host3}|{dohCleanIP}";
             }
-            
+
             // White List Program
             HTTPProxyServer.Program.BlackWhiteList wListProgram = new();
             wListProgram.Set(HTTPProxyServer.Program.BlackWhiteList.Mode.WhiteListText, wlContent);
@@ -63,11 +116,8 @@ namespace SecureDNSClient
             HTTPProxyServer.Program.FakeDns fakeDNSProgram = new();
             fakeDNSProgram.Set(HTTPProxyServer.Program.FakeDns.Mode.Text, fdContent);
 
-            // Add Programs to Proxy
-            proxy.BlockPort80 = true;
-            proxy.EnableBlackWhiteList(wListProgram);
-            proxy.EnableFakeDNS(fakeDNSProgram);
-
+            blackWhiteList = wListProgram;
+            fakeDns = fakeDNSProgram;
             return true;
         }
 
@@ -92,13 +142,13 @@ namespace SecureDNSClient
                 //    return;
                 //}
 
-                // Delete request log on > 100KB
+                // Delete request log on > 50KB
                 try
                 {
                     if (File.Exists(SecureDNS.HTTPProxyServerRequestLogPath))
                     {
                         long lenth = new FileInfo(SecureDNS.HTTPProxyServerRequestLogPath).Length;
-                        if (FileDirectory.ConvertSize(lenth, FileDirectory.SizeUnits.Byte, FileDirectory.SizeUnits.KB) > 100)
+                        if (FileDirectory.ConvertSize(lenth, FileDirectory.SizeUnits.Byte, FileDirectory.SizeUnits.KB) > 50)
                             File.Delete(SecureDNS.HTTPProxyServerRequestLogPath);
                     }
                 }
@@ -132,7 +182,6 @@ namespace SecureDNSClient
                             break;
                         await Task.Delay(100);
                     }
-                    return Task.CompletedTask;
                 });
                 await wait1.WaitAsync(TimeSpan.FromSeconds(5));
 
@@ -199,7 +248,7 @@ namespace SecureDNSClient
                     if (!string.IsNullOrEmpty(msg))
                     {
                         // Write to log
-                        if (!IsCheckingStarted && !IsConnecting && IsProxyActivated && IsSharing)
+                        if (!IsCheckingStarted && !IsConnecting && !IsExiting && IsProxyActivated && IsSharing)
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.Gray));
 
                         // Write to file
@@ -230,8 +279,7 @@ namespace SecureDNSClient
                 bool isDnsOk = await ApplyPDNS(ProxyProcess);
                 if (!isDnsOk)
                 {
-                    if (FakeProxy.IsRunning)
-                        FakeProxy.Stop();
+                    ProcessManager.KillProcessByPID(PIDFakeProxy);
                     ProcessManager.KillProcessByPID(PIDHttpProxy);
                     IsProxyActivating = false;
                     return;
@@ -241,8 +289,7 @@ namespace SecureDNSClient
                 bool isFakeDnsOk = await ApplyPFakeDNS(ProxyProcess);
                 if (!isFakeDnsOk)
                 {
-                    if (FakeProxy.IsRunning)
-                        FakeProxy.Stop();
+                    ProcessManager.KillProcessByPID(PIDFakeProxy);
                     ProcessManager.KillProcessByPID(PIDHttpProxy);
                     IsProxyActivating = false;
                     return;
@@ -252,8 +299,7 @@ namespace SecureDNSClient
                 bool isBlackWhiteListOk = await ApplyPBlackWhiteList(ProxyProcess);
                 if (!isBlackWhiteListOk)
                 {
-                    if (FakeProxy.IsRunning)
-                        FakeProxy.Stop();
+                    ProcessManager.KillProcessByPID(PIDFakeProxy);
                     ProcessManager.KillProcessByPID(PIDHttpProxy);
                     IsProxyActivating = false;
                     return;
@@ -263,8 +309,7 @@ namespace SecureDNSClient
                 bool isDontBypassOk = await ApplyPDontBypass(ProxyProcess);
                 if (!isDontBypassOk)
                 {
-                    if (FakeProxy.IsRunning)
-                        FakeProxy.Stop();
+                    ProcessManager.KillProcessByPID(PIDFakeProxy);
                     ProcessManager.KillProcessByPID(PIDHttpProxy);
                     IsProxyActivating = false;
                     return;
@@ -285,11 +330,29 @@ namespace SecureDNSClient
                 Debug.WriteLine(killOnCpuUsageCommand);
                 await ProcessManager.SendCommandAsync(ProxyProcess, killOnCpuUsageCommand);
 
+                // Kill Request on Timeout (Sec)
+                int reqTimeoutSec = Convert.ToInt32(CustomNumericUpDownSettingHTTPProxyKillRequestTimeout.Value);
+                string killOnRequestTimeoutCommand = $"requesttimeout -{reqTimeoutSec}";
+                Debug.WriteLine(killOnRequestTimeoutCommand);
+                await ProcessManager.SendCommandAsync(ProxyProcess, killOnRequestTimeoutCommand);
+
                 // Start Http Proxy
                 string startCommand = $"start -any -{httpProxyPort} -{handleReq}";
                 Debug.WriteLine(startCommand);
                 await ProcessManager.SendCommandAsync(ProxyProcess, startCommand);
                 await Task.Delay(500);
+
+                // Check for successfull comunication with console
+                ProxyProcess.StandardOutput.DiscardBufferedData();
+                string outMsg = await ProcessManager.SendCommandAndGetAnswerAsync(ProxyProcess, "out", false);
+                if (string.IsNullOrEmpty(outMsg) && !outMsg.StartsWith("Details"))
+                {
+                    ProcessManager.KillProcessByPID(PIDFakeProxy);
+                    ProcessManager.KillProcessByPID(PIDHttpProxy);
+                    FaildSendCommandMessage();
+                    IsProxyActivating = false;
+                    return;
+                }
 
                 // Write Sharing Address to log
                 LocalIP = Network.GetLocalIPv4(); // Update Local IP
@@ -314,8 +377,7 @@ namespace SecureDNSClient
                 if (IsProxyActivating || IsProxyDeactivating) return;
                 IsProxyDeactivating = true;
                 // Stop Fake Proxy
-                if (FakeProxy != null && FakeProxy.IsRunning)
-                    FakeProxy.Stop();
+                ProcessManager.KillProcessByPID(PIDFakeProxy);
 
                 // Stop HTTP Proxy
                 if (ProcessManager.FindProcessByPID(PIDHttpProxy))
@@ -326,7 +388,18 @@ namespace SecureDNSClient
                     if (IsProxySet) Network.UnsetProxy(false, true);
 
                     ProcessManager.KillProcessByPID(PIDHttpProxy);
-                    await Task.Delay(500);
+
+                    // Wait for HTTP Proxy to Exit
+                    Task wait1 = Task.Run(async () =>
+                    {
+                        while (ProcessManager.FindProcessByPID(PIDHttpProxy))
+                        {
+                            if (!ProcessManager.FindProcessByPID(PIDHttpProxy))
+                                break;
+                            await Task.Delay(100);
+                        }
+                    });
+                    await wait1.WaitAsync(TimeSpan.FromSeconds(5));
 
                     if (!ProcessManager.FindProcessByPID(PIDHttpProxy))
                     {
@@ -361,6 +434,64 @@ namespace SecureDNSClient
         public string ConvertNewLineToN(string text)
         {
             return text.Replace(NL, "\n").Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", @"\n").Replace(@"\n\n", @"\n");
+        }
+
+        private void ApplyPDpiChanges(Process process)
+        {
+            // If DNS is Setting or Unsetting Return
+            if (IsDNSSetting || IsDNSUnsetting) return;
+
+            ApplyPDpiChangesOut(out HTTPProxyServer.Program.DPIBypass.Mode bypassMode, out int beforSniChunks, out HTTPProxyServer.Program.DPIBypass.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay);
+
+            UpdateProxyBools = false;
+            string command = $"staticdpibypassprogram -{bypassMode} -{beforSniChunks} -{chunkMode} -{sniChunks} -{antiPatternOffset} -{fragmentDelay}";
+            Debug.WriteLine(command);
+            ProcessManager.SendCommand(process, command);
+            UpdateProxyBools = true;
+
+            // Check DPI Works
+            if (CustomCheckBoxPDpiEnableDpiBypass.Checked && IsProxyActivated)
+            {
+                if (bypassMode != HTTPProxyServer.Program.DPIBypass.Mode.Disable)
+                {
+                    IsProxyDPIActive = true;
+                    IsDPIActive = true;
+                }
+
+                // Get blocked domain
+                string blockedDomain = GetBlockedDomainSetting(out string _);
+                if (!string.IsNullOrEmpty(blockedDomain))
+                    Task.Run(() => CheckDPIWorks(blockedDomain));
+            }
+        }
+
+        private void ApplyPDpiChangesFakeProxy(Process process)
+        {
+            ApplyPDpiChangesOut(out HTTPProxyServer.Program.DPIBypass.Mode bypassMode, out int beforSniChunks, out HTTPProxyServer.Program.DPIBypass.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay);
+
+            string command = $"staticdpibypassprogram -{bypassMode} -{beforSniChunks} -{chunkMode} -{sniChunks} -{antiPatternOffset} -{fragmentDelay}";
+            Debug.WriteLine(command);
+            ProcessManager.SendCommand(process, command);
+        }
+
+        private void ApplyPDpiChangesOut(out HTTPProxyServer.Program.DPIBypass.Mode bypassMode, out int beforSniChunks, out HTTPProxyServer.Program.DPIBypass.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay)
+        {
+            // Get fragment settings
+            bool enableDpiBypass = CustomCheckBoxPDpiEnableDpiBypass.Checked;
+            beforSniChunks = Convert.ToInt32(CustomNumericUpDownPDpiBeforeSniChunks.Value);
+            int chunkModeInt = CustomComboBoxPDpiSniChunkMode.SelectedIndex;
+            chunkMode = chunkModeInt switch
+            {
+                0 => HTTPProxyServer.Program.DPIBypass.ChunkMode.SNI,
+                1 => HTTPProxyServer.Program.DPIBypass.ChunkMode.SniExtension,
+                2 => HTTPProxyServer.Program.DPIBypass.ChunkMode.AllExtensions,
+                _ => HTTPProxyServer.Program.DPIBypass.ChunkMode.AllExtensions,
+            };
+            sniChunks = Convert.ToInt32(CustomNumericUpDownPDpiSniChunks.Value);
+            antiPatternOffset = Convert.ToInt32(CustomNumericUpDownPDpiAntiPatternOffset.Value);
+            fragmentDelay = Convert.ToInt32(CustomNumericUpDownPDpiFragDelay.Value);
+
+            bypassMode = enableDpiBypass ? HTTPProxyServer.Program.DPIBypass.Mode.Program : HTTPProxyServer.Program.DPIBypass.Mode.Disable;
         }
 
         public async Task<bool> ApplyPUpStreamProxy(Process process)
@@ -451,25 +582,17 @@ namespace SecureDNSClient
                 // Get loopback
                 string loopback = IPAddress.Loopback.ToString();
 
-                int getNextPort(int currentPort)
-                {
-                    currentPort = currentPort < 65535 ? currentPort + 1 : currentPort - 1;
-                    if (currentPort == GetHTTPProxyPortSetting())
-                        currentPort = currentPort < 65535 ? currentPort + 1 : currentPort - 1;
-                    return currentPort;
-                }
-
                 // Check port
                 int fakeProxyPort = GetFakeProxyPortSetting();
                 bool isPortOk = GetListeningPort(fakeProxyPort, string.Empty, Color.Orange);
                 if (!isPortOk)
                 {
-                    fakeProxyPort = getNextPort(fakeProxyPort);
+                    fakeProxyPort = Network.GetNextPort(fakeProxyPort);
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Trying Port {fakeProxyPort}...{NL}", Color.MediumSeaGreen));
                     bool isPort2Ok = GetListeningPort(fakeProxyPort, string.Empty, Color.Orange);
                     if (!isPort2Ok)
                     {
-                        fakeProxyPort = getNextPort(fakeProxyPort);
+                        fakeProxyPort = Network.GetNextPort(fakeProxyPort);
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Trying Port {fakeProxyPort}...{NL}", Color.MediumSeaGreen));
                         bool isPort3Ok = GetListeningPort(fakeProxyPort, "Change Fake Proxy port from settings.", Color.IndianRed);
                         if (!isPort3Ok)
@@ -483,18 +606,41 @@ namespace SecureDNSClient
                 string fakeProxyScheme = $"http://{loopback}:{fakeProxyPort}";
 
                 //============================== Start FakeProxy
-                if (FakeProxy.IsRunning)
-                    FakeProxy.Stop();
+                // Kill if it's already running
+                ProcessManager.KillProcessByPID(PIDFakeProxy);
 
-                FakeProxy = new();
-                bool isFpOk = ApplyFakeProxy(FakeProxy);
+                // Execute Fake Proxy
+                PIDFakeProxy = ProcessManager.ExecuteOnly(out Process fakeProcess, SecureDNS.HttpProxyPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
+                FakeProxyProcess = fakeProcess;
+
+                // Wait for Fake Proxy
+                Task fakeWait = Task.Run(async () =>
+                {
+                    while (!ProcessManager.FindProcessByPID(PIDFakeProxy))
+                    {
+                        if (ProcessManager.FindProcessByPID(PIDFakeProxy))
+                            break;
+                        await Task.Delay(100);
+                    }
+                });
+                await fakeWait.WaitAsync(TimeSpan.FromSeconds(5));
+
+                if (!ProcessManager.FindProcessByPID(PIDFakeProxy)) return false;
+
+                // Apply Fake DNS and White List Support to Fake Proxy
+                bool isFpOk = await ApplyFakeProxy(FakeProxyProcess);
                 if (!isFpOk) return false;
 
                 // Apply DPI Bypass Support to Fake Proxy
-                ApplyPDpiChanges(FakeProxy);
+                ApplyPDpiChangesFakeProxy(FakeProxyProcess);
 
-                FakeProxy.Start(IPAddress.Loopback, fakeProxyPort, 20000);
-                Task.Delay(500).Wait();
+                // Start Fake Proxy
+                string startCommand = $"start -loopback -{fakeProxyPort} -50";
+                Debug.WriteLine(startCommand);
+                await ProcessManager.SendCommandAsync(FakeProxyProcess, startCommand);
+
+                await Task.Delay(500);
+                FakeProxyProcess.StandardOutput.DiscardBufferedData();
                 //============================== End FakeProxy
 
                 bool isSetCfOk = await setCloudflareIPs();
@@ -599,6 +745,33 @@ namespace SecureDNSClient
             }
 
             return true;
+        }
+
+        private void WriteProxyRequestsAndChunkDetailsToLogAuto()
+        {
+            // Another way of reading Error output (I'm using Event instead)
+            System.Timers.Timer timer = new();
+            timer.Interval = 50;
+            timer.Elapsed += Timer_Elapsed;
+
+            void Timer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+            {
+                if (!IsCheckingStarted && !IsConnecting && IsProxyActivated && IsSharing)
+                {
+                    if (ProxyProcess != null)
+                    {
+                        string? msg = ProxyProcess.StandardError.ReadLine();
+                        if (!string.IsNullOrEmpty(msg))
+                        {
+                            // Write to log
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.Gray));
+                        }
+                        ProxyProcess.StandardError.DiscardBufferedData();
+                    }
+                }
+            }
+
+            timer.Start();
         }
 
 

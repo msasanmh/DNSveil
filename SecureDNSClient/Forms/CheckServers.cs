@@ -5,7 +5,6 @@ using MsmhTools;
 using MsmhTools.DnsTool;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text;
 
 namespace SecureDNSClient
 {
@@ -19,6 +18,9 @@ namespace SecureDNSClient
             if (!IsCheckingStarted)
             {
                 // Start Checking
+                IsCheckingStarted = true;
+                IsCheckDone = false;
+
                 // Check Internet Connectivity
                 if (!IsInternetAlive()) return;
 
@@ -33,19 +35,20 @@ namespace SecureDNSClient
 
                 try
                 {
-                    Task task = Task.Run(async () =>
-                    {
-                        IsCheckingStarted = true;
-                        IsCheckDone = false;
-                        await CheckServers();
-                    });
+                    Task task = Task.Run(async () => await CheckServers());
 
                     await task.ContinueWith(_ =>
                     {
                         // Save working servers to file
-                        if (!CustomRadioButtonBuiltIn.Checked && WorkingDnsListToFile.Any())
+                        if (!CustomRadioButtonBuiltIn.Checked && WorkingDnsAndLatencyListToFile.Any())
                         {
+                            // Sort By Latency
+                            WorkingDnsAndLatencyListToFile = WorkingDnsAndLatencyListToFile.OrderBy(t => t.Item1).ToList();
+                            // Add Servers to WorkingDnsListToFile
+                            WorkingDnsListToFile = WorkingDnsListToFile.Concat(WorkingDnsAndLatencyListToFile.Select(t => t.Item2).ToList()).ToList();
+                            // Remove Duplicates
                             WorkingDnsListToFile = WorkingDnsListToFile.RemoveDuplicates();
+                            // Save to File
                             WorkingDnsListToFile.SaveToFile(SecureDNS.WorkingServersPath);
                         }
 
@@ -75,6 +78,7 @@ namespace SecureDNSClient
             {
                 // Stop Checking
                 StopChecking = true;
+                this.InvokeIt(() => CustomProgressBarCheck.StopTimer = true);
                 this.InvokeIt(() => CustomButtonCheck.Enabled = false);
             }
         }
@@ -122,7 +126,7 @@ namespace SecureDNSClient
             if (string.IsNullOrEmpty(blockedDomain)) return;
 
             // Warn users to deactivate DPI before checking servers
-            if (IsDPIActive)
+            if (IsGoodbyeDPIActive || (IsProxySet && IsProxyDPIActive))
             {
                 string msg = "It's better to not check servers while DPI Bypass is active.\nStart checking servers?";
                 var resume = CustomMessageBox.Show(msg, "DPI is active", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
@@ -176,6 +180,7 @@ namespace SecureDNSClient
 
             // Clear working list to file on new check
             WorkingDnsListToFile.Clear();
+            WorkingDnsAndLatencyListToFile.Clear();
 
             string? fileContent = string.Empty;
             if (builtInMode)
@@ -209,6 +214,9 @@ namespace SecureDNSClient
                 return;
             }
 
+            // init Check DNS
+            CheckDns checkDns = new(false, GetCPUPriority());
+
             // FlushDNS(); // Flush DNS makes first line always return failed
 
             // Clear temp working list on new check
@@ -223,9 +231,9 @@ namespace SecureDNSClient
             int numberOfCheckedServers = 0;
 
             // Dummy check to fix first run
-            SecureDNS.CheckDns(blockedDomainNoWww, dnsList[0], 100, GetCPUPriority());
-            SecureDNS.CheckDns(blockedDomainNoWww, dnsList[0], 100, GetCPUPriority());
-            SecureDNS.CheckDns(blockedDomainNoWww, dnsList[0], 100, GetCPUPriority());
+            checkDns.CheckDNS(blockedDomainNoWww, dnsList[0], 100);
+            checkDns.CheckDNS(blockedDomainNoWww, dnsList[0], 100);
+            checkDns.CheckDNS(blockedDomainNoWww, dnsList[0], 100);
 
             if (insecure)
                 checkSeries();
@@ -239,6 +247,8 @@ namespace SecureDNSClient
 
             void checkSeries()
             {
+                this.InvokeIt(() => CustomProgressBarCheck.StopTimer = false);
+                this.InvokeIt(() => CustomProgressBarCheck.ChunksColor = Color.DodgerBlue);
                 for (int n = 0; n < dnsCount; n++)
                 {
                     if (StopChecking)
@@ -251,8 +261,9 @@ namespace SecureDNSClient
 
                     // Percentage
                     int persent = n * 100 / dnsCount;
-                    string checkDetail = $"{n + 1} of {dnsCount} ({persent}%)";
-                    this.InvokeIt(() => CustomLabelCheckDetail.Text = checkDetail);
+                    string checkDetail = $"{n + 1} of {dnsCount}";
+                    this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
+                    this.InvokeIt(() => CustomProgressBarCheck.Value = persent);
 
                     string dns = dnsList[n].Trim();
                     checkOne(dns, n + 1);
@@ -260,8 +271,9 @@ namespace SecureDNSClient
                     // Percentage (100%)
                     if (n == dnsCount - 1)
                     {
-                        checkDetail = $"{n + 1} of {dnsCount} (100%)";
-                        this.InvokeIt(() => CustomLabelCheckDetail.Text = checkDetail);
+                        checkDetail = $"{n + 1} of {dnsCount}";
+                        this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
+                        this.InvokeIt(() => CustomProgressBarCheck.Value = 100);
                     }
                 }
             }
@@ -274,6 +286,8 @@ namespace SecureDNSClient
                     var lists = dnsList.SplitToLists(splitSize);
                     int count = 0;
 
+                    this.InvokeIt(() => CustomProgressBarCheck.StopTimer = false);
+                    this.InvokeIt(() => CustomProgressBarCheck.ChunksColor = Color.DodgerBlue);
                     for (int n = 0; n < lists.Count; n++)
                     {
                         if (StopChecking)
@@ -289,8 +303,9 @@ namespace SecureDNSClient
                         // Percentage
                         int persent = n * 100 / lists.Count;
                         count += list.Count;
-                        string checkDetail = $"{count} of {dnsCount} ({persent}%)";
-                        this.InvokeIt(() => CustomLabelCheckDetail.Text = checkDetail);
+                        string checkDetail = $"{count} of {dnsCount}";
+                        this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
+                        this.InvokeIt(() => CustomProgressBarCheck.Value = persent);
 
                         var parallelLoopResult = Parallel.For(0, list.Count, i =>
                         {
@@ -311,8 +326,9 @@ namespace SecureDNSClient
                         // Percentage (100%)
                         if (n == lists.Count - 1)
                         {
-                            checkDetail = $"{dnsCount} of {dnsCount} (100%)";
-                            this.InvokeIt(() => CustomLabelCheckDetail.Text = checkDetail);
+                            checkDetail = $"{dnsCount} of {dnsCount}";
+                            this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
+                            this.InvokeIt(() => CustomProgressBarCheck.Value = 100);
                         }
                     }
                 });
@@ -332,16 +348,18 @@ namespace SecureDNSClient
 
                         // Get DNS Details
                         DnsReader dnsReader = new(dns, companyDataContent);
-
+                        
                         // Get Unknown Companies (Debug Only)
                         //if (dnsReader.CompanyName.ToLower().Contains("couldn't retrieve"))
                         //{
                         //    string p = @"C:\Users\msasa\OneDrive\Desktop\getInfo.txt";
                         //    FileDirectory.CreateEmptyFile(p);
-                        //    string? serv = dnsReader.IP;
-                        //    if (string.IsNullOrEmpty(serv)) serv = dnsReader.Host;
+                        //    string serv = dnsReader.Host;
+                        //    if (string.IsNullOrEmpty(serv) && !string.IsNullOrEmpty(dnsReader.IP)) serv = dnsReader.IP;
                         //    FileDirectory.AppendTextLine(p, serv, new UTF8Encoding(false));
                         //}
+                        //if (dnsReader.CompanyName.ToLower().Contains("china"))
+                        //    Debug.WriteLine("CHINA: " + dns);
 
                         // Apply Protocol Selection
                         bool matchRules = CheckDnsMatchRules(dnsReader);
@@ -352,33 +370,57 @@ namespace SecureDNSClient
                         this.InvokeIt(() =>timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value);
                         int timeoutMS = decimal.ToInt32(timeoutSec * 1000);
 
-                        // Get Status and Latency
-                        bool dnsOK = false;
-                        int latency = -1;
-
                         // Is this being called by parallel?
                         bool isParallel = lineNumber == -1;
 
+                        if (checkDns.CheckForFilters)
+                        {
+                            // Generate Google Force Safe Search IPs
+                            checkDns.GenerateGoogleSafeSearchIps(dns);
+
+                            // Generate Adult IPs
+                            checkDns.GenerateAdultDomainIps(dns);
+                        }
+                        
                         if (insecure)
-                            latency = SecureDNS.CheckDns(true, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort, GetCPUPriority());
+                            checkDns.CheckDNS(true, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
                         else
                         {
                             if (isParallel)
-                                latency = SecureDNS.CheckDns(blockedDomainNoWww, dns, timeoutMS, GetCPUPriority());
+                                checkDns.CheckDNS(blockedDomainNoWww, dns, timeoutMS);
                             else
-                                latency = SecureDNS.CheckDns(false, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort, GetCPUPriority());
+                                checkDns.CheckDNS(false, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
                         }
 
-                        dnsOK = latency != -1;
+                        // Get Status and Latency
+                        bool dnsOK = checkDns.IsDnsOnline;
+                        int latency = checkDns.DnsLatency;
 
+                        if (checkDns.IsSafeSearch || checkDns.IsAdultFilter)
+                        {
+                            Debug.WriteLine("==== Debug ====");
+                            Debug.WriteLine(dns);
+                            Debug.WriteLine("IsSafeSearch: " + checkDns.IsSafeSearch);
+                            Debug.WriteLine("IsAdultFilter: " + checkDns.IsAdultFilter);
+                        }
+                        
                         // Add working DNS to list
                         if (dnsOK)
                         {
-                            WorkingDnsList.Add(new Tuple<long, string>(latency, dns));
+                            if (!checkDns.CheckForFilters ||
+                                (checkDns.CheckForFilters && !checkDns.IsSafeSearch && !checkDns.IsAdultFilter))
+                            {
+                                WorkingDnsList.Add(new Tuple<long, string>(latency, dns));
 
-                            // Add working DNS to list to export
-                            if (!builtInMode)
-                                WorkingDnsListToFile.Add(dns);
+                                // Add working DNS to list to export
+                                if (!builtInMode)
+                                    WorkingDnsAndLatencyListToFile.Add(new Tuple<long, string>(latency, dns));
+                            }
+                            else
+                            {
+                                // Has Filter
+                                return;
+                            }
                         }
 
                         // Checked servers ++

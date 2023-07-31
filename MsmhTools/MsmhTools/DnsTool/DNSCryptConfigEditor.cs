@@ -191,7 +191,7 @@ namespace MsmhTools.DnsTool
             }
         }
 
-        public void ChangePersonalServer(string sdns)
+        public void ChangePersonalServer(string[] sdns)
         {
             string sectionName = "[static]";
             string keyName = "stamp";
@@ -209,15 +209,20 @@ namespace MsmhTools.DnsTool
                     {
                         ConfigList.RemoveRange(n + 1, ConfigList.Count - (n + 1));
                     }
-
+                    
                     // e.g. [static.Personal]
                     // e.g. stamp = 'sdns://AgcAAAAAAAAABzEuMC4wLjEAEmRucy5jbG91ZGZsYXJlLmNvbQovZG5zLXF1ZXJ5'
-                    string newLine1 = "[static.Personal]";
-                    string newLine2 = $"{keyName} = '{sdns}'";
-                    ConfigList.Add(string.Empty);
-                    ConfigList.Add(newLine1);
-                    ConfigList.Add(newLine2);
+                    for (int i = 0; i < sdns.Length; i++)
+                    {
+                        ConfigList.Add(string.Empty);
+                        string newLine1 = $"[static.Personal{i + 1}]";
+                        ConfigList.Add(newLine1);
 
+                        string sdnsOne = sdns[i];
+                        string newLine2 = $"{keyName} = '{sdnsOne}'";
+                        ConfigList.Add(newLine2);
+                    }
+                    
                     break;
                 }
             }

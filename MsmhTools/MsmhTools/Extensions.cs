@@ -24,6 +24,11 @@ namespace MsmhTools
     public static class Extensions
     {
         //-----------------------------------------------------------------------------------
+        public static TimeSpan Round(this TimeSpan timeSpan, int precision)
+        {
+            return TimeSpan.FromSeconds(Math.Round(timeSpan.TotalSeconds, precision));
+        }
+        //-----------------------------------------------------------------------------------
         public static void AppendText(this RichTextBox richTextBox, string text, Color color)
         {
             richTextBox.SelectionStart = richTextBox.TextLength;

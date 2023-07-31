@@ -25,10 +25,22 @@ namespace SecureDNSClient
             if (IsDisconnecting) return false;
 
             // Start Camouflage DNS Server
-            CamouflageDNSServer = new(camouflageDnsPort, cleanIP);
+            CamouflageDNSServer = new(camouflageDnsPort, dohUrl, cleanIP);
             CamouflageDNSServer.Start();
             Task.Delay(500).Wait();
             IsBypassDNSActive = CamouflageDNSServer.IsRunning;
+
+            // Wait for CamouflageDNSServer
+            Task wait1 = Task.Run(async () =>
+            {
+                while (!IsBypassDNSActive)
+                {
+                    if (IsBypassDNSActive)
+                        break;
+                    await Task.Delay(100);
+                }
+            });
+            await wait1.WaitAsync(TimeSpan.FromSeconds(5));
 
             if (IsBypassDNSActive)
             {
@@ -39,9 +51,20 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCfServer1, Color.Orange));
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCfServer2, Color.DodgerBlue));
 
+                // Check if Camouflage DNS Server works
+                CheckDns checkDns = new(false, GetCPUPriority());
+                checkDns.CheckDNS("google.com", $"{IPAddress.Loopback}:{camouflageDnsPort}", 5000);
+                
+                if (!checkDns.IsDnsOnline)
+                {
+                    // Restart if not responsive
+                    CamouflageDNSServer.Stop();
+                    CamouflageDNSServer.Start();
+                }
+
                 // Attempt 1
                 // Write attempt 1 message to log
-                string msgAttempt1 = $"Attempt 1, please wait...{NL}";
+                string msgAttempt1 = $"Attempt 1 (Light), please wait...{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAttempt1, Color.Orange));
 
                 // Get loopback
@@ -83,7 +106,8 @@ namespace SecureDNSClient
                 // Execute DNSProxy
                 PIDDNSProxyBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
 
-                Task wait1 = Task.Run(async () =>
+                // Wait for DNSProxyBypass
+                Task wait2 = Task.Run(async () =>
                 {
                     while (!ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
                     {
@@ -91,19 +115,18 @@ namespace SecureDNSClient
                             break;
                         await Task.Delay(100);
                     }
-                    return Task.CompletedTask;
                 });
-                await wait1.WaitAsync(TimeSpan.FromSeconds(5));
+                await wait2.WaitAsync(TimeSpan.FromSeconds(5));
 
                 // Create blacklist file for GoodbyeDPI
-                File.WriteAllText(SecureDNS.DPIBlacklistCFPath, dohHost);
+                File.WriteAllText(SecureDNS.DPIBlacklistFPPath, dohHost);
 
                 if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
                 {
                     IsConnected = true;
 
                     // Start attempt 1
-                    bool success1 = bypassCF(DPIBasicBypassMode.Light);
+                    bool success1 = await bypassCFAsync(DPIBasicBypassMode.Light);
                     if (success1)
                     {
                         // Success message
@@ -117,19 +140,25 @@ namespace SecureDNSClient
                         if (!IsConnected || IsDisconnecting) return false;
 
                         // Write attempt 1 failed message to log
-                        string msgAttempt1Failed = $"Attempt 1 failed.{NL}";
+                        string msgAttempt1Failed = $"{NL}Attempt 1 failed.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAttempt1Failed, Color.IndianRed));
+
+                        // Get User Mode
+                        DPIBasicBypassMode mode = GetGoodbyeDpiModeBasic();
+
+                        // Return if it's a same mode
+                        if (mode == DPIBasicBypassMode.Light) return false;
 
                         // Attempt 2
                         // Write attempt 2 message to log
-                        string msgAttempt2 = $"Attempt 2, please wait...{NL}";
+                        string msgAttempt2 = $"Attempt 2 ({mode}), please wait...{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAttempt2, Color.Orange));
 
                         // Deactive GoodbyeDPI of attempt 1
                         BypassFakeProxyDohStop(false, false, true, false);
 
                         // Start attempt 2
-                        bool success2 = bypassCF(DPIBasicBypassMode.Medium);
+                        bool success2 = await bypassCFAsync(mode);
                         if (success2)
                         {
                             // Success message
@@ -144,7 +173,7 @@ namespace SecureDNSClient
 
                             // Not seccess after 2 attempts
                             BypassFakeProxyDohStop(true, true, true, false);
-                            string msgFailure1 = "Failure: ";
+                            string msgFailure1 = $"{NL}Failure: ";
                             string msgFailure2 = $"Camouflage mode is not compatible with your ISP.{NL}";
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailure1, Color.IndianRed));
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailure2, Color.LightGray));
@@ -153,7 +182,7 @@ namespace SecureDNSClient
                         }
                     }
 
-                    bool bypassCF(DPIBasicBypassMode bypassMode)
+                    async Task<bool> bypassCFAsync(DPIBasicBypassMode bypassMode)
                     {
                         // Get Bootsrap IP & Port
                         string bootstrap = GetBootstrapSetting(out int bootstrapPort).ToString();
@@ -162,9 +191,20 @@ namespace SecureDNSClient
 
                         // Start GoodbyeDPI
                         DPIBasicBypass dpiBypass = new(bypassMode, CustomNumericUpDownSSLFragmentSize.Value, bootstrap, bootstrapPort);
-                        string args = $"{dpiBypass.Args} --blacklist {SecureDNS.DPIBlacklistCFPath}";
+                        string args = $"{dpiBypass.Args} --blacklist {SecureDNS.DPIBlacklistFPPath}";
                         PIDGoodbyeDPIBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
-                        Task.Delay(500).Wait();
+
+                        // Wait for DNSProxyBypass
+                        Task wait3 = Task.Run(async () =>
+                        {
+                            while (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
+                            {
+                                if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
+                                    break;
+                                await Task.Delay(100);
+                            }
+                        });
+                        await wait3.WaitAsync(TimeSpan.FromSeconds(5));
 
                         if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
                         {

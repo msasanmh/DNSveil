@@ -144,6 +144,11 @@ namespace MsmhTools.HTTPProxyServer
         /// </summary>
         public HttpListenerContext? ListenerContext { get; set; }
 
+        /// <summary>
+        /// Close request if didn't receive data for n seconds. Default: 0 Sec (Disabled)
+        /// </summary>
+        public int TimeoutSec { get; set; } = 0;
+
         private Uri? UriP { get; set; }
         private static readonly int _TimeoutDataReadMs = 2000;
         private static readonly int _DataReadSleepMs = 10;

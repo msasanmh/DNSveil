@@ -50,6 +50,7 @@
             this.CustomLabelEDNSOPT = new CustomControls.CustomLabel();
             this.CustomTextBoxEDNSOPT = new CustomControls.CustomTextBox();
             this.CustomButtonDefault = new CustomControls.CustomButton();
+            this.CustomCheckBoxJSON = new CustomControls.CustomCheckBox();
             this.SuspendLayout();
             // 
             // CustomRadioButtonSourceSDC
@@ -451,6 +452,20 @@
             this.CustomButtonDefault.UseVisualStyleBackColor = true;
             this.CustomButtonDefault.Click += new System.EventHandler(this.CustomButtonDefault_Click);
             // 
+            // CustomCheckBoxJSON
+            // 
+            this.CustomCheckBoxJSON.BackColor = System.Drawing.Color.DimGray;
+            this.CustomCheckBoxJSON.BorderColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxJSON.CheckColor = System.Drawing.Color.Blue;
+            this.CustomCheckBoxJSON.ForeColor = System.Drawing.Color.White;
+            this.CustomCheckBoxJSON.Location = new System.Drawing.Point(340, 100);
+            this.CustomCheckBoxJSON.Name = "CustomCheckBoxJSON";
+            this.CustomCheckBoxJSON.SelectionColor = System.Drawing.Color.LightBlue;
+            this.CustomCheckBoxJSON.Size = new System.Drawing.Size(44, 17);
+            this.CustomCheckBoxJSON.TabIndex = 34;
+            this.CustomCheckBoxJSON.Text = "Json";
+            this.CustomCheckBoxJSON.UseVisualStyleBackColor = false;
+            // 
             // FormDnsLookup
             // 
             this.AcceptButton = this.CustomButtonLookup;
@@ -458,6 +473,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.DimGray;
             this.ClientSize = new System.Drawing.Size(459, 461);
+            this.Controls.Add(this.CustomCheckBoxJSON);
             this.Controls.Add(this.CustomButtonDefault);
             this.Controls.Add(this.CustomTextBoxEDNSOPT);
             this.Controls.Add(this.CustomLabelEDNSOPT);
@@ -516,5 +532,6 @@
         private CustomControls.CustomLabel CustomLabelEDNSOPT;
         private CustomControls.CustomTextBox CustomTextBoxEDNSOPT;
         private CustomControls.CustomButton CustomButtonDefault;
+        private CustomControls.CustomCheckBox CustomCheckBoxJSON;
     }
 }

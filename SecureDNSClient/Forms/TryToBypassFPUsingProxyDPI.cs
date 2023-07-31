@@ -17,12 +17,12 @@ namespace SecureDNSClient
             // Get Fake Proxy DoH Address
             string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
             Network.GetUrlDetails(dohUrl, 443, out string dohHost, out int _, out string _, out bool _);
-            
+
             // It's blocked message
             string msgBlocked = $"It's blocked.{NL}";
             msgBlocked += $"Trying to bypass {dohHost}{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgBlocked, Color.Orange));
-            
+
             // Get fragment settings
             int beforSniChunks = Convert.ToInt32(CustomNumericUpDownPDpiBeforeSniChunks.Value);
             int chunkModeInt = -1;
@@ -34,15 +34,15 @@ namespace SecureDNSClient
                 2 => HTTPProxyServer.Program.DPIBypass.ChunkMode.AllExtensions,
                 _ => HTTPProxyServer.Program.DPIBypass.ChunkMode.AllExtensions,
             };
-            
+
             int sniChunks = Convert.ToInt32(CustomNumericUpDownPDpiSniChunks.Value);
             int antiPatternOffset = Convert.ToInt32(CustomNumericUpDownPDpiAntiPatternOffset.Value);
             int fragmentDelay = Convert.ToInt32(CustomNumericUpDownPDpiFragDelay.Value);
-            
+
             // DPI Bypass Program
             HTTPProxyServer.Program.DPIBypass dpiBypassProgram = new();
             dpiBypassProgram.Set(HTTPProxyServer.Program.DPIBypass.Mode.Program, beforSniChunks, chunkMode, sniChunks, antiPatternOffset, fragmentDelay);
-            
+
             //// Test Only
             //dpiBypassProgram.OnChunkDetailsReceived += DpiBypassProgram_OnChunkDetailsReceived;
             //void DpiBypassProgram_OnChunkDetailsReceived(object? sender, EventArgs e)
@@ -54,12 +54,12 @@ namespace SecureDNSClient
             // Add Programs to Proxy
             if (CamouflageProxyServer.IsRunning)
                 CamouflageProxyServer.Stop();
-            
+
             CamouflageProxyServer = new();
             CamouflageProxyServer.EnableDPIBypass(dpiBypassProgram);
             bool isOk = ApplyFakeProxy(CamouflageProxyServer);
             if (!isOk) return false;
-            
+
             //// Test Only
             //CamouflageProxyServer.OnRequestReceived += CamouflageProxyServer_OnRequestReceived;
             //void CamouflageProxyServer_OnRequestReceived(object? sender, EventArgs e)
@@ -72,7 +72,19 @@ namespace SecureDNSClient
 
             // Start
             CamouflageProxyServer.Start(IPAddress.Loopback, fakeProxyPort, 20000);
-            Task.Delay(500).Wait();
+
+            // Wait for CamouflageProxyServer
+            Task wait1 = Task.Run(async () =>
+            {
+                while (!CamouflageProxyServer.IsRunning)
+                {
+                    if (CamouflageProxyServer.IsRunning)
+                        break;
+                    await Task.Delay(100);
+                }
+            });
+            await wait1.WaitAsync(TimeSpan.FromSeconds(5));
+
             IsBypassProxyActive = CamouflageProxyServer.IsRunning;
 
             if (IsBypassProxyActive)
@@ -128,36 +140,84 @@ namespace SecureDNSClient
                     dnsCryptConfig.DisableDoH();
 
                 // Generate SDNS
+                bool isSdnsGenerateSuccess = false;
                 Network.GetUrlDetails(dohUrl, 443, out string host, out int port, out string path, out bool _);
                 DNSCryptStampGenerator stampGenerator = new();
-                string sdns = stampGenerator.GenerateDoH(cleanIP, null, $"{host}:{port}", path, null, true, true, true);
-                if (!string.IsNullOrEmpty(sdns))
-                    dnsCryptConfig.ChangePersonalServer(sdns);
+                string host1 = "dns.cloudflare.com";
+                string host2 = "cloudflare-dns.com";
+                string host3 = "every1dns.com";
+
+                if (host.Equals(host1) || host.Equals(host2) || host.Equals(host3))
+                {
+                    string sdns1 = stampGenerator.GenerateDoH(cleanIP, null, $"{host1}:{port}", path, null, true, true, true);
+                    string sdns2 = stampGenerator.GenerateDoH(cleanIP, null, $"{host2}:{port}", path, null, true, true, true);
+                    string sdns3 = stampGenerator.GenerateDoH(cleanIP, null, $"{host3}:{port}", path, null, true, true, true);
+
+                    string[] sdnss = Array.Empty<string>();
+                    if (!string.IsNullOrEmpty(sdns1))
+                    {
+                        Array.Resize(ref sdnss, sdnss.Length + 1);
+                        sdnss[0] = sdns1;
+                    }
+                    if (!string.IsNullOrEmpty(sdns2))
+                    {
+                        Array.Resize(ref sdnss, sdnss.Length + 1);
+                        sdnss[1] = sdns2;
+                    }
+                    if (!string.IsNullOrEmpty(sdns3))
+                    {
+                        Array.Resize(ref sdnss, sdnss.Length + 1);
+                        sdnss[2] = sdns3;
+                    }
+
+                    if (sdnss.Length > 0)
+                    {
+                        isSdnsGenerateSuccess = true;
+                        dnsCryptConfig.ChangePersonalServer(sdnss);
+                    }
+                }
+                else
+                {
+                    string sdns = stampGenerator.GenerateDoH(cleanIP, null, $"{host}:{port}", path, null, true, true, true);
+                    if (!string.IsNullOrEmpty(sdns))
+                    {
+                        isSdnsGenerateSuccess = true;
+                        string[] sdnss = { sdns };
+                        dnsCryptConfig.ChangePersonalServer(sdnss);
+                    }
+                }
+
+                // Check for success sdns
+                if (!isSdnsGenerateSuccess)
+                {
+                    string msg = $"Coudn't generate SDNS!{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                    return false;
+                }
                 
                 // Save DNSCrypt Config File
                 await dnsCryptConfig.WriteAsync();
                 await Task.Delay(500);
 
                 // Args
-                string args = $"-config {SecureDNS.DNSCryptConfigCloudflarePath}";
+                string args = $"-config \"{SecureDNS.DNSCryptConfigCloudflarePath}\"";
 
                 if (IsDisconnecting) return false;
 
                 // Execute DNSCrypt
                 PIDDNSCryptBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DNSCrypt, args, true, true);
-
-               // Wait for DNSCrypt
-               Task wait1 = Task.Run(async () =>
-               {
-                   while (!ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
-                   {
-                       if (ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
-                           break;
-                       await Task.Delay(100);
-                   }
-                   return Task.CompletedTask;
-               });
-               await wait1.WaitAsync(TimeSpan.FromSeconds(5));
+                
+                // Wait for DNSCrypt
+                Task wait2 = Task.Run(async () =>
+                {
+                    while (!ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
+                    {
+                        if (ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
+                            break;
+                        await Task.Delay(100);
+                    }
+                });
+                await wait2.WaitAsync(TimeSpan.FromSeconds(5));
 
                 if (ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
                 {
@@ -177,10 +237,20 @@ namespace SecureDNSClient
                         // Not seccess
                         if (IsConnected)
                         {
-                            string msgFailure1 = "Failure: ";
+                            string msgFailure1 = $"{NL}Failure: ";
                             string msgFailure2 = $"Change DPI bypass settings on Share tab and try again.{NL}";
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailure1, Color.IndianRed));
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailure2, Color.LightGray));
+                        }
+                        else
+                        {
+                            if (!ProcessManager.FindProcessByPID(PIDDNSCryptBypass))
+                            {
+                                string msgFailure1 = $"{NL}Failure: ";
+                                string msgFailure2 = $"DNSCrypt crashed or closed by another application.{NL}";
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailure1, Color.IndianRed));
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailure2, Color.LightGray));
+                            }
                         }
 
                         BypassFakeProxyDohStop(true, true, true, false);

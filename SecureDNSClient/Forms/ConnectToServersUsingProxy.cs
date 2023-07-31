@@ -1,12 +1,8 @@
 ﻿using MsmhTools;
 using MsmhTools.DnsTool;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SecureDNSClient
 {
@@ -92,7 +88,7 @@ namespace SecureDNSClient
             await dnsCryptConfig.WriteAsync();
 
             // Args
-            string args = $"-config {SecureDNS.DNSCryptConfigPath}";
+            string args = $"-config \"{SecureDNS.DNSCryptConfigPath}\"";
 
             if (IsDisconnecting) return;
 

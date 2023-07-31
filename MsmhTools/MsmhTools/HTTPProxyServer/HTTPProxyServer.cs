@@ -72,6 +72,7 @@ namespace MsmhTools.HTTPProxyServer
 
         private System.Timers.Timer KillOnOverloadTimer { get; set; } = new(5000);
         private PerformanceCounter PFC { get; set; } = new();
+        private float CpuUsage { get; set; } = 0;
 
         private bool Cancel = false;
 
@@ -91,6 +92,11 @@ namespace MsmhTools.HTTPProxyServer
         /// Kill Requests If CPU Usage is Higher than this Value.
         /// </summary>
         public float KillOnCpuUsage { get; set; } = 25;
+
+        /// <summary>
+        /// Kill Request if didn't receive data for n seconds. Default: 0 Sec (Disabled)
+        /// </summary>
+        public int RequestTimeoutSec { get; set; } = 0;
 
         public HTTPProxyServer()
         {
@@ -146,13 +152,12 @@ namespace MsmhTools.HTTPProxyServer
             //    Terminator.WaitOne();
             //});
 
-
         }
 
         private void KillOnOverloadTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            float cpu = PFC.NextValue() / Environment.ProcessorCount;
-            if (AllRequests >= _Settings.MaxThreads || cpu > KillOnCpuUsage)
+            CpuUsage = PFC.NextValue() / Environment.ProcessorCount;
+            if (AllRequests >= _Settings.MaxThreads || CpuUsage > KillOnCpuUsage)
             {
                 KillAll();
             }
@@ -248,7 +253,7 @@ namespace MsmhTools.HTTPProxyServer
 
                     while (!Cancel)
                     {
-                        TcpClient tcpClient = await _TcpListener.AcceptTcpClientAsync();
+                        TcpClient tcpClient = await _TcpListener.AcceptTcpClientAsync().ConfigureAwait(false);
                         if (tcpClient.Connected) ProcessConnectionSync(tcpClient);
                         if (_CancelToken.IsCancellationRequested || Cancel)
                             break;
@@ -283,15 +288,15 @@ namespace MsmhTools.HTTPProxyServer
 
             // Generate unique int
             int connectionId = Guid.NewGuid().GetHashCode() + BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0);
-            //Debug.WriteLine($"Active Requests: {AllRequests} of {_Settings.MaxThreads}");
+            Debug.WriteLine($"Active Requests: {AllRequests} of {_Settings.MaxThreads}");
             
             try
             {
                 // Check if Max Exceeded
-                if (AllRequests >= _Settings.MaxThreads)
+                if (AllRequests >= _Settings.MaxThreads || CpuUsage > KillOnCpuUsage)
                 {
                     // Event
-                    string msgEventErr = $"AcceptConnections connection count {AllRequests} exceeds configured max {_Settings.MaxThreads}.";
+                    string msgEventErr = $"AcceptConnections Max Exceeded, {AllRequests} of {_Settings.MaxThreads} Requests. CPU: {CpuUsage} of {KillOnCpuUsage}.";
                     OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
                     Debug.WriteLine(msgEventErr);
 
@@ -356,6 +361,7 @@ namespace MsmhTools.HTTPProxyServer
                 req.SourcePort = clientPort;
                 req.DestIp = serverIp;
                 req.DestPort = serverPort;
+                req.TimeoutSec = RequestTimeoutSec;
 
                 // Block Port 80
                 if (BlockPort80 && req.DestHostPort == 80)
@@ -436,20 +442,17 @@ namespace MsmhTools.HTTPProxyServer
                 // Is Upstream Active
                 bool isUpStreamProgramActive = UpStreamProxyProgram.UpStreamMode != Program.UpStreamProxy.Mode.Disable;
 
-                if (isUpStreamProgramActive)
-                {
-                    // Check if Dest Host or IP is blocked
-                    bool isIp = IPAddress.TryParse(req.DestHostname, out IPAddress _);
-                    if (isIp)
-                        req.IsDestBlocked = await CommonTools.IsIpBlocked(req.DestHostname, req.DestHostPort, 2000);
-                    else
-                        req.IsDestBlocked = await CommonTools.IsHostBlocked(req.DestHostname, req.DestHostPort, 2000);
+                // Check if Dest Host or IP is blocked
+                bool isIp = IPAddress.TryParse(req.DestHostname, out IPAddress _);
+                if (isIp)
+                    req.IsDestBlocked = await CommonTools.IsIpBlocked(req.DestHostname, req.DestHostPort, 2000);
+                else
+                    req.IsDestBlocked = await CommonTools.IsHostBlocked(req.DestHostname, req.DestHostPort, 2000);
 
-                    if (req.IsDestBlocked && isIp)
-                        msgReqEvent += " (IP is blocked)";
-                    if (req.IsDestBlocked && !isIp)
-                        msgReqEvent += " (Host is blocked)";
-                }
+                if (req.IsDestBlocked && isIp)
+                    msgReqEvent += " (IP is blocked)";
+                if (req.IsDestBlocked && !isIp)
+                    msgReqEvent += " (Host is blocked)";
 
                 // Apply upstream?
                 bool applyUpStreamProxy = false;
@@ -478,8 +481,8 @@ namespace MsmhTools.HTTPProxyServer
                     string msgEvent = $"{clientEndpoint} proxying request via CONNECT to {req.FullUrl}";
                     OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
-                    //await Task.Run(async () => await ConnectHttpsRequest(connectionId, client, req, applyUpStreamProxy));
-                    await ConnectHttpsRequest(connectionId, client, req, applyUpStreamProxy);
+                    ConnectHttpsRequest(connectionId, client, req, applyUpStreamProxy);
+                    //await ConnectHttpsRequest(connectionId, client, req, applyUpStreamProxy);
                 }
                 else
                 {
@@ -487,11 +490,12 @@ namespace MsmhTools.HTTPProxyServer
                     string msgEvent = $"{clientEndpoint} proxying request to {req.FullUrl}";
                     OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
 
-                    await ConnectHttpRequestAsync(req, client);
+                    ConnectHttpRequestAsync(req, client);
+                    //await ConnectHttpRequestAsync(req, client);
                 }
 
-                if (client.Connected) client.Close();
-                if (AllRequests > 0) AllRequests--;
+                //if (client.Connected) client.Close();
+                //if (AllRequests > 0) AllRequests--;
             }
             catch (IOException)
             {
@@ -511,7 +515,7 @@ namespace MsmhTools.HTTPProxyServer
 
         //======================================== Connect HTTPS Request
 
-        private async Task ConnectHttpsRequest(int connectionId, TcpClient client, Request req, bool applyUpStreamProxy = false)
+        private async void ConnectHttpsRequest(int connectionId, TcpClient client, Request req, bool applyUpStreamProxy = false)
         {
             if (Cancel) return;
             if (client.Client == null) return;
@@ -553,6 +557,7 @@ namespace MsmhTools.HTTPProxyServer
                         // Event Error
                         string msgEventErr = $"Hostname was null or empty.";
                         OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                        disposeIt();
                         return;
                     }
                 }
@@ -561,6 +566,7 @@ namespace MsmhTools.HTTPProxyServer
                     // Event Error
                     string msgEventErr = $"Connect Request failed to {req.DestHostname}:{req.DestHostPort}";
                     OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                    disposeIt();
                     return;
                 }
                 
@@ -573,7 +579,11 @@ namespace MsmhTools.HTTPProxyServer
                     string resp = "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
                     return Encoding.UTF8.GetBytes(resp);
                 }
-                if (client.Client == null) return;
+                if (client.Client == null)
+                {
+                    disposeIt();
+                    return;
+                }
                 client.Client.Send(connectResponse);
 
                 if (string.IsNullOrEmpty(req.SourceIp) || string.IsNullOrEmpty(req.DestIp))
@@ -581,6 +591,7 @@ namespace MsmhTools.HTTPProxyServer
                     // Event Error
                     string msgEventErr = $"Source or dest IP were null or empty. SourceIp: {req.SourceIp} DestIp: {req.DestIp}";
                     OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                    disposeIt();
                     return;
                 }
 
@@ -617,40 +628,45 @@ namespace MsmhTools.HTTPProxyServer
             }
             catch (SocketException)
             {
-                // do nothing
+                disposeIt();
             }
             catch (Exception e)
             {
                 // Event Error
                 string msgEventErr = $"Connect Request: {e.Message}";
                 OnErrorOccurred?.Invoke(msgEventErr, EventArgs.Empty);
+                disposeIt();
             }
             finally
             {
-                if (_TunnelManager != null)
-                    _TunnelManager.Remove(connectionId);
+                disposeIt();
+            }
 
-                if (client != null)
-                    client.Dispose();
-
-                if (server != null)
-                    server.Dispose();
+            void disposeIt()
+            {
+                if (_TunnelManager != null) _TunnelManager.Remove(connectionId);
+                if (client != null) client.Dispose();
+                if (server != null) server.Dispose();
+                if (AllRequests > 0) AllRequests--;
             }
         }
 
         //======================================== Connect HTTP Request
 
-        private async Task ConnectHttpRequestAsync(Request req, TcpClient tcpClient)
+        private async void ConnectHttpRequestAsync(Request req, TcpClient client)
         {
             if (Cancel) return;
 
             RestResponse? resp = await proxyRequest(req);
             if (resp != null)
             {
-                NetworkStream ns = tcpClient.GetStream();
+                NetworkStream ns = client.GetStream();
                 await sendRestResponse(resp, ns);
                 await ns.FlushAsync();
                 ns.Close();
+
+                if (client != null) client.Dispose();
+                if (AllRequests > 0) AllRequests--;
             }
 
             async Task<RestResponse?> proxyRequest(Request request)

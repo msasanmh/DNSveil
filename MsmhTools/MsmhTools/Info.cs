@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace MsmhTools
 {
@@ -29,6 +30,31 @@ namespace MsmhTools
             Assembly assembly = Assembly.GetExecutingAssembly();
             GuidAttribute attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
             return attribute.Value;
+        }
+
+        public static string GetUniqueIdString(bool getEncodedId)
+        {
+            string idPrincipal = Environment.MachineName + Environment.UserName;
+            string idDateTime = DateTime.UtcNow.ToString("yyyyMMddHHmmssfffffff", CultureInfo.InvariantCulture);
+            string idInt1 = $"{Guid.NewGuid().GetHashCode()}";
+            if (idInt1.StartsWith('-')) idInt1 = idInt1.Replace("-", string.Empty);
+            string idInt2 = $"{BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0)}";
+            if (idInt2.StartsWith('-')) idInt2 = idInt2.Replace("-", string.Empty);
+            string result = idPrincipal + idDateTime + idInt1 + idInt2;
+            return getEncodedId ? EncodingTool.GetSHA512(result).ToLower() : result;
+        }
+
+        public static int GetUniqueIdInt()
+        {
+            try
+            {
+                return Guid.NewGuid().GetHashCode() + BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("GetUniqueIdInt: " + ex.Message);
+                return Guid.NewGuid().GetHashCode();
+            }
         }
 
         /// <returns>

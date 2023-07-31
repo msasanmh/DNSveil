@@ -63,6 +63,26 @@ namespace SecureDNSClient.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Farvahar {
+            get {
+                object obj = ResourceManager.GetObject("Farvahar", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap FarvaharBlueRed {
+            get {
+                object obj = ResourceManager.GetObject("FarvaharBlueRed", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap SecureDNSClient {
             get {
                 object obj = ResourceManager.GetObject("SecureDNSClient", resourceCulture);

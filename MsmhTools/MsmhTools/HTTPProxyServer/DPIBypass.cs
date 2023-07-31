@@ -37,7 +37,7 @@ namespace MsmhTools.HTTPProxyServer
                 }
 
                 // Max Data Length = 65536
-                private readonly int MaxDataLength = 65536;
+                private const int MaxDataLength = 65536;
                 public enum Mode
                 {
                     Program,
@@ -88,81 +88,28 @@ namespace MsmhTools.HTTPProxyServer
 
                     private void Test(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, DPIBypass bp)
                     {
-                        Debug.WriteLine("SendDataInFragmentAllExtensions");
+                        Debug.WriteLine("Send Data in TEST");
                         // Create packets
                         List<byte[]> packets = new();
                         packets.Clear();
 
-                        List<byte[]> fbl = new();
-                        byte[] fb = new byte[1];
-                        fb[0] = 0x2;
-                        for (int n = 0; n < 8; n++)
-                            packets.Add(fb);
-
-                        SniReader sniReader = new(data);
-                        
-                        if (beforeSniChunks == 1 && sniChunks == 1)
+                        SniModifire sniModifire = new(data);
+                        if (sniModifire.HasSni)
                         {
-                            packets.Add(data);
+                            packets.Add(sniModifire.ModifiedData);
+                            SendPackets(sniModifire.ModifiedData, socket, bp, packets);
                         }
                         else
                         {
-                            if (sniReader.HaveTlsExtensions)
-                            {
-                                int prevIndex;
-                                int pos = 0;
-                                SniReader.TlsExtensions allExtensions = sniReader.AllExtensions;
-
-                                pos += allExtensions.StartIndex;
-                                prevIndex = pos - allExtensions.StartIndex;
-
-                                // Create packet before SNI
-                                int beforeSniLength = allExtensions.StartIndex - prevIndex;
-                                if (beforeSniLength > 0)
-                                {
-                                    byte[] beforeSNI = new byte[beforeSniLength];
-                                    Buffer.BlockCopy(data, prevIndex, beforeSNI, 0, beforeSniLength);
-
-                                    List<byte[]> chunkedbeforeSNI = ChunkDataNormal(beforeSNI, beforeSniChunks, offset);
-                                    packets = packets.Concat(chunkedbeforeSNI).ToList();
-                                    //Debug.WriteLine($"{prevIndex} ======> {beforeSniLength}");
-                                }
-
-                                // Create SNI packet
-                                List<byte[]> chunkedSNI = ChunkDataNormal(allExtensions.Data, sniChunks, offset);
-                                packets = packets.Concat(chunkedSNI).ToList();
-
-                                //Debug.WriteLine($"{beforeSniLength} ====== {sni.SniStartIndex}");
-                                //Debug.WriteLine($"{sni.SniStartIndex} ======> {sni.SniStartIndex + sni.SniLength}");
-
-                                pos = allExtensions.StartIndex + allExtensions.Length;
-
-                                // Create packet after SNI
-                                if (pos < data.Length)
-                                {
-                                    int afterSniStartIndex = pos;
-                                    int afterSniLength = data.Length - pos;
-                                    byte[] afterSni = new byte[afterSniLength];
-                                    Buffer.BlockCopy(data, afterSniStartIndex, afterSni, 0, afterSniLength);
-                                    packets.Add(afterSni);
-
-                                    //Debug.WriteLine($"{sni.SniStartIndex + sni.SniLength} ====== {afterSniStartIndex}");
-                                    //Debug.WriteLine($"{afterSniStartIndex} ======> {afterSniStartIndex + afterSniLength}");
-                                    //Debug.WriteLine($"{afterSniStartIndex + afterSniLength} ====== {data.Length}");
-                                }
-                            }
-                            else
-                            {
-                                packets.Add(data);
-                            }
+                            packets.Add(data);
+                            SendPackets(data, socket, bp, packets);
                         }
 
-                        SendPackets(data, socket, bp, packets);
                     }
 
                     private void SendDataInFragmentAllExtensions(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, DPIBypass bp)
                     {
-                        Debug.WriteLine("SendDataInFragmentAllExtensions");
+                        //Debug.WriteLine("SendDataInFragmentAllExtensions");
                         // Create packets
                         List<byte[]> packets = new();
                         packets.Clear();
@@ -175,7 +122,7 @@ namespace MsmhTools.HTTPProxyServer
                         }
                         else
                         {
-                            if (sniReader.HaveTlsExtensions)
+                            if (sniReader.HasTlsExtensions)
                             {
                                 int prevIndex;
                                 int pos = 0;
@@ -230,7 +177,7 @@ namespace MsmhTools.HTTPProxyServer
 
                     private void SendDataInFragmentSniExtension(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, DPIBypass bp)
                     {
-                        Debug.WriteLine("SendDataInFragmentSniExtension");
+                        //Debug.WriteLine("SendDataInFragmentSniExtension");
                         // Create packets
                         List<byte[]> packets = new();
                         packets.Clear();
@@ -244,7 +191,7 @@ namespace MsmhTools.HTTPProxyServer
                         }
                         else
                         {
-                            if (sniReader.HaveSniExtension)
+                            if (sniReader.HasSniExtension)
                             {
                                 int prevIndex;
                                 int pos = 0;
@@ -310,17 +257,17 @@ namespace MsmhTools.HTTPProxyServer
                         // Create packets
                         List<byte[]> packets = new();
                         packets.Clear();
-
+                        
                         SniReader sniReader = new(data);
                         if (sniReader.SniList.Count > 1) Debug.WriteLine($"=======================> We Have {sniReader.SniList.Count} SNIs.");
-
+                        
                         if (beforeSniChunks == 1 && sniChunks == 1)
                         {
                             packets.Add(data);
                         }
                         else
                         {
-                            if (sniReader.HaveSni)
+                            if (sniReader.HasSni)
                             {
                                 int prevIndex;
                                 int pos = 0;

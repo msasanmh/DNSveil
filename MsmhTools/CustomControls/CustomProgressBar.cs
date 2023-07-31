@@ -1,5 +1,6 @@
 ﻿using MsmhTools;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms.Design;
 /*
@@ -18,7 +19,7 @@ namespace CustomControls
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new event EventHandler? RightToLeftLayoutChanged;
 
-        private Color mBorderColor = Color.Red;
+        private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Border Color")]
@@ -30,6 +31,22 @@ namespace CustomControls
                 if (mBorderColor != value)
                 {
                     mBorderColor = value;
+                    Invalidate();
+                }
+            }
+        }
+
+        private int mRoundedCorners = 0;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Appearance"), Description("Rounded Corners")]
+        public int RoundedCorners
+        {
+            get { return mRoundedCorners; }
+            set
+            {
+                if (mRoundedCorners != value)
+                {
+                    mRoundedCorners = value;
                     Invalidate();
                 }
             }
@@ -84,26 +101,11 @@ namespace CustomControls
             }
         }
 
-        private DateTime? mStartTime = null;
-        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
-        [Category("Appearance"), Description("Set Start Time Programmatically (Optional)")]
-        public DateTime? StartTime
-        {
-            get { return mStartTime; }
-            set
-            {
-                if (mStartTime != value)
-                {
-                    mStartTime = value;
-                    Invalidate();
-                }
-            }
-        }
+        public bool StopTimer { get; set; } = false;
 
+        private readonly Stopwatch StopWatch = new();
         private static bool ApplicationIdle = false;
-        private TimeSpan elapsedTime;
-        private string? elapsedTimeString;
-        private int once = 0;
+        private string ElapsedTimeString = string.Empty;
         private bool onceIV = true;
 
         public CustomProgressBar() : base()
@@ -183,7 +185,8 @@ namespace CustomControls
             else
                 chunksColorGradient = chunksColor.ChangeBrightness(-0.5f);
 
-            Rectangle rect = ClientRectangle;
+            //Rectangle rect = ClientRectangle;
+            Rectangle rect = new(0, 0, ClientRectangle.Width - 1, ClientRectangle.Height - 1);
             Graphics g = e.Graphics;
             // Draw horizontal bar (Background and Border) With Default System Color:
             //ProgressBarRenderer.DrawHorizontalBar(g, rect);
@@ -191,10 +194,19 @@ namespace CustomControls
             // Draw horizontal bar (Background and Border) With Custom Color:
             // Fill Background
             using SolidBrush bgBrush = new(backColor);
-            g.FillRectangle(bgBrush, rect);
+            g.FillRoundedRectangle(bgBrush, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
 
             // Draw Border
-            ControlPaint.DrawBorder(g, rect, borderColor, ButtonBorderStyle.Solid);
+            using Pen penB = new(borderColor);
+            g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
+
+            // Min
+            if (Value == Minimum)
+            {
+                if (!StopWatch.IsRunning) StopWatch.Start();
+                StopWatch.Restart();
+                return;
+            }
 
             // Padding
             if (Value > 0)
@@ -205,30 +217,32 @@ namespace CustomControls
 
                 // Draw Chunks By Custom Color:
                 // The Following Is The Width Of The Bar. This Will Vary With Each Value.
-                int fillWidth = Width * Value / (Maximum - Minimum);
+                int fillWidth = rect.Width * Value / (Maximum - Minimum);
 
                 // GDI+ Doesn't Like Rectangles 0px Wide or Height
                 if (fillWidth == 0)
                 {
                     // Draw Only Border And Exit
-                    ControlPaint.DrawBorder(g, rect, borderColor, ButtonBorderStyle.Solid);
+                    g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
                     return;
                 }
                 // Rectangles For Upper And Lower Half Of Bar
-                Rectangle topRect = new(0, 0, fillWidth, Height / 2);
-                Rectangle buttomRect = new(0, Height / 2, fillWidth, Height / 2);
+                int y = Value < 2 ? 1 : 0;
+                Rectangle topRect = new(0, y, fillWidth, (rect.Height / 2) + 1 - y); // +1 to avoid "having a dark line in the middle of the bar"
+                Rectangle buttomRect = new(0, (rect.Height / 2) - y, fillWidth, (rect.Height / 2) - y);
 
                 // Paint Upper Half
-                using LinearGradientBrush gbUH = new(new Point(0, 0), new Point(0, Height / 2), chunksColorGradient, chunksColor);
-                e.Graphics.FillRectangle(gbUH, topRect);
+                int right = Value < RoundedCorners ? Value : RoundedCorners;
+                using LinearGradientBrush gbUH = new(new Point(topRect.X, topRect.Y), new Point(topRect.X, topRect.Height), chunksColorGradient, chunksColor);
+                g.FillRoundedRectangle(gbUH, topRect, RoundedCorners, right, 0, 0);
 
                 // Paint Lower Half
-                // (this.Height/2 - 1 Because There Would Be A Dark Line In The Middle Of The Bar)
-                using LinearGradientBrush gbLH = new(new Point(0, Height / 2 - 1), new Point(0, Height), chunksColor, chunksColorGradient);
-                e.Graphics.FillRectangle(gbLH, buttomRect);
+                // -1 to avoid "out of memory exception"
+                using LinearGradientBrush gbLH = new(new Point(buttomRect.X, buttomRect.Y - 1), new Point(buttomRect.X, buttomRect.Height), chunksColor, chunksColorGradient);
+                g.FillRoundedRectangle(gbLH, buttomRect, 0, 0, right, RoundedCorners);
 
                 // Paint Border
-                ControlPaint.DrawBorder(g, rect, borderColor, ButtonBorderStyle.Solid);
+                g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
             }
 
             // Compute Percent
@@ -267,42 +281,35 @@ namespace CustomControls
                     g.DrawString(CustomText, Font, brush, locationCustomTextRight);
                 }
             }
-            
-            // Compute Elapsed Time
-            if (StartTime.HasValue == true)
-            {
-                if (percent == 0)
-                {
-                    elapsedTime = new(0, 0, 0, 0, 0);
-                    elapsedTimeString = string.Empty;
-                }
-                else if (1 < percent && percent < 100)
-                {
-                    elapsedTime = (TimeSpan)(DateTime.Now - StartTime);
-                    elapsedTimeString = string.Format(@"Time: {0:00}:{1:00}:{2:000}", elapsedTime.Minutes, elapsedTime.Seconds, Math.Round((double)elapsedTime.Milliseconds / 10));
-                    once = 0;
-                }
-                else if (percent == 100)
-                {
-                    if (once == 0)
-                    {
-                        elapsedTime = (TimeSpan)(DateTime.Now - StartTime);
-                        elapsedTimeString = string.Format(@"Time: {0:00}:{1:00}:{2:000}", elapsedTime.Minutes, elapsedTime.Seconds, Math.Round((double)elapsedTime.Milliseconds / 10));
-                        once++;
-                    }
-                }
 
-                SizeF lenElapsedTime = g.MeasureString(elapsedTimeString, Font);
-                if (RightToLeft == RightToLeft.No)
-                {
-                    Point locationElapsedTimeRight = new(Convert.ToInt32(Width - lenElapsedTime.Width - 5), Convert.ToInt32((Height / 2) - lenElapsedTime.Height / 2));
-                    g.DrawString(elapsedTimeString, Font, brush, locationElapsedTimeRight);
-                }
-                else
-                {
-                    Point locationElapsedTimeLeft = new(5, Convert.ToInt32((Height / 2) - lenElapsedTime.Height / 2));
-                    g.DrawString(elapsedTimeString, Font, brush, locationElapsedTimeLeft);
-                }
+            // Compute Elapsed Time
+            if (StopTimer && StopWatch.IsRunning) StopWatch.Stop();
+
+            ElapsedTimeString = timer();
+
+            // Max
+            if (Value == Maximum)
+            {
+                if (StopWatch.IsRunning) StopWatch.Stop();
+            }
+
+            string timer()
+            {
+                TimeSpan eTime = StopWatch.Elapsed;
+                eTime = TimeSpan.FromMilliseconds(Math.Round(eTime.TotalMilliseconds, 1));
+                return $"Time: {eTime:hh\\:mm\\:ss\\.f}";
+            }
+
+            SizeF lenElapsedTime = g.MeasureString(ElapsedTimeString, Font);
+            if (RightToLeft == RightToLeft.No)
+            {
+                Point locationElapsedTimeRight = new(Convert.ToInt32(Width - lenElapsedTime.Width - 5), Convert.ToInt32((Height / 2) - lenElapsedTime.Height / 2));
+                g.DrawString(ElapsedTimeString, Font, brush, locationElapsedTimeRight);
+            }
+            else
+            {
+                Point locationElapsedTimeLeft = new(5, Convert.ToInt32((Height / 2) - lenElapsedTime.Height / 2));
+                g.DrawString(ElapsedTimeString, Font, brush, locationElapsedTimeLeft);
             }
         }
 

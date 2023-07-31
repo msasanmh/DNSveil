@@ -4,6 +4,9 @@
     <_LastSelectedProfileId>D:\PPWin\SecureDNSClient\SecureDNSClient\Properties\PublishProfiles\FolderProfile.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Update="Forms\Certificate.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\CheckServers.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -37,6 +40,12 @@
     <Compile Update="Forms\GoodbyeDPI.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\Methods.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\SavedDnsServers.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\SetDNS.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -50,6 +59,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\TryToBypassFPUsingProxyDPI.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\UpdateStatusAuto.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="SecureDNS\SettingsWindow.cs">

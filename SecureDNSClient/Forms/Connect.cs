@@ -1,12 +1,7 @@
 ﻿using CustomControls;
 using MsmhTools;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SecureDNSClient
 {
@@ -29,6 +24,9 @@ namespace SecureDNSClient
 
                     // Check Internet Connectivity
                     if (!IsInternetAlive()) return;
+
+                    // Create uid
+                    SecureDNS.GenerateUid(this);
 
                     // Update NICs
                     SecureDNS.UpdateNICs(CustomComboBoxNICs);
@@ -161,6 +159,9 @@ namespace SecureDNSClient
             string msg2 = "...";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg1, Color.MediumSeaGreen));
 
+            // New Check
+            CheckDns checkDns = new(false, GetCPUPriority());
+
             for (int n = 0; n < attempts; n++)
             {
                 if (!IsConnected || IsDisconnecting) return false;
@@ -170,10 +171,10 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg2, Color.MediumSeaGreen));
 
                 // Delay
-                int latency = SecureDNS.CheckDns(blockedDomainNoWww, loopback, timeoutMS, GetCPUPriority());
-                bool result = latency != -1;
+                checkDns.CheckDNS(blockedDomainNoWww, loopback, timeoutMS);
+                
                 Task.Delay(500).Wait(); // Wait a moment
-                if (result)
+                if (checkDns.IsDnsOnline)
                 {
                     // Update bool
                     IsConnected = true;
@@ -186,7 +187,7 @@ namespace SecureDNSClient
                     string msgDelay1 = "Server delay: ";
                     string msgDelay2 = $" ms.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay1, Color.Orange));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(latency.ToString(), Color.DodgerBlue));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(checkDns.DnsLatency.ToString(), Color.DodgerBlue));
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay2, Color.Orange));
                     return true;
                 }
@@ -206,7 +207,7 @@ namespace SecureDNSClient
             string msgConnecting = "Connecting... Please wait..." + NL + NL;
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnecting, Color.MediumSeaGreen));
 
-            // Check open ports
+            // Check Plain DNS port
             bool portDns = GetListeningPort(53, "You need to resolve the conflict.", Color.IndianRed);
             if (!portDns)
             {
@@ -214,13 +215,17 @@ namespace SecureDNSClient
                 return;
             }
 
-            bool portDoH = GetListeningPort(GetDohPortSetting(), "You need to resolve the conflict.", Color.IndianRed);
-            if (!portDoH)
+            // Check DoH port if working mode is set to Plain DNS and DoH
+            if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
             {
-                IsConnecting = false;
-                return;
+                bool portDoH = GetListeningPort(GetDohPortSetting(), "You need to resolve the conflict.", Color.IndianRed);
+                if (!portDoH)
+                {
+                    IsConnecting = false;
+                    return;
+                }
             }
-
+            
             // Flush DNS
             FlushDNS(false);
 
@@ -246,7 +251,6 @@ namespace SecureDNSClient
                             break;
                         await Task.Delay(100);
                     }
-                    return Task.CompletedTask;
                 });
                 await wait1.WaitAsync(TimeSpan.FromSeconds(5));
 
@@ -259,7 +263,6 @@ namespace SecureDNSClient
                             break;
                         await Task.Delay(100);
                     }
-                    return Task.CompletedTask;
                 });
                 await wait2.WaitAsync(TimeSpan.FromSeconds(30));
                 
@@ -309,7 +312,18 @@ namespace SecureDNSClient
             {
                 //=== Connect To Servers Using Proxy
                 await ConnectToServersUsingProxy();
-                await Task.Delay(1000);
+
+                // Wait for DNSCrypt
+                Task wait1 = Task.Run(async () =>
+                {
+                    while (!ProcessManager.FindProcessByPID(PIDDNSCrypt))
+                    {
+                        if (ProcessManager.FindProcessByPID(PIDDNSCrypt))
+                            break;
+                        await Task.Delay(100);
+                    }
+                });
+                await wait1.WaitAsync(TimeSpan.FromSeconds(5));
 
                 if (ProcessManager.FindProcessByPID(PIDDNSCrypt))
                 {
@@ -381,7 +395,7 @@ namespace SecureDNSClient
                         if (ConnectedDohPort == 443)
                             msgLocalDoH3 = $"https://{LocalIP}/dns-query";
                         else
-                            msgLocalDoH3 = $"{NL}https://{LocalIP}:{ConnectedDohPort}/dns-query";
+                            msgLocalDoH3 = $"https://{LocalIP}:{ConnectedDohPort}/dns-query";
                         msgLocalDoH3 += NL;
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH3, Color.DodgerBlue));
                     }

@@ -9,7 +9,7 @@ namespace SecureDNSClient
     public partial class FormDnsLookup : Form
     {
         // Settings XML path
-        private static readonly string SettingsXmlPath = Path.GetFullPath(SecureDNS.CurrentPath + "DnsLookupSettings.xml");
+        private static readonly string SettingsXmlPath = SecureDNS.SettingsXmlDnsLookup;
         private readonly Settings AppSettings;
         private List<string> ResultList = new();
         private int PID = -1;
@@ -134,6 +134,12 @@ namespace SecureDNSClient
             else
                 process.StartInfo.EnvironmentVariables["VERBOSE"] = "";
 
+            bool json = CustomCheckBoxJSON.Checked;
+            if (json)
+                process.StartInfo.EnvironmentVariables["JSON"] = "1";
+            else
+                process.StartInfo.EnvironmentVariables["JSON"] = "";
+
             string rrtype = CustomTextBoxRRTYPE.Text.Trim();
             if (string.IsNullOrWhiteSpace(rrtype)) rrtype = "A";
             process.StartInfo.EnvironmentVariables["RRTYPE"] = rrtype;
@@ -173,14 +179,15 @@ namespace SecureDNSClient
             result = stdout + Environment.NewLine + errout;
 
             string resultOut = string.Empty;
-            string remove1 = "dnslookup result ";
+            string remove1 = "dnslookup";
+            string remove2 = "dnslookup result ";
             ResultList = result.SplitToLines();
             for (int n = 0; n < ResultList.Count; n++)
             {
-                if (n == 0) continue;
                 string line = ResultList[n];
+                if (n == 0 && line.Contains(remove1)) continue;
                 if (n == 1 && string.IsNullOrEmpty(line)) continue;
-                if (line.Contains(remove1)) line = line.Replace(remove1, string.Empty);
+                if (line.Contains(remove2)) line = line.Replace(remove2, string.Empty);
                 resultOut += line + Environment.NewLine;
             }
 

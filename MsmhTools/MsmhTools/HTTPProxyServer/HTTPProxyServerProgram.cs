@@ -362,8 +362,7 @@ namespace MsmhTools.HTTPProxyServer
                         // Add Support Comment //
                         if (hostIP.StartsWith("//"))
                         {
-                            destIP = destHostname;
-                            return false;
+                            destIP = destHostname; return false;
                         }
                         else
                         {
@@ -375,21 +374,51 @@ namespace MsmhTools.HTTPProxyServer
                                     host = host.Replace("www.", string.Empty);
                                 string ip = split[1].Trim();
 
-                                if (destHostnameNoWWW.Equals(host))
+                                if (!host.StartsWith("*."))
                                 {
-                                    destIP = ip;
-                                    return true;
+                                    // No Wildcard
+                                    if (destHostnameNoWWW.Equals(host))
+                                    {
+                                        destIP = ip; return true;
+                                    }
+                                    else
+                                    {
+                                        destIP = destHostname; return false;
+                                    }
                                 }
                                 else
                                 {
-                                    destIP = destHostname;
-                                    return false;
+                                    // Wildcard
+                                    string destMainHost = string.Empty;
+                                    string[] splitByDot = destHostnameNoWWW.Split('.');
+
+                                    if (splitByDot.Length >= 3)
+                                    {
+                                        host = host[2..];
+
+                                        for (int n = 1; n < splitByDot.Length; n++)
+                                            destMainHost += $"{splitByDot[n]}.";
+                                        if (destMainHost.EndsWith('.')) destMainHost = destMainHost[0..^1];
+
+                                        if (destMainHost.Equals(host))
+                                        {
+                                            destIP = ip;
+                                            return true;
+                                        }
+                                        else
+                                        {
+                                            destIP = destHostname; return false;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        destIP = destHostname; return false;
+                                    }
                                 }
                             }
                             else
                             {
-                                destIP = destHostname;
-                                return false;
+                                destIP = destHostname; return false;
                             }
                         }
                     }

@@ -8,8 +8,9 @@ using System.Threading.Tasks;
 namespace MsmhTools
 {
     // https://tls13.xargs.org
-    public class SniReader
+    public class SniModifire
     {
+        // Needs Certificate
         public class TlsExtensions
         {
             public byte[] Data { get; set; } = Array.Empty<byte>();
@@ -32,6 +33,9 @@ namespace MsmhTools
             public int Length { get; set; } = -1;
         }
 
+        public int Padding { get; set; } = 0;
+        public bool PutSniLast { get; set; } = false;
+
         public string ReasonPhrase { get; private set; } = string.Empty;
         public bool HasTlsExtensions { get; private set; } = false;
         public TlsExtensions AllExtensions { get; private set; } = new();
@@ -39,15 +43,20 @@ namespace MsmhTools
         public List<SniExtension> SniExtensionList { get; private set; } = new();
         public bool HasSni { get; private set; } = false;
         public List<SNI> SniList { get; private set; } = new();
+        public byte[] ModifiedData { get; private set; } = Array.Empty<byte>();
 
         private readonly byte[] Data = Array.Empty<byte>();
+        private readonly int MaxDataLength = 65536;
         private const int TLS_HEADER_LEN = 5;
         private const int TLS_HANDSHAKE_CONTENT_TYPE = 0x16;
         private const int TLS_HANDSHAKE_TYPE_CLIENT_HELLO = 0x01;
 
-        public SniReader(byte[] data)
+        public SniModifire(byte[] data)
         {
             Data = data;
+
+            int maxPadding = MaxDataLength - data.Length - 4;
+            if (Padding > maxPadding) Padding = maxPadding;
 
             int pos = TLS_HEADER_LEN;
             int dataLength = data.Length;
@@ -71,10 +80,10 @@ namespace MsmhTools
                     ReasonPhrase = "Request did not begin with TLS handshake.";
                     return;
                 }
-                
+
                 int tls_version_major = data[1];
                 int tls_version_minor = data[2];
-                
+
                 if (tls_version_major < 3)
                 {
                     ReasonPhrase = $"Received SSL handshake cannot support SNI. Min TLS: {tls_version_minor} Max TLS: {tls_version_major}";
@@ -106,6 +115,22 @@ namespace MsmhTools
                     return;
                 }
 
+                //== Create Modified Data
+                int mPos = 0;
+                byte[] mData1 = new byte[pos - mPos];
+                Buffer.BlockCopy(data, 0, mData1, 0, mData1.Length);
+                mPos += mData1.Length;
+                if (Padding > 0)
+                {
+                    int padding = len + Padding + 4;
+                    mData1[mData1.Length - 2] = (byte)(padding >> 8);
+                    mData1[mData1.Length - 1] = (byte)padding;
+
+                    int len2 = (mData1[mData1.Length - 2] << 8) + mData1[mData1.Length - 1];
+                    Debug.WriteLine(len2);
+                }
+                ModifiedData = ModifiedData.Concat(mData1).ToArray();
+
                 // Skip Handshake Message Type
                 pos += 1;
 
@@ -113,6 +138,22 @@ namespace MsmhTools
                 len = (data[pos] << 16) + (data[pos + 1] << 8) + data[pos + 2];
                 // Skip Length of client hello data
                 pos += 3;
+
+                //== Create Modified Data
+                byte[] mData2 = new byte[pos - mPos];
+                Buffer.BlockCopy(data, mPos, mData2, 0, mData2.Length);
+                mPos += mData2.Length;
+                if (Padding > 0)
+                {
+                    int padding = len + Padding + 4;
+                    mData2[mData2.Length - 3] = (byte)(padding >> 16); // (byte)(padding >> 16)
+                    mData2[mData2.Length - 2] = (byte)(padding >> 8);
+                    mData2[mData2.Length - 1] = (byte)padding;
+
+                    int len2 = (mData2[mData2.Length - 3] << 16) + (mData2[mData2.Length - 2] << 8) + mData2[mData2.Length - 1];
+                    Debug.WriteLine(len2);
+                }
+                ModifiedData = ModifiedData.Concat(mData2).ToArray();
 
                 // CLIENT VERSION (This field is no longer used for negotiation and is hardcoded to the 1.2 version)
                 pos += 2;
@@ -171,6 +212,21 @@ namespace MsmhTools
                 len = (data[pos] << 8) + data[pos + 1];
                 pos += 2;
 
+                //== Create Modified Data
+                byte[] mData3 = new byte[pos - mPos];
+                Buffer.BlockCopy(data, mPos, mData3, 0, mData3.Length);
+                mPos += mData3.Length;
+                if (Padding > 0)
+                {
+                    int padding = len + Padding + 4;
+                    mData3[mData3.Length - 2] = (byte)(padding >> 8);
+                    mData3[mData3.Length - 1] = (byte)padding;
+
+                    int len2 = (mData3[mData3.Length - 2] << 8) + mData3[mData3.Length - 1];
+                    Debug.WriteLine(len2);
+                }
+                ModifiedData = ModifiedData.Concat(mData3).ToArray();
+
                 if (pos + len > dataLength)
                 {
                     ReasonPhrase = "Wrong Data.";
@@ -195,12 +251,17 @@ namespace MsmhTools
 
             int pos = 0;
             int len;
+
+            // Put SNI Extension Last 1
+            byte[] sniExtensionLast = Array.Empty<byte>();
+            bool hasSniLast = false;
+
             // Parse each 4 bytes for the extension header (to avoid index out of range)
             while (pos + 4 <= data.Length)
             {
                 len = 2; // Add Extension Type
                 len += 2; // Add Extension Length (2 bytes length)
-                
+
                 // Add SNI Extension Data
                 len += (data[pos + 2] << 8) + data[pos + 3];
 
@@ -209,7 +270,25 @@ namespace MsmhTools
 
                 //if (data[pos] == 0x00 && data[pos + 1] == 0x15) // Extension: Padding
                 if (data[pos] == 0x00 && data[pos + 1] == 0x00) // Extension: SNI
+                {
                     ParseSniExtension(extData, pos0 + pos);
+
+                    hasSniLast = true;
+                    sniExtensionLast = extData;
+
+                    if (!PutSniLast)
+                    {
+                        //== Create Modified Data
+                        if (Padding > 0)
+                            ModifiedData = ModifiedData.Concat(GetPadding()).ToArray(); // Add Padding before SNI extension
+                        ModifiedData = ModifiedData.Concat(extData).ToArray(); // Add SNI Extension
+                    }
+                }
+                else
+                {
+                    //== Create Modified Data for other extensions
+                    ModifiedData = ModifiedData.Concat(extData).ToArray();
+                }
                 //else if (data[pos] == 0x00 && data[pos + 1] == 0x0b) // Extension: EC Point Formats
                 //else if (data[pos] == 0x00 && data[pos + 1] == 0x0a) // Extension: Supported Groups
                 //else if (data[pos] == 0x00 && data[pos + 1] == 0x23) // Extension: Session Ticket
@@ -222,6 +301,15 @@ namespace MsmhTools
 
                 // Advance to the next extension
                 pos += len;
+            }
+
+            // Put SNI Extension Last 2
+            if (PutSniLast && hasSniLast)
+            {
+                //== Create Modified Data
+                if (Padding > 0)
+                    ModifiedData = ModifiedData.Concat(GetPadding()).ToArray(); // Add Padding before SNI extension
+                ModifiedData = ModifiedData.Concat(sniExtensionLast).ToArray(); // Add SNI Extension
             }
 
             if (SniList.Any())
@@ -242,6 +330,21 @@ namespace MsmhTools
             // EXTENSION SERVER NAME
             if (data.Length <= 0) return;
 
+            // Google SNI Extension
+            //byte[] google = new byte[23];
+            //google[0] = 0;
+            //google[1] = 0;
+            //google[2] = 0;
+            //google[3] = 19;
+            //google[4] = 0;
+            //google[5] = 17;
+            //google[6] = 0;
+            //google[7] = 0;
+            //google[8] = 14;
+            //byte[] googleSNI = Encoding.UTF8.GetBytes("www.google.com");
+            //Buffer.BlockCopy(googleSNI, 0, google, 9, googleSNI.Length);
+            //data = google;
+
             HasSniExtension = true;
             SniExtension sniExtension = new();
             sniExtension.Data = data;
@@ -250,7 +353,7 @@ namespace MsmhTools
             SniExtensionList.Add(sniExtension);
 
             int pos = 0;
-            
+
             // Check if it's a server name extension
             if (data[pos] == 0x00 && data[pos + 1] == 0x00)
             {
@@ -284,7 +387,7 @@ namespace MsmhTools
                             Buffer.BlockCopy(data, pos, outData, 0, len);
 
                             string serverName = Encoding.UTF8.GetString(outData);
-                            //Debug.WriteLine("----------Server Name: " + serverName + ", Length: " + len + ", Whole Data Length: " + Data.Length);
+                            Debug.WriteLine("----------Server Name: " + serverName + ", Length: " + len + ", Whole Data Length: " + Data.Length);
 
                             SNI sni = new();
                             sni.Data = outData;
@@ -305,6 +408,45 @@ namespace MsmhTools
                 }
             }
 
+        }
+
+        // Padding is a TLS Extension (We add Padding before SNI extension)
+        private byte[] GetPadding()
+        {
+            int padding = Padding + 4;
+
+            byte[] paddingData = new byte[padding];
+
+            // Padding Extension Type (2 bytes)
+            paddingData[0] = 0x00;
+            paddingData[1] = 0x15;
+
+            // Padding Extension Data Length (2 bytes length)
+            paddingData[2] = (byte)(Padding >> 8);
+            paddingData[3] = (byte)Padding;
+
+            // Add Padding Data which is bunch of zeros
+            for (int n = 4; n < padding; n++)
+            {
+                paddingData[n] = 0x00;
+            }
+
+            return paddingData;
+        }
+
+        private byte[] GetMinPadding()
+        {
+            byte[] paddingData = new byte[4];
+
+            // Padding Extension Type (2 bytes)
+            paddingData[0] = 0x00;
+            paddingData[1] = 0x15;
+
+            // Padding Extension Data Length (2 bytes length)
+            paddingData[2] = 0x00;
+            paddingData[3] = 0x00;
+
+            return paddingData;
         }
 
     }
