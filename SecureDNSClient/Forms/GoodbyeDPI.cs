@@ -246,7 +246,7 @@ namespace SecureDNSClient
             }
             if (CustomCheckBoxDPIAdvBlacklist.Checked)
             {
-                args += $"--blacklist {SecureDNS.DPIBlacklistPath} "; checkCount++;
+                args += $"--blacklist \"{SecureDNS.DPIBlacklistPath}\" "; checkCount++;
             }
 
             string fallbackDNS = SecureDNS.BootstrapDnsIPv4.ToString();
