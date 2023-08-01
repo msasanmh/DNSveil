@@ -37,8 +37,7 @@ namespace SecureDNSClient
             if (!IsInternetAlive()) return;
 
             // If user changing DPI mode fast, return.
-            if (StopWatchCheckDPIWorks.IsRunning)
-                return;
+            if (StopWatchCheckDPIWorks.IsRunning) return;
 
             // Get blocked domain
             string blockedDomain = GetBlockedDomainSetting(out string _);
@@ -90,7 +89,7 @@ namespace SecureDNSClient
                 }
 
                 // Check DPI works
-                CheckDPIWorks(blockedDomain);
+                Task.Run(() => CheckDPIWorks(blockedDomain));
             }
             else
             {
@@ -304,7 +303,7 @@ namespace SecureDNSClient
                 }
 
                 // Check DPI works
-                CheckDPIWorks(blockedDomain);
+                Task.Run(() => CheckDPIWorks(blockedDomain));
             }
             else
             {

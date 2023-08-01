@@ -11,6 +11,15 @@ namespace SecureDNSClient
             if (!IsProxySet)
             {
                 // Set Proxy
+
+                // Write Let Proxy Start to log
+                if (IsProxyActivating)
+                {
+                    string msg = "Let Proxy Start." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Orange));
+                    return;
+                }
+
                 // Write Enable Proxy first to log
                 if (!IsSharing)
                 {
@@ -21,11 +30,11 @@ namespace SecureDNSClient
 
                 // Get IP:Port
                 string ip = IPAddress.Loopback.ToString();
-                int port = ProxyPort;
+                int port = ProxyPort != -1 ? ProxyPort : GetHTTPProxyPortSetting();
 
                 // Start Set Proxy
                 Network.SetHttpProxy(ip, port);
-
+                
                 Task.Delay(300).Wait(); // Wait a moment
 
                 bool isProxySet = Network.IsProxySet(out string _, out string _, out string _, out string _);
@@ -41,14 +50,14 @@ namespace SecureDNSClient
                     CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
                     CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
                     CustomRichTextBoxLog.AppendText(msg3 + NL, Color.LightGray);
-
+                    
                     // Check DPI Works
                     if (CustomCheckBoxPDpiEnableDpiBypass.Checked)
                     {
                         // Get blocked domain
                         string blockedDomain = GetBlockedDomainSetting(out string _);
                         if (!string.IsNullOrEmpty(blockedDomain))
-                            CheckDPIWorks(blockedDomain);
+                            Task.Run(() => CheckDPIWorks(blockedDomain));
                     }
                 }
                 else

@@ -127,20 +127,21 @@ namespace SecureDNSClient
             {
                 // Start Proxy
                 if (IsProxyActivating || IsProxyDeactivating) return;
+
+                // Write Set DNS first to log
+                if (IsDNSSetting)
+                {
+                    string msg = "Let DNS Set." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Orange));
+                    return;
+                }
+
                 UpdateProxyBools = false;
                 IsProxyActivating = true;
 
                 // Start Share
                 string msgStart = $"Starting HTTP Proxy...{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStart, Color.MediumSeaGreen));
-
-                //// Write Set DNS first to log
-                //if (!IsDNSSet)
-                //{
-                //    string msg = "Set DNS first." + NL;
-                //    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                //    return;
-                //}
 
                 // Delete request log on > 50KB
                 try
@@ -178,8 +179,7 @@ namespace SecureDNSClient
                 {
                     while (!ProcessManager.FindProcessByPID(PIDHttpProxy))
                     {
-                        if (ProcessManager.FindProcessByPID(PIDHttpProxy))
-                            break;
+                        if (ProcessManager.FindProcessByPID(PIDHttpProxy)) break;
                         await Task.Delay(100);
                     }
                 });
@@ -264,7 +264,13 @@ namespace SecureDNSClient
                 }
 
                 // Apply DPI Bypass Support
-                ApplyPDpiChanges(ProxyProcess);
+                bool isDpiBypassApplied = ApplyPDpiChanges(ProxyProcess);
+                if (!isDpiBypassApplied)
+                {
+                    ProcessManager.KillProcessByPID(PIDHttpProxy);
+                    IsProxyActivating = false;
+                    return;
+                }
 
                 // Apply UpStream Proxy Support
                 bool isUpstreamOK = await ApplyPUpStreamProxy(ProxyProcess);
@@ -354,6 +360,9 @@ namespace SecureDNSClient
                     return;
                 }
 
+                // Update Proxy Port
+                ProxyPort = GetHTTPProxyPortSetting();
+
                 // Write Sharing Address to log
                 LocalIP = Network.GetLocalIPv4(); // Update Local IP
                 IPAddress localIP = LocalIP ?? IPAddress.Loopback;
@@ -367,6 +376,8 @@ namespace SecureDNSClient
                 string msgHTTPProxy3 = $"http://{localIP}:{httpProxyPort}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgHTTPProxy3 + NL, Color.DodgerBlue));
 
+                // Update Bools
+                IsSharing = true;
                 UpdateProxyBools = true;
                 IsProxyActivating = false;
                 ProxyProcess.StandardOutput.DiscardBufferedData();
@@ -376,6 +387,7 @@ namespace SecureDNSClient
                 // Stop Proxy
                 if (IsProxyActivating || IsProxyDeactivating) return;
                 IsProxyDeactivating = true;
+
                 // Stop Fake Proxy
                 ProcessManager.KillProcessByPID(PIDFakeProxy);
 
@@ -394,8 +406,7 @@ namespace SecureDNSClient
                     {
                         while (ProcessManager.FindProcessByPID(PIDHttpProxy))
                         {
-                            if (!ProcessManager.FindProcessByPID(PIDHttpProxy))
-                                break;
+                            if (!ProcessManager.FindProcessByPID(PIDHttpProxy)) break;
                             await Task.Delay(100);
                         }
                     });
@@ -403,6 +414,9 @@ namespace SecureDNSClient
 
                     if (!ProcessManager.FindProcessByPID(PIDHttpProxy))
                     {
+                        // Update Bool
+                        IsSharing = false;
+
                         // Write deactivated message to log
                         string msgDiactivated = $"HTTP Proxy Server deactivated.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDiactivated, Color.MediumSeaGreen));
@@ -436,21 +450,22 @@ namespace SecureDNSClient
             return text.Replace(NL, "\n").Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", @"\n").Replace(@"\n\n", @"\n");
         }
 
-        private void ApplyPDpiChanges(Process process)
+        private bool ApplyPDpiChanges(Process process)
         {
-            // If DNS is Setting or Unsetting Return
-            if (IsDNSSetting || IsDNSUnsetting) return;
+            // Return if DNS is setting or unsetting
+            if (IsDNSSetting || IsDNSUnsetting) return false;
 
             ApplyPDpiChangesOut(out HTTPProxyServer.Program.DPIBypass.Mode bypassMode, out int beforSniChunks, out HTTPProxyServer.Program.DPIBypass.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay);
 
             UpdateProxyBools = false;
             string command = $"staticdpibypassprogram -{bypassMode} -{beforSniChunks} -{chunkMode} -{sniChunks} -{antiPatternOffset} -{fragmentDelay}";
             Debug.WriteLine(command);
-            ProcessManager.SendCommand(process, command);
+            bool isCommandSent = ProcessManager.SendCommand(process, command);
+            if (!isCommandSent) return false;
             UpdateProxyBools = true;
 
             // Check DPI Works
-            if (CustomCheckBoxPDpiEnableDpiBypass.Checked && IsProxyActivated)
+            if (CustomCheckBoxPDpiEnableDpiBypass.Checked && IsProxyActivated && !IsProxyActivating)
             {
                 if (bypassMode != HTTPProxyServer.Program.DPIBypass.Mode.Disable)
                 {
@@ -463,6 +478,8 @@ namespace SecureDNSClient
                 if (!string.IsNullOrEmpty(blockedDomain))
                     Task.Run(() => CheckDPIWorks(blockedDomain));
             }
+
+            return true;
         }
 
         private void ApplyPDpiChangesFakeProxy(Process process)

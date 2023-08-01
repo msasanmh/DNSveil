@@ -134,7 +134,7 @@ namespace SecureDNSClient.NecessaryFiles {
         ///   Looks up a localized string similar to dnscrypt-proxy 2.1.4
         ///dnslookup 1.9.1
         ///dnsproxy 0.50.2
-        ///sdchttpproxy 2.3.0
+        ///sdchttpproxy 2.3.5
         ///goodbyedpi 0.2.2.
         /// </summary>
         internal static string versions {

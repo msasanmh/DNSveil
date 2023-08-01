@@ -289,7 +289,7 @@ namespace SecureDNSClient
                 return false;
             }
         }
-
+        
         private async void CheckDPIWorks(string host, int timeoutSec = 30) //Default timeout: 100 sec
         {
             if (string.IsNullOrWhiteSpace(host)) return;
@@ -298,11 +298,11 @@ namespace SecureDNSClient
             if (IsDNSSetting || IsDNSUnsetting) return;
 
             // If user changing DPI mode fast, return.
-            if (StopWatchCheckDPIWorks.IsRunning)
-                return;
+            if (StopWatchCheckDPIWorks.IsRunning) return;
 
             // Start StopWatch
-            StopWatchCheckDPIWorks.Start();
+            if (!StopWatchCheckDPIWorks.IsRunning)
+                StopWatchCheckDPIWorks.Start();
 
             // Write start DPI checking to log
             string msgDPI = $"Checking DPI Bypass ({host})...{NL}";
@@ -311,6 +311,17 @@ namespace SecureDNSClient
             // Update Bools
             //UpdateBools();
             //await UpdateBoolHttpProxy();
+
+            // Wait for IsDPIActive
+            Task wait1 = Task.Run(async () =>
+            {
+                while (!IsDPIActive)
+                {
+                    if (IsDPIActive) break;
+                    await Task.Delay(100);
+                }
+            });
+            await wait1.WaitAsync(TimeSpan.FromSeconds(5));
 
             try
             {
@@ -371,10 +382,10 @@ namespace SecureDNSClient
                     httpClientWithProxy.Timeout = TimeSpan.FromSeconds(timeoutSec);
 
                     StopWatchCheckDPIWorks.Restart();
-
+                    
                     HttpResponseMessage r = await httpClientWithProxy.GetAsync(uri);
 
-                    if (r.IsSuccessStatusCode || r.StatusCode.ToString() == "NotFound")
+                    if (r.IsSuccessStatusCode || r.StatusCode == HttpStatusCode.NotFound || r.StatusCode == HttpStatusCode.Forbidden)
                     {
                         msgSuccess();
                         r.Dispose();
@@ -389,10 +400,10 @@ namespace SecureDNSClient
                     httpClient.Timeout = TimeSpan.FromSeconds(timeoutSec);
 
                     StopWatchCheckDPIWorks.Restart();
-
+                    
                     HttpResponseMessage r = await httpClient.GetAsync(uri);
 
-                    if (r.IsSuccessStatusCode || r.StatusCode.ToString() == "NotFound")
+                    if (r.IsSuccessStatusCode || r.StatusCode == HttpStatusCode.NotFound || r.StatusCode == HttpStatusCode.Forbidden)
                     {
                         msgSuccess();
                         r.Dispose();
@@ -400,15 +411,17 @@ namespace SecureDNSClient
                     else
                         msgFailed(r);
                 }
-
+                
                 void msgSuccess()
                 {
                     // Write Success to log
                     if (IsDPIActive)
                     {
-                        var elapsedTime = Math.Round((double)StopWatchCheckDPIWorks.ElapsedMilliseconds / 1000);
+                        TimeSpan eTime = StopWatchCheckDPIWorks.Elapsed;
+                        eTime = TimeSpan.FromMilliseconds(Math.Round(eTime.TotalMilliseconds, 2));
+                        string eTimeStr = eTime.Seconds > 9 ? $"{eTime:ss\\.ff}" : $"{eTime:s\\.ff}";
                         string msgDPI1 = $"DPI Check: ";
-                        string msgDPI2 = $"Successfully opened {host} in {elapsedTime} seconds.{NL}";
+                        string msgDPI2 = $"Successfully opened {host} in {eTimeStr} seconds.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.MediumSeaGreen));
                     }

@@ -445,9 +445,9 @@ namespace MsmhTools.HTTPProxyServer
                 // Check if Dest Host or IP is blocked
                 bool isIp = IPAddress.TryParse(req.DestHostname, out IPAddress _);
                 if (isIp)
-                    req.IsDestBlocked = await CommonTools.IsIpBlocked(req.DestHostname, req.DestHostPort, 2000);
+                    req.IsDestBlocked = await CommonTools.IsIpBlocked(req.DestHostname, req.DestHostPort, req.Method, 2000);
                 else
-                    req.IsDestBlocked = await CommonTools.IsHostBlocked(req.DestHostname, req.DestHostPort, 2000);
+                    req.IsDestBlocked = await CommonTools.IsHostBlocked(req.DestHostname, req.DestHostPort, req.Method, 2000);
 
                 if (req.IsDestBlocked && isIp)
                     msgReqEvent += " (IP is blocked)";

@@ -35,6 +35,7 @@ namespace SecureDNSClient
                 if (IsDNSSetting || IsDNSUnsetting) return;
                 // Set DNS
                 IsDNSSetting = true;
+
                 // Write Connect first to log
                 string msgConnect = string.Empty;
                 if (!IsConnected)
@@ -118,7 +119,7 @@ namespace SecureDNSClient
 
                 // Check DPI works if DPI is Active
                 if (IsDPIActive)
-                    CheckDPIWorks(blockedDomain);
+                    Task.Run(() => CheckDPIWorks(blockedDomain));
             }
             else
             {
