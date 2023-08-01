@@ -191,7 +191,7 @@ namespace SecureDNSClient
 
                         // Start GoodbyeDPI
                         DPIBasicBypass dpiBypass = new(bypassMode, CustomNumericUpDownSSLFragmentSize.Value, bootstrap, bootstrapPort);
-                        string args = $"{dpiBypass.Args} --blacklist {SecureDNS.DPIBlacklistFPPath}";
+                        string args = $"{dpiBypass.Args} --blacklist \"{SecureDNS.DPIBlacklistFPPath}\"";
                         PIDGoodbyeDPIBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
 
                         // Wait for DNSProxyBypass
