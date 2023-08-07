@@ -103,7 +103,7 @@ namespace SecureDNSClient
 
                     uid = uid.Trim();
                     if (string.IsNullOrEmpty(uid)) return;
-                    string counterUrl = "https://msmh.html-5.me/counter.php";
+                    string counterUrl = "https://msasanmh.html-5.me/counter.php";
                     string productVersion = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion ?? "0.0.0";
                     string args = $"{counterUrl}?uid={uid}&sdcver={productVersion}";
 
@@ -239,7 +239,7 @@ namespace SecureDNSClient
         public static async Task<string> StampToCompanyOffline(string stampUrl)
         {
             string company = "Couldn't retrieve information.";
-            // Can't always return Address
+            
             try
             {
                 DNSCryptStampReader stamp = new(stampUrl);

@@ -33,6 +33,7 @@ namespace SecureDNSClient
             if (DNSServer == null)
             {
                 DNSServer = new(udpServerTransport);
+                DNSServer.QueryReceived -= DnsServer_QueryReceived;
                 DNSServer.QueryReceived += DnsServer_QueryReceived;
                 DNSServer.Start();
                 IsRunning = true;

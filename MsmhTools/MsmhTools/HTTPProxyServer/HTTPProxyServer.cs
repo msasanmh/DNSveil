@@ -287,7 +287,16 @@ namespace MsmhTools.HTTPProxyServer
             AllRequests++;
 
             // Generate unique int
-            int connectionId = Guid.NewGuid().GetHashCode() + BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0);
+            int connectionId;
+            try
+            {
+                connectionId = Guid.NewGuid().GetHashCode() + BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0);
+            }
+            catch (Exception)
+            {
+                connectionId = Guid.NewGuid().GetHashCode();
+            }
+
             Debug.WriteLine($"Active Requests: {AllRequests} of {_Settings.MaxThreads}");
             
             try

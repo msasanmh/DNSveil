@@ -61,7 +61,7 @@ namespace SecureDNSClient
                 }
 
                 // Get blocked domain
-                string blockedDomain = GetBlockedDomainSetting(out string _);
+                string blockedDomain = GetBlockedDomainSetting(out _);
                 if (string.IsNullOrEmpty(blockedDomain))
                 {
                     IsDNSSetting = false;
@@ -119,7 +119,7 @@ namespace SecureDNSClient
 
                 // Check DPI works if DPI is Active
                 if (IsDPIActive)
-                    Task.Run(() => CheckDPIWorks(blockedDomain));
+                    _ = Task.Run(() => CheckDPIWorks(blockedDomain));
             }
             else
             {

@@ -1,14 +1,15 @@
 ﻿using System;
-using System.Net.Sockets;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace MsmhTools.HTTPProxyServer
 {    
     internal class TunnelManager
     {
-        private Dictionary<int, Tunnel> Tunnels = new();
+        private readonly ConcurrentDictionary<int, Lazy<Tunnel>> Tunnels = new();
 
         /// <summary>
-        /// Construct the tunnel manager.
+        /// Construct the Tunnel Manager.
         /// </summary>
         public TunnelManager()
         {
@@ -17,30 +18,43 @@ namespace MsmhTools.HTTPProxyServer
 
         internal void Add(int threadId, Tunnel curr)
         {
-            if (!Tunnels.ContainsKey(threadId))
-                Tunnels.Add(threadId, curr);
+            try
+            {
+                Tunnels.GetOrAdd(threadId, id => new Lazy<Tunnel>(curr));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("TunnelManager Add: " + ex.Message);
+            }
         }
          
         internal void Remove(int threadId)
         {
-            if (Tunnels.ContainsKey(threadId))
+            try
             {
-                Tunnel curr = Tunnels[threadId];
-                if (curr != null)
+                if (Tunnels.ContainsKey(threadId))
                 {
-                    if (curr.ClientTcpClient.Connected)
-                        curr.ClientTcpClient.Dispose();
-                    if (curr.ServerTcpClient.Connected)
-                        curr.ServerTcpClient.Dispose();
-                    Tunnels.Remove(threadId);
-                    curr.Dispose();
+                    Tunnel curr = Tunnels[threadId].Value;
+                    if (curr != null)
+                    {
+                        if (curr.ClientTcpClient.Connected)
+                            curr.ClientTcpClient.Dispose();
+                        if (curr.ServerTcpClient.Connected)
+                            curr.ServerTcpClient.Dispose();
+                        Tunnels.TryRemove(threadId, out Lazy<Tunnel> _);
+                        curr.Dispose();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("TunnelManager Remove: " + ex.Message);
             }
         }
         
-        internal Dictionary<int, Tunnel> GetTunnels()
+        internal Dictionary<int, Lazy<Tunnel>> GetTunnels()
         {
-            Dictionary<int, Tunnel> tempDic = new(Tunnels);
+            Dictionary<int, Lazy<Tunnel>> tempDic = new(Tunnels);
             return tempDic;
         }
         
