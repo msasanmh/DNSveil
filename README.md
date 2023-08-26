@@ -1,10 +1,12 @@
 # SDC - Secure DNS Client
 
 ![GitHub all releases](https://img.shields.io/github/downloads/msasanmh/SecureDNSClient/total)
-![GitHub top language](https://img.shields.io/github/languages/top/msasanmh/SecureDNSClient)
-![GitHub](https://img.shields.io/github/license/msasanmh/SecureDNSClient)
-![GitHub release (with filter)](https://img.shields.io/github/v/release/msasanmh/SecureDNSClient)
 
+![GitHub top language](https://img.shields.io/github/languages/top/msasanmh/SecureDNSClient)
+
+![GitHub](https://img.shields.io/github/license/msasanmh/SecureDNSClient)
+
+![GitHub release (with filter)](https://img.shields.io/github/v/release/msasanmh/SecureDNSClient?link=https%3A%2F%2Fgithub.com%2Fmsasanmh%2FSecureDNSClient%2Freleases%2Flatest)
 
 A GUI for [DNSLookup](https://github.com/ameshkov/dnslookup), [DNSProxy](https://github.com/AdguardTeam/dnsproxy), [DNSCrypt](https://github.com/DNSCrypt/dnscrypt-proxy) and [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI). (Windows only)
 
