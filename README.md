@@ -2,6 +2,7 @@
 
 ![GitHub all releases](https://img.shields.io/github/downloads/msasanmh/SecureDNSClient/total)
 ![GitHub top language](https://img.shields.io/github/languages/top/msasanmh/SecureDNSClient)
+![GitHub](https://img.shields.io/github/license/msasanmh/SecureDNSClient)
 ![GitHub release (with filter)](https://img.shields.io/github/v/release/msasanmh/SecureDNSClient)
 
 
