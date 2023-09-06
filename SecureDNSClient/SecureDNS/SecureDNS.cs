@@ -4,14 +4,15 @@ using System.Diagnostics;
 using CustomControls;
 using System.Net.NetworkInformation;
 using System.Reflection;
-using System.Text.Json;
-using MsmhTools;
-using MsmhTools.DnsTool;
+using MsmhToolsClass;
+using MsmhToolsClass.DnsTool;
 
 namespace SecureDNSClient
 {
     public class SecureDNS
     {
+        // App Name Without Extension
+        private static readonly string appNameWithoutExtension = Path.GetFileNameWithoutExtension(Application.ExecutablePath);
         // App Directory Path
         public static readonly string CurrentPath = Path.GetFullPath(AppContext.BaseDirectory);
 
@@ -51,21 +52,25 @@ namespace SecureDNSClient
         // User Data
         private const string UDN = "user";
         public static readonly string UserDataDirPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN));
-        public static readonly string SettingsXmlPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, Info.ApplicationNameWithoutExtension + ".xml")); // Settings XML path
+        public static readonly string SettingsXmlPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, appNameWithoutExtension + ".xml")); // Settings XML path
         public static readonly string SettingsXmlDnsLookup = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DnsLookupSettings.xml"));
         public static readonly string SettingsXmlIpScanner = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "IpScannerSettings.xml"));
+        public static readonly string SettingsXmlDnsScanner = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DnsScannerSettings.xml"));
+        public static readonly string SettingsXmlDnsScannerExport = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DnsScannerExportSettings.xml"));
         public static readonly string UserIdPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "uid.txt"));
         public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "FakeDnsRules.txt"));
         public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "BlackWhiteList.txt"));
         public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DontBypassList.txt"));
         public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CustomServers.txt"));
+        public static readonly string CustomServersXmlPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CustomServers.xml"));
         public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CustomServers_Working.txt"));
         public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DPIBlacklist.txt"));
         public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "NicName.txt"));
         public static readonly string SavedEncodedDnsPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "SavedEncodedDns.txt"));
+        public static readonly string LogWindowPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "LogWindow.txt"));
 
         // User Data Old Path
-        public static readonly string OldSettingsXmlPath = Path.GetFullPath(Info.ApplicationFullPathWithoutExtension + ".xml");
+        public static readonly string OldSettingsXmlPath = Path.GetFullPath(appNameWithoutExtension + ".xml");
         public static readonly string OldSettingsXmlDnsLookup = Path.GetFullPath(CurrentPath + "DnsLookupSettings.xml");
         public static readonly string OldSettingsXmlIpScanner = Path.GetFullPath(CurrentPath + "IpScannerSettings.xml");
         public static readonly string OldUserIdPath = Path.GetFullPath(Path.Combine(CurrentPath, "uid.txt"));
@@ -103,11 +108,11 @@ namespace SecureDNSClient
 
                     uid = uid.Trim();
                     if (string.IsNullOrEmpty(uid)) return;
-                    string counterUrl = "https://msasanmh.html-5.me/counter.php";
+                    string counterUrl = "https://msmh.html-5.me/counter.php";
                     string productVersion = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion ?? "0.0.0";
                     string args = $"{counterUrl}?uid={uid}&sdcver={productVersion}";
 
-                    if (!Network.IsInternetAlive()) return;
+                    if (!NetworkTool.IsInternetAlive()) return;
                     
                     control.InvokeIt(() =>
                     {
@@ -208,7 +213,7 @@ namespace SecureDNSClient
             string company = "Couldn't retrieve information.";
             if (!string.IsNullOrWhiteSpace(host))
             {
-                string? fileContent = await Resource.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load from Embedded Resource
+                string? fileContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load from Embedded Resource
                 if (!string.IsNullOrWhiteSpace(fileContent))
                 {
                     List<string> split = fileContent.SplitToLines();
@@ -232,7 +237,7 @@ namespace SecureDNSClient
 
         public static async Task<string> UrlToCompanyOffline(string url)
         {
-            Network.GetUrlDetails(url, 53, out string host, out int _, out string _, out bool _);
+            NetworkTool.GetUrlDetails(url, 53, out _, out string host, out int _, out string _, out bool _);
             return await HostToCompanyOffline(host);
         }
 
@@ -268,17 +273,17 @@ namespace SecureDNSClient
         public static async Task<string> UrlToCompanyAsync(string url, string? proxyScheme = null)
         {
             string company = "Couldn't retrieve information.";
-            Network.GetUrlDetails(url, 443, out string host, out int _, out string _, out bool _);
+            NetworkTool.GetUrlDetails(url, 443, out _, out string host, out int _, out string _, out bool _);
             if (!string.IsNullOrWhiteSpace(host))
             {
-                IPAddress? ipAddress = Network.HostToIP(host);
+                string ipStr = GetIP.GetIpFromSystem(host);
                 string? companyFull;
-                if (ipAddress != null)
+                if (!string.IsNullOrEmpty(ipStr))
                 {
                     if (proxyScheme == null)
-                        companyFull = await Network.IpToCompanyAsync(ipAddress);
+                        companyFull = await NetworkTool.IpToCompanyAsync(ipStr);
                     else
-                        companyFull = await Network.IpToCompanyAsync(ipAddress, proxyScheme);
+                        companyFull = await NetworkTool.IpToCompanyAsync(ipStr, proxyScheme);
                     if (!string.IsNullOrWhiteSpace(companyFull))
                     {
                         company = string.Empty;
@@ -300,7 +305,7 @@ namespace SecureDNSClient
         public static void UpdateNICs(CustomComboBox customComboBox)
         {
             customComboBox.Items.Clear();
-            List<NetworkInterface> nics = Network.GetNetworkInterfacesIPv4();
+            List<NetworkInterface> nics = NetworkTool.GetNetworkInterfacesIPv4();
             if (nics == null || nics.Count < 1)
             {
                 Debug.WriteLine("There is no Network Interface.");
@@ -349,7 +354,7 @@ namespace SecureDNSClient
                     string company = await UrlToCompanyAsync(dns);
                     if (!company.Contains("Couldn't retrieve information."))
                     {
-                        Network.GetUrlDetails(dns, 443, out string host, out int _, out string _, out bool _);
+                        NetworkTool.GetUrlDetails(dns, 443, out _, out string host, out int _, out string _, out bool _);
                         object hostToCom = host + "|" + company;
                         HostToCompanyList.Add(hostToCom);
                         Debug.WriteLine(hostToCom);

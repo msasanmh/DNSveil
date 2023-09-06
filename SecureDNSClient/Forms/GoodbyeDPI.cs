@@ -1,4 +1,4 @@
-﻿using MsmhTools;
+﻿using MsmhToolsClass;
 using SecureDNSClient.DPIBasic;
 using System;
 using System.Diagnostics;
@@ -23,16 +23,8 @@ namespace SecureDNSClient
             else return DPIBasicBypassMode.Light;
         }
 
-        private void DPIBasic()
+        private async void GoodbyeDPIBasic()
         {
-            //// Write Connect first to log
-            //if (!IsDNSConnected && !IsDoHConnected)
-            //{
-            //    string msgConnect = "Connect first." + NL;
-            //    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
-            //    return;
-            //}
-
             // Check Internet Connectivity
             if (!IsInternetAlive()) return;
 
@@ -44,13 +36,14 @@ namespace SecureDNSClient
             if (string.IsNullOrEmpty(blockedDomain)) return;
 
             // Kill GoodbyeDPI
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPI);
+            ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
+            ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
 
             string args = string.Empty;
             string text = string.Empty;
             string fallbackDNS = SecureDNS.BootstrapDnsIPv4.ToString();
             int fallbackDnsPort = SecureDNS.BootstrapDnsPort;
-            bool isfallBackDNS = Network.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? fallBackDNSIP);
+            bool isfallBackDNS = NetworkTool.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? fallBackDNSIP);
             if (isfallBackDNS && fallBackDNSIP != null)
             {
                 fallbackDNS = fallBackDNSIP.ToString();
@@ -65,9 +58,20 @@ namespace SecureDNSClient
             text = dpiBypass.Text;
 
             // Execute GoodByeDPI
-            PIDGoodbyeDPI = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+            PIDGoodbyeDPIBasic = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
 
-            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPI))
+            // Wait for GoodbyeDPI
+            Task wait1 = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic)) break;
+                    await Task.Delay(100);
+                }
+            });
+            try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+
+            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic))
             {
                 // Write DPI Mode to log
                 string msg = "DPI bypass is active, mode: ";
@@ -78,18 +82,12 @@ namespace SecureDNSClient
                 UpdateStatusLong();
 
                 // Set IsGoodbyeDPIActive true
-                IsGoodbyeDPIActive = true;
+                IsGoodbyeDPIBasicActive = true;
                 IsDPIActive = true;
 
-                // Go to SetDNS Tab if it's not already set
-                if (ConnectAllClicked && !IsDNSSet)
-                {
-                    this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
-                    this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 3);
-                }
-
                 // Check DPI works
-                Task.Run(() => CheckDPIWorks(blockedDomain));
+                if (IsDNSSet)
+                    _ = Task.Run(() => CheckDPIWorks(blockedDomain));
             }
             else
             {
@@ -99,16 +97,8 @@ namespace SecureDNSClient
             }
         }
 
-        private async void DPIAdvanced()
+        private async void GoodbyeDPIAdvanced()
         {
-            //// Write Connect first to log
-            //if (!IsDNSConnected && !IsDoHConnected)
-            //{
-            //    string msgConnect = "Connect first." + NL;
-            //    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
-            //    return;
-            //}
-
             // Check Internet Connectivity
             if (!IsInternetAlive()) return;
 
@@ -123,7 +113,7 @@ namespace SecureDNSClient
             // Write IP Error to log
             if (CustomCheckBoxDPIAdvIpId.Checked)
             {
-                bool isIpValid = Network.IsIPv4Valid(CustomTextBoxDPIAdvIpId.Text, out IPAddress? tempIP);
+                bool isIpValid = NetworkTool.IsIPv4Valid(CustomTextBoxDPIAdvIpId.Text, out IPAddress? tempIP);
                 if (!isIpValid)
                 {
                     string msgIp = "IP Address is not valid." + NL;
@@ -251,7 +241,7 @@ namespace SecureDNSClient
 
             string fallbackDNS = SecureDNS.BootstrapDnsIPv4.ToString();
             int fallbackDnsPort = SecureDNS.BootstrapDnsPort;
-            bool isfallBackDNS = Network.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? fallBackDNSIP);
+            bool isfallBackDNS = NetworkTool.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? fallBackDNSIP);
             if (isfallBackDNS && fallBackDNSIP != null)
             {
                 fallbackDNS = fallBackDNSIP.ToString();
@@ -272,16 +262,17 @@ namespace SecureDNSClient
             }
 
             // Kill GoodbyeDPI
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPI);
+            ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
+            ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
             await Task.Delay(100);
 
             string text = "Advanced";
 
             // Execute GoodByeDPI
-            PIDGoodbyeDPI = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+            PIDGoodbyeDPIAdvanced = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
             await Task.Delay(100);
 
-            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPI))
+            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced))
             {
                 // Write DPI Mode to log
                 string msg = "DPI bypass is active, mode: ";
@@ -292,18 +283,12 @@ namespace SecureDNSClient
                 UpdateStatusLong();
 
                 // Set IsGoodbyeDPIActive true
-                IsGoodbyeDPIActive = true;
+                IsGoodbyeDPIAdvancedActive = true;
                 IsDPIActive = true;
 
-                // Go to SetDNS Tab if it's not already set
-                if (ConnectAllClicked && !IsDNSSet)
-                {
-                    this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
-                    this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 3);
-                }
-
                 // Check DPI works
-                Task.Run(() => CheckDPIWorks(blockedDomain));
+                if (IsDNSSet)
+                    _ = Task.Run(() => CheckDPIWorks(blockedDomain));
             }
             else
             {
@@ -313,31 +298,76 @@ namespace SecureDNSClient
             }
         }
 
-        private void DPIDeactive()
+        private async void GoodbyeDPIDeactive(bool deactiveBasic, bool deactiveAdvanced)
         {
-            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPI))
+            if (!deactiveBasic && !deactiveAdvanced) return;
+
+            // Kill GoodbyeDPI Basic
+            if (deactiveBasic)
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
+
+            // Kill GoodbyeDPI Advanced
+            if (deactiveAdvanced)
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
+
+            Task wait1 = Task.Run(async () =>
             {
-                // Kill GoodbyeDPI
-                ProcessManager.KillProcessByPID(PIDGoodbyeDPI);
-
-                // Update Groupbox Status
-                UpdateStatusLong();
-
-                // Write to log
-                if (ProcessManager.FindProcessByPID(PIDGoodbyeDPI))
+                while (true)
                 {
-                    string msgDC = "Couldn't deactivate DPI Bypass. Try again." + NL;
+                    if (deactiveBasic && deactiveAdvanced)
+                    {
+                        if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic) &&
+                            !ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced)) break;
+                    }
+                    else
+                    {
+                        if (deactiveBasic && !ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic)) break;
+                        if (deactiveAdvanced && !ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced)) break;
+                    }
+                    await Task.Delay(100);
+                }
+            });
+            try { await wait1.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
+
+            // Update Groupbox Status
+            UpdateStatusLong();
+
+            // Write to log Basic
+            if (deactiveBasic)
+            {
+                if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic))
+                {
+                    string msgDC = "Couldn't deactivate GoodbyeDPI (Basic). Try again." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.IndianRed));
                 }
                 else
                 {
-                    // Set IsGoodbyeDPIActive False
-                    IsGoodbyeDPIActive = false;
+                    // Set IsGoodbyeDPIBasicActive to False
+                    IsGoodbyeDPIBasicActive = false;
 
-                    string msgDC = "DPI bypass deactivated." + NL;
+                    string msgDC = "GoodbyeDPI (Basic) deactivated." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
                 }
             }
+
+            // Write to log Advanced
+            if (deactiveAdvanced)
+            {
+                if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced))
+                {
+                    string msgDC = "Couldn't deactivate GoodbyeDPI (Advanced). Try again." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.IndianRed));
+                }
+                else
+                {
+                    // Set IsGoodbyeDPIAdvancedActive to False
+                    IsGoodbyeDPIAdvancedActive = false;
+
+                    string msgDC = "GoodbyeDPI (Advanced) deactivated." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
+                }
+            }
+
         }
     }
 }

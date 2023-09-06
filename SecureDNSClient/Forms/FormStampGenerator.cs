@@ -1,6 +1,7 @@
-﻿using MsmhTools;
-using MsmhTools.Themes;
-using MsmhTools.DnsTool;
+﻿using MsmhToolsClass;
+using MsmhToolsClass.DnsTool;
+using MsmhToolsWinFormsClass;
+using MsmhToolsWinFormsClass.Themes;
 using System;
 using System.Diagnostics;
 
@@ -12,7 +13,10 @@ namespace SecureDNSClient
         private static bool IsExiting = false;
         public FormStampGenerator()
         {
+            // Fix Screed DPI
+            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
+            ScreenDPI.FixDpiAfterInitializeComponent(this);
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
@@ -304,7 +308,7 @@ namespace SecureDNSClient
                     {
                         if (ClearStatus.ElapsedMilliseconds > 5000 && !IsExiting)
                             if (!string.IsNullOrEmpty(CustomLabelStatus.Text))
-                                this.InvokeIt(() =>  CustomLabelStatus.Text = string.Empty);
+                                this.InvokeIt(() => CustomLabelStatus.Text = string.Empty);
                     }
                     catch (Exception) { }
                 }

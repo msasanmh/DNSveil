@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Linq;
 using ARSoft.Tools.Net;
 using ARSoft.Tools.Net.Dns;
 using System.Net;
-using MsmhTools;
+using MsmhToolsClass;
 
 namespace SecureDNSClient
 {
@@ -22,7 +21,7 @@ namespace SecureDNSClient
             Port = port;
             DohUrl = dohUrl.Trim();
             DohCleanIP = dohCleanIP.Trim();
-            Network.GetUrlDetails(dohUrl.Trim(), 443, out string host, out int dohPort, out string _, out bool _);
+            NetworkTool.GetUrlDetails(dohUrl.Trim(), 443, out _, out string host, out int dohPort, out string _, out bool _);
             DohHost = host;
             DohPort = dohPort;
         }

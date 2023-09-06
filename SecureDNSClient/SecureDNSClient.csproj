@@ -9,16 +9,17 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Copyright>MSasanMH</Copyright>
     <Product>SDC - Secure DNS Client</Product>
-    <Version>$(VersionPrefix)2.3.7</Version>
+    <Version>$(VersionPrefix)2.6.0</Version>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <Optimize>False</Optimize>
+    <Optimize>True</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="DNS-Servers.sdcs" />
     <None Remove="DNS-Servers.txt" />
     <None Remove="DoH-Servers.txt" />
     <None Remove="HostToCompany.txt" />
@@ -38,6 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="DNS-Servers.sdcs" />
     <EmbeddedResource Include="DNS-Servers.txt" />
     <EmbeddedResource Include="HostToCompany.txt" />
     <EmbeddedResource Include="NecessaryFiles\dnscrypt-proxy.exe" />
@@ -66,7 +68,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MsmhTools\MsmhTools.csproj" />
+    <ProjectReference Include="..\MsmhToolsClass\MsmhToolsClass.csproj" />
+    <ProjectReference Include="..\MsmhToolsWinFormsClass\MsmhToolsWinFormsClass.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -91,6 +94,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -106,6 +114,13 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
 
 </Project>

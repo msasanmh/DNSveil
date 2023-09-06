@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using MsmhTools;
+using MsmhToolsClass;
 
 namespace SecureDNSClient
 {
@@ -15,7 +15,7 @@ namespace SecureDNSClient
             // Get Bootstrap IP and Port
             IPAddress bootstrap = SecureDNS.BootstrapDnsIPv4;
             int bootstrapPortD = SecureDNS.BootstrapDnsPort;
-            bool isBootstrap = Network.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? bootstrapIP);
+            bool isBootstrap = NetworkTool.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? bootstrapIP);
             if (isBootstrap && bootstrapIP != null)
             {
                 bootstrap = bootstrapIP;
@@ -71,7 +71,7 @@ namespace SecureDNSClient
         /// <returns>Returns True if everything's ok</returns>
         public bool GetListeningPort(int portToCheck, string message, Color color)
         {
-            bool isPortOpen = Network.IsPortOpen(IPAddress.Loopback.ToString(), portToCheck, 3);
+            bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), portToCheck, 3);
             if (isPortOpen)
             {
                 string existingProcessName = ProcessManager.GetProcessNameByListeningPort(portToCheck);

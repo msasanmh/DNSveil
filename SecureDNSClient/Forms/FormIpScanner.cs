@@ -1,6 +1,7 @@
 ﻿using CustomControls;
-using MsmhTools;
-using MsmhTools.Themes;
+using MsmhToolsClass;
+using MsmhToolsWinFormsClass;
+using MsmhToolsWinFormsClass.Themes;
 using System.ComponentModel;
 
 namespace SecureDNSClient
@@ -15,14 +16,18 @@ namespace SecureDNSClient
         private readonly ToolStripMenuItem ToolStripMenuItemCopy = new();
         public FormIpScanner()
         {
+            // Fix Screed DPI
+            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
+            ScreenDPI.FixDpiAfterInitializeComponent(this);
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
-            
+
             CustomLabelChecking.Text = "Checking: ";
 
             ToolStripMenuItemCopy.Text = "Copy IP";
+            ToolStripMenuItemCopy.Click -= ToolStripMenuItemCopy_Click;
             ToolStripMenuItemCopy.Click += ToolStripMenuItemCopy_Click;
             CustomContextMenuStripMain.Items.Add(ToolStripMenuItemCopy);
 
@@ -32,7 +37,7 @@ namespace SecureDNSClient
             CustomTextBoxCheckWebsite.SetToolTip("Info", msgCheckWebsite);
 
             // Initialize and load Settings
-            if (File.Exists(SettingsXmlPath) && Xml.IsValidXMLFile(SettingsXmlPath))
+            if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
                 AppSettings = new(this, SettingsXmlPath);
             else
                 AppSettings = new(this);
@@ -90,7 +95,7 @@ namespace SecureDNSClient
                     this.InvokeIt(() => CustomLabelChecking.Text = "Checking: ");
                 }
             }
-            
+
         }
 
         private void Scanner_OnWorkingIpReceived(object? sender, EventArgs e)
@@ -101,7 +106,7 @@ namespace SecureDNSClient
                 {
                     int rowId = CustomDataGridViewResult.Rows.Add();
                     DataGridViewRow row = CustomDataGridViewResult.Rows[rowId];
-                    
+
                     CustomDataGridViewResult.BeginEdit(false);
                     row.Height = 20;
                     row.Cells[0].Value = result.RealDelay;
@@ -113,7 +118,7 @@ namespace SecureDNSClient
                     CustomDataGridViewResult.EndEdit();
                 });
 
-                
+
             }
         }
 
@@ -138,7 +143,7 @@ namespace SecureDNSClient
 
                     CustomContextMenuStripMain.Show(CustomDataGridViewResult, e.X, e.Y);
                 }
-                
+
             }
         }
 

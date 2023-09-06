@@ -1,5 +1,5 @@
-﻿using MsmhTools;
-using MsmhTools.DnsTool;
+﻿using MsmhToolsClass;
+using MsmhToolsClass.DnsTool;
 using System;
 using System.Diagnostics;
 using System.Net;
@@ -27,25 +27,28 @@ namespace SecureDNSClient
             }
 
             // Get Host and Port of Proxy
-            Network.GetUrlDetails(proxyScheme, 0, out string host, out int port, out string _, out bool _);
+            NetworkTool.GetUrlDetails(proxyScheme, 0, out _, out string host, out int port, out string _, out bool _);
 
             // Convert proxy host to IP
+            string ipStr = string.Empty;
             bool isIP = IPAddress.TryParse(host, out IPAddress? _);
-            if (!isIP)
-            {
-                IPAddress? ip = Network.HostToIP(host);
-                if (ip != null) host = ip.ToString();
-            }
+            if (isIP)
+                ipStr = host;
+            else
+                ipStr = GetIP.GetIpFromSystem(host);
 
             // Check if proxy works
-            bool isProxyOk = Network.CanPing(host, 15);
-            if (!isProxyOk)
+            if (!string.IsNullOrEmpty(ipStr))
             {
-                string msgWrongProxy = $"Proxy doesn't work.";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWrongProxy + NL, Color.IndianRed));
-                return;
+                bool isProxyOk = NetworkTool.CanPing(ipStr, 15);
+                if (!isProxyOk)
+                {
+                    string msgWrongProxy = $"Proxy doesn't work.";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWrongProxy + NL, Color.IndianRed));
+                    return;
+                }
             }
-
+            
             // Check if config file exist
             if (!File.Exists(SecureDNS.DNSCryptConfigPath))
             {

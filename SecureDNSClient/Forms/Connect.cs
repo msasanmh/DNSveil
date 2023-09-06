@@ -1,13 +1,14 @@
 ﻿using CustomControls;
-using MsmhTools;
+using MsmhToolsClass;
 using System;
+using System.Diagnostics;
 using System.Net;
 
 namespace SecureDNSClient
 {
     public partial class FormMain
     {
-        private async void StartConnect()
+        private async Task StartConnect(ConnectMode connectMode, bool reconnect = false)
         {
             // Return if binary files are missing
             if (!CheckNecessaryFiles()) return;
@@ -20,10 +21,11 @@ namespace SecureDNSClient
                 try
                 {
                     // Connect
-                    if (IsConnecting) return;
-
                     // Check Internet Connectivity
                     if (!IsInternetAlive()) return;
+
+                    if (IsConnecting) return;
+                    IsConnecting = true;
 
                     // Create uid
                     SecureDNS.GenerateUid(this);
@@ -36,26 +38,26 @@ namespace SecureDNSClient
                         // Stop Check
                         if (IsCheckingStarted)
                         {
-                            CustomButtonCheck_Click(null, null);
+                            StartCheck();
 
                             // Wait until check is done
-                            while (!IsCheckDone)
+                            while (IsCheckingStarted)
                                 Task.Delay(100).Wait();
                         }
 
-                        IsConnecting = true;
-                        await Connect();
+                        await Connect(connectMode);
                     });
 
                     await taskConnect.ContinueWith(_ =>
                     {
                         IsConnecting = false;
+
                         string msg = $"{NL}Connect Task: {taskConnect.Status}{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
 
                         if (taskConnect.Status == TaskStatus.Faulted)
                         {
-                            if (GetConnectMode() == ConnectMode.ConnectToWorkingServers)
+                            if (connectMode == ConnectMode.ConnectToWorkingServers)
                             {
                                 string faulted = $"Current DNS Servers are not stable, please check servers.{NL}";
                                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(faulted, Color.IndianRed));
@@ -66,7 +68,7 @@ namespace SecureDNSClient
                 }
                 catch (Exception ex)
                 {
-                    CustomMessageBox.Show(ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    CustomMessageBox.Show(this, ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             else
@@ -75,34 +77,26 @@ namespace SecureDNSClient
                 {
                     // Disconnect
                     if (IsDisconnecting) return;
-
                     IsDisconnecting = true;
 
                     // Write Disconnecting message to log
-                    string msgDisconnecting = NL + "Disconnecting..." + NL;
+                    string msgDisconnecting = $"{NL}Disconnecting...{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDisconnecting, Color.MediumSeaGreen));
 
-                    Task taskWait1 = await Task.Run(async () =>
+                    // Wait for Disconnect
+                    Task wait1 = Task.Run(async () =>
                     {
-                        while (IsConnecting || IsConnected)
+                        while (true)
                         {
-                            if (!IsConnecting && !IsConnected)
-                                return Task.CompletedTask;
+                            if (!IsConnecting && !IsConnected) break;
                             disconnect();
-                            await Task.Delay(1000);
+                            await Task.Delay(500);
                         }
-                        return Task.CompletedTask;
                     });
+                    try { await wait1.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
 
                     async void disconnect()
                     {
-                        // Unset DNS
-                        if (IsDNSSet)
-                            await UnsetSavedDNS();
-
-                        // Deactivate DPI
-                        DPIDeactive();
-
                         // Kill processes (DNSProxy, DNSCrypt)
                         ProcessManager.KillProcessByPID(PIDDNSProxy);
                         ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
@@ -112,13 +106,13 @@ namespace SecureDNSClient
                         // Stop Cloudflare Bypass
                         BypassFakeProxyDohStop(true, true, true, false);
 
-                        //// Stop Fake Proxy
-                        //if (FakeProxy != null && FakeProxy.IsRunning)
-                        //    FakeProxy.Stop();
+                        // Unset Proxy if Proxy is Not Running
+                        if (IsHttpProxySet && !IsHttpProxyRunning)
+                            NetworkTool.UnsetProxy(false, true);
 
-                        // Unset Proxy
-                        if (IsProxySet && !IsSharing)
-                            Network.UnsetProxy(false, false);
+                        // Unset DNS
+                        if (IsDNSSet && !reconnect)
+                            await UnsetSavedDNS();
 
                         // Update Groupbox Status
                         UpdateStatusLong();
@@ -135,10 +129,14 @@ namespace SecureDNSClient
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDisconnected, Color.MediumSeaGreen));
 
                     IsDisconnecting = false;
+
+                    // Reconnect
+                    if (!StopQuickConnect) // Make Quick Connect Cancel faster
+                        if (reconnect) await StartConnect(connectMode);
                 }
                 catch (Exception ex)
                 {
-                    CustomMessageBox.Show(ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    CustomMessageBox.Show(this, ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -201,7 +199,7 @@ namespace SecureDNSClient
             return false;
         }
 
-        private async Task Connect()
+        private async Task Connect(ConnectMode connectMode)
         {
             // Write Connecting message to log
             string msgConnecting = "Connecting... Please wait..." + NL + NL;
@@ -233,9 +231,6 @@ namespace SecureDNSClient
             if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
                 GenerateCertificate();
 
-            // Get Connect mode
-            ConnectMode connectMode = GetConnectMode();
-
             // Connect modes
             if (connectMode == ConnectMode.ConnectToWorkingServers)
             {
@@ -245,26 +240,26 @@ namespace SecureDNSClient
                 // Wait for DNSProxy
                 Task wait1 = Task.Run(async () =>
                 {
-                    while (!ProcessManager.FindProcessByPID(PIDDNSProxy))
+                    while (true)
                     {
-                        if (ProcessManager.FindProcessByPID(PIDDNSProxy))
-                            break;
+                        if (IsDisconnecting) break;
+                        if (ProcessManager.FindProcessByPID(PIDDNSProxy)) break;
                         await Task.Delay(100);
                     }
                 });
-                await wait1.WaitAsync(TimeSpan.FromSeconds(5));
+                try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
                 // Wait Until DNS gets Online
                 Task wait2 = Task.Run(async () =>
                 {
-                    while (!IsDNSConnected)
+                    while (true)
                     {
-                        if (IsDNSConnected)
-                            break;
+                        if (IsDisconnecting) break;
+                        if (IsDNSConnected) break;
                         await Task.Delay(100);
                     }
                 });
-                await wait2.WaitAsync(TimeSpan.FromSeconds(30));
+                try { await wait2.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
                 
                 // Write dnsproxy message to log
                 string msgDnsProxy = string.Empty;
@@ -285,8 +280,8 @@ namespace SecureDNSClient
                 else
                 {
                     msgDnsProxy = "Error: Couldn't start DNSProxy!" + NL;
-                    if (!IsDisconnecting)
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy, Color.IndianRed));
+                    if (IsDisconnecting) msgDnsProxy = "Task Canceled.";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy, Color.IndianRed));
                 }
             }
             else if (connectMode == ConnectMode.ConnectToFakeProxyDohViaProxyDPI || connectMode == ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI)
@@ -316,24 +311,33 @@ namespace SecureDNSClient
                 // Wait for DNSCrypt
                 Task wait1 = Task.Run(async () =>
                 {
-                    while (!ProcessManager.FindProcessByPID(PIDDNSCrypt))
+                    while (true)
                     {
-                        if (ProcessManager.FindProcessByPID(PIDDNSCrypt))
-                            break;
+                        if (IsDisconnecting) break;
+                        if (ProcessManager.FindProcessByPID(PIDDNSCrypt)) break;
                         await Task.Delay(100);
                     }
                 });
-                await wait1.WaitAsync(TimeSpan.FromSeconds(5));
+                try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
                 if (ProcessManager.FindProcessByPID(PIDDNSCrypt))
                 {
                     // Connected with DNSCrypt
                     internalConnect();
+
+                    // Copy Local DoH to Clipboard
+                    string localDoH;
+                    if (ConnectedDohPort == 443)
+                        localDoH = $"https://{IPAddress.Loopback}/dns-query";
+                    else
+                        localDoH = $"https://{IPAddress.Loopback}:{ConnectedDohPort}/dns-query";
+                    this.InvokeIt(() => Clipboard.SetText(localDoH));
                 }
                 else
                 {
                     // Write DNSCryptProxy Error to log
                     string msg = "DNSCryptProxy couldn't connect, try again.";
+                    if (IsDisconnecting) msg = "Task Canceled.";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed));
                 }
             }
@@ -348,20 +352,12 @@ namespace SecureDNSClient
 
                 // Update Groupbox Status
                 UpdateStatusLong();
-
-                // Go to DPI Tab if DPI is not already active
-                if (ConnectAllClicked && !IsDPIActive)
-                {
-                    this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
-                    this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 2);
-                    this.InvokeIt(() => CustomTabControlDPIBasicAdvanced.SelectedIndex = 2);
-                }
             }
 
             void connectMessage()
             {
                 // Update Local IP
-                LocalIP = Network.GetLocalIPv4();
+                LocalIP = NetworkTool.GetLocalIPv4();
 
                 // Get Loopback IP
                 IPAddress loopbackIP = IPAddress.Loopback;
@@ -399,7 +395,9 @@ namespace SecureDNSClient
                         msgLocalDoH3 += NL;
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH3, Color.DodgerBlue));
                     }
-                    
+
+                    // Copy Local DoH to Clipboard
+                    this.InvokeIt(() => Clipboard.SetText(msgLocalDoH2.Trim(NL.ToCharArray())));
                 }
             }
         }

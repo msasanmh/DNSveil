@@ -1,5 +1,5 @@
 ﻿using CustomControls;
-using MsmhTools;
+using MsmhToolsClass;
 using System;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -22,7 +22,7 @@ namespace SecureDNSClient
             }
 
             // Check if NIC is null
-            NetworkInterface? nic = Network.GetNICByName(nicName);
+            NetworkInterface? nic = NetworkTool.GetNICByName(nicName);
             if (nic == null) return;
 
             string loopbackIP = IPAddress.Loopback.ToString();
@@ -33,6 +33,7 @@ namespace SecureDNSClient
             if (!IsDNSSet)
             {
                 if (IsDNSSetting || IsDNSUnsetting) return;
+
                 // Set DNS
                 IsDNSSetting = true;
 
@@ -72,7 +73,7 @@ namespace SecureDNSClient
                 if (ProcessManager.FindProcessByPID(PIDDNSCrypt) && CustomRadioButtonConnectDNSCrypt.Checked)
                 {
                     string msg = "Set DNS while connected via proxy is not a good idea.\nYou may break the connection.\nContinue?";
-                    DialogResult dr = CustomMessageBox.Show(msg, "Info", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    DialogResult dr = CustomMessageBox.Show(this, msg, "Info", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                     if (dr == DialogResult.No)
                     {
                         IsDNSSetting = false;
@@ -84,7 +85,7 @@ namespace SecureDNSClient
                 CustomRichTextBoxLog.AppendText($"Setting DNS...{NL}", Color.MediumSeaGreen);
 
                 // Set DNS
-                await Task.Run(() => Network.SetDNS(nic, dnss));
+                await Task.Run(() => NetworkTool.SetDNS(nic, dnss));
                 IsDNSSet = true;
 
                 // Flush DNS
@@ -107,14 +108,6 @@ namespace SecureDNSClient
                 CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
                 CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
 
-                // Go to Check Tab
-                if (ConnectAllClicked && IsConnected)
-                {
-                    this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
-                    this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 0);
-                    ConnectAllClicked = false;
-                }
-
                 IsDNSSetting = false;
 
                 // Check DPI works if DPI is Active
@@ -135,18 +128,21 @@ namespace SecureDNSClient
                 if (unsetToDHCP)
                 {
                     // Unset to DHCP
-                    await Task.Run(() => Network.UnsetDNS(nic));
-                    Task.Delay(200).Wait();
-                    await UnsetSavedDnsDHCP();
+                    if (File.Exists(SecureDNS.NicNamePath))
+                        await UnsetSavedDnsDHCP();
+                    else
+                        await Task.Run(() => NetworkTool.UnsetDNS(nic));
                 }
                 else
                 {
                     // Unset to Static
                     string dns1 = CustomTextBoxSettingUnsetDns1.Text;
                     string dns2 = CustomTextBoxSettingUnsetDns2.Text;
-                    await Task.Run(() => Network.UnsetDNS(nic, dns1, dns2));
-                    Task.Delay(200).Wait();
-                    await UnsetSavedDnsStatic(dns1, dns2);
+                    
+                    if (File.Exists(SecureDNS.NicNamePath))
+                        await UnsetSavedDnsStatic(dns1, dns2);
+                    else
+                        await Task.Run(() => NetworkTool.UnsetDNS(nic, dns1, dns2));
                 }
 
                 IsDNSUnsetting = false;
@@ -196,10 +192,10 @@ namespace SecureDNSClient
                 string nicName = File.ReadAllText(SecureDNS.NicNamePath).Replace(NL, string.Empty);
                 if (nicName.Length > 0)
                 {
-                    NetworkInterface? nic = Network.GetNICByName(nicName);
+                    NetworkInterface? nic = NetworkTool.GetNICByName(nicName);
                     if (nic != null)
                     {
-                        await Task.Run(() => Network.UnsetDNS(nic));
+                        await Task.Run(() => NetworkTool.UnsetDNS(nic));
                         IsDNSSet = false;
                     }
                 }
@@ -214,14 +210,14 @@ namespace SecureDNSClient
                 string nicName = File.ReadAllText(SecureDNS.NicNamePath).Replace(NL, string.Empty);
                 if (nicName.Length > 0)
                 {
-                    NetworkInterface? nic = Network.GetNICByName(nicName);
+                    NetworkInterface? nic = NetworkTool.GetNICByName(nicName);
                     if (nic != null)
                     {
                         dns1 = dns1.Trim();
                         dns2 = dns2.Trim();
-                        if (Network.IsIPv4Valid(dns1, out IPAddress _) && Network.IsIPv4Valid(dns2, out IPAddress _))
+                        if (NetworkTool.IsIPv4Valid(dns1, out IPAddress? _) && NetworkTool.IsIPv4Valid(dns2, out IPAddress? _))
                         {
-                            await Task.Run(() => Network.UnsetDNS(nic, dns1, dns2));
+                            await Task.Run(() => NetworkTool.UnsetDNS(nic, dns1, dns2));
                             IsDNSSet = false;
                         }
                     }

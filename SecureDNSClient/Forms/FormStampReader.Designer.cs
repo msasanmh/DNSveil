@@ -29,120 +29,116 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormStampReader));
-            this.CustomLabelStampUrl = new CustomControls.CustomLabel();
-            this.CustomTextBoxStampUrl = new CustomControls.CustomTextBox();
-            this.CustomButtonDecode = new CustomControls.CustomButton();
-            this.CustomTextBoxResult = new CustomControls.CustomTextBox();
-            this.SuspendLayout();
+            CustomLabelStampUrl = new CustomControls.CustomLabel();
+            CustomTextBoxStampUrl = new CustomControls.CustomTextBox();
+            CustomButtonDecode = new CustomControls.CustomButton();
+            CustomTextBoxResult = new CustomControls.CustomTextBox();
+            SuspendLayout();
             // 
             // CustomLabelStampUrl
             // 
-            this.CustomLabelStampUrl.AutoSize = true;
-            this.CustomLabelStampUrl.BackColor = System.Drawing.Color.DimGray;
-            this.CustomLabelStampUrl.Border = false;
-            this.CustomLabelStampUrl.BorderColor = System.Drawing.Color.Blue;
-            this.CustomLabelStampUrl.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomLabelStampUrl.ForeColor = System.Drawing.Color.White;
-            this.CustomLabelStampUrl.Location = new System.Drawing.Point(12, 10);
-            this.CustomLabelStampUrl.Name = "CustomLabelStampUrl";
-            this.CustomLabelStampUrl.RoundedCorners = 0;
-            this.CustomLabelStampUrl.Size = new System.Drawing.Size(64, 17);
-            this.CustomLabelStampUrl.TabIndex = 0;
-            this.CustomLabelStampUrl.Text = "Stamp Url:";
+            CustomLabelStampUrl.AutoSize = true;
+            CustomLabelStampUrl.BackColor = Color.DimGray;
+            CustomLabelStampUrl.Border = false;
+            CustomLabelStampUrl.BorderColor = Color.Blue;
+            CustomLabelStampUrl.FlatStyle = FlatStyle.Flat;
+            CustomLabelStampUrl.ForeColor = Color.White;
+            CustomLabelStampUrl.Location = new Point(12, 10);
+            CustomLabelStampUrl.Name = "CustomLabelStampUrl";
+            CustomLabelStampUrl.RoundedCorners = 0;
+            CustomLabelStampUrl.Size = new Size(64, 17);
+            CustomLabelStampUrl.TabIndex = 0;
+            CustomLabelStampUrl.Text = "Stamp Url:";
             // 
             // CustomTextBoxStampUrl
             // 
-            this.CustomTextBoxStampUrl.AcceptsReturn = false;
-            this.CustomTextBoxStampUrl.AcceptsTab = false;
-            this.CustomTextBoxStampUrl.BackColor = System.Drawing.Color.DimGray;
-            this.CustomTextBoxStampUrl.Border = true;
-            this.CustomTextBoxStampUrl.BorderColor = System.Drawing.Color.Blue;
-            this.CustomTextBoxStampUrl.BorderSize = 1;
-            this.CustomTextBoxStampUrl.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
-            this.CustomTextBoxStampUrl.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.CustomTextBoxStampUrl.ForeColor = System.Drawing.Color.White;
-            this.CustomTextBoxStampUrl.HideSelection = true;
-            this.CustomTextBoxStampUrl.Location = new System.Drawing.Point(82, 8);
-            this.CustomTextBoxStampUrl.MaxLength = 32767;
-            this.CustomTextBoxStampUrl.Multiline = false;
-            this.CustomTextBoxStampUrl.Name = "CustomTextBoxStampUrl";
-            this.CustomTextBoxStampUrl.ReadOnly = false;
-            this.CustomTextBoxStampUrl.ScrollBars = System.Windows.Forms.ScrollBars.None;
-            this.CustomTextBoxStampUrl.ShortcutsEnabled = true;
-            this.CustomTextBoxStampUrl.Size = new System.Drawing.Size(500, 23);
-            this.CustomTextBoxStampUrl.TabIndex = 0;
-            this.CustomTextBoxStampUrl.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            this.CustomTextBoxStampUrl.Texts = "";
-            this.CustomTextBoxStampUrl.UnderlinedStyle = true;
-            this.CustomTextBoxStampUrl.UsePasswordChar = false;
-            this.CustomTextBoxStampUrl.WordWrap = true;
+            CustomTextBoxStampUrl.AcceptsReturn = false;
+            CustomTextBoxStampUrl.AcceptsTab = false;
+            CustomTextBoxStampUrl.BackColor = Color.DimGray;
+            CustomTextBoxStampUrl.Border = true;
+            CustomTextBoxStampUrl.BorderColor = Color.Blue;
+            CustomTextBoxStampUrl.BorderSize = 1;
+            CustomTextBoxStampUrl.CharacterCasing = CharacterCasing.Normal;
+            CustomTextBoxStampUrl.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxStampUrl.ForeColor = Color.White;
+            CustomTextBoxStampUrl.HideSelection = true;
+            CustomTextBoxStampUrl.Location = new Point(82, 8);
+            CustomTextBoxStampUrl.MaxLength = 32767;
+            CustomTextBoxStampUrl.Multiline = false;
+            CustomTextBoxStampUrl.Name = "CustomTextBoxStampUrl";
+            CustomTextBoxStampUrl.ReadOnly = false;
+            CustomTextBoxStampUrl.ScrollBars = ScrollBars.None;
+            CustomTextBoxStampUrl.ShortcutsEnabled = true;
+            CustomTextBoxStampUrl.Size = new Size(500, 23);
+            CustomTextBoxStampUrl.TabIndex = 0;
+            CustomTextBoxStampUrl.TextAlign = HorizontalAlignment.Left;
+            CustomTextBoxStampUrl.Texts = "";
+            CustomTextBoxStampUrl.UnderlinedStyle = true;
+            CustomTextBoxStampUrl.UsePasswordChar = false;
+            CustomTextBoxStampUrl.WordWrap = true;
             // 
             // CustomButtonDecode
             // 
-            this.CustomButtonDecode.AutoSize = true;
-            this.CustomButtonDecode.BorderColor = System.Drawing.Color.Blue;
-            this.CustomButtonDecode.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CustomButtonDecode.Location = new System.Drawing.Point(610, 10);
-            this.CustomButtonDecode.Name = "CustomButtonDecode";
-            this.CustomButtonDecode.RoundedCorners = 5;
-            this.CustomButtonDecode.SelectionColor = System.Drawing.Color.LightBlue;
-            this.CustomButtonDecode.Size = new System.Drawing.Size(75, 27);
-            this.CustomButtonDecode.TabIndex = 2;
-            this.CustomButtonDecode.Text = "Decode";
-            this.CustomButtonDecode.UseVisualStyleBackColor = true;
-            this.CustomButtonDecode.Click += new System.EventHandler(this.CustomButtonDecode_Click);
+            CustomButtonDecode.AutoSize = true;
+            CustomButtonDecode.BorderColor = Color.Blue;
+            CustomButtonDecode.FlatStyle = FlatStyle.Flat;
+            CustomButtonDecode.Location = new Point(610, 10);
+            CustomButtonDecode.Name = "CustomButtonDecode";
+            CustomButtonDecode.RoundedCorners = 5;
+            CustomButtonDecode.SelectionColor = Color.LightBlue;
+            CustomButtonDecode.Size = new Size(75, 27);
+            CustomButtonDecode.TabIndex = 2;
+            CustomButtonDecode.Text = "Decode";
+            CustomButtonDecode.UseVisualStyleBackColor = true;
+            CustomButtonDecode.Click += CustomButtonDecode_Click;
             // 
             // CustomTextBoxResult
             // 
-            this.CustomTextBoxResult.AcceptsReturn = false;
-            this.CustomTextBoxResult.AcceptsTab = false;
-            this.CustomTextBoxResult.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.CustomTextBoxResult.BackColor = System.Drawing.Color.DimGray;
-            this.CustomTextBoxResult.Border = true;
-            this.CustomTextBoxResult.BorderColor = System.Drawing.Color.Blue;
-            this.CustomTextBoxResult.BorderSize = 1;
-            this.CustomTextBoxResult.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
-            this.CustomTextBoxResult.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.CustomTextBoxResult.ForeColor = System.Drawing.Color.White;
-            this.CustomTextBoxResult.HideSelection = true;
-            this.CustomTextBoxResult.Location = new System.Drawing.Point(12, 43);
-            this.CustomTextBoxResult.MaxLength = 32767;
-            this.CustomTextBoxResult.MinimumSize = new System.Drawing.Size(0, 23);
-            this.CustomTextBoxResult.Multiline = true;
-            this.CustomTextBoxResult.Name = "CustomTextBoxResult";
-            this.CustomTextBoxResult.ReadOnly = true;
-            this.CustomTextBoxResult.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.CustomTextBoxResult.ShortcutsEnabled = true;
-            this.CustomTextBoxResult.Size = new System.Drawing.Size(673, 356);
-            this.CustomTextBoxResult.TabIndex = 0;
-            this.CustomTextBoxResult.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            this.CustomTextBoxResult.Texts = "";
-            this.CustomTextBoxResult.UnderlinedStyle = false;
-            this.CustomTextBoxResult.UsePasswordChar = false;
-            this.CustomTextBoxResult.WordWrap = true;
+            CustomTextBoxResult.AcceptsReturn = false;
+            CustomTextBoxResult.AcceptsTab = false;
+            CustomTextBoxResult.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            CustomTextBoxResult.BackColor = Color.DimGray;
+            CustomTextBoxResult.Border = true;
+            CustomTextBoxResult.BorderColor = Color.Blue;
+            CustomTextBoxResult.BorderSize = 1;
+            CustomTextBoxResult.CharacterCasing = CharacterCasing.Normal;
+            CustomTextBoxResult.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxResult.ForeColor = Color.White;
+            CustomTextBoxResult.HideSelection = true;
+            CustomTextBoxResult.Location = new Point(12, 43);
+            CustomTextBoxResult.MaxLength = 32767;
+            CustomTextBoxResult.MinimumSize = new Size(0, 23);
+            CustomTextBoxResult.Multiline = true;
+            CustomTextBoxResult.Name = "CustomTextBoxResult";
+            CustomTextBoxResult.ReadOnly = true;
+            CustomTextBoxResult.ScrollBars = ScrollBars.Vertical;
+            CustomTextBoxResult.ShortcutsEnabled = true;
+            CustomTextBoxResult.Size = new Size(673, 356);
+            CustomTextBoxResult.TabIndex = 0;
+            CustomTextBoxResult.TextAlign = HorizontalAlignment.Left;
+            CustomTextBoxResult.Texts = "";
+            CustomTextBoxResult.UnderlinedStyle = false;
+            CustomTextBoxResult.UsePasswordChar = false;
+            CustomTextBoxResult.WordWrap = true;
             // 
             // FormStampReader
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.DimGray;
-            this.ClientSize = new System.Drawing.Size(699, 411);
-            this.Controls.Add(this.CustomTextBoxResult);
-            this.Controls.Add(this.CustomButtonDecode);
-            this.Controls.Add(this.CustomTextBoxStampUrl);
-            this.Controls.Add(this.CustomLabelStampUrl);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(715, 450);
-            this.MinimumSize = new System.Drawing.Size(715, 450);
-            this.Name = "FormStampReader";
-            this.Text = "DNSCrypt Stamp Reader";
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            AutoScaleMode = AutoScaleMode.None;
+            BackColor = Color.DimGray;
+            ClientSize = new Size(699, 411);
+            Controls.Add(CustomTextBoxResult);
+            Controls.Add(CustomButtonDecode);
+            Controls.Add(CustomTextBoxStampUrl);
+            Controls.Add(CustomLabelStampUrl);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            Icon = (Icon)resources.GetObject("$this.Icon");
+            MaximizeBox = false;
+            MaximumSize = new Size(715, 450);
+            MinimumSize = new Size(715, 450);
+            Name = "FormStampReader";
+            Text = "DNSCrypt Stamp Reader";
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion

@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MsmhTools\MsmhTools.csproj" />
+    <ProjectReference Include="..\MsmhToolsClass\MsmhToolsClass.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-﻿using MsmhTools;
+﻿using MsmhToolsClass;
 using System;
 using System.Diagnostics;
 using System.Net;
@@ -14,9 +14,9 @@ namespace SecureDNSClient
 
             int getNextPort(int currentPort)
             {
-                currentPort = Network.GetNextPort(currentPort);
+                currentPort = NetworkTool.GetNextPort(currentPort);
                 if (currentPort == GetHTTPProxyPortSetting() || currentPort == GetCamouflageDnsPortSetting())
-                    currentPort = Network.GetNextPort(currentPort);
+                    currentPort = NetworkTool.GetNextPort(currentPort);
                 return currentPort;
             }
 
@@ -41,7 +41,7 @@ namespace SecureDNSClient
 
             // Check Clean Ip is Valid
             string cleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text;
-            bool isValid = Network.IsIPv4Valid(cleanIP, out IPAddress _);
+            bool isValid = NetworkTool.IsIPv4Valid(cleanIP, out IPAddress? _);
             if (!isValid)
             {
                 string msg = $"Fake Proxy DoH clean IP is not valid, check Settings.{NL}";
@@ -51,7 +51,7 @@ namespace SecureDNSClient
 
             // Get Fake Proxy DoH Address
             string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
-            Network.GetUrlDetails(dohUrl, 443, out string dohHost, out int _, out string _, out bool _);
+            NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string dohHost, out int _, out string _, out bool _);
 
             if (IsDisconnecting) return false;
 
@@ -73,7 +73,7 @@ namespace SecureDNSClient
             if (checkDns.IsDnsOnline)
             {
                 // Not blocked, connect normally
-                return connectToFakeProxyDohNormally();
+                return await connectToFakeProxyDohNormally();
             }
             else
             {
@@ -87,7 +87,7 @@ namespace SecureDNSClient
                     return await TryToBypassFakeProxyDohUsingGoodbyeDPIAsync(cleanIP, camouflagePort, timeoutMS);
             }
 
-            bool connectToFakeProxyDohNormally()
+            async Task<bool> connectToFakeProxyDohNormally()
             {
                 if (IsDisconnecting) return false;
 
@@ -136,7 +136,18 @@ namespace SecureDNSClient
 
                 // Execute DNSProxy
                 PIDDNSProxyBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
-                Task.Delay(500).Wait();
+
+                // Wait for DNSProxy
+                Task wait1 = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        if (IsDisconnecting) break;
+                        if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass)) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
                 if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
                 {
@@ -169,6 +180,7 @@ namespace SecureDNSClient
 
                         // Couldn't connect normally!
                         string connectNormallyFailed = $"Couldn't connect. It's really weird!{NL}";
+                        if (IsDisconnecting) connectNormallyFailed = $"Task Canceled.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(connectNormallyFailed, Color.IndianRed));
 
                         // Kill DNSProxy
@@ -178,10 +190,9 @@ namespace SecureDNSClient
                 }
                 else
                 {
-                    if (IsDisconnecting) return false;
-
                     // DNSProxy failed to execute
                     string msgDNSProxyFailed = $"DNSProxy failed to execute. Try again.{NL}";
+                    if (IsDisconnecting) msgDNSProxyFailed = $"Task Canceled.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDNSProxyFailed, Color.IndianRed));
                     return false;
                 }
@@ -190,10 +201,10 @@ namespace SecureDNSClient
 
         private void BypassFakeProxyDohStop(bool stopCamouflageServer, bool stopDNSProxyOrDNSCrypt, bool stopDPI, bool writeToLog)
         {
-            if (stopCamouflageServer && CamouflageProxyServer != null && CamouflageProxyServer.IsRunning)
+            if (stopCamouflageServer && CamouflageHttpProxyServer != null && CamouflageHttpProxyServer.IsRunning)
             {
-                CamouflageProxyServer.Stop();
-                IsBypassProxyActive = false;
+                CamouflageHttpProxyServer.Stop();
+                IsBypassHttpProxyActive = false;
             }
 
             if (stopCamouflageServer && CamouflageDNSServer != null && CamouflageDNSServer.IsRunning)

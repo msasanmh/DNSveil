@@ -22,13 +22,31 @@
     <Compile Update="Forms\ConnectToWorkingServers.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\ContextMenuStripIcon.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\CustomServers.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FormCustomServers.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\FormDnsLookup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FormDnsScanner.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FormDnsScannerExport.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\FormIpScanner.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\FormMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\FormProcessMonitor.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\FormStampGenerator.cs">
@@ -43,6 +61,9 @@
     <Compile Update="Forms\Methods.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\QuickConnect.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\SavedDnsServers.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -52,7 +73,7 @@
     <Compile Update="Forms\SetProxy.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\Share.cs">
+    <Compile Update="Forms\ShareViaHttpProxy.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\TryToBypassFPUsingGoodbyeDPI.cs">

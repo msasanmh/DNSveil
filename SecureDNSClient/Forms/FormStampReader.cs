@@ -1,6 +1,6 @@
-﻿using MsmhTools;
-using MsmhTools.Themes;
-using MsmhTools.DnsTool;
+﻿using MsmhToolsClass.DnsTool;
+using MsmhToolsWinFormsClass;
+using MsmhToolsWinFormsClass.Themes;
 using System;
 
 namespace SecureDNSClient
@@ -10,7 +10,10 @@ namespace SecureDNSClient
         private readonly string NL = Environment.NewLine;
         public FormStampReader()
         {
+            // Fix Screed DPI
+            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
+            ScreenDPI.FixDpiAfterInitializeComponent(this);
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);

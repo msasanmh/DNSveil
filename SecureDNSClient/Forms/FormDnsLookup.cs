@@ -1,6 +1,7 @@
 ﻿using CustomControls;
-using MsmhTools;
-using MsmhTools.Themes;
+using MsmhToolsClass;
+using MsmhToolsWinFormsClass;
+using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
 using System.Net;
 
@@ -16,7 +17,10 @@ namespace SecureDNSClient
 
         public FormDnsLookup()
         {
+            // Fix Screed DPI
+            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
+            ScreenDPI.FixDpiAfterInitializeComponent(this);
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
@@ -32,7 +36,7 @@ namespace SecureDNSClient
             CustomLabelEDNSOPT.SetToolTip("Info", ednsopt);
 
             // Initialize and load Settings
-            if (File.Exists(SettingsXmlPath) && Xml.IsValidXMLFile(SettingsXmlPath))
+            if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
                 AppSettings = new(this, SettingsXmlPath);
             else
                 AppSettings = new(this);
@@ -67,7 +71,7 @@ namespace SecureDNSClient
                 CustomTextBoxResult.Text = "Binary is missing.";
                 return;
             }
-            
+
             string dns = $"{IPAddress.Loopback}:53";
             if (CustomRadioButtonSourceCustom.Checked)
                 dns = CustomTextBoxSourceCustom.Text;
@@ -175,7 +179,7 @@ namespace SecureDNSClient
                 stdout = process.StandardOutput.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
                 errout = process.StandardError.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
             });
-            
+
             result = stdout + Environment.NewLine + errout;
 
             string resultOut = string.Empty;

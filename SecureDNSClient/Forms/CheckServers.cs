@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Net;
 using CustomControls;
-using MsmhTools;
-using MsmhTools.DnsTool;
+using MsmhToolsClass;
+using MsmhToolsClass.DnsTool;
 using System.Diagnostics;
 using System.Reflection;
+using System.Xml.Linq;
 
 namespace SecureDNSClient
 {
     public partial class FormMain
     {
-        private async void StartCheck()
+        private async void StartCheck(string? groupName = null)
         {
             // Return if binary files are missing
             if (!CheckNecessaryFiles()) return;
@@ -19,25 +20,25 @@ namespace SecureDNSClient
             {
                 // Start Checking
                 IsCheckingStarted = true;
-                IsCheckDone = false;
 
                 // Check Internet Connectivity
-                if (!IsInternetAlive()) return;
+                if (!IsInternetAlive())
+                {
+                    IsCheckingStarted = false;
+                    return;
+                }
 
                 // Unset DNS if it's not connected before checking.
-                if (!IsConnected)
+                if (!IsDNSConnected && IsDNSSet)
                 {
-                    if (IsDNSSet)
-                        SetDNS(); // Unset DNS
-                    else
-                        await UnsetSavedDNS();
+                    SetDNS(); // Unset DNS
                 }
 
                 try
                 {
-                    Task task = Task.Run(async () => await CheckServers());
+                    Task taskCheck = Task.Run(async () => await CheckServers(groupName));
 
-                    await task.ContinueWith(_ =>
+                    await taskCheck.ContinueWith(_ =>
                     {
                         // Save working servers to file
                         if (!CustomRadioButtonBuiltIn.Checked && WorkingDnsAndLatencyListToFile.Any())
@@ -53,25 +54,17 @@ namespace SecureDNSClient
                         }
 
                         IsCheckingStarted = false;
-                        IsCheckDone = true;
 
-                        string msg = NL + "Check operation finished." + NL;
+                        string msg = $"{NL}Check Task: {taskCheck.Status}{NL}";
                         CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue);
                         CustomButtonCheck.Enabled = true;
 
-                        // Go to Connect Tab if it's not already connected
-                        if (ConnectAllClicked && !IsConnected && NumberOfWorkingServers > 0)
-                        {
-                            this.InvokeIt(() => CustomTabControlMain.SelectedIndex = 0);
-                            this.InvokeIt(() => CustomTabControlSecureDNS.SelectedIndex = 1);
-                        }
-                        Debug.WriteLine("Checking Task: " + task.Status);
                         StopChecking = false;
                     }, TaskScheduler.FromCurrentSynchronizationContext());
                 }
                 catch (Exception ex)
                 {
-                    CustomMessageBox.Show(ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    CustomMessageBox.Show(this, ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             else
@@ -119,27 +112,16 @@ namespace SecureDNSClient
             return matchRules;
         }
 
-        private async Task CheckServers()
+        /// <summary>
+        /// Check DNS Servers
+        /// </summary>
+        /// <param name="groupName">Custom Servers Group Name To Check</param>
+        /// <returns>Returns True if find any working server</returns>
+        private async Task<bool> CheckServers(string? groupName = null)
         {
             // Get blocked domain
             string blockedDomain = GetBlockedDomainSetting(out string blockedDomainNoWww);
-            if (string.IsNullOrEmpty(blockedDomain)) return;
-
-            // Warn users to deactivate DPI before checking servers
-            if (IsGoodbyeDPIActive || (IsProxySet && IsProxyDPIActive))
-            {
-                string msg = "It's better to not check servers while DPI Bypass is active.\nStart checking servers?";
-                var resume = CustomMessageBox.Show(msg, "DPI is active", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (resume == DialogResult.No) return;
-            }
-
-            // Warn users to Unset DNS before checking servers
-            if (IsDNSSet)
-            {
-                string msg = "It's better to not check servers while DNS is set.\nStart checking servers?";
-                var resume = CustomMessageBox.Show(msg, "DNS is set", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (resume == DialogResult.No) return;
-            }
+            if (string.IsNullOrEmpty(blockedDomain)) return false;
 
             // Clear Log on new Check
             this.InvokeIt(() => CustomRichTextBoxLog.ResetText());
@@ -161,16 +143,16 @@ namespace SecureDNSClient
             // Check open ports
             if (!checkInParallel)
             {
-                bool isPortOpen = Network.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
+                bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
                 if (isPortOpen)
                 {
-                    localPort = Network.GetNextPort(localPort);
-                    isPortOpen = Network.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
+                    localPort = NetworkTool.GetNextPort(localPort);
+                    isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
                     if (isPortOpen)
                     {
-                        localPort = Network.GetNextPort(localPort);
+                        localPort = NetworkTool.GetNextPort(localPort);
                         bool isPortOk = GetListeningPort(localPort, "You need to resolve the conflict.", Color.IndianRed);
-                        if (!isPortOk) return;
+                        if (!isPortOk) return false;
                     }
                 }
             }
@@ -178,28 +160,48 @@ namespace SecureDNSClient
             // Built-in or Custom
             bool builtInMode = CustomRadioButtonBuiltIn.Checked;
 
-            // Clear working list to file on new check
-            WorkingDnsListToFile.Clear();
-            WorkingDnsAndLatencyListToFile.Clear();
+            // Override Built-in or Custom
+            if (!string.IsNullOrEmpty(groupName))
+            {
+                builtInMode = groupName.Equals("builtin");
+            }
 
             string? fileContent = string.Empty;
             if (builtInMode)
-                fileContent = await Resource.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.txt", Assembly.GetExecutingAssembly());
+            {
+                string? xmlContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
+                fileContent = await ReadCustomServersXml(xmlContent, groupName, false); // Built-In based on custom
+            }
             else
             {
-                FileDirectory.CreateEmptyFile(SecureDNS.CustomServersPath);
-                fileContent = await File.ReadAllTextAsync(SecureDNS.CustomServersPath);
+                // Check if Custom Servers XML is NOT Valid
+                if (!XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath))
+                {
+                    string notValid = $"Custom Servers XML file is not valid.{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(notValid, Color.IndianRed));
+                    return false;
+                }
 
+                string msg = $"Reading Custom Servers...{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+
+                fileContent = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, groupName);
+                
                 // Load saved working servers
+                WorkingDnsListToFile.Clear();
                 WorkingDnsListToFile.LoadFromFile(SecureDNS.WorkingServersPath, true, true);
             }
 
+            // Clear working list to file on new check
+            WorkingDnsAndLatencyListToFile.Clear();
+
             // Check if servers exist 1
+            string custom = builtInMode ? "built-in" : "custom";
+            string msgNoServers = $"There is no {custom} server.{NL}";
             if (string.IsNullOrEmpty(fileContent) || string.IsNullOrWhiteSpace(fileContent))
             {
-                string msg = "Servers list is empty." + NL;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                return;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNoServers, Color.IndianRed));
+                return false;
             }
 
             // Add Servers to list
@@ -209,9 +211,8 @@ namespace SecureDNSClient
             // Check if servers exist 2
             if (dnsCount < 1)
             {
-                string msg = "Servers list is empty." + NL;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                return;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNoServers, Color.IndianRed));
+                return false;
             }
 
             // init Check DNS
@@ -223,7 +224,7 @@ namespace SecureDNSClient
             WorkingDnsList.Clear();
 
             // Get Company Data Content
-            string? companyDataContent = await Resource.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load from Embedded Resource
+            string? companyDataContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load from Embedded Resource
 
             // Set number of servers
             int numberOfAllServers = 0;
@@ -236,44 +237,43 @@ namespace SecureDNSClient
             checkDns.CheckDNS(blockedDomainNoWww, dnsList[0], 100);
 
             if (insecure)
-                checkSeries();
+                await checkSeries();
             else
             {
                 if (checkInParallel)
                     await checkParallel();
                 else
-                    checkSeries();
+                    await checkSeries();
             }
 
-            void checkSeries()
+            async Task checkSeries()
             {
                 this.InvokeIt(() => CustomProgressBarCheck.StopTimer = false);
                 this.InvokeIt(() => CustomProgressBarCheck.ChunksColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomProgressBarCheck.Maximum = dnsCount);
                 for (int n = 0; n < dnsCount; n++)
                 {
                     if (StopChecking)
                     {
                         string msg = NL + "Canceling Check operation..." + NL;
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
-
                         break;
                     }
 
                     // Percentage
-                    int persent = n * 100 / dnsCount;
                     string checkDetail = $"{n + 1} of {dnsCount}";
                     this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
-                    this.InvokeIt(() => CustomProgressBarCheck.Value = persent);
+                    this.InvokeIt(() => CustomProgressBarCheck.Value = n);
 
                     string dns = dnsList[n].Trim();
-                    checkOne(dns, n + 1);
+                    await checkOne(dns, n + 1);
 
                     // Percentage (100%)
                     if (n == dnsCount - 1)
                     {
                         checkDetail = $"{n + 1} of {dnsCount}";
                         this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
-                        this.InvokeIt(() => CustomProgressBarCheck.Value = 100);
+                        this.InvokeIt(() => CustomProgressBarCheck.Value = dnsCount);
                     }
                 }
             }
@@ -288,29 +288,28 @@ namespace SecureDNSClient
 
                     this.InvokeIt(() => CustomProgressBarCheck.StopTimer = false);
                     this.InvokeIt(() => CustomProgressBarCheck.ChunksColor = Color.DodgerBlue);
+                    this.InvokeIt(() => CustomProgressBarCheck.Maximum = lists.Count);
                     for (int n = 0; n < lists.Count; n++)
                     {
                         if (StopChecking)
                         {
                             string msg = NL + "Canceling Check operation..." + NL;
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
-
                             break;
                         }
 
                         List<string> list = lists[n];
 
                         // Percentage
-                        int persent = n * 100 / lists.Count;
                         count += list.Count;
                         string checkDetail = $"{count} of {dnsCount}";
                         this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
-                        this.InvokeIt(() => CustomProgressBarCheck.Value = persent);
+                        this.InvokeIt(() => CustomProgressBarCheck.Value = n);
 
-                        var parallelLoopResult = Parallel.For(0, list.Count, i =>
+                        var parallelLoopResult = Parallel.For(0, list.Count, async i =>
                         {
                             string dns = list[i].Trim();
-                            checkOne(dns, -1);
+                            await checkOne(dns, -1);
                         });
 
                         await Task.Run(async () =>
@@ -318,8 +317,7 @@ namespace SecureDNSClient
                             while (!parallelLoopResult.IsCompleted)
                             {
                                 await Task.Delay(10);
-                                if (parallelLoopResult.IsCompleted)
-                                    break;
+                                if (parallelLoopResult.IsCompleted) break;
                             }
                         });
 
@@ -328,13 +326,13 @@ namespace SecureDNSClient
                         {
                             checkDetail = $"{dnsCount} of {dnsCount}";
                             this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
-                            this.InvokeIt(() => CustomProgressBarCheck.Value = 100);
+                            this.InvokeIt(() => CustomProgressBarCheck.Value = lists.Count);
                         }
                     }
                 });
             }
 
-            void checkOne(string dns, int lineNumber)
+            async Task checkOne(string dns, int lineNumber)
             {
                 if (!string.IsNullOrEmpty(dns) && !string.IsNullOrWhiteSpace(dns))
                 {
@@ -345,7 +343,7 @@ namespace SecureDNSClient
                     {
                         // All supported servers ++
                         numberOfAllSupportedServers++;
-
+                        
                         // Get DNS Details
                         DnsReader dnsReader = new(dns, companyDataContent);
                         
@@ -364,7 +362,7 @@ namespace SecureDNSClient
                         // Apply Protocol Selection
                         bool matchRules = CheckDnsMatchRules(dnsReader);
                         if (!matchRules) return;
-
+                        
                         // Get Check timeout value
                         decimal timeoutSec = 1;
                         this.InvokeIt(() =>timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value);
@@ -383,15 +381,15 @@ namespace SecureDNSClient
                         }
                         
                         if (insecure)
-                            checkDns.CheckDNS(true, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
+                            await checkDns.CheckDnsAsync(true, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
                         else
                         {
                             if (isParallel)
                                 checkDns.CheckDNS(blockedDomainNoWww, dns, timeoutMS);
                             else
-                                checkDns.CheckDNS(false, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
+                                await checkDns.CheckDnsAsync(false, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
                         }
-
+                        
                         // Get Status and Latency
                         bool dnsOK = checkDns.IsDnsOnline;
                         int latency = checkDns.DnsLatency;
@@ -535,11 +533,10 @@ namespace SecureDNSClient
             if (!WorkingDnsList.Any())
             {
                 string noWorkingServer = NL + "There is no working server." + NL;
+                if (StopChecking || IsDisconnecting) noWorkingServer = NL + "Task Canceled." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(noWorkingServer, Color.IndianRed));
-                return;
+                return false;
             }
-
-            //if (StopChecking) return;
 
             // Sort by latency comment
             string allWorkingServers = NL + "Working servers sorted by latency:" + NL + NL;
@@ -709,6 +706,7 @@ namespace SecureDNSClient
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAL2 + NL, Color.LightGray));
             }
 
+            return true;
         }
     }
 }

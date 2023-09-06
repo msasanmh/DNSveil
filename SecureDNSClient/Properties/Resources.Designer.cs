@@ -83,10 +83,100 @@ namespace SecureDNSClient.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap SecureDNSClient {
+        internal static System.Drawing.Bitmap FarvaharBlueRed128x60 {
             get {
-                object obj = ResourceManager.GetObject("SecureDNSClient", resourceCulture);
+                object obj = ResourceManager.GetObject("FarvaharBlueRed128x60", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_B {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_B", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_B_Multi {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_B_Multi", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_BR {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_BR", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_BR_Multi {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_BR_Multi", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap SecureDNSClient_PNG {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_PNG", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_R {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_R", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_R_Multi {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_R_Multi", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_RB {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_RB", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_RB_Multi {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_RB_Multi", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
             }
         }
     }

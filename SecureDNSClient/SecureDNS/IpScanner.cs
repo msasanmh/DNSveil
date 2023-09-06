@@ -1,13 +1,8 @@
-﻿using MsmhTools;
-using MsmhTools.HTTPProxyServer;
+﻿using MsmhToolsClass;
+using MsmhToolsClass.HTTPProxyServer;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO.Compression;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SecureDNSClient
 {
@@ -202,7 +197,7 @@ namespace SecureDNSClient
                             string[] split = CheckWebsite.Split("://");
                             urlScheme = $"{split[0].Trim().ToLower()}://";
                         }
-                        Network.GetUrlDetails(CheckWebsite, CheckPort, out string host, out int _, out string _, out bool _);
+                        NetworkTool.GetUrlDetails(CheckWebsite, CheckPort, out _, out string host, out int _, out string _, out bool _);
                         string url = $"{urlScheme}{host}:{CheckPort}";
                         
                         Uri uri = new(url, UriKind.Absolute);
@@ -249,7 +244,7 @@ namespace SecureDNSClient
                         {
                             Stopwatch pingDelay = new();
                             pingDelay.Start();
-                            Network.CanPing(ipOut, Timeout);
+                            NetworkTool.CanPing(ipOut, Timeout);
                             pingDelay.Stop();
 
                             pingDelayOut = Convert.ToInt32(pingDelay.ElapsedMilliseconds);
@@ -266,7 +261,7 @@ namespace SecureDNSClient
                         {
                             Stopwatch tcpDelay = new();
                             tcpDelay.Start();
-                            Network.CanTcpConnect(ipOut, CheckPort, Timeout);
+                            NetworkTool.CanTcpConnect(ipOut, CheckPort, Timeout);
                             tcpDelay.Stop();
 
                             tcpDelayOut = Convert.ToInt32(tcpDelay.ElapsedMilliseconds);

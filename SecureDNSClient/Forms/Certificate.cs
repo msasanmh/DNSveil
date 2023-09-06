@@ -1,5 +1,5 @@
 ﻿using CustomControls;
-using MsmhTools;
+using MsmhToolsClass;
 using System;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -18,7 +18,7 @@ namespace SecureDNSClient
             // Generate certificate
             if (!File.Exists(SecureDNS.IssuerCertPath) || !File.Exists(SecureDNS.CertPath) || !File.Exists(SecureDNS.KeyPath))
             {
-                IPAddress? gateway = Network.GetDefaultGateway();
+                IPAddress? gateway = NetworkTool.GetDefaultGateway();
                 if (gateway != null)
                 {
                     CertificateTool.GenerateCertificate(SecureDNS.CertificateDirPath, gateway, issuerSubjectName, subjectName);
@@ -34,12 +34,9 @@ namespace SecureDNSClient
                 if (!certInstalled)
                 {
                     string msg = "Local DoH Server doesn't work without certificate.\nYou can remove certificate anytime from Windows.\nTry again?";
-                    using (new CenterWinDialog(this))
-                    {
-                        DialogResult dr = CustomMessageBox.Show(msg, "Certificate", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-                        if (dr == DialogResult.Yes)
-                            CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
-                    }
+                    DialogResult dr = CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    if (dr == DialogResult.Yes)
+                        CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
                 }
             }
         }
@@ -53,7 +50,7 @@ namespace SecureDNSClient
                 if (IsDoHConnected)
                 {
                     string msg = "Disconnect local DoH first.";
-                    CustomMessageBox.Show(msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
@@ -73,7 +70,7 @@ namespace SecureDNSClient
             else
             {
                 string msg = "Certificate is already uninstalled.";
-                CustomMessageBox.Show(msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

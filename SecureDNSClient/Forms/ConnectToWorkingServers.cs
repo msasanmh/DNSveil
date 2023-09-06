@@ -1,4 +1,4 @@
-﻿using MsmhTools;
+﻿using MsmhToolsClass;
 using System;
 using System.Diagnostics;
 
@@ -6,6 +6,8 @@ namespace SecureDNSClient
 {
     public partial class FormMain
     {
+        private static bool ProcessOutputFilter = false;
+
         private int ConnectToWorkingServers()
         {
             // Write Check first to log
@@ -65,7 +67,7 @@ namespace SecureDNSClient
 
             // Add Legacy DNS args
             dnsproxyArgs += " -p 53";
-
+            
             // Add DoH args
             if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
             {
@@ -96,13 +98,32 @@ namespace SecureDNSClient
                 dnsproxyArgs += $" --all-servers -b {bootstrap}:{bootstrapPort}";
             else
                 dnsproxyArgs += $" -b {bootstrap}:{bootstrapPort}";
-
+            dnsproxyArgs += " -v";
             if (IsDisconnecting) return -1;
 
             // Execute DnsProxy
             PIDDNSProxy = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, false, SecureDNS.CurrentPath, GetCPUPriority());
 
+            // Write DNS Requests to Log (the output is heavy filtering queries causes high cpu usage)
+            //process.OutputDataReceived -= process_DataReceived;
+            //process.OutputDataReceived += process_DataReceived;
+            //process.ErrorDataReceived -= process_DataReceived;
+            //process.ErrorDataReceived += process_DataReceived;
+            //process.BeginOutputReadLine(); // Redirects Standard Output to Event
+            //process.BeginErrorReadLine();
+            //void process_DataReceived(object sender, DataReceivedEventArgs e)
+            //{
+            //    string? msgReq = e.Data + NL;
+            //    if (!string.IsNullOrEmpty(msgReq))
+            //    {
+            //        if (ProcessOutputFilter)
+            //            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgReq));
+            //        ProcessOutputFilter = msgReq.Contains("ANSWER SECTION");
+            //    }
+            //}
+
             return countUsingServers;
         }
+
     }
 }

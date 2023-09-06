@@ -1,4 +1,4 @@
-﻿using MsmhTools;
+﻿using MsmhToolsClass;
 using System;
 using System.Net;
 
@@ -8,12 +8,12 @@ namespace SecureDNSClient
     {
         private void SetProxy()
         {
-            if (!IsProxySet)
+            if (!IsHttpProxySet)
             {
                 // Set Proxy
 
                 // Write Let Proxy Start to log
-                if (IsProxyActivating)
+                if (IsHttpProxyActivating)
                 {
                     string msg = "Let Proxy Start." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Orange));
@@ -21,7 +21,7 @@ namespace SecureDNSClient
                 }
 
                 // Write Enable Proxy first to log
-                if (!IsSharing)
+                if (!IsHttpProxyRunning)
                 {
                     string msg = "Enable Proxy first." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
@@ -30,18 +30,18 @@ namespace SecureDNSClient
 
                 // Get IP:Port
                 string ip = IPAddress.Loopback.ToString();
-                int port = ProxyPort != -1 ? ProxyPort : GetHTTPProxyPortSetting();
+                int port = HttpProxyPort != -1 ? HttpProxyPort : GetHTTPProxyPortSetting();
 
                 // Start Set Proxy
-                Network.SetHttpProxy(ip, port);
+                NetworkTool.SetHttpProxy(ip, port);
                 
                 Task.Delay(300).Wait(); // Wait a moment
 
-                bool isProxySet = Network.IsProxySet(out string _, out string _, out string _, out string _);
+                bool isProxySet = NetworkTool.IsProxySet(out string _, out string _, out string _, out string _);
                 if (isProxySet)
                 {
                     // Update bool
-                    IsProxySet = true;
+                    IsHttpProxySet = true;
 
                     // Write Set Proxy message to log
                     string msg1 = "HTTP Proxy ";
@@ -70,15 +70,15 @@ namespace SecureDNSClient
             else
             {
                 // Unset Proxy
-                Network.UnsetProxy(false, true);
+                NetworkTool.UnsetProxy(false, true);
 
                 Task.Delay(300).Wait(); // Wait a moment
 
-                bool isProxySet = Network.IsProxySet(out string _, out string _, out string _, out string _);
+                bool isProxySet = NetworkTool.IsProxySet(out string _, out string _, out string _, out string _);
                 if (!isProxySet)
                 {
                     // Update bool
-                    IsProxySet = false;
+                    IsHttpProxySet = false;
 
                     // Write Unset Proxy message to log
                     string msg1 = "HTTP Proxy removed from system.";

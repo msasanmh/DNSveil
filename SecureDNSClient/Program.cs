@@ -1,4 +1,4 @@
-using MsmhTools;
+using MsmhToolsClass;
 using System.Reflection;
 
 namespace SecureDNSClient

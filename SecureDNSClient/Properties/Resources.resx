@@ -112,19 +112,46 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="Farvahar" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Farvahar.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\SdcResources\Farvahar.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="FarvaharBlueRed" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\FarvaharBlueRed.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\SdcResources\FarvaharBlueRed.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="SecureDNSClient" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\SecureDNSClient.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="FarvaharBlueRed128x60" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\FarvaharBlueRed128x60.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_B" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_B.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_BR" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_BR.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_BR_Multi" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_BR_Multi.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_B_Multi" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_B_Multi.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_PNG" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_PNG.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_R" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_R.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_RB" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_RB.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_RB_Multi" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_RB_Multi.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SecureDNSClient_R_Multi" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SdcResources\SecureDNSClient_R_Multi.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

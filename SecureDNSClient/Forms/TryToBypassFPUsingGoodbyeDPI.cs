@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Net;
-using MsmhTools;
+using MsmhToolsClass;
 using SecureDNSClient.DPIBasic;
 
 namespace SecureDNSClient
@@ -15,7 +15,7 @@ namespace SecureDNSClient
 
             // Get Fake Proxy DoH Address
             string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
-            Network.GetUrlDetails(dohUrl, 443, out string dohHost, out int _, out string _, out bool _);
+            NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string dohHost, out int _, out string _, out bool _);
 
             // It's blocked message
             string msgBlocked = $"It's blocked.{NL}";
@@ -33,14 +33,14 @@ namespace SecureDNSClient
             // Wait for CamouflageDNSServer
             Task wait1 = Task.Run(async () =>
             {
-                while (!IsBypassDNSActive)
+                while (true)
                 {
-                    if (IsBypassDNSActive)
-                        break;
+                    if (IsDisconnecting) break;
+                    if (IsBypassDNSActive) break;
                     await Task.Delay(100);
                 }
             });
-            await wait1.WaitAsync(TimeSpan.FromSeconds(5));
+            try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
             if (IsBypassDNSActive)
             {
@@ -109,14 +109,14 @@ namespace SecureDNSClient
                 // Wait for DNSProxyBypass
                 Task wait2 = Task.Run(async () =>
                 {
-                    while (!ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
+                    while (true)
                     {
-                        if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass))
-                            break;
+                        if (IsDisconnecting) break;
+                        if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass)) break;
                         await Task.Delay(100);
                     }
                 });
-                await wait2.WaitAsync(TimeSpan.FromSeconds(5));
+                try { await wait2.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
                 // Create blacklist file for GoodbyeDPI
                 File.WriteAllText(SecureDNS.DPIBlacklistFPPath, dohHost);
@@ -197,14 +197,14 @@ namespace SecureDNSClient
                         // Wait for DNSProxyBypass
                         Task wait3 = Task.Run(async () =>
                         {
-                            while (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
+                            while (true)
                             {
-                                if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
-                                    break;
+                                if (IsDisconnecting) break;
+                                if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass)) break;
                                 await Task.Delay(100);
                             }
                         });
-                        await wait3.WaitAsync(TimeSpan.FromSeconds(5));
+                        try { await wait3.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
                         if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
                         {
@@ -214,6 +214,7 @@ namespace SecureDNSClient
                         {
                             // GoodbyeDPI failed to execute
                             string msgGoodbyeDPIFailed = $"GoodbyeDPI failed to execute. Try again.{NL}";
+                            if (IsDisconnecting) msgGoodbyeDPIFailed = $"Task Canceled.{NL}";
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgGoodbyeDPIFailed, Color.IndianRed));
                             return false;
                         }
@@ -221,10 +222,9 @@ namespace SecureDNSClient
                 }
                 else
                 {
-                    if (IsDisconnecting) return false;
-
                     // DNSProxy failed to execute
                     string msgDNSProxyFailed = $"DNSProxy failed to execute. Try again.{NL}";
+                    if (IsDisconnecting) msgDNSProxyFailed = $"Task Canceled.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDNSProxyFailed, Color.IndianRed));
 
                     // Kill
@@ -234,11 +234,10 @@ namespace SecureDNSClient
             }
             else
             {
-                if (IsDisconnecting) return false;
-
                 // Camouflage DNS Server couldn't start
-                string msg = "Couldn't start camouflage DNS server, please try again.";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed));
+                string msg = $"Couldn't start camouflage DNS server, please try again.{NL}";
+                if (IsDisconnecting) msg = $"Task Canceled.{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
 
                 return false;
             }

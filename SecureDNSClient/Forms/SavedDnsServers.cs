@@ -1,5 +1,5 @@
-﻿using MsmhTools;
-using MsmhTools.DnsTool;
+﻿using MsmhToolsClass;
+using MsmhToolsClass.DnsTool;
 using System;
 using System.Net;
 using System.Reflection;
@@ -120,7 +120,7 @@ namespace SecureDNSClient
 
                 List<string> savedEncodedDnsList = new();
                 savedEncodedDnsList.LoadFromFile(SecureDNS.SavedEncodedDnsPath, true, true);
-                savedEncodedDnsList.RemoveDuplicates();
+                savedEncodedDnsList = savedEncodedDnsList.RemoveDuplicates();
 
                 if (savedEncodedDnsList.Any())
                 {
@@ -129,11 +129,13 @@ namespace SecureDNSClient
 
                     string? fileContent = string.Empty;
                     if (builtInMode)
-                        fileContent = await Resource.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.txt", Assembly.GetExecutingAssembly());
+                        fileContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.txt", Assembly.GetExecutingAssembly());
                     else
                     {
-                        FileDirectory.CreateEmptyFile(SecureDNS.CustomServersPath);
-                        fileContent = await File.ReadAllTextAsync(SecureDNS.CustomServersPath);
+                        // Check if Custom Servers XML is NOT Valid
+                        if (!XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath)) return;
+
+                        fileContent = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, null);
                     }
 
                     if (!string.IsNullOrEmpty(fileContent) && !string.IsNullOrWhiteSpace(fileContent))
@@ -155,8 +157,8 @@ namespace SecureDNSClient
                             }
                         }
 
-                        WorkingDnsList.RemoveDuplicates(); // not important
-                        SavedDnsList.RemoveDuplicates();
+                        WorkingDnsList = WorkingDnsList.RemoveDuplicates(); // not important
+                        SavedDnsList = SavedDnsList.RemoveDuplicates();
                     }
                 }
 
@@ -217,19 +219,19 @@ namespace SecureDNSClient
                 if (insecure)
                 {
                     int origPort = localPortInsecure;
-                    bool isPortOpen1 = Network.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
+                    bool isPortOpen1 = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
                     if (isPortOpen1)
                     {
-                        localPortInsecure = Network.GetNextPort(localPortInsecure);
-                        bool isPortOpen2 = Network.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
+                        localPortInsecure = NetworkTool.GetNextPort(localPortInsecure);
+                        bool isPortOpen2 = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
                         if (isPortOpen2)
                         {
-                            localPortInsecure = Network.GetNextPort(localPortInsecure);
-                            bool isPortOpen3 = Network.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
+                            localPortInsecure = NetworkTool.GetNextPort(localPortInsecure);
+                            bool isPortOpen3 = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
                             if (isPortOpen3)
                             {
-                                localPortInsecure = Network.GetNextPort(localPortInsecure);
-                                bool isPortOpen4 = Network.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
+                                localPortInsecure = NetworkTool.GetNextPort(localPortInsecure);
+                                bool isPortOpen4 = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
                                 if (isPortOpen4)
                                 {
                                     string existingProcessName = ProcessManager.GetProcessNameByListeningPort(origPort);
@@ -327,7 +329,7 @@ namespace SecureDNSClient
 
             string? fileContent = string.Empty;
             if (builtInMode)
-                fileContent = await Resource.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.txt", Assembly.GetExecutingAssembly());
+                fileContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.txt", Assembly.GetExecutingAssembly());
             else
             {
                 FileDirectory.CreateEmptyFile(SecureDNS.CustomServersPath);

@@ -1,5 +1,5 @@
-using MsmhTools;
-using MsmhTools.HTTPProxyServer;
+using MsmhToolsClass;
+using MsmhToolsClass.HTTPProxyServer;
 using System.Diagnostics;
 using System.Net;
 using System.Reflection;
@@ -472,7 +472,7 @@ namespace SDCHttpProxy
                     int requests = int.Parse(split[3]);
 
                     // Check Port
-                    bool isPortOpen = Network.IsPortOpen(IPAddress.Loopback.ToString(), port, 3);
+                    bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), port, 3);
                     if (isPortOpen)
                     {
                         WriteToStdout($"Port {port} is occupied.");
