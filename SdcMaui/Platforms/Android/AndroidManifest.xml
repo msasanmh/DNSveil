@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="net.msasanmh.sdc">
+	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:supportsRtl="true" android:label="SDC"></application>
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.BIND_VPN_SERVICE" />
+	<uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+	<uses-permission android:name="android.permission.MANAGE_WIFI_INTERFACES" />
+	<uses-permission android:name="android.permission.MANAGE_WIFI_NETWORK_SELECTION" />
+	<uses-sdk android:minSdkVersion="23" android:targetSdkVersion="33" />
+</manifest>
