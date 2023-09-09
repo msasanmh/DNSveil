@@ -884,9 +884,24 @@ namespace SecureDNSClient
                 try
                 {
                     ZipFile.ExtractToDirectory(ofd.FileName, SecureDNS.UserDataDirPath, true);
-                    string msg = "Data imported seccessfully.\n";
-                    msg += "Restart application is required for changes to take effect.";
-                    CustomMessageBox.Show(this, msg, "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Task.Delay(1000).Wait();
+
+                    try
+                    {
+                        // Load Settings
+                        if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidXMLFile(SecureDNS.SettingsXmlPath))
+                            AppSettings = new(this, SecureDNS.SettingsXmlPath);
+                        else
+                            AppSettings = new(this);
+
+                        string msg = "Data imported seccessfully.";
+                        CustomMessageBox.Show(this, msg, "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception)
+                    {
+                        string msg = "Failed importing user data.";
+                        CustomMessageBox.Show(this, msg, "Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
                 }
                 catch (Exception ex)
                 {
