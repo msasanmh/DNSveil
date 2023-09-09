@@ -5,6 +5,7 @@ using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Text;
@@ -29,10 +30,13 @@ namespace SecureDNSClient
 
         public FormDnsScanner(string? dns = null)
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
+
+            // Invariant Culture
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
@@ -62,6 +66,71 @@ namespace SecureDNSClient
                 CustomTextBoxDnsUrl.Text = DNS;
                 CustomButtonScan_Click(null, null);
             }
+
+            // Fix Controls Location
+            int spaceBottom = 10, spaceRight = 12, spaceV = 6, spaceH = 6;
+
+            // Left Side
+            CustomRadioButtonDnsUrl.Location = new Point(spaceRight, spaceBottom);
+
+            CustomTextBoxDnsUrl.Left = CustomRadioButtonDnsUrl.Right + spaceH;
+            CustomTextBoxDnsUrl.Top = CustomRadioButtonDnsUrl.Top - 2;
+            CustomTextBoxDnsUrl.Width = ClientRectangle.Width - CustomTextBoxDnsUrl.Left - spaceRight;
+
+            CustomRadioButtonDnsBrowse.Left = spaceRight;
+            CustomRadioButtonDnsBrowse.Top = CustomTextBoxDnsUrl.Bottom + spaceV;
+
+            CustomButtonDnsBrowse.Left = CustomRadioButtonDnsBrowse.Right + spaceH;
+            CustomButtonDnsBrowse.Top = CustomRadioButtonDnsBrowse.Top - 2;
+
+            CustomLabelDnsBrowse.Left = CustomButtonDnsBrowse.Right + spaceH;
+            CustomLabelDnsBrowse.Top = CustomRadioButtonDnsBrowse.Top + 2;
+
+            CustomRadioButtonCustomServers.Left = spaceRight;
+            CustomRadioButtonCustomServers.Top = CustomButtonDnsBrowse.Bottom + spaceV;
+
+            // Right Side
+            CustomButtonScan.Left = ClientRectangle.Width - CustomButtonScan.Width - spaceRight;
+            CustomButtonScan.Top = CustomTextBoxDnsUrl.Bottom + spaceV;
+
+            CustomButtonExport.Left = CustomButtonScan.Left;
+            CustomButtonExport.Top = CustomButtonScan.Bottom + spaceV;
+
+            CustomCheckBoxClearExportData.Left = ClientRectangle.Width - CustomCheckBoxClearExportData.Width - spaceRight;
+            CustomCheckBoxClearExportData.Top = CustomButtonExport.Bottom + spaceV;
+
+            CustomCheckBoxCheckInsecure.Left = CustomCheckBoxClearExportData.Left;
+            CustomCheckBoxCheckInsecure.Top = CustomCheckBoxClearExportData.Bottom + spaceV;
+
+            // Left Side Part 2
+            CustomCheckBoxSmartDNS.Left = spaceRight;
+            CustomCheckBoxSmartDNS.Top = CustomCheckBoxClearExportData.Top;
+
+            CustomButtonSmartDnsSelect.Left = spaceRight * 2;
+            CustomButtonSmartDnsSelect.Top = CustomCheckBoxSmartDNS.Bottom + spaceH;
+
+            CustomLabelSmartDnsStatus.Left = CustomButtonSmartDnsSelect.Right + spaceH;
+            CustomLabelSmartDnsStatus.Top = CustomButtonSmartDnsSelect.Top + 4;
+
+            CustomLabelBootstrapIp.Left = spaceRight;
+            CustomLabelBootstrapIp.Top = CustomButtonSmartDnsSelect.Bottom + (spaceV * 2);
+
+            CustomTextBoxBootstrapIpPort.Left = CustomLabelBootstrapIp.Right + spaceH;
+            CustomTextBoxBootstrapIpPort.Top = CustomLabelBootstrapIp.Top - 2;
+
+            CustomLabelBootstrapPort.Left = CustomTextBoxBootstrapIpPort.Right + (spaceH * 2);
+            CustomLabelBootstrapPort.Top = CustomLabelBootstrapIp.Top;
+
+            CustomNumericUpDownBootstrapPort.Left = CustomLabelBootstrapPort.Right + spaceH;
+            CustomNumericUpDownBootstrapPort.Top = CustomTextBoxBootstrapIpPort.Top;
+
+            CustomLabelDnsTimeout.Left = CustomNumericUpDownBootstrapPort.Right + (spaceH * 2);
+            CustomLabelDnsTimeout.Top = CustomLabelBootstrapPort.Top;
+
+            CustomNumericUpDownDnsTimeout.Left = CustomLabelDnsTimeout.Right + spaceH;
+            CustomNumericUpDownDnsTimeout.Top = CustomNumericUpDownBootstrapPort.Top;
+
+            CustomRichTextBoxLog.Location = new Point(0, 0);
         }
 
         private void CustomRadioButtonDnsBrowse_CheckedChanged(object sender, EventArgs e)

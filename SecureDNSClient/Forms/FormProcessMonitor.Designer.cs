@@ -130,8 +130,8 @@
             // 
             // FormProcessMonitor
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
             ClientSize = new Size(284, 361);
             Controls.Add(SplitContainerMain);

@@ -1,6 +1,7 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
 using MsmhToolsClass.HTTPProxyServer;
+using MsmhToolsWinFormsClass;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -120,17 +121,6 @@ namespace SecureDNSClient
             catch (Exception ex)
             {
                 Debug.WriteLine($"Delete {Path.GetFileName(filePath)} File: {ex.Message}");
-            }
-        }
-
-        private void FixScreenDPI(Form form)
-        {
-            using Graphics g = form.CreateGraphics();
-            if (g.DpiX > 96 || g.DpiY > 96)
-            {
-                CustomLabelShareInfo.Font = new Font(form.Font.Name, 12f * 96f / form.CreateGraphics().DpiX, form.Font.Style, form.Font.Unit, form.Font.GdiCharSet, form.Font.GdiVerticalFont);
-                CustomLabelInfoDPIModes.Font = new Font(form.Font.Name, 10f * 96f / form.CreateGraphics().DpiX, FontStyle.Bold, form.Font.Unit, form.Font.GdiCharSet, form.Font.GdiVerticalFont);
-                CustomLabelAboutThis.Font = new Font(form.Font.Name, 19f * 96f / form.CreateGraphics().DpiX, FontStyle.Bold, form.Font.Unit, form.Font.GdiCharSet, form.Font.GdiVerticalFont);
             }
         }
 

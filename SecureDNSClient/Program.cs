@@ -14,6 +14,7 @@ namespace SecureDNSClient
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
             // Prevent multiple instances
             using Mutex mutex = new(false, Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName);

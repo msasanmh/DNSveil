@@ -239,7 +239,7 @@
             CustomTextBoxBootstrapIpPort.TabIndex = 0;
             CustomTextBoxBootstrapIpPort.TextAlign = HorizontalAlignment.Left;
             CustomTextBoxBootstrapIpPort.Texts = "8.8.8.8";
-            CustomTextBoxBootstrapIpPort.UnderlinedStyle = false;
+            CustomTextBoxBootstrapIpPort.UnderlinedStyle = true;
             CustomTextBoxBootstrapIpPort.UsePasswordChar = false;
             CustomTextBoxBootstrapIpPort.WordWrap = true;
             // 
@@ -442,7 +442,8 @@
             // 
             // FormDnsScanner
             // 
-            AutoScaleMode = AutoScaleMode.None;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
             ClientSize = new Size(584, 561);
             Controls.Add(SplitContainerMain);

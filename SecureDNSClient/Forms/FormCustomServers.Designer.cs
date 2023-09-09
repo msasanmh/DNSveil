@@ -66,7 +66,6 @@
             // 
             SplitContainerMain.Cursor = Cursors.VSplit;
             SplitContainerMain.Dock = DockStyle.Fill;
-            SplitContainerMain.FixedPanel = FixedPanel.Panel1;
             SplitContainerMain.Location = new Point(0, 0);
             SplitContainerMain.Name = "SplitContainerMain";
             // 
@@ -103,7 +102,6 @@
             // CustomButtonExport
             // 
             CustomButtonExport.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            CustomButtonExport.AutoSize = true;
             CustomButtonExport.BorderColor = Color.Blue;
             CustomButtonExport.FlatStyle = FlatStyle.Flat;
             CustomButtonExport.Location = new Point(170, 423);
@@ -119,7 +117,6 @@
             // CustomButtonImport
             // 
             CustomButtonImport.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            CustomButtonImport.AutoSize = true;
             CustomButtonImport.BorderColor = Color.Blue;
             CustomButtonImport.FlatStyle = FlatStyle.Flat;
             CustomButtonImport.Location = new Point(100, 423);
@@ -238,7 +235,6 @@
             // CustomButtonAddServers
             // 
             CustomButtonAddServers.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            CustomButtonAddServers.AutoSize = true;
             CustomButtonAddServers.BorderColor = Color.Blue;
             CustomButtonAddServers.FlatStyle = FlatStyle.Flat;
             CustomButtonAddServers.Location = new Point(641, 390);
@@ -254,7 +250,6 @@
             // CustomButtonModifyDNS
             // 
             CustomButtonModifyDNS.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            CustomButtonModifyDNS.AutoSize = true;
             CustomButtonModifyDNS.BorderColor = Color.Blue;
             CustomButtonModifyDNS.FlatStyle = FlatStyle.Flat;
             CustomButtonModifyDNS.Location = new Point(641, 423);
@@ -431,7 +426,8 @@
             // 
             // FormCustomServers
             // 
-            AutoScaleMode = AutoScaleMode.None;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
             ClientSize = new Size(974, 461);
             Controls.Add(SplitContainerMain);
@@ -445,7 +441,6 @@
             ((System.ComponentModel.ISupportInitialize)SplitContainerMain).EndInit();
             SplitContainerMain.ResumeLayout(false);
             CustomGroupBoxGroups.ResumeLayout(false);
-            CustomGroupBoxGroups.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)CustomDataGridViewGroups).EndInit();
             CustomGroupBoxDNSs.ResumeLayout(false);
             CustomGroupBoxDNSs.PerformLayout();

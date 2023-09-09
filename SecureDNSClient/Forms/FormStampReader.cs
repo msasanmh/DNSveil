@@ -2,6 +2,7 @@
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System;
+using System.Globalization;
 
 namespace SecureDNSClient
 {
@@ -10,16 +11,39 @@ namespace SecureDNSClient
         private readonly string NL = Environment.NewLine;
         public FormStampReader()
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
+
+            // Invariant Culture
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
             Controllers.SetDarkControl(CustomTextBoxResult);
 
             CustomTextBoxResult.Text = string.Empty;
+
+            Shown -= FormStampReader_Shown;
+            Shown += FormStampReader_Shown;
+        }
+
+        private void FormStampReader_Shown(object? sender, EventArgs e)
+        {
+            // Fix Controls Location
+            int spaceBottom = 10, spaceRight = 10, spaceV = 10, spaceH = 6, spaceHH = (spaceH * 3);
+            CustomLabelStampUrl.Location = new Point(spaceRight, spaceBottom);
+
+            CustomButtonDecode.Left = ClientRectangle.Width - CustomButtonDecode.Width - spaceRight;
+            CustomButtonDecode.Top = CustomLabelStampUrl.Top;
+
+            CustomTextBoxStampUrl.Left = CustomLabelStampUrl.Right + spaceH;
+            CustomTextBoxStampUrl.Top = CustomLabelStampUrl.Top - 2;
+
+            CustomTextBoxResult.Left = spaceRight;
+            CustomTextBoxResult.Top = CustomButtonDecode.Bottom + spaceV;
+            CustomTextBoxResult.Width = ClientRectangle.Width - (spaceRight * 2);
+            CustomTextBoxResult.Height = ClientRectangle.Height - CustomTextBoxResult.Top - spaceBottom;
         }
 
         private void CustomButtonDecode_Click(object sender, EventArgs e)

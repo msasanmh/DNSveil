@@ -165,7 +165,8 @@
             // 
             // FormDnsScannerExport
             // 
-            AutoScaleMode = AutoScaleMode.None;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
             ClientSize = new Size(419, 186);
             Controls.Add(CustomButtonExport);

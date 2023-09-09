@@ -67,6 +67,9 @@
     <Compile Update="Forms\SavedDnsServers.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\ScreenHighDpiScale.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\SetDNS.cs">
       <SubType>Form</SubType>
     </Compile>

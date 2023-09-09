@@ -123,7 +123,8 @@
             // 
             // FormStampReader
             // 
-            AutoScaleMode = AutoScaleMode.None;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
             ClientSize = new Size(699, 411);
             Controls.Add(CustomTextBoxResult);

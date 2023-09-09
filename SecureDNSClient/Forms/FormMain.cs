@@ -16,6 +16,7 @@ namespace SecureDNSClient
 {
     public partial class FormMain : Form
     {
+        private FormWindowState LastWindowState;
         private static readonly CustomLabel LabelMoving = new();
         public List<Tuple<long, string>> WorkingDnsList = new();
         public List<string> SavedDnsList = new();
@@ -53,7 +54,7 @@ namespace SecureDNSClient
         private readonly Stopwatch StopWatchAudioAlertDelay = new();
         private string TheDll = string.Empty;
         private static readonly string NL = Environment.NewLine;
-        private readonly int LogHeight;
+        private int LogHeight;
         private bool IsExiting = false;
 
         // PIDs
@@ -98,17 +99,12 @@ namespace SecureDNSClient
 
         public FormMain()
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
-            FixScreenDPI(this); // Change some labels font
 
-            //CustomStatusStrip1.SizingGrip = false;
-
-            // Set Min Size for Toggle Log View
-            MinimumSize = new Size(Width, Height - CustomGroupBoxLog.Height);
-            LogHeight = CustomGroupBoxLog.Height;
+            // Invariant Culture
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             // Update NICs
             SecureDNS.UpdateNICs(CustomComboBoxNICs);
@@ -210,6 +206,9 @@ namespace SecureDNSClient
             // Auto Save Settings (Timer)
             AutoSaveSettings();
 
+            // Set Window State
+            LastWindowState = WindowState;
+
             // Label Moving
             Controls.Add(LabelMoving);
             LabelMoving.Text = "Now Moving...";
@@ -228,7 +227,8 @@ namespace SecureDNSClient
             Move += FormMain_Move;
             ResizeEnd += FormMain_ResizeEnd;
             Resize += FormMain_Resize;
-
+            MouseUp += FormMain_MouseUp;
+            MaximizedBoundsChanged += FormMain_MaximizedBoundsChanged;
             SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
         }
 
@@ -241,13 +241,17 @@ namespace SecureDNSClient
 
         private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
         {
-            HideLabelMoving();
             if (ScreenDPI.GetSystemDpi() != 96)
             {
+                using Graphics g = CreateGraphics();
+                PaintEventArgs args = new(g, DisplayRectangle);
+                OnPaint(args);
                 string msg = "Display Settings Changed.\n";
-                msg += "You may need restart the app to fix display issue.";
+                msg += "You may need restart the app to fix display blurriness.";
                 CustomMessageBox.Show(this, msg);
             }
+
+            HideLabelMoving();
         }
 
         private void CustomRichTextBoxLog_TextAppended(object? sender, EventArgs e)
@@ -271,7 +275,11 @@ namespace SecureDNSClient
         {
             if (Once)
             {
-                HideLabelMoving();
+                // Fix Microsoft bugs. Like always!
+                await ScreenHighDpiScaleStartup(this);
+
+                // Set Min Size for Toggle Log View
+                LogHeight = CustomGroupBoxLog.Height;
 
                 // Write binaries if not exist or needs update
                 await WriteNecessaryFilesToDisk();
@@ -293,6 +301,11 @@ namespace SecureDNSClient
                 MonitorProcess.SetPID(GetPids(true));
                 MonitorProcess.Start(true);
 
+                // Drag bar color
+                SplitContainerMain.BackColor = Color.IndianRed;
+
+                HideLabelMoving();
+
                 Once = false;
             }
         }
@@ -300,6 +313,7 @@ namespace SecureDNSClient
         private void FormMain_Move(object? sender, EventArgs e)
         {
             SplitContainerMain.Visible = false;
+            LabelMoving.Text = "Now Moving...";
             LabelMoving.Location = new((ClientSize.Width / 2) - (LabelMoving.Width / 2), (ClientSize.Height / 2) - (LabelMoving.Height / 2));
             LabelMoving.Visible = true;
             LabelMoving.BringToFront();
@@ -312,10 +326,30 @@ namespace SecureDNSClient
 
         private void FormMain_Resize(object? sender, EventArgs e)
         {
-            if (WindowState != FormWindowState.Minimized)
+            if (WindowState != LastWindowState)
             {
-                HideLabelMoving();
+                LastWindowState = WindowState;
+                if (WindowState == FormWindowState.Normal || WindowState == FormWindowState.Maximized)
+                    HideLabelMoving();
             }
+            else
+            {
+                SplitContainerMain.Visible = false;
+                LabelMoving.Text = "Now Resizing...";
+                LabelMoving.Location = new((ClientSize.Width / 2) - (LabelMoving.Width / 2), (ClientSize.Height / 2) - (LabelMoving.Height / 2));
+                LabelMoving.Visible = true;
+                LabelMoving.BringToFront();
+            }
+        }
+
+        private void FormMain_MouseUp(object? sender, MouseEventArgs e)
+        {
+            HideLabelMoving();
+        }
+
+        private void FormMain_MaximizedBoundsChanged(object? sender, EventArgs e)
+        {
+            HideLabelMoving();
         }
 
         //============================== Constant

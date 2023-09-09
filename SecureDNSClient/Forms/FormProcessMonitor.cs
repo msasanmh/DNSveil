@@ -13,10 +13,7 @@ namespace SecureDNSClient
         private bool Exit = false;
         public FormProcessMonitor()
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
@@ -24,6 +21,7 @@ namespace SecureDNSClient
             // Update PIDS
             FormMain.MonitorProcess.SetPID(FormMain.GetPids(false));
 
+            Shown -= FormProcessMonitor_Shown;
             Shown += FormProcessMonitor_Shown;
         }
 

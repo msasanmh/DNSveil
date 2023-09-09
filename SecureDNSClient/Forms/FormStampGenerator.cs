@@ -4,6 +4,7 @@ using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace SecureDNSClient
 {
@@ -13,10 +14,12 @@ namespace SecureDNSClient
         private static bool IsExiting = false;
         public FormStampGenerator()
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
+
+            // Invariant Culture
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
@@ -25,6 +28,90 @@ namespace SecureDNSClient
             CustomComboBoxProtocol.SelectedIndex = 2;
             IsExiting = false;
             ClearStatusAuto();
+
+            Shown -= FormStampGenerator_Shown;
+            Shown += FormStampGenerator_Shown;
+        }
+
+        private void FormStampGenerator_Shown(object? sender, EventArgs e)
+        {
+            // Fix Controls Location
+            int spaceBottom = 10, spaceRight = 10, spaceV = 10, spaceH = 6, spaceHH = (spaceH * 3);
+            CustomLabelProtocol.Location = new Point(spaceRight, spaceBottom);
+
+            CustomComboBoxProtocol.Left = CustomLabelProtocol.Right + spaceH;
+            CustomComboBoxProtocol.Top = CustomLabelProtocol.Top - 2;
+
+            CustomLabelIP.Left = spaceRight;
+            CustomLabelIP.Top = CustomComboBoxProtocol.Bottom + spaceV;
+
+            CustomTextBoxIP.Left = spaceRight;
+            CustomTextBoxIP.Top = CustomLabelIP.Bottom + spaceV;
+
+            CustomLabelHost.Left = spaceRight;
+            CustomLabelHost.Top = CustomTextBoxIP.Bottom + spaceV;
+
+            CustomTextBoxHost.Left = spaceRight;
+            CustomTextBoxHost.Top = CustomLabelHost.Bottom + spaceV;
+
+            CustomLabelPort.Left = spaceRight;
+            CustomLabelPort.Top = CustomTextBoxHost.Bottom + spaceV;
+
+            CustomNumericUpDownPort.Left = CustomLabelPort.Right + spaceH;
+            CustomNumericUpDownPort.Top = CustomLabelPort.Top - 2;
+
+            CustomLabelPath.Left = spaceRight;
+            CustomLabelPath.Top = CustomNumericUpDownPort.Bottom + spaceV;
+
+            CustomTextBoxPath.Left = CustomLabelPath.Right + spaceH;
+            CustomTextBoxPath.Top = CustomLabelPath.Top - 2;
+
+            CustomCheckBoxIsDnsSec.Left = spaceRight;
+            CustomCheckBoxIsDnsSec.Top = CustomTextBoxPath.Bottom + spaceV;
+
+            CustomCheckBoxIsNoFilter.Left = CustomCheckBoxIsDnsSec.Right + spaceHH;
+            CustomCheckBoxIsNoFilter.Top = CustomCheckBoxIsDnsSec.Top;
+
+            CustomCheckBoxIsNoLog.Left = CustomCheckBoxIsNoFilter.Right + spaceHH;
+            CustomCheckBoxIsNoLog.Top = CustomCheckBoxIsNoFilter.Top;
+
+            CustomLabelStatus.Left = spaceRight;
+            CustomLabelStatus.Top = ClientRectangle.Height - CustomLabelStatus.Height - spaceBottom;
+
+            // Buttons
+            CustomButtonClear.Left = ClientRectangle.Width - CustomButtonClear.Width - spaceH;
+            CustomButtonClear.Top = CustomCheckBoxIsNoLog.Bottom + spaceV;
+
+            CustomButtonDecode.Left = CustomButtonClear.Left;
+            CustomButtonDecode.Top = CustomButtonClear.Bottom + spaceV;
+
+            CustomButtonEncode.Left = CustomButtonDecode.Left;
+            CustomButtonEncode.Top = CustomButtonDecode.Bottom + spaceV;
+
+            // The Box
+            CustomTextBoxStamp.Left = spaceRight;
+            CustomTextBoxStamp.Top = CustomCheckBoxIsNoLog.Bottom + spaceV;
+            CustomTextBoxStamp.Width = CustomButtonEncode.Left - CustomTextBoxStamp.Left - spaceH;
+            CustomTextBoxStamp.Height = CustomLabelStatus.Top - CustomTextBoxStamp.Top - spaceV;
+
+            // Top-Right Side
+            CustomLabelProviderName.Left = CustomComboBoxProtocol.Right + spaceHH;
+            CustomLabelProviderName.Top = CustomLabelIP.Top;
+
+            CustomTextBoxProviderName.Left = CustomLabelProviderName.Left;
+            CustomTextBoxProviderName.Top = CustomTextBoxIP.Top;
+
+            CustomLabelPublicKey.Left = CustomTextBoxProviderName.Left;
+            CustomLabelPublicKey.Top = CustomLabelHost.Top;
+
+            CustomTextBoxPublicKey.Left = CustomLabelPublicKey.Left;
+            CustomTextBoxPublicKey.Top = CustomTextBoxHost.Top;
+
+            CustomLabelHash.Left = CustomTextBoxPublicKey.Left;
+            CustomLabelHash.Top = CustomLabelPort.Top;
+
+            CustomTextBoxHash.Left = CustomLabelHash.Left;
+            CustomTextBoxHash.Top = CustomLabelHash.Bottom + spaceV;
         }
 
         private void CustomButtonClear_Click(object? sender, EventArgs? e)

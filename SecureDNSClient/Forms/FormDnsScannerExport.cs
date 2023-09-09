@@ -6,6 +6,7 @@ using System.Diagnostics;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using MsmhToolsClass;
+using System.Globalization;
 
 namespace SecureDNSClient
 {
@@ -18,10 +19,12 @@ namespace SecureDNSClient
 
         public FormDnsScannerExport(List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool>>> exportList)
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
+
+            // Invariant Culture
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
@@ -33,6 +36,43 @@ namespace SecureDNSClient
                 AppSettings = new(this);
 
             ExportList = exportList;
+
+            Shown -= FormDnsScannerExport_Shown;
+            Shown += FormDnsScannerExport_Shown;
+        }
+
+        private void FormDnsScannerExport_Shown(object? sender, EventArgs e)
+        {
+            // Fix Controls Location
+            int spaceBottom = 10, spaceRight = 12, spaceV = 12, spaceH = 16;
+            CustomLabelFilterExport.Location = new Point(spaceRight, spaceBottom);
+
+            CustomCheckBoxSecureOnline.Left = CustomLabelFilterExport.Left;
+            CustomCheckBoxSecureOnline.Top = CustomLabelFilterExport.Bottom + spaceV;
+
+            CustomCheckBoxGoogleSafeSearchActive.Left = CustomCheckBoxSecureOnline.Right + spaceH;
+            CustomCheckBoxGoogleSafeSearchActive.Top = CustomCheckBoxSecureOnline.Top;
+
+            spaceV = 6;
+            CustomCheckBoxInsecureOnline.Left = spaceRight;
+            CustomCheckBoxInsecureOnline.Top = CustomCheckBoxSecureOnline.Bottom + spaceV;
+
+            CustomCheckBoxAdultContentFilter.Left = CustomCheckBoxGoogleSafeSearchActive.Left;
+            CustomCheckBoxAdultContentFilter.Top = CustomCheckBoxGoogleSafeSearchActive.Bottom + spaceV;
+
+            spaceV = 16;
+            CustomRadioButtonSortBySecure.Left = spaceRight;
+            CustomRadioButtonSortBySecure.Top = CustomCheckBoxAdultContentFilter.Bottom + spaceV;
+
+            CustomRadioButtonSortByInsecure.Left = CustomCheckBoxAdultContentFilter.Left;
+            CustomRadioButtonSortByInsecure.Top = CustomRadioButtonSortBySecure.Top;
+
+            spaceV = 10;
+            CustomButtonExport.Left = CustomRadioButtonSortByInsecure.Left + (spaceH * 6);
+            CustomButtonExport.Top = CustomRadioButtonSortByInsecure.Bottom + spaceV;
+
+            Width = CustomCheckBoxGoogleSafeSearchActive.Right + (spaceRight * 2) + (Width - ClientRectangle.Width);
+            Height = CustomButtonExport.Bottom + (spaceBottom * 2) + (Height - ClientRectangle.Height);
         }
 
         private async void CustomButtonExport_Click(object sender, EventArgs e)

@@ -3,6 +3,7 @@ using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.ComponentModel;
+using System.Globalization;
 
 namespace SecureDNSClient
 {
@@ -16,10 +17,12 @@ namespace SecureDNSClient
         private readonly ToolStripMenuItem ToolStripMenuItemCopy = new();
         public FormIpScanner()
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
+
+            // Invariant Culture
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
@@ -41,6 +44,54 @@ namespace SecureDNSClient
                 AppSettings = new(this, SettingsXmlPath);
             else
                 AppSettings = new(this);
+
+            Shown -= FormIpScanner_Shown;
+            Shown += FormIpScanner_Shown;
+        }
+
+        private void FormIpScanner_Shown(object? sender, EventArgs e)
+        {
+            // Fix Controls Location
+            int spaceBottom = 10, spaceRight = 12, spaceV = 10, spaceH = 6, spaceHH = (spaceH * 3);
+            CustomRadioButtonSourceCloudflare.Location = new Point(spaceRight, spaceBottom);
+
+            CustomLabelDelay.Left = CustomRadioButtonSourceCloudflare.Right + spaceHH;
+            CustomLabelDelay.Top = CustomRadioButtonSourceCloudflare.Top;
+
+            CustomNumericUpDownDelay.Left = CustomLabelDelay.Right + spaceH;
+            CustomNumericUpDownDelay.Top = CustomLabelDelay.Top - 2;
+
+            CustomButtonStartStop.Left = CustomNumericUpDownDelay.Right + spaceHH;
+            CustomButtonStartStop.Top = CustomNumericUpDownDelay.Top;
+
+            CustomLabelCheckWebsite.Left = spaceRight;
+            CustomLabelCheckWebsite.Top = CustomButtonStartStop.Bottom + spaceV;
+
+            CustomTextBoxCheckWebsite.Left = CustomLabelCheckWebsite.Right + spaceH;
+            CustomTextBoxCheckWebsite.Top = CustomLabelCheckWebsite.Top - 2;
+
+            CustomLabelCheckIpWithThisPort.Left = spaceRight;
+            CustomLabelCheckIpWithThisPort.Top = CustomTextBoxCheckWebsite.Bottom + spaceV;
+
+            CustomNumericUpDownCheckIpWithThisPort.Left = CustomLabelCheckIpWithThisPort.Right;
+            CustomNumericUpDownCheckIpWithThisPort.Top = CustomLabelCheckIpWithThisPort.Top - 2;
+
+            CustomLabelProxyPort.Left = spaceRight;
+            CustomLabelProxyPort.Top = CustomNumericUpDownCheckIpWithThisPort.Bottom + spaceV;
+
+            CustomNumericUpDownProxyPort.Left = CustomLabelProxyPort.Right + spaceH;
+            CustomNumericUpDownProxyPort.Top = CustomLabelProxyPort.Top - 2;
+
+            CustomCheckBoxRandomScan.Left = CustomNumericUpDownProxyPort.Right + spaceHH;
+            CustomCheckBoxRandomScan.Top = CustomLabelProxyPort.Top;
+
+            CustomLabelChecking.Left = spaceRight;
+            CustomLabelChecking.Top = CustomCheckBoxRandomScan.Bottom + spaceV;
+
+            CustomDataGridViewResult.Left = spaceRight;
+            CustomDataGridViewResult.Top = CustomLabelChecking.Bottom + spaceV;
+            CustomDataGridViewResult.Width = ClientRectangle.Width - (spaceRight * 2);
+            CustomDataGridViewResult.Height = ClientRectangle.Height - CustomDataGridViewResult.Top - spaceBottom;
         }
 
         private void CustomButtonStartStop_Click(object sender, EventArgs e)
@@ -108,11 +159,11 @@ namespace SecureDNSClient
                     DataGridViewRow row = CustomDataGridViewResult.Rows[rowId];
 
                     CustomDataGridViewResult.BeginEdit(false);
-                    row.Height = 20;
                     row.Cells[0].Value = result.RealDelay;
                     row.Cells[1].Value = result.TcpDelay;
                     row.Cells[2].Value = result.PingDelay;
                     row.Cells[3].Value = result.IP;
+                    row.Height = TextRenderer.MeasureText("It doesn't matter what we write here!", Font).Height + 5;
 
                     CustomDataGridViewResult.Sort(CustomDataGridViewResult.Columns[0], ListSortDirection.Ascending);
                     CustomDataGridViewResult.EndEdit();

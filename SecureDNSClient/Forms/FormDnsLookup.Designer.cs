@@ -467,7 +467,8 @@
             // FormDnsLookup
             // 
             AcceptButton = CustomButtonLookup;
-            AutoScaleMode = AutoScaleMode.None;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
             ClientSize = new Size(459, 461);
             Controls.Add(CustomCheckBoxJSON);

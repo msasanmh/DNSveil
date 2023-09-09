@@ -4,6 +4,7 @@ using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Xml.Linq;
 
@@ -11,6 +12,7 @@ namespace SecureDNSClient
 {
     public partial class FormCustomServers : Form
     {
+        private readonly CustomLabel LabelScreen = new();
         private readonly CustomLabel LabelMoving = new();
         private static XDocument XDoc = new();
         private static readonly List<string> ListGroupNames = new();
@@ -44,10 +46,12 @@ namespace SecureDNSClient
 
         public FormCustomServers()
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
+
+            // Invariant Culture
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             StartPosition = FormStartPosition.CenterScreen;
 
@@ -63,10 +67,13 @@ namespace SecureDNSClient
             LabelMoving.Size = new(300, 150);
             LabelMoving.Location = new((ClientSize.Width / 2) - (LabelMoving.Width / 2), (ClientSize.Height / 2) - (LabelMoving.Height / 2));
             LabelMoving.TextAlign = ContentAlignment.MiddleCenter;
-            LabelMoving.Font = new(FontFamily.GenericSansSerif, 12);
+            LabelMoving.Font = new(Font.Name, Font.Size * 2);
             Theme.SetColors(LabelMoving);
             LabelMoving.Visible = false;
             LabelMoving.SendToBack();
+
+            LabelScreen.Text = "MSasanMH";
+            LabelScreen.Font = Font;
 
             Shown += FormCustomServers_Shown;
             Move += FormCustomServers_Move;
@@ -80,6 +87,53 @@ namespace SecureDNSClient
             LabelMoving.SendToBack();
             SplitContainerMain.Visible = true;
             ReadGroups(null, false);
+
+            // Fix Controls Location
+            int spaceBottom = 6, spaceRight = 6, spaceV = 6, spaceH = 6;
+            CustomDataGridViewGroups.Location = new Point(spaceRight, LabelScreen.Height);
+
+            CustomButtonExport.Left = CustomGroupBoxGroups.Width - CustomButtonExport.Width - spaceRight;
+            CustomButtonExport.Top = CustomGroupBoxGroups.Height - CustomButtonNewGroup.Height - spaceBottom;
+
+            CustomButtonImport.Left = CustomButtonExport.Left - CustomButtonImport.Width - spaceH;
+            CustomButtonImport.Top = CustomButtonExport.Top;
+
+            CustomButtonNewGroup.Left = CustomDataGridViewGroups.Left;
+            CustomButtonNewGroup.Top = CustomButtonImport.Top;
+            CustomButtonNewGroup.Width = CustomButtonImport.Left - CustomButtonNewGroup.Left - spaceH;
+
+            CustomDataGridViewGroups.Width = CustomGroupBoxGroups.Width - (spaceH * 2);
+            CustomDataGridViewGroups.Height = CustomButtonNewGroup.Top - CustomDataGridViewGroups.Top - spaceV;
+
+            CustomDataGridViewDNSs.Location = new Point(spaceRight, LabelScreen.Height);
+
+            CustomButtonModifyDNS.Left = CustomGroupBoxDNSs.Width - CustomButtonModifyDNS.Width - spaceRight;
+            CustomButtonModifyDNS.Top = CustomGroupBoxDNSs.Height - CustomButtonModifyDNS.Height - spaceBottom;
+
+            CustomButtonAddServers.Left = CustomButtonModifyDNS.Left;
+            CustomButtonAddServers.Top = CustomButtonModifyDNS.Top - CustomButtonAddServers.Height - spaceV;
+
+            CustomLabelDescription.Left = CustomDataGridViewDNSs.Left;
+
+            CustomLabelDNS.Left = CustomLabelDescription.Left;
+
+            CustomTextBoxDescription.Left = CustomLabelDescription.Right + (spaceH * 6);
+            CustomTextBoxDescription.Top = CustomButtonModifyDNS.Top;
+            CustomTextBoxDescription.Width = CustomButtonModifyDNS.Left - CustomTextBoxDescription.Left - spaceH;
+
+            CustomTextBoxDNS.Left = CustomTextBoxDescription.Left;
+            CustomTextBoxDNS.Top = CustomButtonAddServers.Top + (CustomButtonAddServers.Height - CustomTextBoxDNS.Height);
+            CustomTextBoxDNS.Width = CustomTextBoxDescription.Width;
+
+            CustomLabelDescription.Top = CustomTextBoxDescription.Top + 2;
+
+            CustomLabelDNS.Top = CustomTextBoxDNS.Top + 2;
+
+            CustomDataGridViewDNSs.Width = CustomGroupBoxDNSs.Width - (spaceH * 2);
+            CustomDataGridViewDNSs.Height = CustomButtonAddServers.Top - CustomDataGridViewDNSs.Top - spaceV;
+
+            int btnNewGroupWidth = TextRenderer.MeasureText(CustomButtonNewGroup.Text, Font).Width;
+            SplitContainerMain.SplitterDistance = btnNewGroupWidth + (CustomButtonExport.Width * 2) + (spaceRight * 2) + (spaceH * 2);
         }
 
         private void FormCustomServers_Move(object? sender, EventArgs e)
@@ -183,7 +237,7 @@ namespace SecureDNSClient
                 bool cell0Value = nodeEnabled == null || Convert.ToBoolean(nodeEnabled.Value);
                 dgvG.Rows[a].Cells[0].Value = cell0Value;
                 dgvG.Rows[a].Cells[1].Value = nodeName.Value;
-                dgvG.Rows[a].Height = 20;
+                dgvG.Rows[a].Height = TextRenderer.MeasureText(nodeName.Value.ToString(), dgvG.DefaultCellStyle.Font).Height + 5;
                 dgvG.EndEdit();
 
                 // Add Names to List
@@ -267,10 +321,10 @@ namespace SecureDNSClient
                         // Add by AddRange
                         DataGridViewRow row = new();
                         row.CreateCells(dgvS, "cell0", "cell1", "cell2");
-                        row.Height = 20;
                         row.Cells[0].Value = Convert.ToBoolean(nodeEnabled.Value);
                         row.Cells[1].Value = nodeDns.Value;
                         row.Cells[2].Value = nodeDescription.Value;
+                        row.Height = TextRenderer.MeasureText(nodeDns.Value.ToString(), dgvS.DefaultCellStyle.Font).Height + 5;
                         pList.Add(row);
                     }
 

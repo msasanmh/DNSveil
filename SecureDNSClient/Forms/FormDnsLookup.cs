@@ -3,6 +3,7 @@ using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 
 namespace SecureDNSClient
@@ -17,10 +18,12 @@ namespace SecureDNSClient
 
         public FormDnsLookup()
         {
-            // Fix Screed DPI
-            ScreenDPI.FixDpiBeforeInitializeComponent(this);
             InitializeComponent();
-            ScreenDPI.FixDpiAfterInitializeComponent(this);
+
+            // Invariant Culture
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             // Load Theme
             Theme.LoadTheme(this, Theme.Themes.Dark);
@@ -42,6 +45,85 @@ namespace SecureDNSClient
                 AppSettings = new(this);
 
             CustomTextBoxResult.Text = string.Empty;
+
+            Shown -= FormDnsLookup_Shown;
+            Shown += FormDnsLookup_Shown;
+        }
+
+        private void FormDnsLookup_Shown(object? sender, EventArgs e)
+        {
+            // Fix Controls Location
+            int spaceBottom = 10, spaceRight = 12, spaceV = 6, spaceH = 6;
+            CustomRadioButtonSourceSDC.Location = new Point(spaceRight, spaceBottom);
+
+            CustomRadioButtonSourceCustom.Left = CustomRadioButtonSourceSDC.Right + spaceH;
+            CustomRadioButtonSourceCustom.Top = CustomRadioButtonSourceSDC.Top;
+
+            CustomTextBoxSourceCustom.Left = CustomRadioButtonSourceCustom.Right + spaceH;
+            CustomTextBoxSourceCustom.Top = CustomRadioButtonSourceCustom.Top - 2;
+
+            CustomButtonDefault.Top = CustomRadioButtonSourceCustom.Top;
+            CustomButtonDefault.Left = ClientRectangle.Width - CustomButtonDefault.Width - spaceRight;
+
+            CustomTextBoxSourceCustom.Width = CustomButtonDefault.Left - CustomTextBoxSourceCustom.Left - spaceH;
+
+            CustomButtonLookup.Left = CustomButtonDefault.Left;
+            CustomButtonLookup.Top = CustomButtonDefault.Bottom + spaceV;
+
+            CustomTextBoxDomain.Left = CustomTextBoxSourceCustom.Left;
+            CustomTextBoxDomain.Top = CustomTextBoxSourceCustom.Bottom + spaceV;
+            CustomTextBoxDomain.Width = CustomTextBoxSourceCustom.Width;
+
+            CustomLabelDomain.Left = CustomTextBoxDomain.Left - CustomLabelDomain.Width - spaceH;
+            CustomLabelDomain.Top = CustomTextBoxDomain.Top + 2;
+
+            CustomCheckBoxHTTP3.Left = spaceRight;
+            CustomCheckBoxHTTP3.Top = CustomTextBoxDomain.Bottom + spaceV;
+
+            CustomCheckBoxVERIFY.Left = CustomCheckBoxHTTP3.Right + spaceH;
+            CustomCheckBoxVERIFY.Top = CustomCheckBoxHTTP3.Top;
+
+            CustomCheckBoxDNSSEC.Left = spaceRight;
+            CustomCheckBoxDNSSEC.Top = CustomCheckBoxVERIFY.Bottom + spaceV;
+
+            CustomCheckBoxPAD.Left = CustomCheckBoxDNSSEC.Right + spaceH;
+            CustomCheckBoxPAD.Top = CustomCheckBoxDNSSEC.Top;
+
+            CustomCheckBoxVERBOSE.Left = CustomCheckBoxPAD.Right + spaceH;
+            CustomCheckBoxVERBOSE.Top = CustomCheckBoxPAD.Top;
+
+            CustomCheckBoxJSON.Left = CustomCheckBoxVERBOSE.Right + spaceH;
+            CustomCheckBoxJSON.Top = CustomCheckBoxVERBOSE.Top;
+
+            CustomLabelRRTYPE.Left = spaceRight;
+            CustomLabelRRTYPE.Top = CustomCheckBoxJSON.Bottom + spaceV;
+
+            CustomTextBoxRRTYPE.Left = CustomLabelRRTYPE.Right + spaceH;
+            CustomTextBoxRRTYPE.Top = CustomLabelRRTYPE.Top - 2;
+
+            CustomLabelCLASS.Left = CustomTextBoxRRTYPE.Right + spaceH;
+            CustomLabelCLASS.Top = CustomLabelRRTYPE.Top;
+
+            CustomTextBoxCLASS.Left = CustomLabelCLASS.Right + spaceH;
+            CustomTextBoxCLASS.Top = CustomTextBoxRRTYPE.Top;
+
+            CustomLabelSUBNET.Left = CustomTextBoxCLASS.Right + spaceH;
+            CustomLabelSUBNET.Top = CustomLabelCLASS.Top;
+
+            CustomTextBoxSUBNET.Left = CustomLabelSUBNET.Right + spaceH;
+            CustomTextBoxSUBNET.Top = CustomTextBoxCLASS.Top;
+
+            CustomLabelEDNSOPT.Left = spaceRight;
+            CustomLabelEDNSOPT.Top = CustomTextBoxSUBNET.Bottom + spaceV;
+
+            CustomTextBoxEDNSOPT.Left = CustomLabelEDNSOPT.Right + spaceH;
+            CustomTextBoxEDNSOPT.Top = CustomLabelEDNSOPT.Top - 2;
+            CustomTextBoxEDNSOPT.Width = ClientRectangle.Width - CustomTextBoxEDNSOPT.Left - CustomButtonLookup.Width - spaceH - spaceRight;
+
+            CustomTextBoxResult.Left = spaceRight;
+            CustomTextBoxResult.Top = CustomTextBoxEDNSOPT.Bottom + spaceV;
+            CustomTextBoxResult.Width = ClientRectangle.Width - (spaceRight * 2);
+            CustomTextBoxResult.Height = ClientRectangle.Height - CustomTextBoxResult.Top - spaceBottom;
         }
 
         private void CustomButtonDefault_Click(object sender, EventArgs e)

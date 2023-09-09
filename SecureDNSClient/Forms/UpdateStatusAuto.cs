@@ -149,7 +149,7 @@ namespace SecureDNSClient
                 string currentVersion = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion ?? "99.99.99";
                 downloadUrl = split[1].Trim();
                 if (string.IsNullOrEmpty(downloadUrl)) downloadUrl = "https://github.com/msasanmh/SecureDNSClient/releases/latest";
-                
+
                 int versionResult = Info.VersionCompare(newVersion, currentVersion);
                 if (versionResult == 1)
                 {
@@ -303,6 +303,7 @@ namespace SecureDNSClient
                 checkDns.CheckDNS("google.com", IPAddress.Loopback.ToString(), timeoutMS);
                 LocalDnsLatency = checkDns.DnsLatency;
                 IsDNSConnected = LocalDnsLatency != -1;
+                this.InvokeIt(() => SplitContainerMain.BackColor = IsDNSConnected ? Color.MediumSeaGreen : Color.IndianRed);
 
                 try
                 {
@@ -510,6 +511,20 @@ namespace SecureDNSClient
 
         private void UpdateStatusShort()
         {
+            // Update Min Size of Status
+            SplitContainerTop.IsSplitterFixed = true;
+            try
+            {
+                int minS = CustomRichTextBoxStatusProxyDpiBypass.Width + 10;
+                int distance = SplitContainerTop.Width - SplitContainerTop.SplitterIncrement - minS;
+                if (distance > SplitContainerTop.Panel1MinSize && distance < SplitContainerTop.Width - SplitContainerTop.Panel2MinSize)
+                    SplitContainerTop.SplitterDistance = distance;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Splitter Distance: " + ex.Message);
+            }
+
             // Update Status Working Servers
             NumberOfWorkingServers = WorkingDnsList.Count;
             CustomRichTextBoxStatusWorkingServers.ResetText();

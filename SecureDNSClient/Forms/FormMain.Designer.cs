@@ -202,7 +202,7 @@
             CustomButtonSettingHTTPProxyDontBypass = new CustomControls.CustomButton();
             CustomLabelSettingHTTPProxyDontBypass = new CustomControls.CustomLabel();
             CustomCheckBoxSettingHTTPProxyEnableDontBypass = new CustomControls.CustomCheckBox();
-            customLabel1 = new CustomControls.CustomLabel();
+            CustomLabelSettingShareSeparator3 = new CustomControls.CustomLabel();
             CustomButtonSettingHTTPProxyBlackWhiteList = new CustomControls.CustomButton();
             CustomCheckBoxSettingHTTPProxyEnableFakeProxy = new CustomControls.CustomCheckBox();
             CustomLabelSettingHTTPProxyBlackWhiteList = new CustomControls.CustomLabel();
@@ -376,7 +376,7 @@
             CustomRichTextBoxLog.SelectionLength = 0;
             CustomRichTextBoxLog.SelectionStart = 0;
             CustomRichTextBoxLog.ShortcutsEnabled = true;
-            CustomRichTextBoxLog.Size = new Size(878, 155);
+            CustomRichTextBoxLog.Size = new Size(978, 155);
             CustomRichTextBoxLog.TabIndex = 0;
             CustomRichTextBoxLog.Texts = "";
             CustomRichTextBoxLog.UnderlinedStyle = false;
@@ -407,7 +407,7 @@
             CustomGroupBoxLog.Location = new Point(0, 0);
             CustomGroupBoxLog.Margin = new Padding(1);
             CustomGroupBoxLog.Name = "CustomGroupBoxLog";
-            CustomGroupBoxLog.Size = new Size(884, 177);
+            CustomGroupBoxLog.Size = new Size(984, 177);
             CustomGroupBoxLog.TabIndex = 3;
             CustomGroupBoxLog.TabStop = false;
             CustomGroupBoxLog.Text = "Log";
@@ -657,10 +657,10 @@
             CustomTabControlMain.Margin = new Padding(0);
             CustomTabControlMain.Name = "CustomTabControlMain";
             CustomTabControlMain.SelectedIndex = 0;
-            CustomTabControlMain.Size = new Size(700, 400);
+            CustomTabControlMain.Size = new Size(779, 400);
             CustomTabControlMain.SizeMode = TabSizeMode.Fixed;
             CustomTabControlMain.TabIndex = 6;
-            CustomTabControlMain.Tag = 0;
+            CustomTabControlMain.Tag = 1;
             // 
             // TabPageSecureDNS
             // 
@@ -669,7 +669,7 @@
             TabPageSecureDNS.Location = new Point(4, 25);
             TabPageSecureDNS.Name = "TabPageSecureDNS";
             TabPageSecureDNS.Padding = new Padding(3);
-            TabPageSecureDNS.Size = new Size(692, 371);
+            TabPageSecureDNS.Size = new Size(771, 371);
             TabPageSecureDNS.TabIndex = 0;
             TabPageSecureDNS.Tag = 0;
             TabPageSecureDNS.Text = "Secure DNS";
@@ -686,9 +686,11 @@
             CustomTabControlSecureDNS.HideTabHeader = false;
             CustomTabControlSecureDNS.ItemSize = new Size(120, 21);
             CustomTabControlSecureDNS.Location = new Point(3, 3);
+            CustomTabControlSecureDNS.Margin = new Padding(0);
             CustomTabControlSecureDNS.Name = "CustomTabControlSecureDNS";
             CustomTabControlSecureDNS.SelectedIndex = 0;
-            CustomTabControlSecureDNS.Size = new Size(686, 365);
+            CustomTabControlSecureDNS.Size = new Size(765, 365);
+            CustomTabControlSecureDNS.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSecureDNS.TabIndex = 0;
             CustomTabControlSecureDNS.Tag = 0;
             // 
@@ -709,7 +711,7 @@
             TabPageCheck.Location = new Point(4, 25);
             TabPageCheck.Name = "TabPageCheck";
             TabPageCheck.Padding = new Padding(3);
-            TabPageCheck.Size = new Size(678, 336);
+            TabPageCheck.Size = new Size(757, 336);
             TabPageCheck.TabIndex = 0;
             TabPageCheck.Tag = 0;
             TabPageCheck.Text = "1. Check";
@@ -740,7 +742,7 @@
             CustomProgressBarCheck.Location = new Point(299, 303);
             CustomProgressBarCheck.Name = "CustomProgressBarCheck";
             CustomProgressBarCheck.RoundedCorners = 5;
-            CustomProgressBarCheck.Size = new Size(274, 27);
+            CustomProgressBarCheck.Size = new Size(353, 27);
             CustomProgressBarCheck.StopTimer = false;
             CustomProgressBarCheck.TabIndex = 16;
             // 
@@ -749,7 +751,7 @@
             LinkLabelCheckUpdate.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             LinkLabelCheckUpdate.AutoSize = true;
             LinkLabelCheckUpdate.LinkBehavior = LinkBehavior.NeverUnderline;
-            LinkLabelCheckUpdate.Location = new Point(502, 280);
+            LinkLabelCheckUpdate.Location = new Point(581, 280);
             LinkLabelCheckUpdate.Name = "LinkLabelCheckUpdate";
             LinkLabelCheckUpdate.RightToLeft = RightToLeft.Yes;
             LinkLabelCheckUpdate.Size = new Size(173, 15);
@@ -762,7 +764,7 @@
             CustomButtonCheckUpdate.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             CustomButtonCheckUpdate.BorderColor = Color.Blue;
             CustomButtonCheckUpdate.FlatStyle = FlatStyle.Flat;
-            CustomButtonCheckUpdate.Location = new Point(579, 303);
+            CustomButtonCheckUpdate.Location = new Point(658, 303);
             CustomButtonCheckUpdate.Name = "CustomButtonCheckUpdate";
             CustomButtonCheckUpdate.RoundedCorners = 5;
             CustomButtonCheckUpdate.SelectionColor = Color.LightBlue;
@@ -799,7 +801,7 @@
             TabPageConnect.Location = new Point(4, 25);
             TabPageConnect.Name = "TabPageConnect";
             TabPageConnect.Padding = new Padding(3);
-            TabPageConnect.Size = new Size(678, 336);
+            TabPageConnect.Size = new Size(757, 336);
             TabPageConnect.TabIndex = 1;
             TabPageConnect.Tag = 1;
             TabPageConnect.Text = "2. Connect";
@@ -888,7 +890,7 @@
             TabPageSetDNS.Location = new Point(4, 25);
             TabPageSetDNS.Name = "TabPageSetDNS";
             TabPageSetDNS.Padding = new Padding(3);
-            TabPageSetDNS.Size = new Size(678, 336);
+            TabPageSetDNS.Size = new Size(757, 336);
             TabPageSetDNS.TabIndex = 3;
             TabPageSetDNS.Tag = 2;
             TabPageSetDNS.Text = "3. Set DNS";
@@ -978,7 +980,7 @@
             TabPageShare.Location = new Point(4, 25);
             TabPageShare.Name = "TabPageShare";
             TabPageShare.Padding = new Padding(3);
-            TabPageShare.Size = new Size(678, 336);
+            TabPageShare.Size = new Size(757, 336);
             TabPageShare.TabIndex = 4;
             TabPageShare.Tag = 3;
             TabPageShare.Text = "4. Share + Bypass DPI";
@@ -1278,7 +1280,7 @@
             TabPageGoodbyeDPI.Location = new Point(4, 25);
             TabPageGoodbyeDPI.Name = "TabPageGoodbyeDPI";
             TabPageGoodbyeDPI.Padding = new Padding(3);
-            TabPageGoodbyeDPI.Size = new Size(678, 336);
+            TabPageGoodbyeDPI.Size = new Size(757, 336);
             TabPageGoodbyeDPI.TabIndex = 2;
             TabPageGoodbyeDPI.Tag = 4;
             TabPageGoodbyeDPI.Text = "GoodbyeDPI";
@@ -1294,10 +1296,10 @@
             CustomTabControlDPIBasicAdvanced.Location = new Point(3, 3);
             CustomTabControlDPIBasicAdvanced.Name = "CustomTabControlDPIBasicAdvanced";
             CustomTabControlDPIBasicAdvanced.SelectedIndex = 0;
-            CustomTabControlDPIBasicAdvanced.Size = new Size(672, 330);
+            CustomTabControlDPIBasicAdvanced.Size = new Size(751, 330);
             CustomTabControlDPIBasicAdvanced.SizeMode = TabSizeMode.Fixed;
             CustomTabControlDPIBasicAdvanced.TabIndex = 13;
-            CustomTabControlDPIBasicAdvanced.Tag = 1;
+            CustomTabControlDPIBasicAdvanced.Tag = 0;
             // 
             // TabPageDPIBasic
             // 
@@ -1322,7 +1324,7 @@
             TabPageDPIBasic.Location = new Point(4, 25);
             TabPageDPIBasic.Name = "TabPageDPIBasic";
             TabPageDPIBasic.Padding = new Padding(3);
-            TabPageDPIBasic.Size = new Size(664, 301);
+            TabPageDPIBasic.Size = new Size(743, 301);
             TabPageDPIBasic.TabIndex = 0;
             TabPageDPIBasic.Tag = 0;
             TabPageDPIBasic.Text = "Basic";
@@ -1447,7 +1449,7 @@
             CustomButtonDPIBasicDeactivate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             CustomButtonDPIBasicDeactivate.BorderColor = Color.Blue;
             CustomButtonDPIBasicDeactivate.FlatStyle = FlatStyle.Flat;
-            CustomButtonDPIBasicDeactivate.Location = new Point(124, 268);
+            CustomButtonDPIBasicDeactivate.Location = new Point(119, 268);
             CustomButtonDPIBasicDeactivate.Name = "CustomButtonDPIBasicDeactivate";
             CustomButtonDPIBasicDeactivate.RoundedCorners = 5;
             CustomButtonDPIBasicDeactivate.SelectionColor = Color.LightBlue;
@@ -1462,7 +1464,7 @@
             CustomButtonDPIBasicActivate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             CustomButtonDPIBasicActivate.BorderColor = Color.Blue;
             CustomButtonDPIBasicActivate.FlatStyle = FlatStyle.Flat;
-            CustomButtonDPIBasicActivate.Location = new Point(45, 268);
+            CustomButtonDPIBasicActivate.Location = new Point(40, 268);
             CustomButtonDPIBasicActivate.Name = "CustomButtonDPIBasicActivate";
             CustomButtonDPIBasicActivate.RoundedCorners = 5;
             CustomButtonDPIBasicActivate.SelectionColor = Color.LightBlue;
@@ -1512,7 +1514,7 @@
             TabPageDPIAdvanced.Location = new Point(4, 25);
             TabPageDPIAdvanced.Name = "TabPageDPIAdvanced";
             TabPageDPIAdvanced.Padding = new Padding(3);
-            TabPageDPIAdvanced.Size = new Size(664, 301);
+            TabPageDPIAdvanced.Size = new Size(743, 301);
             TabPageDPIAdvanced.TabIndex = 1;
             TabPageDPIAdvanced.Tag = 1;
             TabPageDPIAdvanced.Text = "Advanced";
@@ -1601,7 +1603,7 @@
             CustomButtonDPIAdvDeactivate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             CustomButtonDPIAdvDeactivate.BorderColor = Color.Blue;
             CustomButtonDPIAdvDeactivate.FlatStyle = FlatStyle.Flat;
-            CustomButtonDPIAdvDeactivate.Location = new Point(124, 268);
+            CustomButtonDPIAdvDeactivate.Location = new Point(119, 268);
             CustomButtonDPIAdvDeactivate.Name = "CustomButtonDPIAdvDeactivate";
             CustomButtonDPIAdvDeactivate.RoundedCorners = 5;
             CustomButtonDPIAdvDeactivate.SelectionColor = Color.LightBlue;
@@ -1616,7 +1618,7 @@
             CustomButtonDPIAdvActivate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             CustomButtonDPIAdvActivate.BorderColor = Color.Blue;
             CustomButtonDPIAdvActivate.FlatStyle = FlatStyle.Flat;
-            CustomButtonDPIAdvActivate.Location = new Point(45, 268);
+            CustomButtonDPIAdvActivate.Location = new Point(40, 268);
             CustomButtonDPIAdvActivate.Name = "CustomButtonDPIAdvActivate";
             CustomButtonDPIAdvActivate.RoundedCorners = 5;
             CustomButtonDPIAdvActivate.SelectionColor = Color.LightBlue;
@@ -2038,7 +2040,7 @@
             TabPageTools.Controls.Add(CustomButtonToolsIpScanner);
             TabPageTools.Location = new Point(4, 25);
             TabPageTools.Name = "TabPageTools";
-            TabPageTools.Size = new Size(692, 371);
+            TabPageTools.Size = new Size(771, 371);
             TabPageTools.TabIndex = 3;
             TabPageTools.Tag = 1;
             TabPageTools.Text = "Tools";
@@ -2120,7 +2122,7 @@
             TabPageSettings.Location = new Point(4, 25);
             TabPageSettings.Name = "TabPageSettings";
             TabPageSettings.Padding = new Padding(3);
-            TabPageSettings.Size = new Size(692, 371);
+            TabPageSettings.Size = new Size(771, 371);
             TabPageSettings.TabIndex = 1;
             TabPageSettings.Tag = 2;
             TabPageSettings.Text = "Settings";
@@ -2146,10 +2148,10 @@
             CustomTabControlSettings.Name = "CustomTabControlSettings";
             CustomTabControlSettings.RightToLeft = RightToLeft.No;
             CustomTabControlSettings.SelectedIndex = 0;
-            CustomTabControlSettings.Size = new Size(686, 365);
+            CustomTabControlSettings.Size = new Size(765, 365);
             CustomTabControlSettings.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSettings.TabIndex = 10;
-            CustomTabControlSettings.Tag = 7;
+            CustomTabControlSettings.Tag = 0;
             // 
             // TabPageSettingsWorkingMode
             // 
@@ -2164,7 +2166,7 @@
             TabPageSettingsWorkingMode.Location = new Point(94, 4);
             TabPageSettingsWorkingMode.Name = "TabPageSettingsWorkingMode";
             TabPageSettingsWorkingMode.Padding = new Padding(3);
-            TabPageSettingsWorkingMode.Size = new Size(588, 357);
+            TabPageSettingsWorkingMode.Size = new Size(667, 357);
             TabPageSettingsWorkingMode.TabIndex = 0;
             TabPageSettingsWorkingMode.Tag = 0;
             TabPageSettingsWorkingMode.Text = "Working mode";
@@ -2193,7 +2195,7 @@
             CustomLabelSettingWorkingModeSetDohPort.Location = new Point(65, 180);
             CustomLabelSettingWorkingModeSetDohPort.Name = "CustomLabelSettingWorkingModeSetDohPort";
             CustomLabelSettingWorkingModeSetDohPort.RoundedCorners = 0;
-            CustomLabelSettingWorkingModeSetDohPort.Size = new Size(106, 15);
+            CustomLabelSettingWorkingModeSetDohPort.Size = new Size(108, 17);
             CustomLabelSettingWorkingModeSetDohPort.TabIndex = 5;
             CustomLabelSettingWorkingModeSetDohPort.Text = "Set local DoH port:";
             // 
@@ -2223,7 +2225,7 @@
             CustomLabelSettingInfoWorkingMode2.Location = new Point(50, 334);
             CustomLabelSettingInfoWorkingMode2.Name = "CustomLabelSettingInfoWorkingMode2";
             CustomLabelSettingInfoWorkingMode2.RoundedCorners = 0;
-            CustomLabelSettingInfoWorkingMode2.Size = new Size(262, 15);
+            CustomLabelSettingInfoWorkingMode2.Size = new Size(264, 17);
             CustomLabelSettingInfoWorkingMode2.TabIndex = 3;
             CustomLabelSettingInfoWorkingMode2.Text = "* Reconnect is require for changes to take effect.";
             // 
@@ -2269,7 +2271,7 @@
             CustomLabelSettingInfoWorkingMode1.Location = new Point(50, 35);
             CustomLabelSettingInfoWorkingMode1.Name = "CustomLabelSettingInfoWorkingMode1";
             CustomLabelSettingInfoWorkingMode1.RoundedCorners = 0;
-            CustomLabelSettingInfoWorkingMode1.Size = new Size(394, 30);
+            CustomLabelSettingInfoWorkingMode1.Size = new Size(396, 32);
             CustomLabelSettingInfoWorkingMode1.TabIndex = 0;
             CustomLabelSettingInfoWorkingMode1.Text = "Legacy DNS Server: You can set and unset DNS easily.\r\nDNS Over HTTPS Server: You need to install certificate and set it manually.";
             // 
@@ -2285,7 +2287,7 @@
             TabPageSettingsCheck.Location = new Point(94, 4);
             TabPageSettingsCheck.Name = "TabPageSettingsCheck";
             TabPageSettingsCheck.Padding = new Padding(3);
-            TabPageSettingsCheck.Size = new Size(588, 357);
+            TabPageSettingsCheck.Size = new Size(667, 357);
             TabPageSettingsCheck.TabIndex = 3;
             TabPageSettingsCheck.Tag = 1;
             TabPageSettingsCheck.Text = "Check";
@@ -2302,7 +2304,7 @@
             CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolDoH);
             CustomGroupBoxSettingCheckDnsProtocol.Location = new Point(4, 105);
             CustomGroupBoxSettingCheckDnsProtocol.Name = "CustomGroupBoxSettingCheckDnsProtocol";
-            CustomGroupBoxSettingCheckDnsProtocol.Size = new Size(580, 87);
+            CustomGroupBoxSettingCheckDnsProtocol.Size = new Size(659, 87);
             CustomGroupBoxSettingCheckDnsProtocol.TabIndex = 13;
             CustomGroupBoxSettingCheckDnsProtocol.TabStop = false;
             CustomGroupBoxSettingCheckDnsProtocol.Text = "Select protocol";
@@ -2411,7 +2413,7 @@
             CustomGroupBoxSettingCheckSDNS.Location = new Point(4, 196);
             CustomGroupBoxSettingCheckSDNS.Margin = new Padding(1);
             CustomGroupBoxSettingCheckSDNS.Name = "CustomGroupBoxSettingCheckSDNS";
-            CustomGroupBoxSettingCheckSDNS.Size = new Size(580, 65);
+            CustomGroupBoxSettingCheckSDNS.Size = new Size(659, 65);
             CustomGroupBoxSettingCheckSDNS.TabIndex = 11;
             CustomGroupBoxSettingCheckSDNS.TabStop = false;
             CustomGroupBoxSettingCheckSDNS.Text = "sdns:// servers must have";
@@ -2498,7 +2500,7 @@
             CustomLabelSettingCheckDPIInfo.Location = new Point(15, 65);
             CustomLabelSettingCheckDPIInfo.Name = "CustomLabelSettingCheckDPIInfo";
             CustomLabelSettingCheckDPIInfo.RoundedCorners = 0;
-            CustomLabelSettingCheckDPIInfo.Size = new Size(257, 15);
+            CustomLabelSettingCheckDPIInfo.Size = new Size(259, 17);
             CustomLabelSettingCheckDPIInfo.TabIndex = 10;
             CustomLabelSettingCheckDPIInfo.Text = "A DNS based blocked website to check. https://";
             // 
@@ -2513,7 +2515,7 @@
             CustomLabelSettingCheckTimeout.Location = new Point(15, 25);
             CustomLabelSettingCheckTimeout.Name = "CustomLabelSettingCheckTimeout";
             CustomLabelSettingCheckTimeout.RoundedCorners = 0;
-            CustomLabelSettingCheckTimeout.Size = new Size(142, 15);
+            CustomLabelSettingCheckTimeout.Size = new Size(144, 17);
             CustomLabelSettingCheckTimeout.TabIndex = 2;
             CustomLabelSettingCheckTimeout.Text = "Check timeout (seconds):";
             // 
@@ -2543,7 +2545,7 @@
             TabPageSettingsConnect.Location = new Point(94, 4);
             TabPageSettingsConnect.Name = "TabPageSettingsConnect";
             TabPageSettingsConnect.Padding = new Padding(3);
-            TabPageSettingsConnect.Size = new Size(588, 357);
+            TabPageSettingsConnect.Size = new Size(667, 357);
             TabPageSettingsConnect.TabIndex = 4;
             TabPageSettingsConnect.Tag = 2;
             TabPageSettingsConnect.Text = "Connect";
@@ -2588,7 +2590,7 @@
             CustomLabelSettingCamouflageDnsPort.Location = new Point(50, 150);
             CustomLabelSettingCamouflageDnsPort.Name = "CustomLabelSettingCamouflageDnsPort";
             CustomLabelSettingCamouflageDnsPort.RoundedCorners = 0;
-            CustomLabelSettingCamouflageDnsPort.Size = new Size(160, 15);
+            CustomLabelSettingCamouflageDnsPort.Size = new Size(162, 17);
             CustomLabelSettingCamouflageDnsPort.TabIndex = 15;
             CustomLabelSettingCamouflageDnsPort.Text = "Camouflage DNS server port:";
             // 
@@ -2616,7 +2618,7 @@
             CustomLabelSettingMaxServers.Location = new Point(50, 100);
             CustomLabelSettingMaxServers.Name = "CustomLabelSettingMaxServers";
             CustomLabelSettingMaxServers.RoundedCorners = 0;
-            CustomLabelSettingMaxServers.Size = new Size(223, 15);
+            CustomLabelSettingMaxServers.Size = new Size(225, 17);
             CustomLabelSettingMaxServers.TabIndex = 6;
             CustomLabelSettingMaxServers.Text = "Maximum number of servers to connect:";
             // 
@@ -2632,7 +2634,7 @@
             TabPageSettingsSetUnsetDNS.Location = new Point(94, 4);
             TabPageSettingsSetUnsetDNS.Name = "TabPageSettingsSetUnsetDNS";
             TabPageSettingsSetUnsetDNS.Padding = new Padding(3);
-            TabPageSettingsSetUnsetDNS.Size = new Size(588, 357);
+            TabPageSettingsSetUnsetDNS.Size = new Size(667, 357);
             TabPageSettingsSetUnsetDNS.TabIndex = 5;
             TabPageSettingsSetUnsetDNS.Tag = 3;
             TabPageSettingsSetUnsetDNS.Text = "Set/Unset DNS";
@@ -2702,7 +2704,7 @@
             CustomLabelSettingUnsetDns2.Location = new Point(110, 140);
             CustomLabelSettingUnsetDns2.Name = "CustomLabelSettingUnsetDns2";
             CustomLabelSettingUnsetDns2.RoundedCorners = 0;
-            CustomLabelSettingUnsetDns2.Size = new Size(65, 15);
+            CustomLabelSettingUnsetDns2.Size = new Size(67, 17);
             CustomLabelSettingUnsetDns2.TabIndex = 3;
             CustomLabelSettingUnsetDns2.Text = "Secondary:";
             // 
@@ -2717,7 +2719,7 @@
             CustomLabelSettingUnsetDns1.Location = new Point(110, 105);
             CustomLabelSettingUnsetDns1.Name = "CustomLabelSettingUnsetDns1";
             CustomLabelSettingUnsetDns1.RoundedCorners = 0;
-            CustomLabelSettingUnsetDns1.Size = new Size(51, 15);
+            CustomLabelSettingUnsetDns1.Size = new Size(53, 17);
             CustomLabelSettingUnsetDns1.TabIndex = 2;
             CustomLabelSettingUnsetDns1.Text = "Primary:";
             // 
@@ -2731,10 +2733,10 @@
             CustomRadioButtonSettingUnsetDnsToStatic.Location = new Point(50, 70);
             CustomRadioButtonSettingUnsetDnsToStatic.Name = "CustomRadioButtonSettingUnsetDnsToStatic";
             CustomRadioButtonSettingUnsetDnsToStatic.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingUnsetDnsToStatic.Size = new Size(131, 17);
+            CustomRadioButtonSettingUnsetDnsToStatic.Size = new Size(128, 17);
             CustomRadioButtonSettingUnsetDnsToStatic.TabIndex = 1;
             CustomRadioButtonSettingUnsetDnsToStatic.TabStop = true;
-            CustomRadioButtonSettingUnsetDnsToStatic.Text = "Unset DNS to Static.";
+            CustomRadioButtonSettingUnsetDnsToStatic.Text = "Unset DNS to Static";
             CustomRadioButtonSettingUnsetDnsToStatic.UseVisualStyleBackColor = false;
             // 
             // CustomRadioButtonSettingUnsetDnsToDhcp
@@ -2758,7 +2760,7 @@
             TabPageSettingsShare.Location = new Point(94, 4);
             TabPageSettingsShare.Name = "TabPageSettingsShare";
             TabPageSettingsShare.Padding = new Padding(3);
-            TabPageSettingsShare.Size = new Size(588, 357);
+            TabPageSettingsShare.Size = new Size(667, 357);
             TabPageSettingsShare.TabIndex = 6;
             TabPageSettingsShare.Tag = 4;
             TabPageSettingsShare.Text = "Share";
@@ -2773,7 +2775,8 @@
             CustomTabControlSettingHttpProxy.Location = new Point(3, 3);
             CustomTabControlSettingHttpProxy.Name = "CustomTabControlSettingHttpProxy";
             CustomTabControlSettingHttpProxy.SelectedIndex = 0;
-            CustomTabControlSettingHttpProxy.Size = new Size(582, 351);
+            CustomTabControlSettingHttpProxy.Size = new Size(661, 351);
+            CustomTabControlSettingHttpProxy.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSettingHttpProxy.TabIndex = 49;
             CustomTabControlSettingHttpProxy.Tag = 0;
             // 
@@ -2797,7 +2800,7 @@
             TabPageSettingHttpProxyBasic.Location = new Point(4, 25);
             TabPageSettingHttpProxyBasic.Name = "TabPageSettingHttpProxyBasic";
             TabPageSettingHttpProxyBasic.Padding = new Padding(3);
-            TabPageSettingHttpProxyBasic.Size = new Size(574, 322);
+            TabPageSettingHttpProxyBasic.Size = new Size(653, 322);
             TabPageSettingHttpProxyBasic.TabIndex = 0;
             TabPageSettingHttpProxyBasic.Tag = 0;
             TabPageSettingHttpProxyBasic.Text = "Basic";
@@ -2826,7 +2829,7 @@
             CustomLabelSettingHTTPProxyKillRequestTimeout.Location = new Point(6, 65);
             CustomLabelSettingHTTPProxyKillRequestTimeout.Name = "CustomLabelSettingHTTPProxyKillRequestTimeout";
             CustomLabelSettingHTTPProxyKillRequestTimeout.RoundedCorners = 0;
-            CustomLabelSettingHTTPProxyKillRequestTimeout.Size = new Size(158, 15);
+            CustomLabelSettingHTTPProxyKillRequestTimeout.Size = new Size(160, 17);
             CustomLabelSettingHTTPProxyKillRequestTimeout.TabIndex = 55;
             CustomLabelSettingHTTPProxyKillRequestTimeout.Text = "Kill request on timeout (sec):";
             // 
@@ -2897,7 +2900,7 @@
             CustomLabelSettingHTTPProxyUpstreamPort.Location = new Point(330, 168);
             CustomLabelSettingHTTPProxyUpstreamPort.Name = "CustomLabelSettingHTTPProxyUpstreamPort";
             CustomLabelSettingHTTPProxyUpstreamPort.RoundedCorners = 0;
-            CustomLabelSettingHTTPProxyUpstreamPort.Size = new Size(32, 15);
+            CustomLabelSettingHTTPProxyUpstreamPort.Size = new Size(34, 17);
             CustomLabelSettingHTTPProxyUpstreamPort.TabIndex = 49;
             CustomLabelSettingHTTPProxyUpstreamPort.Text = "Port:";
             // 
@@ -2912,7 +2915,7 @@
             CustomLabelSettingHTTPProxyUpstreamHost.Location = new Point(113, 168);
             CustomLabelSettingHTTPProxyUpstreamHost.Name = "CustomLabelSettingHTTPProxyUpstreamHost";
             CustomLabelSettingHTTPProxyUpstreamHost.RoundedCorners = 0;
-            CustomLabelSettingHTTPProxyUpstreamHost.Size = new Size(35, 15);
+            CustomLabelSettingHTTPProxyUpstreamHost.Size = new Size(37, 17);
             CustomLabelSettingHTTPProxyUpstreamHost.TabIndex = 48;
             CustomLabelSettingHTTPProxyUpstreamHost.Text = "Host:";
             // 
@@ -2956,7 +2959,7 @@
             CustomLabelSettingHTTPProxyPort.Location = new Point(6, 25);
             CustomLabelSettingHTTPProxyPort.Name = "CustomLabelSettingHTTPProxyPort";
             CustomLabelSettingHTTPProxyPort.RoundedCorners = 0;
-            CustomLabelSettingHTTPProxyPort.Size = new Size(99, 15);
+            CustomLabelSettingHTTPProxyPort.Size = new Size(101, 17);
             CustomLabelSettingHTTPProxyPort.TabIndex = 42;
             CustomLabelSettingHTTPProxyPort.Text = "HTTP Proxy. Port:";
             // 
@@ -2987,7 +2990,7 @@
             CustomLabelSettingHTTPProxyHandleRequests.Location = new Point(190, 25);
             CustomLabelSettingHTTPProxyHandleRequests.Name = "CustomLabelSettingHTTPProxyHandleRequests";
             CustomLabelSettingHTTPProxyHandleRequests.RoundedCorners = 0;
-            CustomLabelSettingHTTPProxyHandleRequests.Size = new Size(95, 15);
+            CustomLabelSettingHTTPProxyHandleRequests.Size = new Size(97, 17);
             CustomLabelSettingHTTPProxyHandleRequests.TabIndex = 43;
             CustomLabelSettingHTTPProxyHandleRequests.Text = "Handle requests:";
             // 
@@ -3023,7 +3026,7 @@
             TabPageSettingHttpProxyAdvanced.Controls.Add(CustomButtonSettingHTTPProxyDontBypass);
             TabPageSettingHttpProxyAdvanced.Controls.Add(CustomLabelSettingHTTPProxyDontBypass);
             TabPageSettingHttpProxyAdvanced.Controls.Add(CustomCheckBoxSettingHTTPProxyEnableDontBypass);
-            TabPageSettingHttpProxyAdvanced.Controls.Add(customLabel1);
+            TabPageSettingHttpProxyAdvanced.Controls.Add(CustomLabelSettingShareSeparator3);
             TabPageSettingHttpProxyAdvanced.Controls.Add(CustomButtonSettingHTTPProxyBlackWhiteList);
             TabPageSettingHttpProxyAdvanced.Controls.Add(CustomCheckBoxSettingHTTPProxyEnableFakeProxy);
             TabPageSettingHttpProxyAdvanced.Controls.Add(CustomLabelSettingHTTPProxyBlackWhiteList);
@@ -3038,14 +3041,13 @@
             TabPageSettingHttpProxyAdvanced.Location = new Point(4, 25);
             TabPageSettingHttpProxyAdvanced.Name = "TabPageSettingHttpProxyAdvanced";
             TabPageSettingHttpProxyAdvanced.Padding = new Padding(3);
-            TabPageSettingHttpProxyAdvanced.Size = new Size(574, 322);
+            TabPageSettingHttpProxyAdvanced.Size = new Size(653, 322);
             TabPageSettingHttpProxyAdvanced.TabIndex = 1;
             TabPageSettingHttpProxyAdvanced.Tag = 1;
             TabPageSettingHttpProxyAdvanced.Text = "Advanced";
             // 
             // CustomButtonSettingHTTPProxyDontBypass
             // 
-            CustomButtonSettingHTTPProxyDontBypass.AutoSize = true;
             CustomButtonSettingHTTPProxyDontBypass.BorderColor = Color.Blue;
             CustomButtonSettingHTTPProxyDontBypass.FlatStyle = FlatStyle.Flat;
             CustomButtonSettingHTTPProxyDontBypass.Location = new Point(210, 258);
@@ -3069,7 +3071,7 @@
             CustomLabelSettingHTTPProxyDontBypass.Location = new Point(22, 255);
             CustomLabelSettingHTTPProxyDontBypass.Name = "CustomLabelSettingHTTPProxyDontBypass";
             CustomLabelSettingHTTPProxyDontBypass.RoundedCorners = 0;
-            CustomLabelSettingHTTPProxyDontBypass.Size = new Size(146, 30);
+            CustomLabelSettingHTTPProxyDontBypass.Size = new Size(148, 32);
             CustomLabelSettingHTTPProxyDontBypass.TabIndex = 15;
             CustomLabelSettingHTTPProxyDontBypass.Text = "Each line one domain. e.g:\r\n stackoverflow.com";
             // 
@@ -3087,22 +3089,21 @@
             CustomCheckBoxSettingHTTPProxyEnableDontBypass.Text = "Enable Don't Bypass DPI List (Don't apply DPI Bypass to these domains)";
             CustomCheckBoxSettingHTTPProxyEnableDontBypass.UseVisualStyleBackColor = false;
             // 
-            // customLabel1
+            // CustomLabelSettingShareSeparator3
             // 
-            customLabel1.BackColor = Color.DimGray;
-            customLabel1.Border = true;
-            customLabel1.BorderColor = Color.Blue;
-            customLabel1.FlatStyle = FlatStyle.Flat;
-            customLabel1.ForeColor = Color.White;
-            customLabel1.Location = new Point(12, 225);
-            customLabel1.Name = "customLabel1";
-            customLabel1.RoundedCorners = 0;
-            customLabel1.Size = new Size(550, 1);
-            customLabel1.TabIndex = 13;
+            CustomLabelSettingShareSeparator3.BackColor = Color.DimGray;
+            CustomLabelSettingShareSeparator3.Border = true;
+            CustomLabelSettingShareSeparator3.BorderColor = Color.Blue;
+            CustomLabelSettingShareSeparator3.FlatStyle = FlatStyle.Flat;
+            CustomLabelSettingShareSeparator3.ForeColor = Color.White;
+            CustomLabelSettingShareSeparator3.Location = new Point(12, 225);
+            CustomLabelSettingShareSeparator3.Name = "CustomLabelSettingShareSeparator3";
+            CustomLabelSettingShareSeparator3.RoundedCorners = 0;
+            CustomLabelSettingShareSeparator3.Size = new Size(550, 1);
+            CustomLabelSettingShareSeparator3.TabIndex = 13;
             // 
             // CustomButtonSettingHTTPProxyBlackWhiteList
             // 
-            CustomButtonSettingHTTPProxyBlackWhiteList.AutoSize = true;
             CustomButtonSettingHTTPProxyBlackWhiteList.BorderColor = Color.Blue;
             CustomButtonSettingHTTPProxyBlackWhiteList.FlatStyle = FlatStyle.Flat;
             CustomButtonSettingHTTPProxyBlackWhiteList.Location = new Point(210, 179);
@@ -3140,7 +3141,7 @@
             CustomLabelSettingHTTPProxyBlackWhiteList.Location = new Point(22, 185);
             CustomLabelSettingHTTPProxyBlackWhiteList.Name = "CustomLabelSettingHTTPProxyBlackWhiteList";
             CustomLabelSettingHTTPProxyBlackWhiteList.RoundedCorners = 0;
-            CustomLabelSettingHTTPProxyBlackWhiteList.Size = new Size(146, 30);
+            CustomLabelSettingHTTPProxyBlackWhiteList.Size = new Size(148, 32);
             CustomLabelSettingHTTPProxyBlackWhiteList.TabIndex = 10;
             CustomLabelSettingHTTPProxyBlackWhiteList.Text = "Each line one domain. e.g:\r\n google.com";
             // 
@@ -3250,13 +3251,12 @@
             CustomLabelSettingHTTPProxyFakeDNS.Location = new Point(22, 110);
             CustomLabelSettingHTTPProxyFakeDNS.Name = "CustomLabelSettingHTTPProxyFakeDNS";
             CustomLabelSettingHTTPProxyFakeDNS.RoundedCorners = 0;
-            CustomLabelSettingHTTPProxyFakeDNS.Size = new Size(132, 30);
+            CustomLabelSettingHTTPProxyFakeDNS.Size = new Size(134, 32);
             CustomLabelSettingHTTPProxyFakeDNS.TabIndex = 4;
             CustomLabelSettingHTTPProxyFakeDNS.Text = "Each line one rule. e.g:\r\n dns.google.com|8.8.8.8";
             // 
             // CustomButtonSettingHTTPProxyFakeDNS
             // 
-            CustomButtonSettingHTTPProxyFakeDNS.AutoSize = true;
             CustomButtonSettingHTTPProxyFakeDNS.BorderColor = Color.Blue;
             CustomButtonSettingHTTPProxyFakeDNS.FlatStyle = FlatStyle.Flat;
             CustomButtonSettingHTTPProxyFakeDNS.Location = new Point(210, 100);
@@ -3282,7 +3282,7 @@
             TabPageSettingsFakeProxy.Location = new Point(94, 4);
             TabPageSettingsFakeProxy.Name = "TabPageSettingsFakeProxy";
             TabPageSettingsFakeProxy.Padding = new Padding(3);
-            TabPageSettingsFakeProxy.Size = new Size(588, 357);
+            TabPageSettingsFakeProxy.Size = new Size(667, 357);
             TabPageSettingsFakeProxy.TabIndex = 7;
             TabPageSettingsFakeProxy.Tag = 5;
             TabPageSettingsFakeProxy.Text = "Fake Proxy";
@@ -3352,7 +3352,7 @@
             CustomLabelSettingFakeProxyDohCleanIP.Location = new Point(20, 150);
             CustomLabelSettingFakeProxyDohCleanIP.Name = "CustomLabelSettingFakeProxyDohCleanIP";
             CustomLabelSettingFakeProxyDohCleanIP.RoundedCorners = 0;
-            CustomLabelSettingFakeProxyDohCleanIP.Size = new Size(100, 15);
+            CustomLabelSettingFakeProxyDohCleanIP.Size = new Size(102, 17);
             CustomLabelSettingFakeProxyDohCleanIP.TabIndex = 50;
             CustomLabelSettingFakeProxyDohCleanIP.Text = "The DoH clean IP:";
             // 
@@ -3367,7 +3367,7 @@
             CustomLabelSettingFakeProxyDohAddress.Location = new Point(20, 100);
             CustomLabelSettingFakeProxyDohAddress.Name = "CustomLabelSettingFakeProxyDohAddress";
             CustomLabelSettingFakeProxyDohAddress.RoundedCorners = 0;
-            CustomLabelSettingFakeProxyDohAddress.Size = new Size(88, 15);
+            CustomLabelSettingFakeProxyDohAddress.Size = new Size(90, 17);
             CustomLabelSettingFakeProxyDohAddress.TabIndex = 49;
             CustomLabelSettingFakeProxyDohAddress.Text = "A DoH address:";
             // 
@@ -3383,7 +3383,7 @@
             CustomLabelSettingFakeProxyInfo.Location = new Point(20, 10);
             CustomLabelSettingFakeProxyInfo.Name = "CustomLabelSettingFakeProxyInfo";
             CustomLabelSettingFakeProxyInfo.RoundedCorners = 0;
-            CustomLabelSettingFakeProxyInfo.Size = new Size(247, 21);
+            CustomLabelSettingFakeProxyInfo.Size = new Size(249, 23);
             CustomLabelSettingFakeProxyInfo.TabIndex = 48;
             CustomLabelSettingFakeProxyInfo.Text = "Fake Proxy is use to bypass a DoH.";
             // 
@@ -3411,7 +3411,7 @@
             CustomLabelSettingFakeProxyPort.Location = new Point(20, 50);
             CustomLabelSettingFakeProxyPort.Name = "CustomLabelSettingFakeProxyPort";
             CustomLabelSettingFakeProxyPort.RoundedCorners = 0;
-            CustomLabelSettingFakeProxyPort.Size = new Size(95, 15);
+            CustomLabelSettingFakeProxyPort.Size = new Size(97, 17);
             CustomLabelSettingFakeProxyPort.TabIndex = 0;
             CustomLabelSettingFakeProxyPort.Text = "Fake Proxy. Port:";
             // 
@@ -3429,7 +3429,7 @@
             TabPageSettingsCPU.Location = new Point(94, 4);
             TabPageSettingsCPU.Name = "TabPageSettingsCPU";
             TabPageSettingsCPU.Padding = new Padding(3);
-            TabPageSettingsCPU.Size = new Size(588, 357);
+            TabPageSettingsCPU.Size = new Size(667, 357);
             TabPageSettingsCPU.TabIndex = 1;
             TabPageSettingsCPU.Tag = 6;
             TabPageSettingsCPU.Text = "CPU";
@@ -3458,7 +3458,7 @@
             CustomLabelSettingCpuKillProxyRequests.Location = new Point(50, 230);
             CustomLabelSettingCpuKillProxyRequests.Name = "CustomLabelSettingCpuKillProxyRequests";
             CustomLabelSettingCpuKillProxyRequests.RoundedCorners = 0;
-            CustomLabelSettingCpuKillProxyRequests.Size = new Size(231, 15);
+            CustomLabelSettingCpuKillProxyRequests.Size = new Size(233, 17);
             CustomLabelSettingCpuKillProxyRequests.TabIndex = 6;
             CustomLabelSettingCpuKillProxyRequests.Text = "Kill Proxy requests when CPU is above (%):";
             // 
@@ -3545,7 +3545,7 @@
             CustomLabelSettingInfoCPU.Location = new Point(50, 35);
             CustomLabelSettingInfoCPU.Name = "CustomLabelSettingInfoCPU";
             CustomLabelSettingInfoCPU.RoundedCorners = 0;
-            CustomLabelSettingInfoCPU.Size = new Size(132, 15);
+            CustomLabelSettingInfoCPU.Size = new Size(134, 17);
             CustomLabelSettingInfoCPU.TabIndex = 0;
             CustomLabelSettingInfoCPU.Text = "Set processing priorities";
             // 
@@ -3569,7 +3569,7 @@
             TabPageSettingsOthers.Location = new Point(94, 4);
             TabPageSettingsOthers.Name = "TabPageSettingsOthers";
             TabPageSettingsOthers.Padding = new Padding(3);
-            TabPageSettingsOthers.Size = new Size(588, 357);
+            TabPageSettingsOthers.Size = new Size(667, 357);
             TabPageSettingsOthers.TabIndex = 2;
             TabPageSettingsOthers.Tag = 7;
             TabPageSettingsOthers.Text = "Others";
@@ -3579,7 +3579,7 @@
             CustomButtonImportUserData.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             CustomButtonImportUserData.BorderColor = Color.Blue;
             CustomButtonImportUserData.FlatStyle = FlatStyle.Flat;
-            CustomButtonImportUserData.Location = new Point(476, 324);
+            CustomButtonImportUserData.Location = new Point(555, 324);
             CustomButtonImportUserData.Name = "CustomButtonImportUserData";
             CustomButtonImportUserData.RoundedCorners = 5;
             CustomButtonImportUserData.SelectionColor = Color.LightBlue;
@@ -3594,7 +3594,7 @@
             CustomButtonExportUserData.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             CustomButtonExportUserData.BorderColor = Color.Blue;
             CustomButtonExportUserData.FlatStyle = FlatStyle.Flat;
-            CustomButtonExportUserData.Location = new Point(368, 324);
+            CustomButtonExportUserData.Location = new Point(447, 324);
             CustomButtonExportUserData.Name = "CustomButtonExportUserData";
             CustomButtonExportUserData.RoundedCorners = 5;
             CustomButtonExportUserData.SelectionColor = Color.LightBlue;
@@ -3643,7 +3643,7 @@
             CustomLabelSettingFallbackDnsPort.Location = new Point(275, 70);
             CustomLabelSettingFallbackDnsPort.Name = "CustomLabelSettingFallbackDnsPort";
             CustomLabelSettingFallbackDnsPort.RoundedCorners = 0;
-            CustomLabelSettingFallbackDnsPort.Size = new Size(104, 15);
+            CustomLabelSettingFallbackDnsPort.Size = new Size(106, 17);
             CustomLabelSettingFallbackDnsPort.TabIndex = 12;
             CustomLabelSettingFallbackDnsPort.Text = "Fallback DNS Port:";
             // 
@@ -3686,7 +3686,7 @@
             CustomLabelSettingFallbackDnsIP.Location = new Point(15, 70);
             CustomLabelSettingFallbackDnsIP.Name = "CustomLabelSettingFallbackDnsIP";
             CustomLabelSettingFallbackDnsIP.RoundedCorners = 0;
-            CustomLabelSettingFallbackDnsIP.Size = new Size(92, 15);
+            CustomLabelSettingFallbackDnsIP.Size = new Size(94, 17);
             CustomLabelSettingFallbackDnsIP.TabIndex = 10;
             CustomLabelSettingFallbackDnsIP.Text = "Fallback DNS IP:";
             // 
@@ -3714,7 +3714,7 @@
             CustomLabelSettingBootstrapDnsPort.Location = new Point(275, 20);
             CustomLabelSettingBootstrapDnsPort.Name = "CustomLabelSettingBootstrapDnsPort";
             CustomLabelSettingBootstrapDnsPort.RoundedCorners = 0;
-            CustomLabelSettingBootstrapDnsPort.Size = new Size(112, 15);
+            CustomLabelSettingBootstrapDnsPort.Size = new Size(114, 17);
             CustomLabelSettingBootstrapDnsPort.TabIndex = 8;
             CustomLabelSettingBootstrapDnsPort.Text = "Bootstrap DNS Port:";
             // 
@@ -3758,7 +3758,7 @@
             CustomLabelSettingBootstrapDnsIP.Location = new Point(15, 20);
             CustomLabelSettingBootstrapDnsIP.Name = "CustomLabelSettingBootstrapDnsIP";
             CustomLabelSettingBootstrapDnsIP.RoundedCorners = 0;
-            CustomLabelSettingBootstrapDnsIP.Size = new Size(100, 15);
+            CustomLabelSettingBootstrapDnsIP.Size = new Size(102, 17);
             CustomLabelSettingBootstrapDnsIP.TabIndex = 3;
             CustomLabelSettingBootstrapDnsIP.Text = "Bootstrap DNS IP:";
             // 
@@ -3823,7 +3823,7 @@
             TabPageAbout.Location = new Point(4, 25);
             TabPageAbout.Name = "TabPageAbout";
             TabPageAbout.Padding = new Padding(3);
-            TabPageAbout.Size = new Size(692, 371);
+            TabPageAbout.Size = new Size(771, 371);
             TabPageAbout.TabIndex = 2;
             TabPageAbout.Tag = 3;
             TabPageAbout.Text = "About";
@@ -4005,7 +4005,7 @@
             CustomButtonToggleLogView.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             CustomButtonToggleLogView.BorderColor = Color.Blue;
             CustomButtonToggleLogView.FlatStyle = FlatStyle.Flat;
-            CustomButtonToggleLogView.Location = new Point(148, 366);
+            CustomButtonToggleLogView.Location = new Point(169, 366);
             CustomButtonToggleLogView.Name = "CustomButtonToggleLogView";
             CustomButtonToggleLogView.RoundedCorners = 5;
             CustomButtonToggleLogView.SelectionColor = Color.LightBlue;
@@ -4013,6 +4013,7 @@
             CustomButtonToggleLogView.TabIndex = 10;
             CustomButtonToggleLogView.Text = "T";
             CustomButtonToggleLogView.UseVisualStyleBackColor = true;
+            CustomButtonToggleLogView.Visible = false;
             CustomButtonToggleLogView.Click += CustomButtonToggleLogView_Click;
             // 
             // NotifyIconMain
@@ -4055,7 +4056,7 @@
             CustomGroupBoxStatus.Location = new Point(0, 0);
             CustomGroupBoxStatus.Margin = new Padding(1);
             CustomGroupBoxStatus.Name = "CustomGroupBoxStatus";
-            CustomGroupBoxStatus.Size = new Size(180, 400);
+            CustomGroupBoxStatus.Size = new Size(201, 400);
             CustomGroupBoxStatus.TabIndex = 8;
             CustomGroupBoxStatus.TabStop = false;
             CustomGroupBoxStatus.Text = "Status";
@@ -4520,9 +4521,8 @@
             // 
             // SplitContainerMain
             // 
-            SplitContainerMain.BackColor = Color.Transparent;
+            SplitContainerMain.BackColor = Color.IndianRed;
             SplitContainerMain.Dock = DockStyle.Fill;
-            SplitContainerMain.IsSplitterFixed = true;
             SplitContainerMain.Location = new Point(0, 0);
             SplitContainerMain.Name = "SplitContainerMain";
             SplitContainerMain.Orientation = Orientation.Horizontal;
@@ -4530,18 +4530,20 @@
             // SplitContainerMain.Panel1
             // 
             SplitContainerMain.Panel1.Controls.Add(SplitContainerTop);
+            SplitContainerMain.Panel1MinSize = 400;
             // 
             // SplitContainerMain.Panel2
             // 
             SplitContainerMain.Panel2.Controls.Add(CustomGroupBoxLog);
-            SplitContainerMain.Size = new Size(884, 581);
+            SplitContainerMain.Panel2MinSize = 100;
+            SplitContainerMain.Size = new Size(984, 581);
             SplitContainerMain.SplitterDistance = 400;
             SplitContainerMain.TabIndex = 9;
             // 
             // SplitContainerTop
             // 
+            SplitContainerTop.BackColor = Color.DimGray;
             SplitContainerTop.Dock = DockStyle.Fill;
-            SplitContainerTop.IsSplitterFixed = true;
             SplitContainerTop.Location = new Point(0, 0);
             SplitContainerTop.Name = "SplitContainerTop";
             // 
@@ -4554,24 +4556,23 @@
             // 
             SplitContainerTop.Panel2.Controls.Add(CustomGroupBoxStatus);
             SplitContainerTop.Panel2MinSize = 180;
-            SplitContainerTop.Size = new Size(884, 400);
-            SplitContainerTop.SplitterDistance = 700;
+            SplitContainerTop.Size = new Size(984, 400);
+            SplitContainerTop.SplitterDistance = 779;
             SplitContainerTop.TabIndex = 0;
             // 
             // FormMain
             // 
-            AcceptButton = CustomButtonCheck;
-            AutoScaleMode = AutoScaleMode.None;
-            ClientSize = new Size(884, 581);
+            AcceptButton = CustomButtonQuickConnect;
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            BackColor = Color.DimGray;
+            ClientSize = new Size(984, 581);
             Controls.Add(SplitContainerMain);
             DoubleBuffered = true;
-            FormBorderStyle = FormBorderStyle.FixedSingle;
             Icon = (Icon)resources.GetObject("$this.Icon");
-            MaximizeBox = false;
-            MaximumSize = new Size(900, 620);
-            MinimumSize = new Size(900, 435);
+            MinimumSize = new Size(900, 620);
             Name = "FormMain";
-            SizeGripStyle = SizeGripStyle.Hide;
+            SizeGripStyle = SizeGripStyle.Show;
             Text = "SecureDNSClient";
             FormClosing += FormMain_FormClosing;
             CustomGroupBoxLog.ResumeLayout(false);
@@ -4887,7 +4888,7 @@
         private CustomControls.CustomNumericUpDown CustomNumericUpDownSettingWorkingModeSetDohPort;
         private CustomControls.CustomLabel CustomLabelSettingHTTPProxyDontBypass;
         private CustomControls.CustomCheckBox CustomCheckBoxSettingHTTPProxyEnableDontBypass;
-        private CustomControls.CustomLabel customLabel1;
+        private CustomControls.CustomLabel CustomLabelSettingShareSeparator3;
         private CustomControls.CustomButton CustomButtonSettingHTTPProxyDontBypass;
         private CustomControls.CustomButton CustomButtonToolsDnsLookup;
         private CustomControls.CustomButton CustomButtonToolsStampReader;
