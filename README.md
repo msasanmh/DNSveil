@@ -11,6 +11,7 @@
 - *Hide SNI and website addresses from ISP.*
 - *Bypass YouTube, Twitter and any SNI/DNS based blocked websites.*
 - *Encode and decode DNSCrypt STAMP (sdns://).*
+- *Share to other devices via Proxy (HTTP, SOCKS4, SOCKS4A, SOCKS5).*
 
 **Requirements:** .Net Destop Runtime 6. (Installing both x86 and x64 are required)<br>
 [Download Runtime x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.21-windows-x64-installer)<br>
