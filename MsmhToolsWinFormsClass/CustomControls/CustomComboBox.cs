@@ -227,8 +227,7 @@ namespace CustomControls
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            if (!ApplicationIdle)
-                return;
+            if (!ApplicationIdle) return;
 
             Color backColor = GetBackColor();
             Color foreColor = GetForeColor();

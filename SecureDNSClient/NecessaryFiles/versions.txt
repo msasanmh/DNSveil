@@ -1,5 +1,5 @@
 dnscrypt-proxy 2.1.5
-dnslookup 1.9.2
-dnsproxy 0.54.0
-sdchttpproxy 2.3.6
+dnslookup 1.10.0
+dnsproxy 0.56.1
+sdcproxyserver 2.5.0
 goodbyedpi 0.2.2

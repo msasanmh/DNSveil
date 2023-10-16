@@ -123,18 +123,18 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] SDCHttpProxy {
+        internal static byte[] SDCProxyServer {
             get {
-                object obj = ResourceManager.GetObject("SDCHttpProxy", resourceCulture);
+                object obj = ResourceManager.GetObject("SDCProxyServer", resourceCulture);
                 return ((byte[])(obj));
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to dnscrypt-proxy 2.1.5
-        ///dnslookup 1.9.2
-        ///dnsproxy 0.54.0
-        ///sdchttpproxy 2.3.6
+        ///dnslookup 1.10.0
+        ///dnsproxy 0.56.1
+        ///sdcproxyserver 2.5.0
         ///goodbyedpi 0.2.2.
         /// </summary>
         internal static string versions {

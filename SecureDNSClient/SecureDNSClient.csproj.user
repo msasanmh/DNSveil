@@ -28,6 +28,9 @@
     <Compile Update="Forms\CustomServers.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\DefaultSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\FormCustomServers.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -76,7 +79,10 @@
     <Compile Update="Forms\SetProxy.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\ShareViaHttpProxy.cs">
+    <Compile Update="Forms\ShareViaProxy.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\TryConnectToFPNormally.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\TryToBypassFPUsingGoodbyeDPI.cs">

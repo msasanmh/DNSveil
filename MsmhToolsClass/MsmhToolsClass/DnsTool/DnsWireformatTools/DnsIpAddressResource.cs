@@ -1,54 +1,53 @@
 ﻿using System;
 using System.Net;
 
-namespace MsmhToolsClass.DnsTool.DnsWireformatTools
+namespace MsmhToolsClass.DnsTool.DnsWireformatTools;
+
+/// <summary>
+/// Represents a DNS resource record which contains an Internet Protocol address.
+/// See <see cref="DnsQueryType.A"/> and <see cref="DnsQueryType.AAAA"/>.
+/// </summary>
+public sealed class DnsIpAddressResource : IDnsResource, IEquatable<DnsIpAddressResource>
 {
     /// <summary>
-    /// Represents a DNS resource record which contains an Internet Protocol address.
-    /// See <see cref="DnsQueryType.A"/> and <see cref="DnsQueryType.AAAA"/>.
+    /// The Internet Protocol address.
     /// </summary>
-    public sealed class DnsIpAddressResource : IDnsResource, IEquatable<DnsIpAddressResource>
+    /// <value>
+    /// May be an IPv4 or IPv6 address, depending on the record type.
+    /// </value>
+    public IPAddress IPAddress { get; set; } = IPAddress.Loopback;
+
+    /// <inheritdoc/>
+    public bool Equals(DnsIpAddressResource? other) => IPAddress.Equals(other?.IPAddress);
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj) => obj is DnsIpAddressResource record ? Equals(record) : base.Equals(obj);
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => HashCode.Combine(IPAddress);
+
+    /// <inheritdoc/>
+    public void ReadBytes(ReadOnlyMemory<byte> bytes, ref int offset, int length)
     {
-        /// <summary>
-        /// The Internet Protocol address.
-        /// </summary>
-        /// <value>
-        /// May be an IPv4 or IPv6 address, depending on the record type.
-        /// </value>
-        public IPAddress IPAddress { get; set; } = IPAddress.Loopback;
+        var raw = DnsByteExtensions.ReadBytes(bytes, length, ref offset);
+        IPAddress = new IPAddress(raw.ToArray());
+    }
 
-        /// <inheritdoc/>
-        public bool Equals(DnsIpAddressResource? other) => IPAddress.Equals(other?.IPAddress);
+    /// <inheritdoc/>
+    public IEnumerable<IEnumerable<byte>> WriteBytes()
+    {
+        yield return IPAddress.GetAddressBytes();
+    }
 
-        /// <inheritdoc/>
-        public override bool Equals(object? obj) => obj is DnsIpAddressResource record ? Equals(record) : base.Equals(obj);
+    /// <inheritdoc/>
+    public override string ToString() => IPAddress.ToString();
 
-        /// <inheritdoc/>
-        public override int GetHashCode() => HashCode.Combine(IPAddress);
+    /// <inheritdoc/>
+    public void WriteBytes(Memory<byte> bytes, ref int offset)
+    {
+        Span<byte> address = IPAddress.GetAddressBytes();
 
-        /// <inheritdoc/>
-        public void ReadBytes(ReadOnlyMemory<byte> bytes, ref int offset, int length)
-        {
-            var raw = DnsByteExtensions.ReadBytes(bytes, length, ref offset);
-            IPAddress = new IPAddress(raw.ToArray());
-        }
-
-        /// <inheritdoc/>
-        public IEnumerable<IEnumerable<byte>> WriteBytes()
-        {
-            yield return IPAddress.GetAddressBytes();
-        }
-
-        /// <inheritdoc/>
-        public override string ToString() => IPAddress.ToString();
-
-        /// <inheritdoc/>
-        public void WriteBytes(Memory<byte> bytes, ref int offset)
-        {
-            Span<byte> address = IPAddress.GetAddressBytes();
-
-            address.CopyTo(bytes.Slice(offset).Span);
-            offset += address.Length;
-        }
+        address.CopyTo(bytes[offset..].Span);
+        offset += address.Length;
     }
 }

@@ -10,13 +10,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureDNSClient", "SecureDN
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureDNSClientPortable", "SecureDNSClientPortable\SecureDNSClientPortable.csproj", "{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SDCHttpProxy", "SDCHttpProxy\SDCHttpProxy.csproj", "{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsmhToolsClass", "MsmhToolsClass\MsmhToolsClass.csproj", "{3FCBF4E2-4039-4140-BA71-8D27CB76536B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsmhToolsWinFormsClass", "MsmhToolsWinFormsClass\MsmhToolsWinFormsClass.csproj", "{47B32391-1B42-406E-8EB4-D9A405C800D2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SdcMaui", "SdcMaui\SdcMaui.csproj", "{D145F57A-C15F-4CD7-AFD3-D3A8BA407FDA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDCProxyServer", "SDCProxyServer\SDCProxyServer.csproj", "{646985B3-37AD-4B4B-94FA-3C0A4BE5E2DC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,10 +32,6 @@ Global
 		{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C28D441-E382-4DB3-A45C-0A34FA0ABC79}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5A71E005-ED6A-4AEF-B6D5-0C4DAF3E7F1E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3FCBF4E2-4039-4140-BA71-8D27CB76536B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3FCBF4E2-4039-4140-BA71-8D27CB76536B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FCBF4E2-4039-4140-BA71-8D27CB76536B}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -50,6 +46,10 @@ Global
 		{D145F57A-C15F-4CD7-AFD3-D3A8BA407FDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D145F57A-C15F-4CD7-AFD3-D3A8BA407FDA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D145F57A-C15F-4CD7-AFD3-D3A8BA407FDA}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{646985B3-37AD-4B4B-94FA-3C0A4BE5E2DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{646985B3-37AD-4B4B-94FA-3C0A4BE5E2DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{646985B3-37AD-4B4B-94FA-3C0A4BE5E2DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{646985B3-37AD-4B4B-94FA-3C0A4BE5E2DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
