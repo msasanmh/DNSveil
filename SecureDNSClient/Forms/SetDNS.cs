@@ -86,8 +86,7 @@ public partial class FormMain
             DoesDNSSetOnce = true;
 
             // Flush DNS
-            if (!IsDisconnecting && !IsDisconnectingAll)
-                FlushDNS();
+            if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNS();
 
             // Update Groupbox Status
             UpdateStatusLong();
@@ -141,7 +140,7 @@ public partial class FormMain
             IsDNSSet = false;
 
             // Flush DNS
-            FlushDNS();
+            await FlushDNS();
 
             // Update Groupbox Status
             UpdateStatusLong();
@@ -170,8 +169,14 @@ public partial class FormMain
             return false;
         }
 
-        // Set Last Nicname
-        LastNicName = nicName;
+        NetworkInterfaces nis = new(nicName);
+        Task.Delay(300).Wait();
+        if (nis.NetConnectionStatus != 2)
+        {
+            string msgNotConnected = $"Network Adapter \"{nis.NetConnectionID}\" Status: {nis.NetConnectionStatusMessage}{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNotConnected, Color.IndianRed));
+            return false;
+        }
 
         NetworkInterface? nicOut = NetworkTool.GetNICByName(nicName);
         if (nicOut == null)
@@ -181,25 +186,8 @@ public partial class FormMain
             return false;
         }
 
-        // Update NICs
-        SecureDNS.UpdateNICs(CustomComboBoxNICs, out List<NetworkInterface> availableNICs);
-
-        bool isNicAvailable = false; // "availableNICs.Contains(nic)" doesn't work well
-        for (int n = 0; n < availableNICs.Count; n++)
-        {
-            if (nicName.Equals(availableNICs[n].Name))
-            {
-                isNicAvailable = true;
-                break;
-            }
-        }
-
-        if (!isNicAvailable)
-        {
-            string msgNicNotAvailable = $"Network Interface \"{nicName}\" is not connected.{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNicNotAvailable, Color.IndianRed));
-            return false;
-        }
+        // Set Last Nicname
+        LastNicName = nicName;
 
         nic = nicOut;
         return true;

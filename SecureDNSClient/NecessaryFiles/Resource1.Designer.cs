@@ -73,9 +73,19 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] dnscrypt_proxyEXE {
+        internal static byte[] dnscrypt_proxy_X64 {
             get {
-                object obj = ResourceManager.GetObject("dnscrypt_proxyEXE", resourceCulture);
+                object obj = ResourceManager.GetObject("dnscrypt_proxy_X64", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] dnscrypt_proxy_X86 {
+            get {
+                object obj = ResourceManager.GetObject("dnscrypt_proxy_X86", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -93,9 +103,9 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] dnslookup {
+        internal static byte[] dnslookup_X64 {
             get {
-                object obj = ResourceManager.GetObject("dnslookup", resourceCulture);
+                object obj = ResourceManager.GetObject("dnslookup_X64", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -103,9 +113,29 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] dnsproxy {
+        internal static byte[] dnslookup_X86 {
             get {
-                object obj = ResourceManager.GetObject("dnsproxy", resourceCulture);
+                object obj = ResourceManager.GetObject("dnslookup_X86", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] dnsproxy_X64 {
+            get {
+                object obj = ResourceManager.GetObject("dnsproxy_X64", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] dnsproxy_X86 {
+            get {
+                object obj = ResourceManager.GetObject("dnsproxy_X86", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -123,19 +153,34 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] SDCProxyServer {
+        internal static byte[] SDCProxyServer_X64 {
             get {
-                object obj = ResourceManager.GetObject("SDCProxyServer", resourceCulture);
+                object obj = ResourceManager.GetObject("SDCProxyServer_X64", resourceCulture);
                 return ((byte[])(obj));
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to dnscrypt-proxy 2.1.5
-        ///dnslookup 1.10.0
-        ///dnsproxy 0.56.1
-        ///sdcproxyserver 2.5.0
-        ///goodbyedpi 0.2.2.
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] SDCProxyServer_X86 {
+            get {
+                object obj = ResourceManager.GetObject("SDCProxyServer_X86", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to dnslookup-X64 1.10.0
+        ///dnslookup-X86 1.10.0
+        ///dnsproxy-X64 0.56.3
+        ///dnsproxy-X86 0.56.3
+        ///dnscrypt-proxy-X64 2.1.5
+        ///dnscrypt-proxy-X86 2.1.5
+        ///sdcproxyserver-X64 2.5.1
+        ///sdcproxyserver-X86 2.5.1
+        ///goodbyedpi-X64 0.2.2
+        ///goodbyedpi-X86 0.2.2.
         /// </summary>
         internal static string versions {
             get {

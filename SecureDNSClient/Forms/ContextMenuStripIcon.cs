@@ -360,7 +360,7 @@ public partial class FormMain
         {
             IsDisconnecting = true;
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Disconnecting...{NL}", Color.LightGray));
-            await Task.Run(() => KillAll());
+            await Task.Run(async () => await KillAll());
 
             // Wait
             Task wait = Task.Run(async () =>
@@ -383,7 +383,7 @@ public partial class FormMain
             if (IsExiting)
                 await Task.Run(async () => await FlushDnsOnExit());
             else
-                await Task.Run(() => FlushDNS());
+                await FlushDNS();
         }
 
         if (!IsExiting)
@@ -392,7 +392,7 @@ public partial class FormMain
         IsDisconnectingAll = false;
     }
 
-    private async void Exit_Click(object? sender, EventArgs e)
+    private async void Exit_Click(object? sender, EventArgs? e)
     {
         if (IsExiting) return;
         IsExiting = true;

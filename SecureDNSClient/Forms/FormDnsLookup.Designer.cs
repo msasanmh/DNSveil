@@ -63,7 +63,7 @@
             CustomRadioButtonSourceSDC.Location = new Point(12, 10);
             CustomRadioButtonSourceSDC.Name = "CustomRadioButtonSourceSDC";
             CustomRadioButtonSourceSDC.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSourceSDC.Size = new Size(43, 17);
+            CustomRadioButtonSourceSDC.Size = new Size(47, 17);
             CustomRadioButtonSourceSDC.TabIndex = 0;
             CustomRadioButtonSourceSDC.TabStop = true;
             CustomRadioButtonSourceSDC.Text = "SDC";
@@ -78,7 +78,7 @@
             CustomRadioButtonSourceCustom.Location = new Point(61, 10);
             CustomRadioButtonSourceCustom.Name = "CustomRadioButtonSourceCustom";
             CustomRadioButtonSourceCustom.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSourceCustom.Size = new Size(65, 17);
+            CustomRadioButtonSourceCustom.Size = new Size(69, 17);
             CustomRadioButtonSourceCustom.TabIndex = 1;
             CustomRadioButtonSourceCustom.Text = "Custom:";
             CustomRadioButtonSourceCustom.UseVisualStyleBackColor = false;
@@ -100,6 +100,7 @@
             CustomTextBoxSourceCustom.Multiline = false;
             CustomTextBoxSourceCustom.Name = "CustomTextBoxSourceCustom";
             CustomTextBoxSourceCustom.ReadOnly = false;
+            CustomTextBoxSourceCustom.RoundedCorners = 0;
             CustomTextBoxSourceCustom.ScrollBars = ScrollBars.None;
             CustomTextBoxSourceCustom.ShortcutsEnabled = true;
             CustomTextBoxSourceCustom.Size = new Size(200, 23);
@@ -142,6 +143,7 @@
             CustomTextBoxDomain.Multiline = false;
             CustomTextBoxDomain.Name = "CustomTextBoxDomain";
             CustomTextBoxDomain.ReadOnly = false;
+            CustomTextBoxDomain.RoundedCorners = 0;
             CustomTextBoxDomain.ScrollBars = ScrollBars.None;
             CustomTextBoxDomain.ShortcutsEnabled = true;
             CustomTextBoxDomain.Size = new Size(200, 23);
@@ -187,6 +189,7 @@
             CustomTextBoxResult.Multiline = true;
             CustomTextBoxResult.Name = "CustomTextBoxResult";
             CustomTextBoxResult.ReadOnly = true;
+            CustomTextBoxResult.RoundedCorners = 5;
             CustomTextBoxResult.ScrollBars = ScrollBars.Vertical;
             CustomTextBoxResult.ShortcutsEnabled = true;
             CustomTextBoxResult.Size = new Size(433, 262);
@@ -206,7 +209,7 @@
             CustomCheckBoxHTTP3.Location = new Point(12, 80);
             CustomCheckBoxHTTP3.Name = "CustomCheckBoxHTTP3";
             CustomCheckBoxHTTP3.SelectionColor = Color.LightBlue;
-            CustomCheckBoxHTTP3.Size = new Size(107, 17);
+            CustomCheckBoxHTTP3.Size = new Size(110, 17);
             CustomCheckBoxHTTP3.TabIndex = 10;
             CustomCheckBoxHTTP3.Text = "HTTP/3 support";
             CustomCheckBoxHTTP3.UseVisualStyleBackColor = false;
@@ -220,7 +223,7 @@
             CustomCheckBoxVERIFY.Location = new Point(132, 80);
             CustomCheckBoxVERIFY.Name = "CustomCheckBoxVERIFY";
             CustomCheckBoxVERIFY.SelectionColor = Color.LightBlue;
-            CustomCheckBoxVERIFY.Size = new Size(189, 17);
+            CustomCheckBoxVERIFY.Size = new Size(193, 17);
             CustomCheckBoxVERIFY.TabIndex = 14;
             CustomCheckBoxVERIFY.Text = "Disable Certificates Verification";
             CustomCheckBoxVERIFY.UseVisualStyleBackColor = false;
@@ -257,6 +260,7 @@
             CustomTextBoxRRTYPE.Multiline = false;
             CustomTextBoxRRTYPE.Name = "CustomTextBoxRRTYPE";
             CustomTextBoxRRTYPE.ReadOnly = false;
+            CustomTextBoxRRTYPE.RoundedCorners = 0;
             CustomTextBoxRRTYPE.ScrollBars = ScrollBars.None;
             CustomTextBoxRRTYPE.ShortcutsEnabled = true;
             CustomTextBoxRRTYPE.Size = new Size(50, 23);
@@ -299,6 +303,7 @@
             CustomTextBoxCLASS.Multiline = false;
             CustomTextBoxCLASS.Name = "CustomTextBoxCLASS";
             CustomTextBoxCLASS.ReadOnly = false;
+            CustomTextBoxCLASS.RoundedCorners = 0;
             CustomTextBoxCLASS.ScrollBars = ScrollBars.None;
             CustomTextBoxCLASS.ShortcutsEnabled = true;
             CustomTextBoxCLASS.Size = new Size(50, 23);
@@ -318,7 +323,7 @@
             CustomCheckBoxDNSSEC.Location = new Point(12, 100);
             CustomCheckBoxDNSSEC.Name = "CustomCheckBoxDNSSEC";
             CustomCheckBoxDNSSEC.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDNSSEC.Size = new Size(65, 17);
+            CustomCheckBoxDNSSEC.Size = new Size(69, 17);
             CustomCheckBoxDNSSEC.TabIndex = 19;
             CustomCheckBoxDNSSEC.Text = "DNSSEC";
             CustomCheckBoxDNSSEC.UseVisualStyleBackColor = false;
@@ -355,6 +360,7 @@
             CustomTextBoxSUBNET.Multiline = false;
             CustomTextBoxSUBNET.Name = "CustomTextBoxSUBNET";
             CustomTextBoxSUBNET.ReadOnly = false;
+            CustomTextBoxSUBNET.RoundedCorners = 0;
             CustomTextBoxSUBNET.ScrollBars = ScrollBars.None;
             CustomTextBoxSUBNET.ShortcutsEnabled = true;
             CustomTextBoxSUBNET.Size = new Size(100, 23);
@@ -374,7 +380,7 @@
             CustomCheckBoxPAD.Location = new Point(83, 100);
             CustomCheckBoxPAD.Name = "CustomCheckBoxPAD";
             CustomCheckBoxPAD.SelectionColor = Color.LightBlue;
-            CustomCheckBoxPAD.Size = new Size(132, 17);
+            CustomCheckBoxPAD.Size = new Size(136, 17);
             CustomCheckBoxPAD.TabIndex = 22;
             CustomCheckBoxPAD.Text = "Add EDNS0 Padding";
             CustomCheckBoxPAD.UseVisualStyleBackColor = false;
@@ -388,7 +394,7 @@
             CustomCheckBoxVERBOSE.Location = new Point(221, 100);
             CustomCheckBoxVERBOSE.Name = "CustomCheckBoxVERBOSE";
             CustomCheckBoxVERBOSE.SelectionColor = Color.LightBlue;
-            CustomCheckBoxVERBOSE.Size = new Size(113, 17);
+            CustomCheckBoxVERBOSE.Size = new Size(117, 17);
             CustomCheckBoxVERBOSE.TabIndex = 23;
             CustomCheckBoxVERBOSE.Text = "Verbose Logging";
             CustomCheckBoxVERBOSE.UseVisualStyleBackColor = false;
@@ -425,6 +431,7 @@
             CustomTextBoxEDNSOPT.Multiline = false;
             CustomTextBoxEDNSOPT.Name = "CustomTextBoxEDNSOPT";
             CustomTextBoxEDNSOPT.ReadOnly = false;
+            CustomTextBoxEDNSOPT.RoundedCorners = 0;
             CustomTextBoxEDNSOPT.ScrollBars = ScrollBars.None;
             CustomTextBoxEDNSOPT.ShortcutsEnabled = true;
             CustomTextBoxEDNSOPT.Size = new Size(200, 23);
@@ -459,7 +466,7 @@
             CustomCheckBoxJSON.Location = new Point(340, 100);
             CustomCheckBoxJSON.Name = "CustomCheckBoxJSON";
             CustomCheckBoxJSON.SelectionColor = Color.LightBlue;
-            CustomCheckBoxJSON.Size = new Size(44, 17);
+            CustomCheckBoxJSON.Size = new Size(48, 17);
             CustomCheckBoxJSON.TabIndex = 34;
             CustomCheckBoxJSON.Text = "Json";
             CustomCheckBoxJSON.UseVisualStyleBackColor = false;

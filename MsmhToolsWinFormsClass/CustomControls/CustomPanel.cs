@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Forms.Design;
@@ -272,8 +271,7 @@ namespace CustomControls
 
         private void CustomPanel_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false)
-                return;
+            if (ApplicationIdle == false) return;
 
             Rectangle rect = new(0, 0, ClientRectangle.Width, ClientRectangle.Height);
 
@@ -296,8 +294,6 @@ namespace CustomControls
                 e.Graphics.Clear(backColor);
 
                 // Draw Border
-                //ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle);
-
                 if (Border == BorderStyle.FixedSingle)
                     ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle);
                 else if (Border == BorderStyle.Fixed3D)

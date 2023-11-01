@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Windows.Forms.Design;
 /*
@@ -49,6 +48,22 @@ namespace CustomControls
                 if (mBorderColor != value)
                 {
                     mBorderColor = value;
+                    Invalidate();
+                }
+            }
+        }
+
+        private int mRoundedCorners = 0;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Appearance"), Description("Rounded Corners")]
+        public int RoundedCorners
+        {
+            get { return mRoundedCorners; }
+            set
+            {
+                if (mRoundedCorners != value)
+                {
+                    mRoundedCorners = value;
                     Invalidate();
                 }
             }
@@ -160,13 +175,24 @@ namespace CustomControls
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            
+
             Rectangle rect = ClientRectangle;
+            Color backColor = GetBackColor();
             Color borderColor = GetBorderColor();
 
+            e.Graphics.Clear(backColor);
+
+            int r = RoundedCorners;
+            using SolidBrush brush = new(backColor);
+            using Pen penBorder = new(borderColor);
+            Rectangle rectBorder = new(rect.X + 0, rect.Y + 0, rect.Width - 1, rect.Height - 1);
+            
             if (BorderStyle == BorderStyle.FixedSingle)
             {
-                ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle.Solid);
+                //ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle.Solid);
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                e.Graphics.DrawRoundedRectangle(penBorder, rectBorder, r, 0, 0, r);
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
             }
             else if (BorderStyle == BorderStyle.Fixed3D)
             {
@@ -187,7 +213,6 @@ namespace CustomControls
                 rect3DBorder = new(rect.X, rect.Y, rect.Width - 1, rect.Height - 1);
                 ControlPaint.DrawBorder(e.Graphics, rect3DBorder, borderColor, ButtonBorderStyle.Solid);
             }
-
         }
 
         private void UpDown_Paint(object? sender, PaintEventArgs e)
@@ -210,9 +235,11 @@ namespace CustomControls
             // Mouse Position
             Point mP = UpDown.PointToClient(MousePosition);
 
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            
             // Paint UpDown Background
             e.Graphics.Clear(backColor.ChangeBrightness(-0.3f));
-
+            
             // Paint UpDown Border
             using Pen arrowButtonsBorderPen = new(borderColor);
             Point[] arrowButtonsBorderPointsRight = new[]
@@ -298,6 +325,8 @@ namespace CustomControls
                 new Point(downArrowCenter.X + 4, downArrowCenter.Y - 1), // Top Right
                 new Point(downArrowCenter.X, downArrowCenter.Y + 3) // Bottom
             };
+
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
 
             // Paint UpArrow
             e.Graphics.FillPolygon(arrowBrush, upArrowPoints);

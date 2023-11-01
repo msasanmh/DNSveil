@@ -1,7 +1,7 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
-using System;
 using System.ComponentModel;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms.Design;
 /*
 * Copyright MSasanMH, June 20, 2022.
@@ -42,6 +42,22 @@ namespace CustomControls
                 {
                     mBorderColor = value;
                     BorderColorChanged?.Invoke(this, EventArgs.Empty);
+                    Invalidate();
+                }
+            }
+        }
+
+        private int mRoundedCorners = 0;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Appearance"), Description("Rounded Corners")]
+        public int RoundedCorners
+        {
+            get { return mRoundedCorners; }
+            set
+            {
+                if (mRoundedCorners != value)
+                {
+                    mRoundedCorners = value;
                     Invalidate();
                 }
             }
@@ -108,6 +124,7 @@ namespace CustomControls
             MyRenderer.BackColor = GetBackColor();
             MyRenderer.ForeColor = GetForeColor();
             MyRenderer.BorderColor = GetBorderColor();
+            MyRenderer.RoundedCorners = RoundedCorners;
             MyRenderer.SelectionColor = SelectionColor;
             Renderer = MyRenderer;
 
@@ -118,6 +135,7 @@ namespace CustomControls
             SameColorForSubItemsChanged += CustomMenuStrip_SameColorForSubItemsChanged;
             ItemAdded += CustomMenuStrip_ItemAdded;
             Paint += CustomMenuStrip_Paint;
+            Application.Idle += Application_Idle;
 
             var timer = new System.Windows.Forms.Timer();
             timer.Interval = 500;
@@ -127,6 +145,11 @@ namespace CustomControls
                     ColorForSubItems();
             };
             timer.Start();
+        }
+
+        private void Application_Idle(object? sender, EventArgs e)
+        {
+            MyRenderer.SelectionColor = SelectionColor;
         }
 
         private void ColorForSubItems()
@@ -174,6 +197,7 @@ namespace CustomControls
         private void CustomMenuStrip_BorderColorChanged(object? sender, EventArgs e)
         {
             MyRenderer.BorderColor = GetBorderColor();
+            MyRenderer.RoundedCorners = RoundedCorners;
             Invalidate();
         }
 
@@ -200,8 +224,14 @@ namespace CustomControls
         {
             if (Border)
             {
+                // Menu Strip Border
                 Color borderColor = GetBorderColor();
-                ControlPaint.DrawBorder(e.Graphics, ClientRectangle, borderColor, ButtonBorderStyle.Solid);
+                Rectangle rect = new(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width - 1, ClientRectangle.Height - 1);
+                int r = RoundedCorners;
+                using Pen pen = new(borderColor);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.DrawRoundedRectangle(pen, rect, r, r, r, r);
+                e.Graphics.SmoothingMode = SmoothingMode.Default;
             }
         }
 

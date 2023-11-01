@@ -82,6 +82,7 @@
             CustomComboBoxProtocol.Items.AddRange(new object[] { "Plain DNS", "DNSCrypt", "DNS-Over-HTTPS", "DNS-Over-TLS", "DNS-Over-Quic", "Oblivious DoH Target", "Anonymized DNSCrypt Relay", "Oblivious DoH Relay" });
             CustomComboBoxProtocol.Location = new Point(75, 8);
             CustomComboBoxProtocol.Name = "CustomComboBoxProtocol";
+            CustomComboBoxProtocol.RoundedCorners = 5;
             CustomComboBoxProtocol.SelectionColor = Color.DodgerBlue;
             CustomComboBoxProtocol.Size = new Size(287, 23);
             CustomComboBoxProtocol.TabIndex = 1;
@@ -119,6 +120,7 @@
             CustomTextBoxIP.Multiline = false;
             CustomTextBoxIP.Name = "CustomTextBoxIP";
             CustomTextBoxIP.ReadOnly = false;
+            CustomTextBoxIP.RoundedCorners = 0;
             CustomTextBoxIP.ScrollBars = ScrollBars.None;
             CustomTextBoxIP.ShortcutsEnabled = true;
             CustomTextBoxIP.Size = new Size(350, 23);
@@ -161,6 +163,7 @@
             CustomTextBoxHost.Multiline = false;
             CustomTextBoxHost.Name = "CustomTextBoxHost";
             CustomTextBoxHost.ReadOnly = false;
+            CustomTextBoxHost.RoundedCorners = 0;
             CustomTextBoxHost.ScrollBars = ScrollBars.None;
             CustomTextBoxHost.ShortcutsEnabled = true;
             CustomTextBoxHost.Size = new Size(350, 23);
@@ -195,6 +198,7 @@
             CustomNumericUpDownPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownPort.Name = "CustomNumericUpDownPort";
+            CustomNumericUpDownPort.RoundedCorners = 5;
             CustomNumericUpDownPort.Size = new Size(80, 23);
             CustomNumericUpDownPort.TabIndex = 8;
             CustomNumericUpDownPort.Value = new decimal(new int[] { 53, 0, 0, 0 });
@@ -231,6 +235,7 @@
             CustomTextBoxPath.Multiline = false;
             CustomTextBoxPath.Name = "CustomTextBoxPath";
             CustomTextBoxPath.ReadOnly = false;
+            CustomTextBoxPath.RoundedCorners = 0;
             CustomTextBoxPath.ScrollBars = ScrollBars.None;
             CustomTextBoxPath.ShortcutsEnabled = true;
             CustomTextBoxPath.Size = new Size(223, 23);
@@ -273,6 +278,7 @@
             CustomTextBoxProviderName.Multiline = false;
             CustomTextBoxProviderName.Name = "CustomTextBoxProviderName";
             CustomTextBoxProviderName.ReadOnly = false;
+            CustomTextBoxProviderName.RoundedCorners = 0;
             CustomTextBoxProviderName.ScrollBars = ScrollBars.None;
             CustomTextBoxProviderName.ShortcutsEnabled = true;
             CustomTextBoxProviderName.Size = new Size(350, 23);
@@ -315,6 +321,7 @@
             CustomTextBoxPublicKey.Multiline = false;
             CustomTextBoxPublicKey.Name = "CustomTextBoxPublicKey";
             CustomTextBoxPublicKey.ReadOnly = false;
+            CustomTextBoxPublicKey.RoundedCorners = 0;
             CustomTextBoxPublicKey.ScrollBars = ScrollBars.None;
             CustomTextBoxPublicKey.ShortcutsEnabled = true;
             CustomTextBoxPublicKey.Size = new Size(350, 23);
@@ -357,6 +364,7 @@
             CustomTextBoxHash.Multiline = false;
             CustomTextBoxHash.Name = "CustomTextBoxHash";
             CustomTextBoxHash.ReadOnly = false;
+            CustomTextBoxHash.RoundedCorners = 0;
             CustomTextBoxHash.ScrollBars = ScrollBars.None;
             CustomTextBoxHash.ShortcutsEnabled = true;
             CustomTextBoxHash.Size = new Size(350, 23);
@@ -376,7 +384,7 @@
             CustomCheckBoxIsDnsSec.Location = new Point(12, 250);
             CustomCheckBoxIsDnsSec.Name = "CustomCheckBoxIsDnsSec";
             CustomCheckBoxIsDnsSec.SelectionColor = Color.LightBlue;
-            CustomCheckBoxIsDnsSec.Size = new Size(76, 17);
+            CustomCheckBoxIsDnsSec.Size = new Size(79, 17);
             CustomCheckBoxIsDnsSec.TabIndex = 20;
             CustomCheckBoxIsDnsSec.Text = "Is DNSSec";
             CustomCheckBoxIsDnsSec.UseVisualStyleBackColor = false;
@@ -390,7 +398,7 @@
             CustomCheckBoxIsNoFilter.Location = new Point(122, 250);
             CustomCheckBoxIsNoFilter.Name = "CustomCheckBoxIsNoFilter";
             CustomCheckBoxIsNoFilter.SelectionColor = Color.LightBlue;
-            CustomCheckBoxIsNoFilter.Size = new Size(79, 17);
+            CustomCheckBoxIsNoFilter.Size = new Size(83, 17);
             CustomCheckBoxIsNoFilter.TabIndex = 21;
             CustomCheckBoxIsNoFilter.Text = "Is No Filter";
             CustomCheckBoxIsNoFilter.UseVisualStyleBackColor = false;
@@ -404,7 +412,7 @@
             CustomCheckBoxIsNoLog.Location = new Point(232, 250);
             CustomCheckBoxIsNoLog.Name = "CustomCheckBoxIsNoLog";
             CustomCheckBoxIsNoLog.SelectionColor = Color.LightBlue;
-            CustomCheckBoxIsNoLog.Size = new Size(73, 17);
+            CustomCheckBoxIsNoLog.Size = new Size(76, 17);
             CustomCheckBoxIsNoLog.TabIndex = 22;
             CustomCheckBoxIsNoLog.Text = "Is No Log";
             CustomCheckBoxIsNoLog.UseVisualStyleBackColor = false;
@@ -428,6 +436,7 @@
             CustomTextBoxStamp.Multiline = true;
             CustomTextBoxStamp.Name = "CustomTextBoxStamp";
             CustomTextBoxStamp.ReadOnly = false;
+            CustomTextBoxStamp.RoundedCorners = 5;
             CustomTextBoxStamp.ScrollBars = ScrollBars.Vertical;
             CustomTextBoxStamp.ShortcutsEnabled = true;
             CustomTextBoxStamp.Size = new Size(602, 102);

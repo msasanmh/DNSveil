@@ -28,50 +28,20 @@
         /// </summary>
         private void InitializeComponent()
         {
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormProcessMonitor));
-            CustomRichTextBoxUp = new CustomControls.CustomRichTextBox();
             SplitContainerMain = new SplitContainer();
+            CustomDataGridViewStatusTop = new CustomControls.CustomDataGridView();
+            ColumnStatusName = new DataGridViewTextBoxColumn();
+            ColumnStatusText = new DataGridViewTextBoxColumn();
             CustomRichTextBoxDown = new CustomControls.CustomRichTextBox();
             ((System.ComponentModel.ISupportInitialize)SplitContainerMain).BeginInit();
             SplitContainerMain.Panel1.SuspendLayout();
             SplitContainerMain.Panel2.SuspendLayout();
             SplitContainerMain.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)CustomDataGridViewStatusTop).BeginInit();
             SuspendLayout();
-            // 
-            // CustomRichTextBoxUp
-            // 
-            CustomRichTextBoxUp.AcceptsTab = false;
-            CustomRichTextBoxUp.AutoWordSelection = false;
-            CustomRichTextBoxUp.BackColor = Color.DimGray;
-            CustomRichTextBoxUp.Border = true;
-            CustomRichTextBoxUp.BorderColor = Color.Blue;
-            CustomRichTextBoxUp.BorderSize = 1;
-            CustomRichTextBoxUp.BulletIndent = 0;
-            CustomRichTextBoxUp.DetectUrls = false;
-            CustomRichTextBoxUp.Dock = DockStyle.Fill;
-            CustomRichTextBoxUp.EnableAutoDragDrop = false;
-            CustomRichTextBoxUp.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            CustomRichTextBoxUp.ForeColor = Color.White;
-            CustomRichTextBoxUp.HideSelection = true;
-            CustomRichTextBoxUp.Location = new Point(0, 0);
-            CustomRichTextBoxUp.MaxLength = int.MaxValue;
-            CustomRichTextBoxUp.MinimumSize = new Size(0, 23);
-            CustomRichTextBoxUp.Multiline = true;
-            CustomRichTextBoxUp.Name = "CustomRichTextBoxUp";
-            CustomRichTextBoxUp.ReadOnly = true;
-            CustomRichTextBoxUp.RightMargin = 0;
-            CustomRichTextBoxUp.ScrollBars = ScrollBars.Vertical;
-            CustomRichTextBoxUp.ScrollToBottom = false;
-            CustomRichTextBoxUp.SelectionColor = Color.White;
-            CustomRichTextBoxUp.SelectionLength = 0;
-            CustomRichTextBoxUp.SelectionStart = 0;
-            CustomRichTextBoxUp.ShortcutsEnabled = true;
-            CustomRichTextBoxUp.Size = new Size(284, 120);
-            CustomRichTextBoxUp.TabIndex = 0;
-            CustomRichTextBoxUp.Texts = "";
-            CustomRichTextBoxUp.UnderlinedStyle = false;
-            CustomRichTextBoxUp.WordWrap = true;
-            CustomRichTextBoxUp.ZoomFactor = 1F;
             // 
             // SplitContainerMain
             // 
@@ -82,7 +52,7 @@
             // 
             // SplitContainerMain.Panel1
             // 
-            SplitContainerMain.Panel1.Controls.Add(CustomRichTextBoxUp);
+            SplitContainerMain.Panel1.Controls.Add(CustomDataGridViewStatusTop);
             SplitContainerMain.Panel1MinSize = 120;
             // 
             // SplitContainerMain.Panel2
@@ -92,6 +62,72 @@
             SplitContainerMain.Size = new Size(284, 361);
             SplitContainerMain.SplitterDistance = 120;
             SplitContainerMain.TabIndex = 1;
+            // 
+            // CustomDataGridViewStatusTop
+            // 
+            CustomDataGridViewStatusTop.AllowUserToAddRows = false;
+            CustomDataGridViewStatusTop.AllowUserToDeleteRows = false;
+            CustomDataGridViewStatusTop.AllowUserToResizeColumns = false;
+            CustomDataGridViewStatusTop.AllowUserToResizeRows = false;
+            CustomDataGridViewStatusTop.BorderColor = Color.Blue;
+            CustomDataGridViewStatusTop.CheckColor = Color.Blue;
+            CustomDataGridViewStatusTop.ColumnHeadersBorder = true;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle1.ForeColor = Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle1.SelectionForeColor = Color.White;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            CustomDataGridViewStatusTop.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            CustomDataGridViewStatusTop.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            CustomDataGridViewStatusTop.ColumnHeadersVisible = false;
+            CustomDataGridViewStatusTop.Columns.AddRange(new DataGridViewColumn[] { ColumnStatusName, ColumnStatusText });
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = Color.DimGray;
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle2.ForeColor = Color.White;
+            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(97, 177, 255);
+            dataGridViewCellStyle2.SelectionForeColor = Color.White;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
+            CustomDataGridViewStatusTop.DefaultCellStyle = dataGridViewCellStyle2;
+            CustomDataGridViewStatusTop.Dock = DockStyle.Fill;
+            CustomDataGridViewStatusTop.GridColor = Color.LightBlue;
+            CustomDataGridViewStatusTop.Location = new Point(0, 0);
+            CustomDataGridViewStatusTop.MultiSelect = false;
+            CustomDataGridViewStatusTop.Name = "CustomDataGridViewStatusTop";
+            CustomDataGridViewStatusTop.ReadOnly = true;
+            CustomDataGridViewStatusTop.RowHeadersVisible = false;
+            CustomDataGridViewStatusTop.RowTemplate.Height = 25;
+            CustomDataGridViewStatusTop.ScrollBars = ScrollBars.None;
+            CustomDataGridViewStatusTop.SelectionColor = Color.DodgerBlue;
+            CustomDataGridViewStatusTop.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            CustomDataGridViewStatusTop.SelectionModeFocus = false;
+            CustomDataGridViewStatusTop.ShowCellErrors = false;
+            CustomDataGridViewStatusTop.ShowCellToolTips = false;
+            CustomDataGridViewStatusTop.ShowEditingIcon = false;
+            CustomDataGridViewStatusTop.ShowRowErrors = false;
+            CustomDataGridViewStatusTop.Size = new Size(284, 120);
+            CustomDataGridViewStatusTop.TabIndex = 19;
+            // 
+            // ColumnStatusName
+            // 
+            ColumnStatusName.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            ColumnStatusName.HeaderText = "Status Name";
+            ColumnStatusName.Name = "ColumnStatusName";
+            ColumnStatusName.ReadOnly = true;
+            ColumnStatusName.Resizable = DataGridViewTriState.False;
+            ColumnStatusName.SortMode = DataGridViewColumnSortMode.NotSortable;
+            ColumnStatusName.Width = 5;
+            // 
+            // ColumnStatusText
+            // 
+            ColumnStatusText.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            ColumnStatusText.HeaderText = "Status Text";
+            ColumnStatusText.Name = "ColumnStatusText";
+            ColumnStatusText.ReadOnly = true;
+            ColumnStatusText.Resizable = DataGridViewTriState.False;
+            ColumnStatusText.SortMode = DataGridViewColumnSortMode.NotSortable;
             // 
             // CustomRichTextBoxDown
             // 
@@ -115,6 +151,7 @@
             CustomRichTextBoxDown.Name = "CustomRichTextBoxDown";
             CustomRichTextBoxDown.ReadOnly = true;
             CustomRichTextBoxDown.RightMargin = 0;
+            CustomRichTextBoxDown.RoundedCorners = 0;
             CustomRichTextBoxDown.ScrollBars = ScrollBars.Vertical;
             CustomRichTextBoxDown.ScrollToBottom = false;
             CustomRichTextBoxDown.SelectionColor = Color.White;
@@ -146,13 +183,15 @@
             SplitContainerMain.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)SplitContainerMain).EndInit();
             SplitContainerMain.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)CustomDataGridViewStatusTop).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
-
-        private CustomControls.CustomRichTextBox CustomRichTextBoxUp;
         private SplitContainer SplitContainerMain;
         private CustomControls.CustomRichTextBox CustomRichTextBoxDown;
+        private CustomControls.CustomDataGridView CustomDataGridViewStatusTop;
+        private DataGridViewTextBoxColumn ColumnStatusName;
+        private DataGridViewTextBoxColumn ColumnStatusText;
     }
 }

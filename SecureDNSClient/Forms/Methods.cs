@@ -1,21 +1,192 @@
-﻿using Ae.Dns.Client;
-using CustomControls;
+﻿using CustomControls;
+using Microsoft.Win32;
+using Microsoft.Win32.TaskScheduler;
 using MsmhToolsClass;
 using MsmhToolsClass.ProxyServerPrograms;
-using System;
+using MsmhToolsWinFormsClass;
+using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Http;
-using System.Net.NetworkInformation;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
-using System.Windows.Forms;
+using System.Runtime.InteropServices;
+using Task = System.Threading.Tasks.Task;
 
 namespace SecureDNSClient;
 
 public partial class FormMain
 {
+    public async void StartupTask()
+    {
+        Hide();
+        Opacity = 0;
+        bool cancel = false;
+
+        // Wait for Startup Delay
+        Task wait = Task.Run(async () =>
+        {
+            while (true)
+            {
+                if (IsCheckingStarted || IsConnecting || IsQuickConnecting || IsExiting)
+                {
+                    cancel = true;
+                    break;
+                }
+                await Task.Delay(100);
+            }
+        });
+        try { await wait.WaitAsync(TimeSpan.FromSeconds(Program.StartupDelaySec)); } catch (Exception) { }
+
+        if (cancel) return;
+
+        // Wait for Network Connectivity
+        Task waitNet = Task.Run(async () =>
+        {
+            while (true)
+            {
+                if (NetworkTool.IsInternetAlive()) break;
+                if (IsCheckingStarted || IsConnecting || IsQuickConnecting || IsExiting)
+                {
+                    cancel = true;
+                    break;
+                }
+                await Task.Delay(500);
+            }
+        });
+        try { await waitNet.WaitAsync(CancellationToken.None); } catch (Exception) { }
+
+        if (cancel) return;
+
+        // Update NICs
+        SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
+        await Task.Delay(300);
+
+        // Start Quick Connect
+        await StartQuickConnect(null);
+    }
+
+    public static bool IsAppOnWindowsStartup(out bool isPathOk)
+    {
+        isPathOk = false;
+        bool isTaskExist = false;
+
+        try
+        {
+            string taskName = "SecureDnsClientStartup";
+            string startCmd = "cmd";
+            string prefix = "/c start \"SDC\" /b ";
+            string appPath = $"\"{Path.GetFullPath(Application.ExecutablePath)}\"";
+            string trimStart = $"{startCmd} {prefix}";
+            using TaskService ts = new();
+            TaskCollection tasks = ts.RootFolder.GetTasks(new System.Text.RegularExpressions.Regex(taskName));
+            for (int n = 0; n < tasks.Count; n++)
+            {
+                Microsoft.Win32.TaskScheduler.Task task = tasks[n];
+                if (task.Name.Equals(taskName))
+                {
+                    task.Enabled = true;
+                    TaskDefinition td = task.Definition;
+                    ActionCollection actions = td.Actions;
+                    for (int n2 = 0; n2 < actions.Count; n2++)
+                    {
+                        Microsoft.Win32.TaskScheduler.Action action = actions[n2];
+                        string existStr = action.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+                        if (!string.IsNullOrEmpty(existStr))
+                        {
+                            if (existStr.StartsWith(trimStart)) existStr = existStr[trimStart.Length..];
+                            if (existStr.Contains("\" "))
+                                existStr = $"{existStr.Split("\" ")[0]}\"";
+                            if (existStr.Equals(appPath) && td.Principal.RunLevel == TaskRunLevel.Highest) isPathOk = true;
+                        }
+                    }
+
+                    isTaskExist = true;
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("IsAppOnWindowsStartup: " + ex.Message);
+        }
+
+        return isTaskExist;
+    }
+
+    public static void ActivateWindowsStartup(bool active)
+    {
+        try
+        {
+            int startupDelay = 5;
+            string taskName = "SecureDnsClientStartup";
+            string startCmd = "cmd";
+            string prefix = "/c start \"SDC\" /b ";
+            string appPath = $"\"{Path.GetFullPath(Application.ExecutablePath)}\"";
+            string appArgs = $" startup {startupDelay}";
+            string args = prefix + appPath + appArgs;
+            using TaskService ts = new();
+            TaskDefinition td = ts.NewTask();
+            td.RegistrationInfo.Description = "Secure DNS Client Startup";
+            td.Triggers.Add(new LogonTrigger()); // Trigger at Logon
+            td.Actions.Add(startCmd, args);
+            td.Principal.RunLevel = TaskRunLevel.Highest;
+            td.Settings.Enabled = active;
+            td.Settings.AllowDemandStart = true;
+            td.Settings.DisallowStartIfOnBatteries = false;
+            td.Settings.MultipleInstances = TaskInstancesPolicy.IgnoreNew;
+            td.Settings.StopIfGoingOnBatteries = false;
+            td.Settings.Hidden = false; // Don't Hide App
+            if (active)
+                ts.RootFolder.RegisterTaskDefinition(taskName, td); // Add Task
+            else
+                ts.RootFolder.DeleteTask(taskName); // Remove Task
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ActivateWindowsStartup: " + ex.Message);
+        }
+    }
+
+    public static bool IsAppOnWindowsStartupRegistry(out bool isPathOk)
+    {
+        isPathOk = false;
+        string appName = "SecureDnsClient";
+        string prefix = "cmd /c start \"SDC\" /b ";
+        string appPath = $"\"{Path.GetFullPath(Application.ExecutablePath)}\"";
+        string regPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+        RegistryKey? registry = Registry.CurrentUser.OpenSubKey(regPath, false);
+        if (registry == null) return false;
+        object? exist = registry.GetValue(appName, "false");
+        if (exist == null) return false;
+        if (exist.Equals("false")) return false;
+        string? existStr = exist as string;
+        if (!string.IsNullOrEmpty(existStr))
+        {
+            if (existStr.StartsWith(prefix)) existStr = existStr[prefix.Length..];
+            if (existStr.Contains("\" "))
+                existStr = $"{existStr.Split("\" ")[0]}\"";
+            if (existStr.Equals(appPath)) isPathOk = true;
+        }
+        return true;
+    }
+
+    public static void ActivateWindowsStartupRegistry(bool active)
+    {
+        int startupDelay = 5;
+        string appName = "SecureDnsClient";
+        string prefix = "cmd /c start \"SDC\" /b ";
+        string args = $"{prefix}\"{Path.GetFullPath(Application.ExecutablePath)}\" startup {startupDelay}";
+        string regPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+        RegistryKey? registry = Registry.CurrentUser.OpenSubKey(regPath, true);
+        if (registry != null)
+        {
+            if (active)
+                registry.SetValue(appName, args);
+            else
+                registry.DeleteValue(appName, false);
+        }
+    }
+
     public enum ConnectMode
     {
         ConnectToWorkingServers,
@@ -147,26 +318,19 @@ public partial class FormMain
         }
     }
 
-    private static void MoveToNewLocation()
+    private static async Task MoveToNewLocation()
     {
         try
         {
-            if (File.Exists(SecureDNS.OldSettingsXmlPath)) File.Move(SecureDNS.OldSettingsXmlPath, SecureDNS.SettingsXmlPath, false);
-            if (File.Exists(SecureDNS.OldSettingsXmlDnsLookup)) File.Move(SecureDNS.OldSettingsXmlDnsLookup, SecureDNS.SettingsXmlDnsLookup, false);
-            if (File.Exists(SecureDNS.OldSettingsXmlIpScanner)) File.Move(SecureDNS.OldSettingsXmlIpScanner, SecureDNS.SettingsXmlIpScanner, false);
-            if (File.Exists(SecureDNS.OldUserIdPath)) File.Move(SecureDNS.OldUserIdPath, SecureDNS.UserIdPath, false);
-            if (File.Exists(SecureDNS.OldFakeDnsRulesPath)) File.Move(SecureDNS.OldFakeDnsRulesPath, SecureDNS.FakeDnsRulesPath, false);
-            if (File.Exists(SecureDNS.OldBlackWhiteListPath)) File.Move(SecureDNS.OldBlackWhiteListPath, SecureDNS.BlackWhiteListPath, false);
-            if (File.Exists(SecureDNS.OldDontBypassListPath)) File.Move(SecureDNS.OldDontBypassListPath, SecureDNS.DontBypassListPath, false);
-            if (File.Exists(SecureDNS.OldCustomServersPath)) File.Move(SecureDNS.OldCustomServersPath, SecureDNS.CustomServersPath, false);
-            if (File.Exists(SecureDNS.OldWorkingServersPath)) File.Move(SecureDNS.OldWorkingServersPath, SecureDNS.WorkingServersPath, false);
-            if (File.Exists(SecureDNS.OldDPIBlacklistPath)) File.Move(SecureDNS.OldDPIBlacklistPath, SecureDNS.DPIBlacklistPath, false);
-            if (File.Exists(SecureDNS.OldNicNamePath)) File.Move(SecureDNS.OldNicNamePath, SecureDNS.NicNamePath, false);
-            if (File.Exists(SecureDNS.OldSavedEncodedDnsPath)) File.Move(SecureDNS.OldSavedEncodedDnsPath, SecureDNS.SavedEncodedDnsPath, false);
+            if (Directory.Exists(SecureDNS.OldUserDataDirPath))
+                await FileDirectory.MoveDirectory(SecureDNS.OldUserDataDirPath, SecureDNS.UserDataDirPath, true, CancellationToken.None);
+            
+            if (Directory.Exists(SecureDNS.OldCertificateDirPath))
+                await FileDirectory.MoveDirectory(SecureDNS.OldCertificateDirPath, SecureDNS.CertificateDirPath, true, CancellationToken.None);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // do nothing
+            Debug.WriteLine("MoveToNewLocation: " + ex.Message);
         }
     }
 
@@ -251,14 +415,20 @@ public partial class FormMain
             return true;
     }
 
-    private void FlushDNS(bool writeToLog = true)
+    private async Task FlushDNS(bool showMsg = true)
     {
-        string? flushDNS = ProcessManager.Execute(out Process _, "ipconfig", "/flushdns");
-        if (!string.IsNullOrWhiteSpace(flushDNS) && writeToLog)
+        if (IsFlushingDns) return;
+        IsFlushingDns = true;
+        await Task.Run(async () =>
         {
-            // Write flush DNS message to log
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(flushDNS + NL, Color.LightGray));
-        }
+            string msg = $"{NL}Flushing Dns...{NL}";
+            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
+            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
+            msg = $"Dns flushed successfully.{NL}";
+            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+        });
+        IsFlushingDns = false;
     }
 
     private async Task FlushDnsOnExit(bool showMsg = false)
@@ -267,17 +437,17 @@ public partial class FormMain
         IsFlushingDns = true;
         await Task.Run(async () =>
         {
-            string msg = $"{NL}Flushing Dns...{NL}";
+            string msg = $"{NL}Full Flushing Dns...{NL}";
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
-            msg = await ProcessManager.ExecuteAsync("ipconfig", "/flushdns", true, true);
+            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-            msg = await ProcessManager.ExecuteAsync("ipconfig", "/registerdns", true, true);
+            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-            msg = await ProcessManager.ExecuteAsync("ipconfig", "/release", true, true);
+            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-            msg = await ProcessManager.ExecuteAsync("ipconfig", "/renew", true, true);
+            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-            msg = "Dns flushed successfully.";
+            msg = $"Dns flushed successfully.{NL}";
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
             //ProcessManager.Execute("netsh", "winsock reset"); // Needs PC Restart
         });
@@ -294,29 +464,38 @@ public partial class FormMain
         return list.Distinct().ToList();
     }
 
-    private void KillAll(bool killByName = false)
+    private async Task KillAll(bool killByName = false)
     {
-        if (killByName)
+        await Task.Run(() =>
         {
-            ProcessManager.KillProcessByName("SDCProxyServer");
-            ProcessManager.KillProcessByName("dnslookup");
-            ProcessManager.KillProcessByName("dnsproxy");
-            ProcessManager.KillProcessByName("dnscrypt-proxy");
-            ProcessManager.KillProcessByName("goodbyedpi");
-        }
-        else
-        {
-            ProcessManager.KillProcessByPID(PIDProxy);
-            ProcessManager.KillProcessByPID(PIDFakeProxy);
-            ProcessManager.KillProcessByName("dnslookup");
-            ProcessManager.KillProcessByPID(PIDDNSProxy);
-            ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
-            ProcessManager.KillProcessByPID(PIDDNSCrypt);
-            ProcessManager.KillProcessByPID(PIDDNSCryptBypass);
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
-        }
+            if (killByName)
+            {
+                while (ProcessManager.FindProcessByName("SDCProxyServer"))
+                    ProcessManager.KillProcessByName("SDCProxyServer");
+                while (ProcessManager.FindProcessByName("dnslookup"))
+                    ProcessManager.KillProcessByName("dnslookup");
+                while (ProcessManager.FindProcessByName("dnsproxy"))
+                    ProcessManager.KillProcessByName("dnsproxy");
+                while (ProcessManager.FindProcessByName("dnscrypt-proxy"))
+                    ProcessManager.KillProcessByName("dnscrypt-proxy");
+                while (ProcessManager.FindProcessByName("goodbyedpi"))
+                    ProcessManager.KillProcessByName("goodbyedpi");
+            }
+            else
+            {
+                ProcessManager.KillProcessByPID(PIDProxy);
+                ProcessManager.KillProcessByPID(PIDFakeProxy);
+                while (ProcessManager.FindProcessByName("dnslookup"))
+                    ProcessManager.KillProcessByName("dnslookup");
+                ProcessManager.KillProcessByPID(PIDDNSProxy);
+                ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
+                ProcessManager.KillProcessByPID(PIDDNSCrypt);
+                ProcessManager.KillProcessByPID(PIDDNSCryptBypass);
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+            }
+        });
     }
 
     public ProcessPriorityClass GetCPUPriority()
@@ -355,19 +534,20 @@ public partial class FormMain
 
     private async Task WriteNecessaryFilesToDisk()
     {
+        Architecture arch = RuntimeInformation.ProcessArchitecture;
         // Get New Versions
-        string dnslookupNewVer = SecureDNS.GetBinariesVersionFromResource("dnslookup");
-        string dnsproxyNewVer = SecureDNS.GetBinariesVersionFromResource("dnsproxy");
-        string dnscryptNewVer = SecureDNS.GetBinariesVersionFromResource("dnscrypt-proxy");
-        string sdcproxyserverNewVer = SecureDNS.GetBinariesVersionFromResource("sdcproxyserver");
-        string goodbyedpiNewVer = SecureDNS.GetBinariesVersionFromResource("goodbyedpi");
+        string dnslookupNewVer = SecureDNS.GetBinariesVersionFromResource("dnslookup", arch);
+        string dnsproxyNewVer = SecureDNS.GetBinariesVersionFromResource("dnsproxy", arch);
+        string dnscryptNewVer = SecureDNS.GetBinariesVersionFromResource("dnscrypt-proxy", arch);
+        string sdcproxyserverNewVer = SecureDNS.GetBinariesVersionFromResource("sdcproxyserver", arch);
+        string goodbyedpiNewVer = SecureDNS.GetBinariesVersionFromResource("goodbyedpi", arch);
 
         // Get Old Versions
-        string dnslookupOldVer = SecureDNS.GetBinariesVersion("dnslookup");
-        string dnsproxyOldVer = SecureDNS.GetBinariesVersion("dnsproxy");
-        string dnscryptOldVer = SecureDNS.GetBinariesVersion("dnscrypt-proxy");
-        string sdcproxyserverOldVer = SecureDNS.GetBinariesVersion("sdcproxyserver");
-        string goodbyedpiOldVer = SecureDNS.GetBinariesVersion("goodbyedpi");
+        string dnslookupOldVer = SecureDNS.GetBinariesVersion("dnslookup", arch);
+        string dnsproxyOldVer = SecureDNS.GetBinariesVersion("dnsproxy", arch);
+        string dnscryptOldVer = SecureDNS.GetBinariesVersion("dnscrypt-proxy", arch);
+        string sdcproxyserverOldVer = SecureDNS.GetBinariesVersion("sdcproxyserver", arch);
+        string goodbyedpiOldVer = SecureDNS.GetBinariesVersion("goodbyedpi", arch);
 
         // Get Version Result
         int dnslookupResult = Info.VersionCompare(dnslookupNewVer, dnslookupOldVer);
@@ -380,7 +560,7 @@ public partial class FormMain
         if (!CheckNecessaryFiles(false) || dnslookupResult == 1 || dnsproxyResult == 1 || dnscryptResult == 1 ||
                                            sdcproxyserverResult == 1 || goodbyedpiResult == 1)
         {
-            string msg1 = "Creating/Updating binaries. Please Wait..." + NL;
+            string msg1 = $"Creating/Updating {arch} binaries. Please Wait..." + NL;
             CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
 
             await writeBinariesAsync();
@@ -392,13 +572,29 @@ public partial class FormMain
                 Directory.CreateDirectory(SecureDNS.BinaryDirPath);
 
             if (!File.Exists(SecureDNS.DnsLookup) || dnslookupResult == 1)
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnslookup, SecureDNS.DnsLookup);
+            {
+                if (arch == Architecture.X64)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnslookup_X64, SecureDNS.DnsLookup);
+                if (arch == Architecture.X86)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnslookup_X86, SecureDNS.DnsLookup);
+            }
+                
 
             if (!File.Exists(SecureDNS.DnsProxy) || dnsproxyResult == 1)
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnsproxy, SecureDNS.DnsProxy);
+            {
+                if (arch == Architecture.X64)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnsproxy_X64, SecureDNS.DnsProxy);
+                if (arch == Architecture.X86)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnsproxy_X86, SecureDNS.DnsProxy);
+            }
 
             if (!File.Exists(SecureDNS.DNSCrypt) || dnscryptResult == 1)
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxyEXE, SecureDNS.DNSCrypt);
+            {
+                if (arch == Architecture.X64)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxy_X64, SecureDNS.DNSCrypt);
+                if (arch == Architecture.X86)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxy_X86, SecureDNS.DNSCrypt);
+            }
 
             if (!File.Exists(SecureDNS.DNSCryptConfigPath))
                 await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxyTOML, SecureDNS.DNSCryptConfigPath);
@@ -407,19 +603,28 @@ public partial class FormMain
                 await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxy_fakeproxyTOML, SecureDNS.DNSCryptConfigFakeProxyPath);
 
             if (!File.Exists(SecureDNS.ProxyServerPath) || sdcproxyserverResult == 1)
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.SDCProxyServer, SecureDNS.ProxyServerPath);
+            {
+                if (arch == Architecture.X64)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.SDCProxyServer_X64, SecureDNS.ProxyServerPath);
+                if (arch == Architecture.X86)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.SDCProxyServer_X86, SecureDNS.ProxyServerPath);
+            }
 
             if (!File.Exists(SecureDNS.GoodbyeDpi) || goodbyedpiResult == 1)
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.goodbyedpi, SecureDNS.GoodbyeDpi);
+                if (arch == Architecture.X64 || arch == Architecture.X86)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.goodbyedpi, SecureDNS.GoodbyeDpi);
 
             if (!File.Exists(SecureDNS.WinDivert))
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert, SecureDNS.WinDivert);
+                if (arch == Architecture.X64 || arch == Architecture.X86)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert, SecureDNS.WinDivert);
 
             if (!File.Exists(SecureDNS.WinDivert32))
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert32, SecureDNS.WinDivert32);
+                if (arch == Architecture.X64 || arch == Architecture.X86)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert32, SecureDNS.WinDivert32);
 
             if (!File.Exists(SecureDNS.WinDivert64))
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert64, SecureDNS.WinDivert64);
+                if (arch == Architecture.X64 || arch == Architecture.X86)
+                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert64, SecureDNS.WinDivert64);
 
             // Update old version numbers
             await File.WriteAllTextAsync(SecureDNS.BinariesVersionPath, NecessaryFiles.Resource1.versions);
@@ -500,6 +705,87 @@ public partial class FormMain
         dgv.Rows.AddRange(rList.ToArray());
     }
 
+    private void InitializeNicStatus(CustomDataGridView dgv)
+    {
+        ToolStripMenuItem toolStripMenuItemCopy = new();
+        toolStripMenuItemCopy.Text = "Copy Value";
+        toolStripMenuItemCopy.Click += (s, e) =>
+        {
+            if (dgv.SelectedCells.Count > 0)
+            {
+                string? value = dgv.CurrentRow.Cells[1].Value.ToString();
+                if (!string.IsNullOrEmpty(value))
+                {
+                    Clipboard.SetText(value);
+                }
+            }
+        };
+        CustomContextMenuStrip cms = new();
+        cms.Items.Add(toolStripMenuItemCopy);
+
+        dgv.MouseClick += (s, e) =>
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                dgv.Select(); // Set Focus on Control
+                int currentMouseOverRow = dgv.HitTest(e.X, e.Y).RowIndex;
+                if (currentMouseOverRow != -1)
+                {
+                    dgv.Rows[currentMouseOverRow].Cells[0].Selected = true;
+                    dgv.Rows[currentMouseOverRow].Selected = true;
+
+                    Theme.SetColors(cms);
+                    cms.RoundedCorners = 5;
+                    cms.Show(dgv, e.X, e.Y);
+                }
+
+            }
+        };
+
+        //dgv.SelectionChanged += (s, e) => dgv.ClearSelection();
+        dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
+        dgv.BorderStyle = BorderStyle.None;
+        dgv.ShowCellToolTips = true;
+        List<DataGridViewRow> rList = new();
+        for (int n = 0; n < 14; n++)
+        {
+            DataGridViewRow row = new();
+            row.CreateCells(dgv, "cell0", "cell1");
+            row.Height = TextRenderer.MeasureText("It doesn't matter what we write here!", dgv.Font).Height + 4;
+
+            string cellName = n switch
+            {
+                0 => "Name",
+                1 => "Description",
+                2 => "Adapter Type",
+                3 => "Availability",
+                4 => "Status",
+                5 => "Net Status",
+                6 => "DNS Addresses",
+                7 => "GUID",
+                8 => "MAC Address",
+                9 => "Manufacturer",
+                10 => "Is Physical Adapter",
+                11 => "ServiceName",
+                12 => "Speed",
+                13 => "Time Of Last Reset",
+                _ => string.Empty
+            };
+
+            if (n % 2 == 0)
+                row.DefaultCellStyle.BackColor = BackColor.ChangeBrightness(-0.2f);
+            else
+                row.DefaultCellStyle.BackColor = BackColor;
+
+            row.Cells[0].Value = cellName;
+            row.Cells[1].Value = string.Empty;
+            row.Cells[0].ToolTipText = string.Empty;
+            row.Cells[1].ToolTipText = string.Empty;
+            rList.Add(row);
+        }
+
+        dgv.Rows.AddRange(rList.ToArray());
+    }
 
     private async Task CheckDPIWorks(string host, int timeoutSec = 30) //Default timeout: 100 sec
     {

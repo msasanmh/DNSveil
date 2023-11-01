@@ -1,10 +1,10 @@
 ﻿using System.Net;
 using System.Diagnostics;
 using CustomControls;
-using System.Net.NetworkInformation;
 using System.Reflection;
 using MsmhToolsClass;
 using MsmhToolsClass.DnsTool;
+using System.Runtime.InteropServices;
 
 namespace SecureDNSClient;
 
@@ -12,8 +12,29 @@ public class SecureDNS
 {
     // App Name Without Extension
     private static readonly string appNameWithoutExtension = Path.GetFileNameWithoutExtension(Application.ExecutablePath);
+    
     // App Directory Path
     public static readonly string CurrentPath = Path.GetFullPath(AppContext.BaseDirectory);
+
+    public static readonly string CurrentExecutablePath = Path.GetFullPath(Application.ExecutablePath);
+
+    public static string GetParent
+    {
+        get
+        {
+            string parent = CurrentPath;
+            try
+            {
+                DirectoryInfo info = new(CurrentPath);
+                if (info.Parent != null) parent = info.Parent.FullName;
+            }
+            catch (Exception)
+            {
+                // do nothing
+            }
+            return parent;
+        }
+    }
 
     // Binaries path
     public static readonly string BinaryDirPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary"));
@@ -30,17 +51,6 @@ public class SecureDNS
     // Binaries file version path
     public static readonly string BinariesVersionPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "versions.txt"));
 
-    // Certificates path
-    public static readonly string CertificateDirPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate"));
-    public static readonly string IssuerKeyPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate", "rootCA.key"));
-    public static readonly string IssuerCertPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate", "rootCA.crt"));
-    public static readonly string KeyPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate", "localhost.key"));
-    public static readonly string CertPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate", "localhost.crt"));
-
-    // Certificate Subject Names
-    public static readonly string CertIssuerSubjectName = "CN=SecureDNSClient Authority";
-    public static readonly string CertSubjectName = "CN=SecureDNSClient";
-
     // Others
     public static readonly string DNSCryptConfigPath = Path.GetFullPath(Path.Combine(CurrentPath, "dnscrypt-proxy.toml"));
     public static readonly string DNSCryptConfigFakeProxyPath = Path.GetFullPath(Path.Combine(CurrentPath, "dnscrypt-proxy-fakeproxy.toml"));
@@ -49,39 +59,43 @@ public class SecureDNS
     public static readonly string ProxyServerRequestLogPath = Path.GetFullPath(Path.Combine(CurrentPath, "ProxyServerRequest.log"));
 
     // User Data
-    private const string UDN = "user";
-    public static readonly string UserDataDirPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN));
-    public static readonly string SettingsXmlPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, appNameWithoutExtension + ".xml")); // Settings XML path
-    public static readonly string SettingsXmlDnsLookup = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DnsLookupSettings.xml"));
-    public static readonly string SettingsXmlIpScanner = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "IpScannerSettings.xml"));
-    public static readonly string SettingsXmlDnsScanner = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DnsScannerSettings.xml"));
-    public static readonly string SettingsXmlDnsScannerExport = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DnsScannerExportSettings.xml"));
-    public static readonly string UserIdPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "uid.txt"));
-    public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "FakeDnsRules.txt"));
-    public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "BlackWhiteList.txt"));
-    public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DontBypassList.txt"));
-    public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CustomServers.txt"));
-    public static readonly string CustomServersXmlPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CustomServers.xml"));
-    public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CustomServers_Working.txt"));
-    public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "DPIBlacklist.txt"));
-    public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "NicName.txt"));
-    public static readonly string SavedEncodedDnsPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "SavedEncodedDns.txt"));
-    public static readonly string LogWindowPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "LogWindow.txt"));
-    public static readonly string CloseStatusPath = Path.GetFullPath(Path.Combine(CurrentPath, UDN, "CloseStatus.txt"));
+    private const string UDN = "UserData";
+    public static readonly string UserDataDirPath = Path.GetFullPath(Path.Combine(GetParent, UDN));
+    public static readonly string SettingsXmlPath = Path.GetFullPath(Path.Combine(UserDataDirPath, appNameWithoutExtension + ".xml")); // Settings XML path
+    public static readonly string SettingsXmlDnsLookup = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsLookupSettings.xml"));
+    public static readonly string SettingsXmlIpScanner = Path.GetFullPath(Path.Combine(UserDataDirPath, "IpScannerSettings.xml"));
+    public static readonly string SettingsXmlDnsScanner = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsScannerSettings.xml"));
+    public static readonly string SettingsXmlDnsScannerExport = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsScannerExportSettings.xml"));
+    public static readonly string UserIdPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "uid.txt"));
+    public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeDnsRules.txt"));
+    public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "BlackWhiteList.txt"));
+    public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DontBypassList.txt"));
+    public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers.txt"));
+    public static readonly string CustomServersXmlPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers.xml"));
+    public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers_Working.txt"));
+    public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DPIBlacklist.txt"));
+    public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(UserDataDirPath, "NicName.txt"));
+    public static readonly string SavedEncodedDnsPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "SavedEncodedDns.txt"));
+    public static readonly string LogWindowPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "LogWindow.txt"));
+    public static readonly string CloseStatusPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CloseStatus.txt"));
 
     // User Data Old Path
-    public static readonly string OldSettingsXmlPath = Path.GetFullPath(appNameWithoutExtension + ".xml");
-    public static readonly string OldSettingsXmlDnsLookup = Path.GetFullPath(CurrentPath + "DnsLookupSettings.xml");
-    public static readonly string OldSettingsXmlIpScanner = Path.GetFullPath(CurrentPath + "IpScannerSettings.xml");
-    public static readonly string OldUserIdPath = Path.GetFullPath(Path.Combine(CurrentPath, "uid.txt"));
-    public static readonly string OldFakeDnsRulesPath = Path.GetFullPath(Path.Combine(CurrentPath, "FakeDnsRules.txt"));
-    public static readonly string OldBlackWhiteListPath = Path.GetFullPath(Path.Combine(CurrentPath, "BlackWhiteList.txt"));
-    public static readonly string OldDontBypassListPath = Path.GetFullPath(Path.Combine(CurrentPath, "DontBypassList.txt"));
-    public static readonly string OldCustomServersPath = Path.GetFullPath(Path.Combine(CurrentPath, "CustomServers.txt"));
-    public static readonly string OldWorkingServersPath = Path.GetFullPath(Path.Combine(CurrentPath, "CustomServers_Working.txt"));
-    public static readonly string OldDPIBlacklistPath = Path.GetFullPath(Path.Combine(CurrentPath, "DPIBlacklist.txt"));
-    public static readonly string OldNicNamePath = Path.GetFullPath(Path.Combine(CurrentPath, "NicName.txt"));
-    public static readonly string OldSavedEncodedDnsPath = Path.GetFullPath(Path.Combine(CurrentPath, "SavedEncodedDns.txt"));
+    private const string OldUDN = "user";
+    public static readonly string OldUserDataDirPath = Path.GetFullPath(Path.Combine(CurrentPath, OldUDN));
+
+    // Certificates Path
+    public static readonly string CertificateDirPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "certificate"));
+    public static readonly string IssuerKeyPath = Path.GetFullPath(Path.Combine(CertificateDirPath, "rootCA.key"));
+    public static readonly string IssuerCertPath = Path.GetFullPath(Path.Combine(CertificateDirPath, "rootCA.crt"));
+    public static readonly string KeyPath = Path.GetFullPath(Path.Combine(CertificateDirPath, "localhost.key"));
+    public static readonly string CertPath = Path.GetFullPath(Path.Combine(CertificateDirPath, "localhost.crt"));
+
+    // Certificates Old Path
+    public static readonly string OldCertificateDirPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate"));
+
+    // Certificate Subject Names
+    public static readonly string CertIssuerSubjectName = "CN=SecureDNSClient Authority";
+    public static readonly string CertSubjectName = "CN=SecureDNSClient";
 
     // Bootstrap and Fallback
     public static readonly IPAddress BootstrapDnsIPv4 = IPAddress.Parse("8.8.8.8");
@@ -90,6 +104,26 @@ public class SecureDNS
     public static readonly IPAddress FallbackDnsIPv4 = IPAddress.Parse("8.8.8.8");
     public static readonly IPAddress FallbackDnsIPv6 = IPAddress.Parse("2001:4860:4860::8888");
     public static readonly int FallbackDnsPort = 53;
+
+    // Windows Firewall Rule Names
+    public static readonly string FirewallRule_SdcIn = "SDC IN";
+    public static readonly string FirewallRule_SdcOut = "SDC OUT";
+    public static readonly string FirewallRule_SdcDnsLookupIn = "SDC DnsLookup IN";
+    public static readonly string FirewallRule_SdcDnsLookupOut = "SDC DnsLookup OUT";
+    public static readonly string FirewallRule_SdcDnsProxyIn = "SDC DnsProxy IN";
+    public static readonly string FirewallRule_SdcDnsProxyOut = "SDC DnsProxy OUT";
+    public static readonly string FirewallRule_SdcDNSCryptIn = "SDC DNSCrypt IN";
+    public static readonly string FirewallRule_SdcDNSCryptOut = "SDC DNSCrypt OUT";
+    public static readonly string FirewallRule_SdcProxyServerIn = "SDC ProxyServer IN";
+    public static readonly string FirewallRule_SdcProxyServerOut = "SDC ProxyServer OUT";
+    public static readonly string FirewallRule_SdcGoodbyeDpiIn = "SDC GoodbyeDpi IN";
+    public static readonly string FirewallRule_SdcGoodbyeDpiOut = "SDC GoodbyeDpi OUT";
+    public static readonly string FirewallRule_SdcWinDivertIn = "SDC WinDivert IN";
+    public static readonly string FirewallRule_SdcWinDivertOut = "SDC WinDivert OUT";
+    public static readonly string FirewallRule_SdcWinDivert32In = "SDC WinDivert32 IN";
+    public static readonly string FirewallRule_SdcWinDivert32Out = "SDC WinDivert32 OUT";
+    public static readonly string FirewallRule_SdcWinDivert64In = "SDC WinDivert64 IN";
+    public static readonly string FirewallRule_SdcWinDivert64Out = "SDC WinDivert64 OUT";
 
     public static void GenerateUid(Control control)
     {
@@ -168,7 +202,7 @@ public class SecureDNS
         }
     }
 
-    public static string GetBinariesVersion(string binaryName)
+    public static string GetBinariesVersion(string binaryName, Architecture arch)
     {
         if (File.Exists(BinariesVersionPath))
         {
@@ -177,7 +211,8 @@ public class SecureDNS
             for (int n = 0; n < lines.Count; n++)
             {
                 string line = lines[n];
-                if (line.StartsWith(binaryName, StringComparison.OrdinalIgnoreCase))
+                string appName = $"{binaryName}-{arch}";
+                if (line.StartsWith(appName, StringComparison.OrdinalIgnoreCase))
                 {
                     string[] split = line.Split(" ");
                     if (split[1].Length > 0)
@@ -188,7 +223,7 @@ public class SecureDNS
         return "0.0.0";
     }
 
-    public static string GetBinariesVersionFromResource(string binaryName)
+    public static string GetBinariesVersionFromResource(string binaryName, Architecture arch)
     {
         string? content = NecessaryFiles.Resource1.versions;
         if (!string.IsNullOrWhiteSpace(content))
@@ -197,7 +232,8 @@ public class SecureDNS
             for (int n = 0; n < lines.Count; n++)
             {
                 string line = lines[n];
-                if (line.StartsWith(binaryName, StringComparison.OrdinalIgnoreCase))
+                string appName = $"{binaryName}-{arch}";
+                if (line.StartsWith(appName, StringComparison.OrdinalIgnoreCase))
                 {
                     string[] split = line.Split(" ");
                     if (split[1].Length > 0)
@@ -205,7 +241,7 @@ public class SecureDNS
                 }
             }
         }
-        return "0.0.0";
+        return "99.99.99";
     }
 
     public static async Task<string> HostToCompanyOffline(string host)
@@ -302,11 +338,11 @@ public class SecureDNS
         return company;
     }
 
-    public static void UpdateNICs(CustomComboBox ccb, out List<NetworkInterface> availableNICs)
+    public static void UpdateNICs(CustomComboBox ccb, bool upAndRunning, out List<string> availableNICs)
     {
         object item = ccb.SelectedItem;
         ccb.Items.Clear();
-        List<NetworkInterface> nics = NetworkTool.GetNetworkInterfacesIPv4(true);
+        List<string> nics = NetworkInterfaces.GetAllNetworkInterfaces(upAndRunning);
         availableNICs = new(nics);
         if (nics == null || nics.Count < 1)
         {
@@ -315,8 +351,8 @@ public class SecureDNS
         }
         for (int n = 0; n < nics.Count; n++)
         {
-            NetworkInterface nic = nics[n];
-            ccb.Items.Add(nic.Name);
+            string nicName = nics[n];
+            ccb.Items.Add(nicName);
         }
         if (ccb.Items.Count > 0)
         {
@@ -338,7 +374,7 @@ public class SecureDNS
         }
     }
 
-    // HostToCompany file generator
+    // HostToCompany file Generator
     private static List<object> HostToCompanyList = new();
     public static async Task HostToCompanyAsync(string hostsFilePath)
     {

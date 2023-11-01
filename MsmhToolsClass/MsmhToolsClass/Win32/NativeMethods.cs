@@ -1,5 +1,4 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace MsmhToolsClass;
@@ -7,7 +6,6 @@ namespace MsmhToolsClass;
 #pragma warning disable CA1401 // P/Invokes should not be visible
 public static class NativeMethods
 {
-
     #region Hunspell
 
     [DllImport("libhunspell", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false)]

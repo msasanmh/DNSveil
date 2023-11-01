@@ -31,6 +31,8 @@
             components = new System.ComponentModel.Container();
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
             CustomRichTextBoxLog = new CustomControls.CustomRichTextBox();
             CustomButtonCheck = new CustomControls.CustomButton();
@@ -65,6 +67,11 @@
             CustomRadioButtonConnectCheckedServers = new CustomControls.CustomRadioButton();
             CustomRadioButtonConnectDNSCrypt = new CustomControls.CustomRadioButton();
             TabPageSetDNS = new TabPage();
+            CustomButtonEnableDisableNic = new CustomControls.CustomButton();
+            CustomGroupBoxNicStatus = new CustomControls.CustomGroupBox();
+            CustomDataGridViewNicStatus = new CustomControls.CustomDataGridView();
+            ColumnNicStatusName = new DataGridViewTextBoxColumn();
+            ColumnNicStatusText = new DataGridViewTextBoxColumn();
             CustomButtonUpdateNICs = new CustomControls.CustomButton();
             CustomButtonSetDNS = new CustomControls.CustomButton();
             CustomLabelSelectNIC = new CustomControls.CustomLabel();
@@ -173,6 +180,8 @@
             CustomLabelSettingCheckTimeout = new CustomControls.CustomLabel();
             CustomNumericUpDownSettingCheckTimeout = new CustomControls.CustomNumericUpDown();
             TabPageSettingsQuickConnect = new TabPage();
+            CustomCheckBoxSettingQcUseSavedServers = new CustomControls.CustomCheckBox();
+            CustomButtonSettingQcStartup = new CustomControls.CustomButton();
             CustomCheckBoxSettingQcSetDnsTo = new CustomControls.CustomCheckBox();
             CustomComboBoxSettingQcGdBasic = new CustomControls.CustomComboBox();
             CustomRadioButtonSettingQcGdAdvanced = new CustomControls.CustomRadioButton();
@@ -295,6 +304,8 @@
             TabPageCheck.SuspendLayout();
             TabPageConnect.SuspendLayout();
             TabPageSetDNS.SuspendLayout();
+            CustomGroupBoxNicStatus.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)CustomDataGridViewNicStatus).BeginInit();
             TabPageShare.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownPDpiBeforeSniChunks).BeginInit();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownPDpiAntiPatternOffset).BeginInit();
@@ -379,6 +390,7 @@
             CustomRichTextBoxLog.Name = "CustomRichTextBoxLog";
             CustomRichTextBoxLog.ReadOnly = true;
             CustomRichTextBoxLog.RightMargin = 0;
+            CustomRichTextBoxLog.RoundedCorners = 0;
             CustomRichTextBoxLog.ScrollBars = ScrollBars.Both;
             CustomRichTextBoxLog.ScrollToBottom = true;
             CustomRichTextBoxLog.SelectionColor = Color.White;
@@ -416,6 +428,7 @@
             CustomGroupBoxLog.Location = new Point(0, 0);
             CustomGroupBoxLog.Margin = new Padding(1);
             CustomGroupBoxLog.Name = "CustomGroupBoxLog";
+            CustomGroupBoxLog.RoundedCorners = 5;
             CustomGroupBoxLog.Size = new Size(984, 177);
             CustomGroupBoxLog.TabIndex = 3;
             CustomGroupBoxLog.TabStop = false;
@@ -430,7 +443,7 @@
             CustomCheckBoxInsecure.Location = new Point(25, 220);
             CustomCheckBoxInsecure.Name = "CustomCheckBoxInsecure";
             CustomCheckBoxInsecure.SelectionColor = Color.LightBlue;
-            CustomCheckBoxInsecure.Size = new Size(211, 17);
+            CustomCheckBoxInsecure.Size = new Size(215, 17);
             CustomCheckBoxInsecure.TabIndex = 7;
             CustomCheckBoxInsecure.Text = "Allow insecure (not recommended)";
             CustomCheckBoxInsecure.UseVisualStyleBackColor = false;
@@ -475,9 +488,8 @@
             CustomRadioButtonCustom.Location = new Point(25, 50);
             CustomRadioButtonCustom.Name = "CustomRadioButtonCustom";
             CustomRadioButtonCustom.SelectionColor = Color.LightBlue;
-            CustomRadioButtonCustom.Size = new Size(125, 17);
+            CustomRadioButtonCustom.Size = new Size(129, 17);
             CustomRadioButtonCustom.TabIndex = 4;
-            CustomRadioButtonCustom.TabStop = true;
             CustomRadioButtonCustom.Text = "Use custom servers";
             CustomRadioButtonCustom.UseVisualStyleBackColor = false;
             CustomRadioButtonCustom.CheckedChanged += SecureDNSClient_CheckedChanged;
@@ -487,14 +499,12 @@
             CustomRadioButtonBuiltIn.BackColor = Color.DimGray;
             CustomRadioButtonBuiltIn.BorderColor = Color.Blue;
             CustomRadioButtonBuiltIn.CheckColor = Color.Blue;
-            CustomRadioButtonBuiltIn.Checked = true;
             CustomRadioButtonBuiltIn.ForeColor = Color.White;
             CustomRadioButtonBuiltIn.Location = new Point(25, 20);
             CustomRadioButtonBuiltIn.Name = "CustomRadioButtonBuiltIn";
             CustomRadioButtonBuiltIn.SelectionColor = Color.LightBlue;
-            CustomRadioButtonBuiltIn.Size = new Size(125, 17);
+            CustomRadioButtonBuiltIn.Size = new Size(128, 17);
             CustomRadioButtonBuiltIn.TabIndex = 3;
-            CustomRadioButtonBuiltIn.TabStop = true;
             CustomRadioButtonBuiltIn.Text = "Use built-in servers";
             CustomRadioButtonBuiltIn.UseVisualStyleBackColor = false;
             CustomRadioButtonBuiltIn.CheckedChanged += SecureDNSClient_CheckedChanged;
@@ -523,6 +533,7 @@
             CustomNumericUpDownSSLFragmentSize.Margin = new Padding(1);
             CustomNumericUpDownSSLFragmentSize.Maximum = new decimal(new int[] { 70000, 0, 0, 0 });
             CustomNumericUpDownSSLFragmentSize.Name = "CustomNumericUpDownSSLFragmentSize";
+            CustomNumericUpDownSSLFragmentSize.RoundedCorners = 5;
             CustomNumericUpDownSSLFragmentSize.Size = new Size(53, 23);
             CustomNumericUpDownSSLFragmentSize.TabIndex = 9;
             CustomNumericUpDownSSLFragmentSize.Value = new decimal(new int[] { 40, 0, 0, 0 });
@@ -546,6 +557,7 @@
             CustomTextBoxHTTPProxy.Multiline = false;
             CustomTextBoxHTTPProxy.Name = "CustomTextBoxHTTPProxy";
             CustomTextBoxHTTPProxy.ReadOnly = false;
+            CustomTextBoxHTTPProxy.RoundedCorners = 0;
             CustomTextBoxHTTPProxy.ScrollBars = ScrollBars.None;
             CustomTextBoxHTTPProxy.ShortcutsEnabled = true;
             CustomTextBoxHTTPProxy.Size = new Size(205, 23);
@@ -566,7 +578,7 @@
             CustomRadioButtonDPIModeExtreme.Margin = new Padding(1);
             CustomRadioButtonDPIModeExtreme.Name = "CustomRadioButtonDPIModeExtreme";
             CustomRadioButtonDPIModeExtreme.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIModeExtreme.Size = new Size(64, 17);
+            CustomRadioButtonDPIModeExtreme.Size = new Size(68, 17);
             CustomRadioButtonDPIModeExtreme.TabIndex = 7;
             CustomRadioButtonDPIModeExtreme.Text = "Extreme";
             CustomRadioButtonDPIModeExtreme.UseVisualStyleBackColor = false;
@@ -582,7 +594,7 @@
             CustomRadioButtonDPIModeHigh.Margin = new Padding(1);
             CustomRadioButtonDPIModeHigh.Name = "CustomRadioButtonDPIModeHigh";
             CustomRadioButtonDPIModeHigh.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIModeHigh.Size = new Size(47, 17);
+            CustomRadioButtonDPIModeHigh.Size = new Size(50, 17);
             CustomRadioButtonDPIModeHigh.TabIndex = 6;
             CustomRadioButtonDPIModeHigh.Text = "High";
             CustomRadioButtonDPIModeHigh.UseVisualStyleBackColor = false;
@@ -598,7 +610,7 @@
             CustomRadioButtonDPIModeMedium.Margin = new Padding(1);
             CustomRadioButtonDPIModeMedium.Name = "CustomRadioButtonDPIModeMedium";
             CustomRadioButtonDPIModeMedium.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIModeMedium.Size = new Size(66, 17);
+            CustomRadioButtonDPIModeMedium.Size = new Size(69, 17);
             CustomRadioButtonDPIModeMedium.TabIndex = 5;
             CustomRadioButtonDPIModeMedium.Text = "Medium";
             CustomRadioButtonDPIModeMedium.UseVisualStyleBackColor = false;
@@ -615,7 +627,7 @@
             CustomRadioButtonDPIModeLight.Margin = new Padding(1);
             CustomRadioButtonDPIModeLight.Name = "CustomRadioButtonDPIModeLight";
             CustomRadioButtonDPIModeLight.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIModeLight.Size = new Size(48, 17);
+            CustomRadioButtonDPIModeLight.Size = new Size(51, 17);
             CustomRadioButtonDPIModeLight.TabIndex = 4;
             CustomRadioButtonDPIModeLight.TabStop = true;
             CustomRadioButtonDPIModeLight.Text = "Light";
@@ -665,6 +677,7 @@
             CustomTabControlMain.Location = new Point(0, 0);
             CustomTabControlMain.Margin = new Padding(0);
             CustomTabControlMain.Name = "CustomTabControlMain";
+            CustomTabControlMain.RoundedCorners = 5;
             CustomTabControlMain.SelectedIndex = 0;
             CustomTabControlMain.Size = new Size(779, 400);
             CustomTabControlMain.SizeMode = TabSizeMode.Fixed;
@@ -697,6 +710,7 @@
             CustomTabControlSecureDNS.Location = new Point(3, 3);
             CustomTabControlSecureDNS.Margin = new Padding(0);
             CustomTabControlSecureDNS.Name = "CustomTabControlSecureDNS";
+            CustomTabControlSecureDNS.RoundedCorners = 5;
             CustomTabControlSecureDNS.SelectedIndex = 0;
             CustomTabControlSecureDNS.Size = new Size(765, 365);
             CustomTabControlSecureDNS.SizeMode = TabSizeMode.Fixed;
@@ -792,7 +806,7 @@
             CustomCheckBoxCheckInParallel.Location = new Point(25, 190);
             CustomCheckBoxCheckInParallel.Name = "CustomCheckBoxCheckInParallel";
             CustomCheckBoxCheckInParallel.SelectionColor = Color.LightBlue;
-            CustomCheckBoxCheckInParallel.Size = new Size(110, 17);
+            CustomCheckBoxCheckInParallel.Size = new Size(113, 17);
             CustomCheckBoxCheckInParallel.TabIndex = 12;
             CustomCheckBoxCheckInParallel.Text = "Check in parallel";
             CustomCheckBoxCheckInParallel.UseVisualStyleBackColor = false;
@@ -838,7 +852,7 @@
             CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Location = new Point(25, 80);
             CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Name = "CustomRadioButtonConnectFakeProxyDohViaProxyDPI";
             CustomRadioButtonConnectFakeProxyDohViaProxyDPI.SelectionColor = Color.LightBlue;
-            CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Size = new Size(421, 17);
+            CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Size = new Size(425, 17);
             CustomRadioButtonConnectFakeProxyDohViaProxyDPI.TabIndex = 17;
             CustomRadioButtonConnectFakeProxyDohViaProxyDPI.TabStop = true;
             CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Text = "Connect to Fake Proxy DoH using ProxyDPI (Gets settings from Share tab)";
@@ -853,7 +867,7 @@
             CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Location = new Point(25, 125);
             CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Name = "CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI";
             CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.SelectionColor = Color.LightBlue;
-            CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Size = new Size(395, 17);
+            CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Size = new Size(399, 17);
             CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.TabIndex = 15;
             CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Text = "Connect to Fake Proxy DoH using GoodbyeDPI (Light & User Choice)";
             CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.UseVisualStyleBackColor = false;
@@ -868,7 +882,7 @@
             CustomRadioButtonConnectCheckedServers.Location = new Point(25, 35);
             CustomRadioButtonConnectCheckedServers.Name = "CustomRadioButtonConnectCheckedServers";
             CustomRadioButtonConnectCheckedServers.SelectionColor = Color.LightBlue;
-            CustomRadioButtonConnectCheckedServers.Size = new Size(169, 17);
+            CustomRadioButtonConnectCheckedServers.Size = new Size(173, 17);
             CustomRadioButtonConnectCheckedServers.TabIndex = 14;
             CustomRadioButtonConnectCheckedServers.TabStop = true;
             CustomRadioButtonConnectCheckedServers.Text = "Connect to working servers";
@@ -883,7 +897,7 @@
             CustomRadioButtonConnectDNSCrypt.Location = new Point(25, 170);
             CustomRadioButtonConnectDNSCrypt.Name = "CustomRadioButtonConnectDNSCrypt";
             CustomRadioButtonConnectDNSCrypt.SelectionColor = Color.LightBlue;
-            CustomRadioButtonConnectDNSCrypt.Size = new Size(283, 17);
+            CustomRadioButtonConnectDNSCrypt.Size = new Size(287, 17);
             CustomRadioButtonConnectDNSCrypt.TabIndex = 13;
             CustomRadioButtonConnectDNSCrypt.Text = "Connect to popular servers using HTTP(S) proxy:";
             CustomRadioButtonConnectDNSCrypt.UseVisualStyleBackColor = false;
@@ -892,6 +906,8 @@
             // TabPageSetDNS
             // 
             TabPageSetDNS.BackColor = Color.Transparent;
+            TabPageSetDNS.Controls.Add(CustomButtonEnableDisableNic);
+            TabPageSetDNS.Controls.Add(CustomGroupBoxNicStatus);
             TabPageSetDNS.Controls.Add(CustomButtonUpdateNICs);
             TabPageSetDNS.Controls.Add(CustomButtonSetDNS);
             TabPageSetDNS.Controls.Add(CustomLabelSelectNIC);
@@ -905,11 +921,103 @@
             TabPageSetDNS.Tag = 2;
             TabPageSetDNS.Text = "3. Set DNS";
             // 
+            // CustomButtonEnableDisableNic
+            // 
+            CustomButtonEnableDisableNic.BorderColor = Color.Blue;
+            CustomButtonEnableDisableNic.FlatStyle = FlatStyle.Flat;
+            CustomButtonEnableDisableNic.Location = new Point(106, 84);
+            CustomButtonEnableDisableNic.Name = "CustomButtonEnableDisableNic";
+            CustomButtonEnableDisableNic.RoundedCorners = 5;
+            CustomButtonEnableDisableNic.SelectionColor = Color.LightBlue;
+            CustomButtonEnableDisableNic.Size = new Size(80, 27);
+            CustomButtonEnableDisableNic.TabIndex = 6;
+            CustomButtonEnableDisableNic.Text = "Disable NIC";
+            CustomButtonEnableDisableNic.UseVisualStyleBackColor = true;
+            CustomButtonEnableDisableNic.Click += CustomButtonEnableDisableNic_Click;
+            // 
+            // CustomGroupBoxNicStatus
+            // 
+            CustomGroupBoxNicStatus.BorderColor = Color.Blue;
+            CustomGroupBoxNicStatus.Controls.Add(CustomDataGridViewNicStatus);
+            CustomGroupBoxNicStatus.Location = new Point(322, 25);
+            CustomGroupBoxNicStatus.Name = "CustomGroupBoxNicStatus";
+            CustomGroupBoxNicStatus.RoundedCorners = 5;
+            CustomGroupBoxNicStatus.Size = new Size(316, 237);
+            CustomGroupBoxNicStatus.TabIndex = 5;
+            CustomGroupBoxNicStatus.TabStop = false;
+            CustomGroupBoxNicStatus.Text = "Network Adapter Status";
+            // 
+            // CustomDataGridViewNicStatus
+            // 
+            CustomDataGridViewNicStatus.AllowUserToAddRows = false;
+            CustomDataGridViewNicStatus.AllowUserToDeleteRows = false;
+            CustomDataGridViewNicStatus.AllowUserToResizeColumns = false;
+            CustomDataGridViewNicStatus.AllowUserToResizeRows = false;
+            CustomDataGridViewNicStatus.BorderColor = Color.Blue;
+            CustomDataGridViewNicStatus.CheckColor = Color.Blue;
+            CustomDataGridViewNicStatus.ColumnHeadersBorder = true;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle1.ForeColor = Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle1.SelectionForeColor = Color.White;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            CustomDataGridViewNicStatus.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            CustomDataGridViewNicStatus.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            CustomDataGridViewNicStatus.ColumnHeadersVisible = false;
+            CustomDataGridViewNicStatus.Columns.AddRange(new DataGridViewColumn[] { ColumnNicStatusName, ColumnNicStatusText });
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = Color.DimGray;
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle2.ForeColor = Color.White;
+            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(97, 177, 255);
+            dataGridViewCellStyle2.SelectionForeColor = Color.White;
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
+            CustomDataGridViewNicStatus.DefaultCellStyle = dataGridViewCellStyle2;
+            CustomDataGridViewNicStatus.Dock = DockStyle.Fill;
+            CustomDataGridViewNicStatus.GridColor = Color.LightBlue;
+            CustomDataGridViewNicStatus.Location = new Point(3, 19);
+            CustomDataGridViewNicStatus.MultiSelect = false;
+            CustomDataGridViewNicStatus.Name = "CustomDataGridViewNicStatus";
+            CustomDataGridViewNicStatus.ReadOnly = true;
+            CustomDataGridViewNicStatus.RowHeadersVisible = false;
+            CustomDataGridViewNicStatus.RowTemplate.Height = 25;
+            CustomDataGridViewNicStatus.ScrollBars = ScrollBars.None;
+            CustomDataGridViewNicStatus.SelectionColor = Color.DodgerBlue;
+            CustomDataGridViewNicStatus.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            CustomDataGridViewNicStatus.SelectionModeFocus = false;
+            CustomDataGridViewNicStatus.ShowCellErrors = false;
+            CustomDataGridViewNicStatus.ShowCellToolTips = false;
+            CustomDataGridViewNicStatus.ShowEditingIcon = false;
+            CustomDataGridViewNicStatus.ShowRowErrors = false;
+            CustomDataGridViewNicStatus.Size = new Size(310, 215);
+            CustomDataGridViewNicStatus.TabIndex = 19;
+            // 
+            // ColumnNicStatusName
+            // 
+            ColumnNicStatusName.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            ColumnNicStatusName.HeaderText = "Status Name";
+            ColumnNicStatusName.Name = "ColumnNicStatusName";
+            ColumnNicStatusName.ReadOnly = true;
+            ColumnNicStatusName.Resizable = DataGridViewTriState.False;
+            ColumnNicStatusName.SortMode = DataGridViewColumnSortMode.NotSortable;
+            ColumnNicStatusName.Width = 5;
+            // 
+            // ColumnNicStatusText
+            // 
+            ColumnNicStatusText.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            ColumnNicStatusText.HeaderText = "Status Text";
+            ColumnNicStatusText.Name = "ColumnNicStatusText";
+            ColumnNicStatusText.ReadOnly = true;
+            ColumnNicStatusText.Resizable = DataGridViewTriState.False;
+            ColumnNicStatusText.SortMode = DataGridViewColumnSortMode.NotSortable;
+            // 
             // CustomButtonUpdateNICs
             // 
             CustomButtonUpdateNICs.BorderColor = Color.Blue;
             CustomButtonUpdateNICs.FlatStyle = FlatStyle.Flat;
-            CustomButtonUpdateNICs.Location = new Point(250, 53);
+            CustomButtonUpdateNICs.Location = new Point(25, 84);
             CustomButtonUpdateNICs.Name = "CustomButtonUpdateNICs";
             CustomButtonUpdateNICs.RoundedCorners = 5;
             CustomButtonUpdateNICs.SelectionColor = Color.LightBlue;
@@ -957,7 +1065,7 @@
             CustomLabelSetDNSInfo.BorderColor = Color.Blue;
             CustomLabelSetDNSInfo.FlatStyle = FlatStyle.Flat;
             CustomLabelSetDNSInfo.ForeColor = Color.White;
-            CustomLabelSetDNSInfo.Location = new Point(25, 100);
+            CustomLabelSetDNSInfo.Location = new Point(25, 137);
             CustomLabelSetDNSInfo.Name = "CustomLabelSetDNSInfo";
             CustomLabelSetDNSInfo.RoundedCorners = 0;
             CustomLabelSetDNSInfo.Size = new Size(220, 45);
@@ -974,8 +1082,9 @@
             CustomComboBoxNICs.ItemHeight = 17;
             CustomComboBoxNICs.Location = new Point(25, 55);
             CustomComboBoxNICs.Name = "CustomComboBoxNICs";
+            CustomComboBoxNICs.RoundedCorners = 5;
             CustomComboBoxNICs.SelectionColor = Color.DodgerBlue;
-            CustomComboBoxNICs.Size = new Size(171, 23);
+            CustomComboBoxNICs.Size = new Size(200, 23);
             CustomComboBoxNICs.TabIndex = 1;
             // 
             // TabPageShare
@@ -1047,6 +1156,7 @@
             CustomNumericUpDownPDpiBeforeSniChunks.Maximum = new decimal(new int[] { 500, 0, 0, 0 });
             CustomNumericUpDownPDpiBeforeSniChunks.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownPDpiBeforeSniChunks.Name = "CustomNumericUpDownPDpiBeforeSniChunks";
+            CustomNumericUpDownPDpiBeforeSniChunks.RoundedCorners = 5;
             CustomNumericUpDownPDpiBeforeSniChunks.Size = new Size(45, 23);
             CustomNumericUpDownPDpiBeforeSniChunks.TabIndex = 44;
             CustomNumericUpDownPDpiBeforeSniChunks.Value = new decimal(new int[] { 50, 0, 0, 0 });
@@ -1092,6 +1202,7 @@
             CustomComboBoxPDpiSniChunkMode.Items.AddRange(new object[] { "SNI", "SNI Extension", "All Extensions" });
             CustomComboBoxPDpiSniChunkMode.Location = new Point(167, 138);
             CustomComboBoxPDpiSniChunkMode.Name = "CustomComboBoxPDpiSniChunkMode";
+            CustomComboBoxPDpiSniChunkMode.RoundedCorners = 5;
             CustomComboBoxPDpiSniChunkMode.SelectionColor = Color.DodgerBlue;
             CustomComboBoxPDpiSniChunkMode.Size = new Size(100, 23);
             CustomComboBoxPDpiSniChunkMode.TabIndex = 41;
@@ -1104,6 +1215,7 @@
             CustomNumericUpDownPDpiAntiPatternOffset.Location = new Point(167, 198);
             CustomNumericUpDownPDpiAntiPatternOffset.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownPDpiAntiPatternOffset.Name = "CustomNumericUpDownPDpiAntiPatternOffset";
+            CustomNumericUpDownPDpiAntiPatternOffset.RoundedCorners = 5;
             CustomNumericUpDownPDpiAntiPatternOffset.Size = new Size(45, 23);
             CustomNumericUpDownPDpiAntiPatternOffset.TabIndex = 40;
             CustomNumericUpDownPDpiAntiPatternOffset.Value = new decimal(new int[] { 2, 0, 0, 0 });
@@ -1132,7 +1244,7 @@
             CustomCheckBoxProxyEventShowChunkDetails.Location = new Point(190, 40);
             CustomCheckBoxProxyEventShowChunkDetails.Name = "CustomCheckBoxProxyEventShowChunkDetails";
             CustomCheckBoxProxyEventShowChunkDetails.SelectionColor = Color.LightBlue;
-            CustomCheckBoxProxyEventShowChunkDetails.Size = new Size(161, 17);
+            CustomCheckBoxProxyEventShowChunkDetails.Size = new Size(164, 17);
             CustomCheckBoxProxyEventShowChunkDetails.TabIndex = 38;
             CustomCheckBoxProxyEventShowChunkDetails.Text = "Write chunk details to log";
             CustomCheckBoxProxyEventShowChunkDetails.UseVisualStyleBackColor = false;
@@ -1160,6 +1272,7 @@
             CustomNumericUpDownPDpiFragDelay.BorderStyle = BorderStyle.FixedSingle;
             CustomNumericUpDownPDpiFragDelay.Location = new Point(167, 228);
             CustomNumericUpDownPDpiFragDelay.Name = "CustomNumericUpDownPDpiFragDelay";
+            CustomNumericUpDownPDpiFragDelay.RoundedCorners = 5;
             CustomNumericUpDownPDpiFragDelay.Size = new Size(45, 23);
             CustomNumericUpDownPDpiFragDelay.TabIndex = 36;
             CustomNumericUpDownPDpiFragDelay.Value = new decimal(new int[] { 1, 0, 0, 0 });
@@ -1203,6 +1316,7 @@
             CustomNumericUpDownPDpiSniChunks.Maximum = new decimal(new int[] { 500, 0, 0, 0 });
             CustomNumericUpDownPDpiSniChunks.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownPDpiSniChunks.Name = "CustomNumericUpDownPDpiSniChunks";
+            CustomNumericUpDownPDpiSniChunks.RoundedCorners = 5;
             CustomNumericUpDownPDpiSniChunks.Size = new Size(45, 23);
             CustomNumericUpDownPDpiSniChunks.TabIndex = 28;
             CustomNumericUpDownPDpiSniChunks.Value = new decimal(new int[] { 5, 0, 0, 0 });
@@ -1244,7 +1358,7 @@
             CustomCheckBoxProxyEventShowRequest.Location = new Point(25, 40);
             CustomCheckBoxProxyEventShowRequest.Name = "CustomCheckBoxProxyEventShowRequest";
             CustomCheckBoxProxyEventShowRequest.SelectionColor = Color.LightBlue;
-            CustomCheckBoxProxyEventShowRequest.Size = new Size(135, 17);
+            CustomCheckBoxProxyEventShowRequest.Size = new Size(139, 17);
             CustomCheckBoxProxyEventShowRequest.TabIndex = 23;
             CustomCheckBoxProxyEventShowRequest.Text = "Write requests to log";
             CustomCheckBoxProxyEventShowRequest.UseVisualStyleBackColor = false;
@@ -1261,7 +1375,7 @@
             CustomCheckBoxPDpiEnableDpiBypass.Location = new Point(25, 80);
             CustomCheckBoxPDpiEnableDpiBypass.Name = "CustomCheckBoxPDpiEnableDpiBypass";
             CustomCheckBoxPDpiEnableDpiBypass.SelectionColor = Color.LightBlue;
-            CustomCheckBoxPDpiEnableDpiBypass.Size = new Size(120, 17);
+            CustomCheckBoxPDpiEnableDpiBypass.Size = new Size(123, 17);
             CustomCheckBoxPDpiEnableDpiBypass.TabIndex = 17;
             CustomCheckBoxPDpiEnableDpiBypass.Text = "Enable DPI bypass";
             CustomCheckBoxPDpiEnableDpiBypass.UseVisualStyleBackColor = false;
@@ -1319,11 +1433,12 @@
             CustomTabControlDPIBasicAdvanced.ItemSize = new Size(90, 21);
             CustomTabControlDPIBasicAdvanced.Location = new Point(3, 3);
             CustomTabControlDPIBasicAdvanced.Name = "CustomTabControlDPIBasicAdvanced";
+            CustomTabControlDPIBasicAdvanced.RoundedCorners = 5;
             CustomTabControlDPIBasicAdvanced.SelectedIndex = 0;
             CustomTabControlDPIBasicAdvanced.Size = new Size(751, 330);
             CustomTabControlDPIBasicAdvanced.SizeMode = TabSizeMode.Fixed;
             CustomTabControlDPIBasicAdvanced.TabIndex = 13;
-            CustomTabControlDPIBasicAdvanced.Tag = 0;
+            CustomTabControlDPIBasicAdvanced.Tag = 1;
             // 
             // TabPageDPIBasic
             // 
@@ -1378,7 +1493,7 @@
             CustomRadioButtonDPIMode6.Location = new Point(370, 155);
             CustomRadioButtonDPIMode6.Name = "CustomRadioButtonDPIMode6";
             CustomRadioButtonDPIMode6.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIMode6.Size = new Size(63, 17);
+            CustomRadioButtonDPIMode6.Size = new Size(66, 17);
             CustomRadioButtonDPIMode6.TabIndex = 19;
             CustomRadioButtonDPIMode6.Text = "Mode 6";
             CustomRadioButtonDPIMode6.UseVisualStyleBackColor = false;
@@ -1392,7 +1507,7 @@
             CustomRadioButtonDPIMode5.Location = new Point(301, 155);
             CustomRadioButtonDPIMode5.Name = "CustomRadioButtonDPIMode5";
             CustomRadioButtonDPIMode5.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIMode5.Size = new Size(63, 17);
+            CustomRadioButtonDPIMode5.Size = new Size(66, 17);
             CustomRadioButtonDPIMode5.TabIndex = 18;
             CustomRadioButtonDPIMode5.Text = "Mode 5";
             CustomRadioButtonDPIMode5.UseVisualStyleBackColor = false;
@@ -1406,7 +1521,7 @@
             CustomRadioButtonDPIMode4.Location = new Point(232, 155);
             CustomRadioButtonDPIMode4.Name = "CustomRadioButtonDPIMode4";
             CustomRadioButtonDPIMode4.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIMode4.Size = new Size(63, 17);
+            CustomRadioButtonDPIMode4.Size = new Size(66, 17);
             CustomRadioButtonDPIMode4.TabIndex = 17;
             CustomRadioButtonDPIMode4.Text = "Mode 4";
             CustomRadioButtonDPIMode4.UseVisualStyleBackColor = false;
@@ -1420,7 +1535,7 @@
             CustomRadioButtonDPIMode3.Location = new Point(163, 155);
             CustomRadioButtonDPIMode3.Name = "CustomRadioButtonDPIMode3";
             CustomRadioButtonDPIMode3.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIMode3.Size = new Size(63, 17);
+            CustomRadioButtonDPIMode3.Size = new Size(66, 17);
             CustomRadioButtonDPIMode3.TabIndex = 16;
             CustomRadioButtonDPIMode3.Text = "Mode 3";
             CustomRadioButtonDPIMode3.UseVisualStyleBackColor = false;
@@ -1449,7 +1564,7 @@
             CustomRadioButtonDPIMode2.Location = new Point(94, 155);
             CustomRadioButtonDPIMode2.Name = "CustomRadioButtonDPIMode2";
             CustomRadioButtonDPIMode2.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIMode2.Size = new Size(63, 17);
+            CustomRadioButtonDPIMode2.Size = new Size(66, 17);
             CustomRadioButtonDPIMode2.TabIndex = 14;
             CustomRadioButtonDPIMode2.Text = "Mode 2";
             CustomRadioButtonDPIMode2.UseVisualStyleBackColor = false;
@@ -1463,7 +1578,7 @@
             CustomRadioButtonDPIMode1.Location = new Point(25, 155);
             CustomRadioButtonDPIMode1.Name = "CustomRadioButtonDPIMode1";
             CustomRadioButtonDPIMode1.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDPIMode1.Size = new Size(63, 17);
+            CustomRadioButtonDPIMode1.Size = new Size(66, 17);
             CustomRadioButtonDPIMode1.TabIndex = 13;
             CustomRadioButtonDPIMode1.Text = "Mode 1";
             CustomRadioButtonDPIMode1.UseVisualStyleBackColor = false;
@@ -1560,6 +1675,7 @@
             CustomTextBoxDPIAdvAutoTTL.Multiline = false;
             CustomTextBoxDPIAdvAutoTTL.Name = "CustomTextBoxDPIAdvAutoTTL";
             CustomTextBoxDPIAdvAutoTTL.ReadOnly = false;
+            CustomTextBoxDPIAdvAutoTTL.RoundedCorners = 0;
             CustomTextBoxDPIAdvAutoTTL.ScrollBars = ScrollBars.None;
             CustomTextBoxDPIAdvAutoTTL.ShortcutsEnabled = true;
             CustomTextBoxDPIAdvAutoTTL.Size = new Size(53, 23);
@@ -1579,6 +1695,7 @@
             CustomNumericUpDownDPIAdvMaxPayload.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             CustomNumericUpDownDPIAdvMaxPayload.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownDPIAdvMaxPayload.Name = "CustomNumericUpDownDPIAdvMaxPayload";
+            CustomNumericUpDownDPIAdvMaxPayload.RoundedCorners = 5;
             CustomNumericUpDownDPIAdvMaxPayload.Size = new Size(53, 23);
             CustomNumericUpDownDPIAdvMaxPayload.TabIndex = 36;
             CustomNumericUpDownDPIAdvMaxPayload.Value = new decimal(new int[] { 1200, 0, 0, 0 });
@@ -1592,6 +1709,7 @@
             CustomNumericUpDownDPIAdvMinTTL.Maximum = new decimal(new int[] { 3600, 0, 0, 0 });
             CustomNumericUpDownDPIAdvMinTTL.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownDPIAdvMinTTL.Name = "CustomNumericUpDownDPIAdvMinTTL";
+            CustomNumericUpDownDPIAdvMinTTL.RoundedCorners = 5;
             CustomNumericUpDownDPIAdvMinTTL.Size = new Size(53, 23);
             CustomNumericUpDownDPIAdvMinTTL.TabIndex = 35;
             CustomNumericUpDownDPIAdvMinTTL.Value = new decimal(new int[] { 3, 0, 0, 0 });
@@ -1605,6 +1723,7 @@
             CustomNumericUpDownDPIAdvSetTTL.Maximum = new decimal(new int[] { 3600, 0, 0, 0 });
             CustomNumericUpDownDPIAdvSetTTL.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownDPIAdvSetTTL.Name = "CustomNumericUpDownDPIAdvSetTTL";
+            CustomNumericUpDownDPIAdvSetTTL.RoundedCorners = 5;
             CustomNumericUpDownDPIAdvSetTTL.Size = new Size(53, 23);
             CustomNumericUpDownDPIAdvSetTTL.TabIndex = 34;
             CustomNumericUpDownDPIAdvSetTTL.Value = new decimal(new int[] { 1, 0, 0, 0 });
@@ -1618,6 +1737,7 @@
             CustomNumericUpDownDPIAdvPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownDPIAdvPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownDPIAdvPort.Name = "CustomNumericUpDownDPIAdvPort";
+            CustomNumericUpDownDPIAdvPort.RoundedCorners = 5;
             CustomNumericUpDownDPIAdvPort.Size = new Size(53, 23);
             CustomNumericUpDownDPIAdvPort.TabIndex = 33;
             CustomNumericUpDownDPIAdvPort.Value = new decimal(new int[] { 80, 0, 0, 0 });
@@ -1675,7 +1795,7 @@
             CustomCheckBoxDPIAdvBlacklist.Location = new Point(165, 155);
             CustomCheckBoxDPIAdvBlacklist.Name = "CustomCheckBoxDPIAdvBlacklist";
             CustomCheckBoxDPIAdvBlacklist.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvBlacklist.Size = new Size(74, 17);
+            CustomCheckBoxDPIAdvBlacklist.Size = new Size(78, 17);
             CustomCheckBoxDPIAdvBlacklist.TabIndex = 29;
             CustomCheckBoxDPIAdvBlacklist.Text = "--blacklist";
             CustomCheckBoxDPIAdvBlacklist.UseVisualStyleBackColor = false;
@@ -1691,7 +1811,7 @@
             CustomCheckBoxDPIAdvMaxPayload.Location = new Point(5, 155);
             CustomCheckBoxDPIAdvMaxPayload.Name = "CustomCheckBoxDPIAdvMaxPayload";
             CustomCheckBoxDPIAdvMaxPayload.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvMaxPayload.Size = new Size(101, 17);
+            CustomCheckBoxDPIAdvMaxPayload.Size = new Size(105, 17);
             CustomCheckBoxDPIAdvMaxPayload.TabIndex = 27;
             CustomCheckBoxDPIAdvMaxPayload.Text = "--max-payload";
             CustomCheckBoxDPIAdvMaxPayload.UseVisualStyleBackColor = false;
@@ -1705,7 +1825,7 @@
             CustomCheckBoxDPIAdvReverseFrag.Location = new Point(470, 125);
             CustomCheckBoxDPIAdvReverseFrag.Name = "CustomCheckBoxDPIAdvReverseFrag";
             CustomCheckBoxDPIAdvReverseFrag.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvReverseFrag.Size = new Size(96, 17);
+            CustomCheckBoxDPIAdvReverseFrag.Size = new Size(100, 17);
             CustomCheckBoxDPIAdvReverseFrag.TabIndex = 26;
             CustomCheckBoxDPIAdvReverseFrag.Text = "--reverse-frag";
             CustomCheckBoxDPIAdvReverseFrag.UseVisualStyleBackColor = false;
@@ -1721,7 +1841,7 @@
             CustomCheckBoxDPIAdvNativeFrag.Location = new Point(320, 125);
             CustomCheckBoxDPIAdvNativeFrag.Name = "CustomCheckBoxDPIAdvNativeFrag";
             CustomCheckBoxDPIAdvNativeFrag.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvNativeFrag.Size = new Size(90, 17);
+            CustomCheckBoxDPIAdvNativeFrag.Size = new Size(93, 17);
             CustomCheckBoxDPIAdvNativeFrag.TabIndex = 25;
             CustomCheckBoxDPIAdvNativeFrag.Text = "--native-frag";
             CustomCheckBoxDPIAdvNativeFrag.UseVisualStyleBackColor = false;
@@ -1735,7 +1855,7 @@
             CustomCheckBoxDPIAdvWrongSeq.Location = new Point(165, 125);
             CustomCheckBoxDPIAdvWrongSeq.Name = "CustomCheckBoxDPIAdvWrongSeq";
             CustomCheckBoxDPIAdvWrongSeq.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvWrongSeq.Size = new Size(89, 17);
+            CustomCheckBoxDPIAdvWrongSeq.Size = new Size(93, 17);
             CustomCheckBoxDPIAdvWrongSeq.TabIndex = 24;
             CustomCheckBoxDPIAdvWrongSeq.Text = "--wrong-seq";
             CustomCheckBoxDPIAdvWrongSeq.UseVisualStyleBackColor = false;
@@ -1749,7 +1869,7 @@
             CustomCheckBoxDPIAdvWrongChksum.Location = new Point(5, 125);
             CustomCheckBoxDPIAdvWrongChksum.Name = "CustomCheckBoxDPIAdvWrongChksum";
             CustomCheckBoxDPIAdvWrongChksum.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvWrongChksum.Size = new Size(112, 17);
+            CustomCheckBoxDPIAdvWrongChksum.Size = new Size(115, 17);
             CustomCheckBoxDPIAdvWrongChksum.TabIndex = 23;
             CustomCheckBoxDPIAdvWrongChksum.Text = "--wrong-chksum";
             CustomCheckBoxDPIAdvWrongChksum.UseVisualStyleBackColor = false;
@@ -1763,7 +1883,7 @@
             CustomCheckBoxDPIAdvMinTTL.Location = new Point(470, 95);
             CustomCheckBoxDPIAdvMinTTL.Name = "CustomCheckBoxDPIAdvMinTTL";
             CustomCheckBoxDPIAdvMinTTL.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvMinTTL.Size = new Size(67, 17);
+            CustomCheckBoxDPIAdvMinTTL.Size = new Size(71, 17);
             CustomCheckBoxDPIAdvMinTTL.TabIndex = 21;
             CustomCheckBoxDPIAdvMinTTL.Text = "--min-ttl";
             CustomCheckBoxDPIAdvMinTTL.UseVisualStyleBackColor = false;
@@ -1777,7 +1897,7 @@
             CustomCheckBoxDPIAdvAutoTTL.Location = new Point(320, 95);
             CustomCheckBoxDPIAdvAutoTTL.Name = "CustomCheckBoxDPIAdvAutoTTL";
             CustomCheckBoxDPIAdvAutoTTL.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvAutoTTL.Size = new Size(71, 17);
+            CustomCheckBoxDPIAdvAutoTTL.Size = new Size(75, 17);
             CustomCheckBoxDPIAdvAutoTTL.TabIndex = 20;
             CustomCheckBoxDPIAdvAutoTTL.Text = "--auto-ttl";
             CustomCheckBoxDPIAdvAutoTTL.UseVisualStyleBackColor = false;
@@ -1791,7 +1911,7 @@
             CustomCheckBoxDPIAdvSetTTL.Location = new Point(165, 95);
             CustomCheckBoxDPIAdvSetTTL.Name = "CustomCheckBoxDPIAdvSetTTL";
             CustomCheckBoxDPIAdvSetTTL.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvSetTTL.Size = new Size(63, 17);
+            CustomCheckBoxDPIAdvSetTTL.Size = new Size(66, 17);
             CustomCheckBoxDPIAdvSetTTL.TabIndex = 18;
             CustomCheckBoxDPIAdvSetTTL.Text = "--set-ttl";
             CustomCheckBoxDPIAdvSetTTL.UseVisualStyleBackColor = false;
@@ -1805,7 +1925,7 @@
             CustomCheckBoxDPIAdvAllowNoSNI.Location = new Point(5, 95);
             CustomCheckBoxDPIAdvAllowNoSNI.Name = "CustomCheckBoxDPIAdvAllowNoSNI";
             CustomCheckBoxDPIAdvAllowNoSNI.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvAllowNoSNI.Size = new Size(98, 17);
+            CustomCheckBoxDPIAdvAllowNoSNI.Size = new Size(102, 17);
             CustomCheckBoxDPIAdvAllowNoSNI.TabIndex = 17;
             CustomCheckBoxDPIAdvAllowNoSNI.Text = "--allow-no-sni";
             CustomCheckBoxDPIAdvAllowNoSNI.UseVisualStyleBackColor = false;
@@ -1827,6 +1947,7 @@
             CustomTextBoxDPIAdvIpId.Multiline = false;
             CustomTextBoxDPIAdvIpId.Name = "CustomTextBoxDPIAdvIpId";
             CustomTextBoxDPIAdvIpId.ReadOnly = false;
+            CustomTextBoxDPIAdvIpId.RoundedCorners = 0;
             CustomTextBoxDPIAdvIpId.ScrollBars = ScrollBars.None;
             CustomTextBoxDPIAdvIpId.ShortcutsEnabled = true;
             CustomTextBoxDPIAdvIpId.Size = new Size(70, 23);
@@ -1846,7 +1967,7 @@
             CustomCheckBoxDPIAdvIpId.Location = new Point(470, 65);
             CustomCheckBoxDPIAdvIpId.Name = "CustomCheckBoxDPIAdvIpId";
             CustomCheckBoxDPIAdvIpId.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvIpId.Size = new Size(56, 17);
+            CustomCheckBoxDPIAdvIpId.Size = new Size(59, 17);
             CustomCheckBoxDPIAdvIpId.TabIndex = 15;
             CustomCheckBoxDPIAdvIpId.Text = "--ip-id";
             CustomCheckBoxDPIAdvIpId.UseVisualStyleBackColor = false;
@@ -1860,7 +1981,7 @@
             CustomCheckBoxDPIAdvPort.Location = new Point(320, 65);
             CustomCheckBoxDPIAdvPort.Name = "CustomCheckBoxDPIAdvPort";
             CustomCheckBoxDPIAdvPort.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvPort.Size = new Size(53, 17);
+            CustomCheckBoxDPIAdvPort.Size = new Size(57, 17);
             CustomCheckBoxDPIAdvPort.TabIndex = 13;
             CustomCheckBoxDPIAdvPort.Text = "--port";
             CustomCheckBoxDPIAdvPort.UseVisualStyleBackColor = false;
@@ -1876,7 +1997,7 @@
             CustomCheckBoxDPIAdvW.Location = new Point(165, 65);
             CustomCheckBoxDPIAdvW.Name = "CustomCheckBoxDPIAdvW";
             CustomCheckBoxDPIAdvW.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvW.Size = new Size(34, 17);
+            CustomCheckBoxDPIAdvW.Size = new Size(38, 17);
             CustomCheckBoxDPIAdvW.TabIndex = 12;
             CustomCheckBoxDPIAdvW.Text = "-w";
             CustomCheckBoxDPIAdvW.UseVisualStyleBackColor = false;
@@ -1890,7 +2011,7 @@
             CustomCheckBoxDPIAdvA.Location = new Point(5, 65);
             CustomCheckBoxDPIAdvA.Name = "CustomCheckBoxDPIAdvA";
             CustomCheckBoxDPIAdvA.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvA.Size = new Size(32, 17);
+            CustomCheckBoxDPIAdvA.Size = new Size(35, 17);
             CustomCheckBoxDPIAdvA.TabIndex = 11;
             CustomCheckBoxDPIAdvA.Text = "-a";
             CustomCheckBoxDPIAdvA.UseVisualStyleBackColor = false;
@@ -1903,6 +2024,7 @@
             CustomNumericUpDownDPIAdvE.Location = new Point(506, 33);
             CustomNumericUpDownDPIAdvE.Maximum = new decimal(new int[] { 70000, 0, 0, 0 });
             CustomNumericUpDownDPIAdvE.Name = "CustomNumericUpDownDPIAdvE";
+            CustomNumericUpDownDPIAdvE.RoundedCorners = 5;
             CustomNumericUpDownDPIAdvE.Size = new Size(53, 23);
             CustomNumericUpDownDPIAdvE.TabIndex = 10;
             CustomNumericUpDownDPIAdvE.Value = new decimal(new int[] { 40, 0, 0, 0 });
@@ -1918,7 +2040,7 @@
             CustomCheckBoxDPIAdvE.Location = new Point(470, 35);
             CustomCheckBoxDPIAdvE.Name = "CustomCheckBoxDPIAdvE";
             CustomCheckBoxDPIAdvE.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvE.Size = new Size(32, 17);
+            CustomCheckBoxDPIAdvE.Size = new Size(35, 17);
             CustomCheckBoxDPIAdvE.TabIndex = 9;
             CustomCheckBoxDPIAdvE.Text = "-e";
             CustomCheckBoxDPIAdvE.UseVisualStyleBackColor = false;
@@ -1932,7 +2054,7 @@
             CustomCheckBoxDPIAdvN.Location = new Point(320, 35);
             CustomCheckBoxDPIAdvN.Name = "CustomCheckBoxDPIAdvN";
             CustomCheckBoxDPIAdvN.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvN.Size = new Size(32, 17);
+            CustomCheckBoxDPIAdvN.Size = new Size(36, 17);
             CustomCheckBoxDPIAdvN.TabIndex = 8;
             CustomCheckBoxDPIAdvN.Text = "-n";
             CustomCheckBoxDPIAdvN.UseVisualStyleBackColor = false;
@@ -1946,6 +2068,7 @@
             CustomNumericUpDownDPIAdvK.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             CustomNumericUpDownDPIAdvK.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownDPIAdvK.Name = "CustomNumericUpDownDPIAdvK";
+            CustomNumericUpDownDPIAdvK.RoundedCorners = 5;
             CustomNumericUpDownDPIAdvK.Size = new Size(53, 23);
             CustomNumericUpDownDPIAdvK.TabIndex = 7;
             CustomNumericUpDownDPIAdvK.Value = new decimal(new int[] { 2, 0, 0, 0 });
@@ -1959,7 +2082,7 @@
             CustomCheckBoxDPIAdvK.Location = new Point(165, 35);
             CustomCheckBoxDPIAdvK.Name = "CustomCheckBoxDPIAdvK";
             CustomCheckBoxDPIAdvK.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvK.Size = new Size(32, 17);
+            CustomCheckBoxDPIAdvK.Size = new Size(35, 17);
             CustomCheckBoxDPIAdvK.TabIndex = 6;
             CustomCheckBoxDPIAdvK.Text = "-k";
             CustomCheckBoxDPIAdvK.UseVisualStyleBackColor = false;
@@ -1972,6 +2095,7 @@
             CustomNumericUpDownDPIAdvF.Location = new Point(38, 33);
             CustomNumericUpDownDPIAdvF.Maximum = new decimal(new int[] { 70000, 0, 0, 0 });
             CustomNumericUpDownDPIAdvF.Name = "CustomNumericUpDownDPIAdvF";
+            CustomNumericUpDownDPIAdvF.RoundedCorners = 5;
             CustomNumericUpDownDPIAdvF.Size = new Size(53, 23);
             CustomNumericUpDownDPIAdvF.TabIndex = 5;
             CustomNumericUpDownDPIAdvF.Value = new decimal(new int[] { 2, 0, 0, 0 });
@@ -1985,7 +2109,7 @@
             CustomCheckBoxDPIAdvF.Location = new Point(5, 35);
             CustomCheckBoxDPIAdvF.Name = "CustomCheckBoxDPIAdvF";
             CustomCheckBoxDPIAdvF.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvF.Size = new Size(29, 17);
+            CustomCheckBoxDPIAdvF.Size = new Size(33, 17);
             CustomCheckBoxDPIAdvF.TabIndex = 4;
             CustomCheckBoxDPIAdvF.Text = "-f";
             CustomCheckBoxDPIAdvF.UseVisualStyleBackColor = false;
@@ -2001,7 +2125,7 @@
             CustomCheckBoxDPIAdvM.Location = new Point(470, 5);
             CustomCheckBoxDPIAdvM.Name = "CustomCheckBoxDPIAdvM";
             CustomCheckBoxDPIAdvM.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvM.Size = new Size(36, 17);
+            CustomCheckBoxDPIAdvM.Size = new Size(40, 17);
             CustomCheckBoxDPIAdvM.TabIndex = 3;
             CustomCheckBoxDPIAdvM.Text = "-m";
             CustomCheckBoxDPIAdvM.UseVisualStyleBackColor = false;
@@ -2017,7 +2141,7 @@
             CustomCheckBoxDPIAdvS.Location = new Point(320, 5);
             CustomCheckBoxDPIAdvS.Name = "CustomCheckBoxDPIAdvS";
             CustomCheckBoxDPIAdvS.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvS.Size = new Size(31, 17);
+            CustomCheckBoxDPIAdvS.Size = new Size(34, 17);
             CustomCheckBoxDPIAdvS.TabIndex = 2;
             CustomCheckBoxDPIAdvS.Text = "-s";
             CustomCheckBoxDPIAdvS.UseVisualStyleBackColor = false;
@@ -2033,7 +2157,7 @@
             CustomCheckBoxDPIAdvR.Location = new Point(165, 5);
             CustomCheckBoxDPIAdvR.Name = "CustomCheckBoxDPIAdvR";
             CustomCheckBoxDPIAdvR.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvR.Size = new Size(30, 17);
+            CustomCheckBoxDPIAdvR.Size = new Size(33, 17);
             CustomCheckBoxDPIAdvR.TabIndex = 1;
             CustomCheckBoxDPIAdvR.Text = "-r";
             CustomCheckBoxDPIAdvR.UseVisualStyleBackColor = false;
@@ -2049,7 +2173,7 @@
             CustomCheckBoxDPIAdvP.Location = new Point(5, 5);
             CustomCheckBoxDPIAdvP.Name = "CustomCheckBoxDPIAdvP";
             CustomCheckBoxDPIAdvP.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDPIAdvP.Size = new Size(33, 17);
+            CustomCheckBoxDPIAdvP.Size = new Size(36, 17);
             CustomCheckBoxDPIAdvP.TabIndex = 0;
             CustomCheckBoxDPIAdvP.Text = "-p";
             CustomCheckBoxDPIAdvP.UseVisualStyleBackColor = false;
@@ -2187,11 +2311,12 @@
             CustomTabControlSettings.Multiline = true;
             CustomTabControlSettings.Name = "CustomTabControlSettings";
             CustomTabControlSettings.RightToLeft = RightToLeft.No;
+            CustomTabControlSettings.RoundedCorners = 5;
             CustomTabControlSettings.SelectedIndex = 0;
             CustomTabControlSettings.Size = new Size(765, 365);
             CustomTabControlSettings.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSettings.TabIndex = 10;
-            CustomTabControlSettings.Tag = 0;
+            CustomTabControlSettings.Tag = 2;
             // 
             // TabPageSettingsWorkingMode
             // 
@@ -2220,6 +2345,7 @@
             CustomNumericUpDownSettingWorkingModeSetDohPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownSettingWorkingModeSetDohPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingWorkingModeSetDohPort.Name = "CustomNumericUpDownSettingWorkingModeSetDohPort";
+            CustomNumericUpDownSettingWorkingModeSetDohPort.RoundedCorners = 5;
             CustomNumericUpDownSettingWorkingModeSetDohPort.Size = new Size(53, 23);
             CustomNumericUpDownSettingWorkingModeSetDohPort.TabIndex = 6;
             CustomNumericUpDownSettingWorkingModeSetDohPort.Value = new decimal(new int[] { 443, 0, 0, 0 });
@@ -2278,7 +2404,7 @@
             CustomRadioButtonSettingWorkingModeDNSandDoH.Location = new Point(50, 145);
             CustomRadioButtonSettingWorkingModeDNSandDoH.Name = "CustomRadioButtonSettingWorkingModeDNSandDoH";
             CustomRadioButtonSettingWorkingModeDNSandDoH.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingWorkingModeDNSandDoH.Size = new Size(234, 17);
+            CustomRadioButtonSettingWorkingModeDNSandDoH.Size = new Size(238, 17);
             CustomRadioButtonSettingWorkingModeDNSandDoH.TabIndex = 2;
             CustomRadioButtonSettingWorkingModeDNSandDoH.Text = "Legacy DNS + DNS-Over-HTTPS Server";
             CustomRadioButtonSettingWorkingModeDNSandDoH.UseVisualStyleBackColor = false;
@@ -2293,7 +2419,7 @@
             CustomRadioButtonSettingWorkingModeDNS.Location = new Point(50, 100);
             CustomRadioButtonSettingWorkingModeDNS.Name = "CustomRadioButtonSettingWorkingModeDNS";
             CustomRadioButtonSettingWorkingModeDNS.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingWorkingModeDNS.Size = new Size(123, 17);
+            CustomRadioButtonSettingWorkingModeDNS.Size = new Size(127, 17);
             CustomRadioButtonSettingWorkingModeDNS.TabIndex = 1;
             CustomRadioButtonSettingWorkingModeDNS.TabStop = true;
             CustomRadioButtonSettingWorkingModeDNS.Text = "Legacy DNS Server";
@@ -2344,6 +2470,7 @@
             CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolDoH);
             CustomGroupBoxSettingCheckDnsProtocol.Location = new Point(4, 105);
             CustomGroupBoxSettingCheckDnsProtocol.Name = "CustomGroupBoxSettingCheckDnsProtocol";
+            CustomGroupBoxSettingCheckDnsProtocol.RoundedCorners = 5;
             CustomGroupBoxSettingCheckDnsProtocol.Size = new Size(659, 87);
             CustomGroupBoxSettingCheckDnsProtocol.TabIndex = 13;
             CustomGroupBoxSettingCheckDnsProtocol.TabStop = false;
@@ -2358,7 +2485,7 @@
             CustomCheckBoxSettingProtocolPlainDNS.Location = new Point(420, 55);
             CustomCheckBoxSettingProtocolPlainDNS.Name = "CustomCheckBoxSettingProtocolPlainDNS";
             CustomCheckBoxSettingProtocolPlainDNS.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolPlainDNS.Size = new Size(75, 17);
+            CustomCheckBoxSettingProtocolPlainDNS.Size = new Size(78, 17);
             CustomCheckBoxSettingProtocolPlainDNS.TabIndex = 5;
             CustomCheckBoxSettingProtocolPlainDNS.Text = "Plain DNS";
             CustomCheckBoxSettingProtocolPlainDNS.UseVisualStyleBackColor = false;
@@ -2374,7 +2501,7 @@
             CustomCheckBoxSettingProtocolDoQ.Location = new Point(230, 55);
             CustomCheckBoxSettingProtocolDoQ.Name = "CustomCheckBoxSettingProtocolDoQ";
             CustomCheckBoxSettingProtocolDoQ.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDoQ.Size = new Size(106, 17);
+            CustomCheckBoxSettingProtocolDoQ.Size = new Size(109, 17);
             CustomCheckBoxSettingProtocolDoQ.TabIndex = 4;
             CustomCheckBoxSettingProtocolDoQ.Text = "DNS-Over-Quic";
             CustomCheckBoxSettingProtocolDoQ.UseVisualStyleBackColor = false;
@@ -2390,7 +2517,7 @@
             CustomCheckBoxSettingProtocolDNSCryptRelay.Location = new Point(15, 55);
             CustomCheckBoxSettingProtocolDNSCryptRelay.Name = "CustomCheckBoxSettingProtocolDNSCryptRelay";
             CustomCheckBoxSettingProtocolDNSCryptRelay.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Size = new Size(107, 17);
+            CustomCheckBoxSettingProtocolDNSCryptRelay.Size = new Size(110, 17);
             CustomCheckBoxSettingProtocolDNSCryptRelay.TabIndex = 3;
             CustomCheckBoxSettingProtocolDNSCryptRelay.Text = "DNSCrypt Relay";
             CustomCheckBoxSettingProtocolDNSCryptRelay.UseVisualStyleBackColor = false;
@@ -2406,7 +2533,7 @@
             CustomCheckBoxSettingProtocolDNSCrypt.Location = new Point(420, 25);
             CustomCheckBoxSettingProtocolDNSCrypt.Name = "CustomCheckBoxSettingProtocolDNSCrypt";
             CustomCheckBoxSettingProtocolDNSCrypt.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDNSCrypt.Size = new Size(74, 17);
+            CustomCheckBoxSettingProtocolDNSCrypt.Size = new Size(78, 17);
             CustomCheckBoxSettingProtocolDNSCrypt.TabIndex = 2;
             CustomCheckBoxSettingProtocolDNSCrypt.Text = "DNSCrypt";
             CustomCheckBoxSettingProtocolDNSCrypt.UseVisualStyleBackColor = false;
@@ -2422,7 +2549,7 @@
             CustomCheckBoxSettingProtocolTLS.Location = new Point(230, 25);
             CustomCheckBoxSettingProtocolTLS.Name = "CustomCheckBoxSettingProtocolTLS";
             CustomCheckBoxSettingProtocolTLS.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolTLS.Size = new Size(100, 17);
+            CustomCheckBoxSettingProtocolTLS.Size = new Size(103, 17);
             CustomCheckBoxSettingProtocolTLS.TabIndex = 1;
             CustomCheckBoxSettingProtocolTLS.Text = "DNS-Over-TLS";
             CustomCheckBoxSettingProtocolTLS.UseVisualStyleBackColor = false;
@@ -2438,7 +2565,7 @@
             CustomCheckBoxSettingProtocolDoH.Location = new Point(15, 25);
             CustomCheckBoxSettingProtocolDoH.Name = "CustomCheckBoxSettingProtocolDoH";
             CustomCheckBoxSettingProtocolDoH.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDoH.Size = new Size(116, 17);
+            CustomCheckBoxSettingProtocolDoH.Size = new Size(120, 17);
             CustomCheckBoxSettingProtocolDoH.TabIndex = 0;
             CustomCheckBoxSettingProtocolDoH.Text = "DNS-Over-HTTPS";
             CustomCheckBoxSettingProtocolDoH.UseVisualStyleBackColor = false;
@@ -2453,6 +2580,7 @@
             CustomGroupBoxSettingCheckSDNS.Location = new Point(4, 196);
             CustomGroupBoxSettingCheckSDNS.Margin = new Padding(1);
             CustomGroupBoxSettingCheckSDNS.Name = "CustomGroupBoxSettingCheckSDNS";
+            CustomGroupBoxSettingCheckSDNS.RoundedCorners = 5;
             CustomGroupBoxSettingCheckSDNS.Size = new Size(659, 65);
             CustomGroupBoxSettingCheckSDNS.TabIndex = 11;
             CustomGroupBoxSettingCheckSDNS.TabStop = false;
@@ -2469,7 +2597,7 @@
             CustomCheckBoxSettingSdnsNoFilter.Location = new Point(420, 28);
             CustomCheckBoxSettingSdnsNoFilter.Name = "CustomCheckBoxSettingSdnsNoFilter";
             CustomCheckBoxSettingSdnsNoFilter.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingSdnsNoFilter.Size = new Size(67, 17);
+            CustomCheckBoxSettingSdnsNoFilter.Size = new Size(71, 17);
             CustomCheckBoxSettingSdnsNoFilter.TabIndex = 2;
             CustomCheckBoxSettingSdnsNoFilter.Text = "No Filter";
             CustomCheckBoxSettingSdnsNoFilter.UseVisualStyleBackColor = false;
@@ -2483,7 +2611,7 @@
             CustomCheckBoxSettingSdnsNoLog.Location = new Point(230, 28);
             CustomCheckBoxSettingSdnsNoLog.Name = "CustomCheckBoxSettingSdnsNoLog";
             CustomCheckBoxSettingSdnsNoLog.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingSdnsNoLog.Size = new Size(61, 17);
+            CustomCheckBoxSettingSdnsNoLog.Size = new Size(64, 17);
             CustomCheckBoxSettingSdnsNoLog.TabIndex = 1;
             CustomCheckBoxSettingSdnsNoLog.Text = "No Log";
             CustomCheckBoxSettingSdnsNoLog.UseVisualStyleBackColor = false;
@@ -2497,7 +2625,7 @@
             CustomCheckBoxSettingSdnsDNSSec.Location = new Point(15, 28);
             CustomCheckBoxSettingSdnsDNSSec.Name = "CustomCheckBoxSettingSdnsDNSSec";
             CustomCheckBoxSettingSdnsDNSSec.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingSdnsDNSSec.Size = new Size(111, 17);
+            CustomCheckBoxSettingSdnsDNSSec.Size = new Size(114, 17);
             CustomCheckBoxSettingSdnsDNSSec.TabIndex = 0;
             CustomCheckBoxSettingSdnsDNSSec.Text = "DNSSec Enabled";
             CustomCheckBoxSettingSdnsDNSSec.UseVisualStyleBackColor = false;
@@ -2519,6 +2647,7 @@
             CustomTextBoxSettingCheckDPIHost.Multiline = false;
             CustomTextBoxSettingCheckDPIHost.Name = "CustomTextBoxSettingCheckDPIHost";
             CustomTextBoxSettingCheckDPIHost.ReadOnly = false;
+            CustomTextBoxSettingCheckDPIHost.RoundedCorners = 0;
             CustomTextBoxSettingCheckDPIHost.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingCheckDPIHost.ShortcutsEnabled = true;
             CustomTextBoxSettingCheckDPIHost.Size = new Size(143, 23);
@@ -2570,6 +2699,7 @@
             CustomNumericUpDownSettingCheckTimeout.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownSettingCheckTimeout.Minimum = new decimal(new int[] { 1, 0, 0, 65536 });
             CustomNumericUpDownSettingCheckTimeout.Name = "CustomNumericUpDownSettingCheckTimeout";
+            CustomNumericUpDownSettingCheckTimeout.RoundedCorners = 5;
             CustomNumericUpDownSettingCheckTimeout.Size = new Size(45, 23);
             CustomNumericUpDownSettingCheckTimeout.TabIndex = 3;
             CustomNumericUpDownSettingCheckTimeout.Value = new decimal(new int[] { 5, 0, 0, 0 });
@@ -2577,6 +2707,8 @@
             // TabPageSettingsQuickConnect
             // 
             TabPageSettingsQuickConnect.BackColor = Color.Transparent;
+            TabPageSettingsQuickConnect.Controls.Add(CustomCheckBoxSettingQcUseSavedServers);
+            TabPageSettingsQuickConnect.Controls.Add(CustomButtonSettingQcStartup);
             TabPageSettingsQuickConnect.Controls.Add(CustomCheckBoxSettingQcSetDnsTo);
             TabPageSettingsQuickConnect.Controls.Add(CustomComboBoxSettingQcGdBasic);
             TabPageSettingsQuickConnect.Controls.Add(CustomRadioButtonSettingQcGdAdvanced);
@@ -2598,6 +2730,35 @@
             TabPageSettingsQuickConnect.Tag = 2;
             TabPageSettingsQuickConnect.Text = "Quick Connect";
             // 
+            // CustomCheckBoxSettingQcUseSavedServers
+            // 
+            CustomCheckBoxSettingQcUseSavedServers.BackColor = Color.DimGray;
+            CustomCheckBoxSettingQcUseSavedServers.BorderColor = Color.Blue;
+            CustomCheckBoxSettingQcUseSavedServers.CheckColor = Color.Blue;
+            CustomCheckBoxSettingQcUseSavedServers.ForeColor = Color.White;
+            CustomCheckBoxSettingQcUseSavedServers.Location = new Point(117, 89);
+            CustomCheckBoxSettingQcUseSavedServers.Name = "CustomCheckBoxSettingQcUseSavedServers";
+            CustomCheckBoxSettingQcUseSavedServers.SelectionColor = Color.LightBlue;
+            CustomCheckBoxSettingQcUseSavedServers.Size = new Size(184, 17);
+            CustomCheckBoxSettingQcUseSavedServers.TabIndex = 15;
+            CustomCheckBoxSettingQcUseSavedServers.Text = "Use Saved Servers if available";
+            CustomCheckBoxSettingQcUseSavedServers.UseVisualStyleBackColor = false;
+            // 
+            // CustomButtonSettingQcStartup
+            // 
+            CustomButtonSettingQcStartup.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            CustomButtonSettingQcStartup.BorderColor = Color.Blue;
+            CustomButtonSettingQcStartup.FlatStyle = FlatStyle.Flat;
+            CustomButtonSettingQcStartup.Location = new Point(506, 324);
+            CustomButtonSettingQcStartup.Name = "CustomButtonSettingQcStartup";
+            CustomButtonSettingQcStartup.RoundedCorners = 5;
+            CustomButtonSettingQcStartup.SelectionColor = Color.LightBlue;
+            CustomButtonSettingQcStartup.Size = new Size(155, 27);
+            CustomButtonSettingQcStartup.TabIndex = 14;
+            CustomButtonSettingQcStartup.Text = "Apply to Windows Startup";
+            CustomButtonSettingQcStartup.UseVisualStyleBackColor = true;
+            CustomButtonSettingQcStartup.Click += CustomButtonSettingQcStartup_Click;
+            // 
             // CustomCheckBoxSettingQcSetDnsTo
             // 
             CustomCheckBoxSettingQcSetDnsTo.BackColor = Color.DimGray;
@@ -2606,10 +2767,10 @@
             CustomCheckBoxSettingQcSetDnsTo.Checked = true;
             CustomCheckBoxSettingQcSetDnsTo.CheckState = CheckState.Checked;
             CustomCheckBoxSettingQcSetDnsTo.ForeColor = Color.White;
-            CustomCheckBoxSettingQcSetDnsTo.Location = new Point(20, 100);
+            CustomCheckBoxSettingQcSetDnsTo.Location = new Point(20, 128);
             CustomCheckBoxSettingQcSetDnsTo.Name = "CustomCheckBoxSettingQcSetDnsTo";
             CustomCheckBoxSettingQcSetDnsTo.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingQcSetDnsTo.Size = new Size(77, 17);
+            CustomCheckBoxSettingQcSetDnsTo.Size = new Size(80, 17);
             CustomCheckBoxSettingQcSetDnsTo.TabIndex = 13;
             CustomCheckBoxSettingQcSetDnsTo.Text = "Set Dns to";
             CustomCheckBoxSettingQcSetDnsTo.UseVisualStyleBackColor = false;
@@ -2622,8 +2783,9 @@
             CustomComboBoxSettingQcGdBasic.ForeColor = Color.White;
             CustomComboBoxSettingQcGdBasic.FormattingEnabled = true;
             CustomComboBoxSettingQcGdBasic.ItemHeight = 17;
-            CustomComboBoxSettingQcGdBasic.Location = new Point(117, 225);
+            CustomComboBoxSettingQcGdBasic.Location = new Point(117, 253);
             CustomComboBoxSettingQcGdBasic.Name = "CustomComboBoxSettingQcGdBasic";
+            CustomComboBoxSettingQcGdBasic.RoundedCorners = 5;
             CustomComboBoxSettingQcGdBasic.SelectionColor = Color.DodgerBlue;
             CustomComboBoxSettingQcGdBasic.Size = new Size(121, 23);
             CustomComboBoxSettingQcGdBasic.TabIndex = 12;
@@ -2634,10 +2796,10 @@
             CustomRadioButtonSettingQcGdAdvanced.BorderColor = Color.Blue;
             CustomRadioButtonSettingQcGdAdvanced.CheckColor = Color.Blue;
             CustomRadioButtonSettingQcGdAdvanced.ForeColor = Color.White;
-            CustomRadioButtonSettingQcGdAdvanced.Location = new Point(289, 227);
+            CustomRadioButtonSettingQcGdAdvanced.Location = new Point(289, 255);
             CustomRadioButtonSettingQcGdAdvanced.Name = "CustomRadioButtonSettingQcGdAdvanced";
             CustomRadioButtonSettingQcGdAdvanced.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingQcGdAdvanced.Size = new Size(74, 17);
+            CustomRadioButtonSettingQcGdAdvanced.Size = new Size(78, 17);
             CustomRadioButtonSettingQcGdAdvanced.TabIndex = 11;
             CustomRadioButtonSettingQcGdAdvanced.Text = "Advanced";
             CustomRadioButtonSettingQcGdAdvanced.UseVisualStyleBackColor = false;
@@ -2649,10 +2811,10 @@
             CustomRadioButtonSettingQcGdBasic.CheckColor = Color.Blue;
             CustomRadioButtonSettingQcGdBasic.Checked = true;
             CustomRadioButtonSettingQcGdBasic.ForeColor = Color.White;
-            CustomRadioButtonSettingQcGdBasic.Location = new Point(35, 227);
+            CustomRadioButtonSettingQcGdBasic.Location = new Point(35, 255);
             CustomRadioButtonSettingQcGdBasic.Name = "CustomRadioButtonSettingQcGdBasic";
             CustomRadioButtonSettingQcGdBasic.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingQcGdBasic.Size = new Size(48, 17);
+            CustomRadioButtonSettingQcGdBasic.Size = new Size(51, 17);
             CustomRadioButtonSettingQcGdBasic.TabIndex = 10;
             CustomRadioButtonSettingQcGdBasic.TabStop = true;
             CustomRadioButtonSettingQcGdBasic.Text = "Basic";
@@ -2664,10 +2826,10 @@
             CustomCheckBoxSettingQcStartGoodbyeDpi.BorderColor = Color.Blue;
             CustomCheckBoxSettingQcStartGoodbyeDpi.CheckColor = Color.Blue;
             CustomCheckBoxSettingQcStartGoodbyeDpi.ForeColor = Color.White;
-            CustomCheckBoxSettingQcStartGoodbyeDpi.Location = new Point(20, 200);
+            CustomCheckBoxSettingQcStartGoodbyeDpi.Location = new Point(20, 228);
             CustomCheckBoxSettingQcStartGoodbyeDpi.Name = "CustomCheckBoxSettingQcStartGoodbyeDpi";
             CustomCheckBoxSettingQcStartGoodbyeDpi.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingQcStartGoodbyeDpi.Size = new Size(122, 17);
+            CustomCheckBoxSettingQcStartGoodbyeDpi.Size = new Size(125, 17);
             CustomCheckBoxSettingQcStartGoodbyeDpi.TabIndex = 9;
             CustomCheckBoxSettingQcStartGoodbyeDpi.Text = "Start Goodbye DPI";
             CustomCheckBoxSettingQcStartGoodbyeDpi.UseVisualStyleBackColor = false;
@@ -2678,10 +2840,10 @@
             CustomCheckBoxSettingQcSetProxy.BorderColor = Color.Blue;
             CustomCheckBoxSettingQcSetProxy.CheckColor = Color.Blue;
             CustomCheckBoxSettingQcSetProxy.ForeColor = Color.White;
-            CustomCheckBoxSettingQcSetProxy.Location = new Point(156, 151);
+            CustomCheckBoxSettingQcSetProxy.Location = new Point(156, 179);
             CustomCheckBoxSettingQcSetProxy.Name = "CustomCheckBoxSettingQcSetProxy";
             CustomCheckBoxSettingQcSetProxy.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingQcSetProxy.Size = new Size(129, 17);
+            CustomCheckBoxSettingQcSetProxy.Size = new Size(132, 17);
             CustomCheckBoxSettingQcSetProxy.TabIndex = 8;
             CustomCheckBoxSettingQcSetProxy.Text = "Set Proxy to System";
             CustomCheckBoxSettingQcSetProxy.UseVisualStyleBackColor = false;
@@ -2692,10 +2854,10 @@
             CustomCheckBoxSettingQcStartProxyServer.BorderColor = Color.Blue;
             CustomCheckBoxSettingQcStartProxyServer.CheckColor = Color.Blue;
             CustomCheckBoxSettingQcStartProxyServer.ForeColor = Color.White;
-            CustomCheckBoxSettingQcStartProxyServer.Location = new Point(20, 151);
+            CustomCheckBoxSettingQcStartProxyServer.Location = new Point(20, 179);
             CustomCheckBoxSettingQcStartProxyServer.Name = "CustomCheckBoxSettingQcStartProxyServer";
             CustomCheckBoxSettingQcStartProxyServer.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingQcStartProxyServer.Size = new Size(117, 17);
+            CustomCheckBoxSettingQcStartProxyServer.Size = new Size(120, 17);
             CustomCheckBoxSettingQcStartProxyServer.TabIndex = 7;
             CustomCheckBoxSettingQcStartProxyServer.Text = "Start Proxy Server";
             CustomCheckBoxSettingQcStartProxyServer.UseVisualStyleBackColor = false;
@@ -2704,7 +2866,7 @@
             // 
             CustomButtonSettingQcUpdateNics.BorderColor = Color.Blue;
             CustomButtonSettingQcUpdateNics.FlatStyle = FlatStyle.Flat;
-            CustomButtonSettingQcUpdateNics.Location = new Point(289, 96);
+            CustomButtonSettingQcUpdateNics.Location = new Point(340, 124);
             CustomButtonSettingQcUpdateNics.Name = "CustomButtonSettingQcUpdateNics";
             CustomButtonSettingQcUpdateNics.RoundedCorners = 5;
             CustomButtonSettingQcUpdateNics.SelectionColor = Color.LightBlue;
@@ -2722,10 +2884,11 @@
             CustomComboBoxSettingQcNics.ForeColor = Color.White;
             CustomComboBoxSettingQcNics.FormattingEnabled = true;
             CustomComboBoxSettingQcNics.ItemHeight = 17;
-            CustomComboBoxSettingQcNics.Location = new Point(117, 98);
+            CustomComboBoxSettingQcNics.Location = new Point(117, 126);
             CustomComboBoxSettingQcNics.Name = "CustomComboBoxSettingQcNics";
+            CustomComboBoxSettingQcNics.RoundedCorners = 5;
             CustomComboBoxSettingQcNics.SelectionColor = Color.DodgerBlue;
-            CustomComboBoxSettingQcNics.Size = new Size(150, 23);
+            CustomComboBoxSettingQcNics.Size = new Size(200, 23);
             CustomComboBoxSettingQcNics.TabIndex = 5;
             // 
             // CustomCheckBoxSettingQcCheckAllServers
@@ -2734,10 +2897,10 @@
             CustomCheckBoxSettingQcCheckAllServers.BorderColor = Color.Blue;
             CustomCheckBoxSettingQcCheckAllServers.CheckColor = Color.Blue;
             CustomCheckBoxSettingQcCheckAllServers.ForeColor = Color.White;
-            CustomCheckBoxSettingQcCheckAllServers.Location = new Point(387, 53);
+            CustomCheckBoxSettingQcCheckAllServers.Location = new Point(301, 89);
             CustomCheckBoxSettingQcCheckAllServers.Name = "CustomCheckBoxSettingQcCheckAllServers";
             CustomCheckBoxSettingQcCheckAllServers.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingQcCheckAllServers.Size = new Size(110, 17);
+            CustomCheckBoxSettingQcCheckAllServers.Size = new Size(114, 17);
             CustomCheckBoxSettingQcCheckAllServers.TabIndex = 3;
             CustomCheckBoxSettingQcCheckAllServers.Text = "Check all servers";
             CustomCheckBoxSettingQcCheckAllServers.UseVisualStyleBackColor = false;
@@ -2752,6 +2915,7 @@
             CustomComboBoxSettingQcConnectMode.ItemHeight = 17;
             CustomComboBoxSettingQcConnectMode.Location = new Point(117, 51);
             CustomComboBoxSettingQcConnectMode.Name = "CustomComboBoxSettingQcConnectMode";
+            CustomComboBoxSettingQcConnectMode.RoundedCorners = 5;
             CustomComboBoxSettingQcConnectMode.SelectionColor = Color.DodgerBlue;
             CustomComboBoxSettingQcConnectMode.Size = new Size(250, 23);
             CustomComboBoxSettingQcConnectMode.TabIndex = 2;
@@ -2813,7 +2977,7 @@
             CustomCheckBoxSettingEnableCache.Location = new Point(50, 50);
             CustomCheckBoxSettingEnableCache.Name = "CustomCheckBoxSettingEnableCache";
             CustomCheckBoxSettingEnableCache.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingEnableCache.Size = new Size(119, 17);
+            CustomCheckBoxSettingEnableCache.Size = new Size(123, 17);
             CustomCheckBoxSettingEnableCache.TabIndex = 17;
             CustomCheckBoxSettingEnableCache.Text = "Enable DNS cache";
             CustomCheckBoxSettingEnableCache.UseVisualStyleBackColor = false;
@@ -2827,6 +2991,7 @@
             CustomNumericUpDownSettingCamouflageDnsPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownSettingCamouflageDnsPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingCamouflageDnsPort.Name = "CustomNumericUpDownSettingCamouflageDnsPort";
+            CustomNumericUpDownSettingCamouflageDnsPort.RoundedCorners = 5;
             CustomNumericUpDownSettingCamouflageDnsPort.Size = new Size(53, 23);
             CustomNumericUpDownSettingCamouflageDnsPort.TabIndex = 16;
             CustomNumericUpDownSettingCamouflageDnsPort.Value = new decimal(new int[] { 5380, 0, 0, 0 });
@@ -2855,6 +3020,7 @@
             CustomNumericUpDownSettingMaxServers.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownSettingMaxServers.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingMaxServers.Name = "CustomNumericUpDownSettingMaxServers";
+            CustomNumericUpDownSettingMaxServers.RoundedCorners = 5;
             CustomNumericUpDownSettingMaxServers.Size = new Size(45, 23);
             CustomNumericUpDownSettingMaxServers.TabIndex = 7;
             CustomNumericUpDownSettingMaxServers.Value = new decimal(new int[] { 5, 0, 0, 0 });
@@ -2908,6 +3074,7 @@
             CustomTextBoxSettingUnsetDns2.Multiline = false;
             CustomTextBoxSettingUnsetDns2.Name = "CustomTextBoxSettingUnsetDns2";
             CustomTextBoxSettingUnsetDns2.ReadOnly = false;
+            CustomTextBoxSettingUnsetDns2.RoundedCorners = 0;
             CustomTextBoxSettingUnsetDns2.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingUnsetDns2.ShortcutsEnabled = true;
             CustomTextBoxSettingUnsetDns2.Size = new Size(95, 23);
@@ -2935,6 +3102,7 @@
             CustomTextBoxSettingUnsetDns1.Multiline = false;
             CustomTextBoxSettingUnsetDns1.Name = "CustomTextBoxSettingUnsetDns1";
             CustomTextBoxSettingUnsetDns1.ReadOnly = false;
+            CustomTextBoxSettingUnsetDns1.RoundedCorners = 0;
             CustomTextBoxSettingUnsetDns1.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingUnsetDns1.ShortcutsEnabled = true;
             CustomTextBoxSettingUnsetDns1.Size = new Size(95, 23);
@@ -2985,7 +3153,7 @@
             CustomRadioButtonSettingUnsetDnsToStatic.Location = new Point(50, 70);
             CustomRadioButtonSettingUnsetDnsToStatic.Name = "CustomRadioButtonSettingUnsetDnsToStatic";
             CustomRadioButtonSettingUnsetDnsToStatic.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingUnsetDnsToStatic.Size = new Size(128, 17);
+            CustomRadioButtonSettingUnsetDnsToStatic.Size = new Size(131, 17);
             CustomRadioButtonSettingUnsetDnsToStatic.TabIndex = 1;
             CustomRadioButtonSettingUnsetDnsToStatic.TabStop = true;
             CustomRadioButtonSettingUnsetDnsToStatic.Text = "Unset DNS to Static";
@@ -3000,7 +3168,7 @@
             CustomRadioButtonSettingUnsetDnsToDhcp.Location = new Point(50, 35);
             CustomRadioButtonSettingUnsetDnsToDhcp.Name = "CustomRadioButtonSettingUnsetDnsToDhcp";
             CustomRadioButtonSettingUnsetDnsToDhcp.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingUnsetDnsToDhcp.Size = new Size(130, 17);
+            CustomRadioButtonSettingUnsetDnsToDhcp.Size = new Size(133, 17);
             CustomRadioButtonSettingUnsetDnsToDhcp.TabIndex = 0;
             CustomRadioButtonSettingUnsetDnsToDhcp.Text = "Unset DNS to DHCP";
             CustomRadioButtonSettingUnsetDnsToDhcp.UseVisualStyleBackColor = false;
@@ -3026,11 +3194,12 @@
             CustomTabControlSettingProxy.HideTabHeader = false;
             CustomTabControlSettingProxy.Location = new Point(3, 3);
             CustomTabControlSettingProxy.Name = "CustomTabControlSettingProxy";
+            CustomTabControlSettingProxy.RoundedCorners = 5;
             CustomTabControlSettingProxy.SelectedIndex = 0;
             CustomTabControlSettingProxy.Size = new Size(661, 351);
             CustomTabControlSettingProxy.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSettingProxy.TabIndex = 49;
-            CustomTabControlSettingProxy.Tag = 0;
+            CustomTabControlSettingProxy.Tag = 1;
             // 
             // TabPageSettingProxyBasic
             // 
@@ -3066,6 +3235,7 @@
             CustomNumericUpDownSettingProxyKillRequestTimeout.Maximum = new decimal(new int[] { 300, 0, 0, 0 });
             CustomNumericUpDownSettingProxyKillRequestTimeout.Minimum = new decimal(new int[] { 5, 0, 0, 0 });
             CustomNumericUpDownSettingProxyKillRequestTimeout.Name = "CustomNumericUpDownSettingProxyKillRequestTimeout";
+            CustomNumericUpDownSettingProxyKillRequestTimeout.RoundedCorners = 5;
             CustomNumericUpDownSettingProxyKillRequestTimeout.Size = new Size(55, 23);
             CustomNumericUpDownSettingProxyKillRequestTimeout.TabIndex = 56;
             CustomNumericUpDownSettingProxyKillRequestTimeout.Value = new decimal(new int[] { 20, 0, 0, 0 });
@@ -3096,7 +3266,7 @@
             CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Location = new Point(25, 135);
             CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Name = "CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs";
             CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Size = new Size(159, 17);
+            CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Size = new Size(162, 17);
             CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.TabIndex = 53;
             CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Text = "Apply only to blocked IPs";
             CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.UseVisualStyleBackColor = false;
@@ -3110,6 +3280,7 @@
             CustomNumericUpDownSettingProxyUpstreamPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownSettingProxyUpstreamPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingProxyUpstreamPort.Name = "CustomNumericUpDownSettingProxyUpstreamPort";
+            CustomNumericUpDownSettingProxyUpstreamPort.RoundedCorners = 5;
             CustomNumericUpDownSettingProxyUpstreamPort.Size = new Size(55, 23);
             CustomNumericUpDownSettingProxyUpstreamPort.TabIndex = 51;
             CustomNumericUpDownSettingProxyUpstreamPort.Value = new decimal(new int[] { 1090, 0, 0, 0 });
@@ -3131,6 +3302,7 @@
             CustomTextBoxSettingProxyUpstreamHost.Multiline = false;
             CustomTextBoxSettingProxyUpstreamHost.Name = "CustomTextBoxSettingProxyUpstreamHost";
             CustomTextBoxSettingProxyUpstreamHost.ReadOnly = false;
+            CustomTextBoxSettingProxyUpstreamHost.RoundedCorners = 0;
             CustomTextBoxSettingProxyUpstreamHost.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingProxyUpstreamHost.ShortcutsEnabled = true;
             CustomTextBoxSettingProxyUpstreamHost.Size = new Size(150, 23);
@@ -3182,6 +3354,7 @@
             CustomComboBoxSettingProxyUpstreamMode.Items.AddRange(new object[] { "HTTP", "SOCKS5" });
             CustomComboBoxSettingProxyUpstreamMode.Location = new Point(25, 165);
             CustomComboBoxSettingProxyUpstreamMode.Name = "CustomComboBoxSettingProxyUpstreamMode";
+            CustomComboBoxSettingProxyUpstreamMode.RoundedCorners = 5;
             CustomComboBoxSettingProxyUpstreamMode.SelectionColor = Color.DodgerBlue;
             CustomComboBoxSettingProxyUpstreamMode.Size = new Size(70, 23);
             CustomComboBoxSettingProxyUpstreamMode.TabIndex = 47;
@@ -3195,7 +3368,7 @@
             CustomCheckBoxSettingProxyUpstream.Location = new Point(6, 105);
             CustomCheckBoxSettingProxyUpstream.Name = "CustomCheckBoxSettingProxyUpstream";
             CustomCheckBoxSettingProxyUpstream.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProxyUpstream.Size = new Size(129, 17);
+            CustomCheckBoxSettingProxyUpstream.Size = new Size(133, 17);
             CustomCheckBoxSettingProxyUpstream.TabIndex = 46;
             CustomCheckBoxSettingProxyUpstream.Text = "Use upstream proxy";
             CustomCheckBoxSettingProxyUpstream.UseVisualStyleBackColor = false;
@@ -3226,7 +3399,7 @@
             CustomCheckBoxSettingProxyBlockPort80.Location = new Point(361, 25);
             CustomCheckBoxSettingProxyBlockPort80.Name = "CustomCheckBoxSettingProxyBlockPort80";
             CustomCheckBoxSettingProxyBlockPort80.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProxyBlockPort80.Size = new Size(93, 17);
+            CustomCheckBoxSettingProxyBlockPort80.Size = new Size(96, 17);
             CustomCheckBoxSettingProxyBlockPort80.TabIndex = 45;
             CustomCheckBoxSettingProxyBlockPort80.Text = "Block port 80";
             CustomCheckBoxSettingProxyBlockPort80.UseVisualStyleBackColor = false;
@@ -3255,6 +3428,7 @@
             CustomNumericUpDownSettingProxyPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownSettingProxyPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingProxyPort.Name = "CustomNumericUpDownSettingProxyPort";
+            CustomNumericUpDownSettingProxyPort.RoundedCorners = 5;
             CustomNumericUpDownSettingProxyPort.Size = new Size(55, 23);
             CustomNumericUpDownSettingProxyPort.TabIndex = 41;
             CustomNumericUpDownSettingProxyPort.Value = new decimal(new int[] { 8080, 0, 0, 0 });
@@ -3268,6 +3442,7 @@
             CustomNumericUpDownSettingProxyHandleRequests.Maximum = new decimal(new int[] { 50000, 0, 0, 0 });
             CustomNumericUpDownSettingProxyHandleRequests.Minimum = new decimal(new int[] { 200, 0, 0, 0 });
             CustomNumericUpDownSettingProxyHandleRequests.Name = "CustomNumericUpDownSettingProxyHandleRequests";
+            CustomNumericUpDownSettingProxyHandleRequests.RoundedCorners = 5;
             CustomNumericUpDownSettingProxyHandleRequests.Size = new Size(55, 23);
             CustomNumericUpDownSettingProxyHandleRequests.TabIndex = 44;
             CustomNumericUpDownSettingProxyHandleRequests.Value = new decimal(new int[] { 2000, 0, 0, 0 });
@@ -3336,7 +3511,7 @@
             CustomCheckBoxSettingProxyEnableDontBypass.Location = new Point(6, 235);
             CustomCheckBoxSettingProxyEnableDontBypass.Name = "CustomCheckBoxSettingProxyEnableDontBypass";
             CustomCheckBoxSettingProxyEnableDontBypass.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProxyEnableDontBypass.Size = new Size(409, 17);
+            CustomCheckBoxSettingProxyEnableDontBypass.Size = new Size(412, 17);
             CustomCheckBoxSettingProxyEnableDontBypass.TabIndex = 14;
             CustomCheckBoxSettingProxyEnableDontBypass.Text = "Enable Don't Bypass DPI List (Don't apply DPI Bypass to these domains)";
             CustomCheckBoxSettingProxyEnableDontBypass.UseVisualStyleBackColor = false;
@@ -3377,7 +3552,7 @@
             CustomCheckBoxSettingProxyEnableFakeProxy.Location = new Point(6, 15);
             CustomCheckBoxSettingProxyEnableFakeProxy.Name = "CustomCheckBoxSettingProxyEnableFakeProxy";
             CustomCheckBoxSettingProxyEnableFakeProxy.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProxyEnableFakeProxy.Size = new Size(119, 17);
+            CustomCheckBoxSettingProxyEnableFakeProxy.Size = new Size(122, 17);
             CustomCheckBoxSettingProxyEnableFakeProxy.TabIndex = 0;
             CustomCheckBoxSettingProxyEnableFakeProxy.Text = "Enable Fake Proxy";
             CustomCheckBoxSettingProxyEnableFakeProxy.UseVisualStyleBackColor = false;
@@ -3406,7 +3581,7 @@
             CustomCheckBoxSettingProxyCfCleanIP.Location = new Point(6, 45);
             CustomCheckBoxSettingProxyCfCleanIP.Name = "CustomCheckBoxSettingProxyCfCleanIP";
             CustomCheckBoxSettingProxyCfCleanIP.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProxyCfCleanIP.Size = new Size(232, 17);
+            CustomCheckBoxSettingProxyCfCleanIP.Size = new Size(235, 17);
             CustomCheckBoxSettingProxyCfCleanIP.TabIndex = 1;
             CustomCheckBoxSettingProxyCfCleanIP.Text = "Redirect all Cloudflare IPs to a clean IP:";
             CustomCheckBoxSettingProxyCfCleanIP.UseVisualStyleBackColor = false;
@@ -3441,6 +3616,7 @@
             CustomTextBoxSettingProxyCfCleanIP.Multiline = false;
             CustomTextBoxSettingProxyCfCleanIP.Name = "CustomTextBoxSettingProxyCfCleanIP";
             CustomTextBoxSettingProxyCfCleanIP.ReadOnly = false;
+            CustomTextBoxSettingProxyCfCleanIP.RoundedCorners = 0;
             CustomTextBoxSettingProxyCfCleanIP.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingProxyCfCleanIP.ShortcutsEnabled = true;
             CustomTextBoxSettingProxyCfCleanIP.Size = new Size(150, 23);
@@ -3460,7 +3636,7 @@
             CustomCheckBoxSettingProxyEnableBlackWhiteList.Location = new Point(6, 165);
             CustomCheckBoxSettingProxyEnableBlackWhiteList.Name = "CustomCheckBoxSettingProxyEnableBlackWhiteList";
             CustomCheckBoxSettingProxyEnableBlackWhiteList.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProxyEnableBlackWhiteList.Size = new Size(110, 17);
+            CustomCheckBoxSettingProxyEnableBlackWhiteList.Size = new Size(113, 17);
             CustomCheckBoxSettingProxyEnableBlackWhiteList.TabIndex = 8;
             CustomCheckBoxSettingProxyEnableBlackWhiteList.Text = "Enable Black List";
             CustomCheckBoxSettingProxyEnableBlackWhiteList.UseVisualStyleBackColor = false;
@@ -3474,7 +3650,7 @@
             CustomCheckBoxSettingProxyEnableFakeDNS.Location = new Point(6, 90);
             CustomCheckBoxSettingProxyEnableFakeDNS.Name = "CustomCheckBoxSettingProxyEnableFakeDNS";
             CustomCheckBoxSettingProxyEnableFakeDNS.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProxyEnableFakeDNS.Size = new Size(113, 17);
+            CustomCheckBoxSettingProxyEnableFakeDNS.Size = new Size(116, 17);
             CustomCheckBoxSettingProxyEnableFakeDNS.TabIndex = 3;
             CustomCheckBoxSettingProxyEnableFakeDNS.Text = "Enable Fake DNS";
             CustomCheckBoxSettingProxyEnableFakeDNS.UseVisualStyleBackColor = false;
@@ -3556,6 +3732,7 @@
             CustomTextBoxSettingFakeProxyDohCleanIP.Multiline = false;
             CustomTextBoxSettingFakeProxyDohCleanIP.Name = "CustomTextBoxSettingFakeProxyDohCleanIP";
             CustomTextBoxSettingFakeProxyDohCleanIP.ReadOnly = false;
+            CustomTextBoxSettingFakeProxyDohCleanIP.RoundedCorners = 0;
             CustomTextBoxSettingFakeProxyDohCleanIP.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingFakeProxyDohCleanIP.ShortcutsEnabled = true;
             CustomTextBoxSettingFakeProxyDohCleanIP.Size = new Size(95, 23);
@@ -3583,6 +3760,7 @@
             CustomTextBoxSettingFakeProxyDohAddress.Multiline = false;
             CustomTextBoxSettingFakeProxyDohAddress.Name = "CustomTextBoxSettingFakeProxyDohAddress";
             CustomTextBoxSettingFakeProxyDohAddress.ReadOnly = false;
+            CustomTextBoxSettingFakeProxyDohAddress.RoundedCorners = 0;
             CustomTextBoxSettingFakeProxyDohAddress.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingFakeProxyDohAddress.ShortcutsEnabled = true;
             CustomTextBoxSettingFakeProxyDohAddress.Size = new Size(250, 23);
@@ -3648,6 +3826,7 @@
             CustomNumericUpDownSettingFakeProxyPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownSettingFakeProxyPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingFakeProxyPort.Name = "CustomNumericUpDownSettingFakeProxyPort";
+            CustomNumericUpDownSettingFakeProxyPort.RoundedCorners = 5;
             CustomNumericUpDownSettingFakeProxyPort.Size = new Size(53, 23);
             CustomNumericUpDownSettingFakeProxyPort.TabIndex = 47;
             CustomNumericUpDownSettingFakeProxyPort.Value = new decimal(new int[] { 8070, 0, 0, 0 });
@@ -3695,6 +3874,7 @@
             CustomNumericUpDownSettingCpuKillProxyRequests.Maximum = new decimal(new int[] { 90, 0, 0, 0 });
             CustomNumericUpDownSettingCpuKillProxyRequests.Minimum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownSettingCpuKillProxyRequests.Name = "CustomNumericUpDownSettingCpuKillProxyRequests";
+            CustomNumericUpDownSettingCpuKillProxyRequests.RoundedCorners = 5;
             CustomNumericUpDownSettingCpuKillProxyRequests.Size = new Size(45, 23);
             CustomNumericUpDownSettingCpuKillProxyRequests.TabIndex = 7;
             CustomNumericUpDownSettingCpuKillProxyRequests.Value = new decimal(new int[] { 40, 0, 0, 0 });
@@ -3723,7 +3903,7 @@
             CustomRadioButtonSettingCPULow.Location = new Point(50, 180);
             CustomRadioButtonSettingCPULow.Name = "CustomRadioButtonSettingCPULow";
             CustomRadioButtonSettingCPULow.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingCPULow.Size = new Size(42, 17);
+            CustomRadioButtonSettingCPULow.Size = new Size(46, 17);
             CustomRadioButtonSettingCPULow.TabIndex = 5;
             CustomRadioButtonSettingCPULow.Text = "Low";
             CustomRadioButtonSettingCPULow.UseVisualStyleBackColor = false;
@@ -3737,7 +3917,7 @@
             CustomRadioButtonSettingCPUBelowNormal.Location = new Point(50, 155);
             CustomRadioButtonSettingCPUBelowNormal.Name = "CustomRadioButtonSettingCPUBelowNormal";
             CustomRadioButtonSettingCPUBelowNormal.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingCPUBelowNormal.Size = new Size(95, 17);
+            CustomRadioButtonSettingCPUBelowNormal.Size = new Size(99, 17);
             CustomRadioButtonSettingCPUBelowNormal.TabIndex = 4;
             CustomRadioButtonSettingCPUBelowNormal.Text = "Below normal";
             CustomRadioButtonSettingCPUBelowNormal.UseVisualStyleBackColor = false;
@@ -3752,7 +3932,7 @@
             CustomRadioButtonSettingCPUNormal.Location = new Point(50, 130);
             CustomRadioButtonSettingCPUNormal.Name = "CustomRadioButtonSettingCPUNormal";
             CustomRadioButtonSettingCPUNormal.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingCPUNormal.Size = new Size(61, 17);
+            CustomRadioButtonSettingCPUNormal.Size = new Size(65, 17);
             CustomRadioButtonSettingCPUNormal.TabIndex = 3;
             CustomRadioButtonSettingCPUNormal.TabStop = true;
             CustomRadioButtonSettingCPUNormal.Text = "Normal";
@@ -3767,7 +3947,7 @@
             CustomRadioButtonSettingCPUAboveNormal.Location = new Point(50, 105);
             CustomRadioButtonSettingCPUAboveNormal.Name = "CustomRadioButtonSettingCPUAboveNormal";
             CustomRadioButtonSettingCPUAboveNormal.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingCPUAboveNormal.Size = new Size(97, 17);
+            CustomRadioButtonSettingCPUAboveNormal.Size = new Size(101, 17);
             CustomRadioButtonSettingCPUAboveNormal.TabIndex = 2;
             CustomRadioButtonSettingCPUAboveNormal.Text = "Above normal";
             CustomRadioButtonSettingCPUAboveNormal.UseVisualStyleBackColor = false;
@@ -3781,7 +3961,7 @@
             CustomRadioButtonSettingCPUHigh.Location = new Point(50, 80);
             CustomRadioButtonSettingCPUHigh.Name = "CustomRadioButtonSettingCPUHigh";
             CustomRadioButtonSettingCPUHigh.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSettingCPUHigh.Size = new Size(47, 17);
+            CustomRadioButtonSettingCPUHigh.Size = new Size(50, 17);
             CustomRadioButtonSettingCPUHigh.TabIndex = 1;
             CustomRadioButtonSettingCPUHigh.Text = "High";
             CustomRadioButtonSettingCPUHigh.UseVisualStyleBackColor = false;
@@ -3865,7 +4045,7 @@
             CustomCheckBoxSettingWriteLogWindowToFile.Location = new Point(15, 170);
             CustomCheckBoxSettingWriteLogWindowToFile.Name = "CustomCheckBoxSettingWriteLogWindowToFile";
             CustomCheckBoxSettingWriteLogWindowToFile.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingWriteLogWindowToFile.Size = new Size(154, 17);
+            CustomCheckBoxSettingWriteLogWindowToFile.Size = new Size(157, 17);
             CustomCheckBoxSettingWriteLogWindowToFile.TabIndex = 16;
             CustomCheckBoxSettingWriteLogWindowToFile.Text = "Write log window to file.";
             CustomCheckBoxSettingWriteLogWindowToFile.UseVisualStyleBackColor = false;
@@ -3880,6 +4060,7 @@
             CustomNumericUpDownSettingFallbackDnsPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownSettingFallbackDnsPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingFallbackDnsPort.Name = "CustomNumericUpDownSettingFallbackDnsPort";
+            CustomNumericUpDownSettingFallbackDnsPort.RoundedCorners = 5;
             CustomNumericUpDownSettingFallbackDnsPort.Size = new Size(53, 23);
             CustomNumericUpDownSettingFallbackDnsPort.TabIndex = 13;
             CustomNumericUpDownSettingFallbackDnsPort.Value = new decimal(new int[] { 53, 0, 0, 0 });
@@ -3917,6 +4098,7 @@
             CustomTextBoxSettingFallbackDnsIP.Multiline = false;
             CustomTextBoxSettingFallbackDnsIP.Name = "CustomTextBoxSettingFallbackDnsIP";
             CustomTextBoxSettingFallbackDnsIP.ReadOnly = false;
+            CustomTextBoxSettingFallbackDnsIP.RoundedCorners = 0;
             CustomTextBoxSettingFallbackDnsIP.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingFallbackDnsIP.ShortcutsEnabled = true;
             CustomTextBoxSettingFallbackDnsIP.Size = new Size(95, 23);
@@ -3951,6 +4133,7 @@
             CustomNumericUpDownSettingBootstrapDnsPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownSettingBootstrapDnsPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingBootstrapDnsPort.Name = "CustomNumericUpDownSettingBootstrapDnsPort";
+            CustomNumericUpDownSettingBootstrapDnsPort.RoundedCorners = 5;
             CustomNumericUpDownSettingBootstrapDnsPort.Size = new Size(53, 23);
             CustomNumericUpDownSettingBootstrapDnsPort.TabIndex = 9;
             CustomNumericUpDownSettingBootstrapDnsPort.Value = new decimal(new int[] { 53, 0, 0, 0 });
@@ -3994,7 +4177,7 @@
             CustomCheckBoxSettingDisableAudioAlert.Location = new Point(15, 140);
             CustomCheckBoxSettingDisableAudioAlert.Name = "CustomCheckBoxSettingDisableAudioAlert";
             CustomCheckBoxSettingDisableAudioAlert.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingDisableAudioAlert.Size = new Size(125, 17);
+            CustomCheckBoxSettingDisableAudioAlert.Size = new Size(128, 17);
             CustomCheckBoxSettingDisableAudioAlert.TabIndex = 6;
             CustomCheckBoxSettingDisableAudioAlert.Text = "Disable audio alert.";
             CustomCheckBoxSettingDisableAudioAlert.UseVisualStyleBackColor = false;
@@ -4023,7 +4206,7 @@
             CustomCheckBoxSettingDontAskCertificate.Location = new Point(15, 110);
             CustomCheckBoxSettingDontAskCertificate.Name = "CustomCheckBoxSettingDontAskCertificate";
             CustomCheckBoxSettingDontAskCertificate.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingDontAskCertificate.Size = new Size(210, 17);
+            CustomCheckBoxSettingDontAskCertificate.Size = new Size(213, 17);
             CustomCheckBoxSettingDontAskCertificate.TabIndex = 4;
             CustomCheckBoxSettingDontAskCertificate.Text = "Don't ask for certificate every time.";
             CustomCheckBoxSettingDontAskCertificate.UseVisualStyleBackColor = false;
@@ -4045,6 +4228,7 @@
             CustomTextBoxSettingBootstrapDnsIP.Multiline = false;
             CustomTextBoxSettingBootstrapDnsIP.Name = "CustomTextBoxSettingBootstrapDnsIP";
             CustomTextBoxSettingBootstrapDnsIP.ReadOnly = false;
+            CustomTextBoxSettingBootstrapDnsIP.RoundedCorners = 0;
             CustomTextBoxSettingBootstrapDnsIP.ScrollBars = ScrollBars.None;
             CustomTextBoxSettingBootstrapDnsIP.ShortcutsEnabled = true;
             CustomTextBoxSettingBootstrapDnsIP.Size = new Size(95, 23);
@@ -4261,25 +4445,25 @@
             CustomDataGridViewStatus.BorderColor = Color.Blue;
             CustomDataGridViewStatus.CheckColor = Color.Blue;
             CustomDataGridViewStatus.ColumnHeadersBorder = true;
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            dataGridViewCellStyle1.ForeColor = Color.White;
-            dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle1.SelectionForeColor = Color.White;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            CustomDataGridViewStatus.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle3.ForeColor = Color.White;
+            dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle3.SelectionForeColor = Color.White;
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.True;
+            CustomDataGridViewStatus.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
             CustomDataGridViewStatus.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             CustomDataGridViewStatus.ColumnHeadersVisible = false;
             CustomDataGridViewStatus.Columns.AddRange(new DataGridViewColumn[] { ColumnStatusName, ColumnStatusText });
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = Color.DimGray;
-            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            dataGridViewCellStyle2.ForeColor = Color.White;
-            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(97, 177, 255);
-            dataGridViewCellStyle2.SelectionForeColor = Color.White;
-            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
-            CustomDataGridViewStatus.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = Color.DimGray;
+            dataGridViewCellStyle4.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle4.ForeColor = Color.White;
+            dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(97, 177, 255);
+            dataGridViewCellStyle4.SelectionForeColor = Color.White;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.False;
+            CustomDataGridViewStatus.DefaultCellStyle = dataGridViewCellStyle4;
             CustomDataGridViewStatus.GridColor = Color.LightBlue;
             CustomDataGridViewStatus.Location = new Point(19, 20);
             CustomDataGridViewStatus.MultiSelect = false;
@@ -4331,9 +4515,10 @@
             CustomContextMenuStripIcon.ForeColor = Color.White;
             CustomContextMenuStripIcon.ImageScalingSize = new Size(20, 20);
             CustomContextMenuStripIcon.Name = "CustomContextMenuStripIcon";
+            CustomContextMenuStripIcon.RoundedCorners = 5;
             CustomContextMenuStripIcon.SameColorForSubItems = true;
             CustomContextMenuStripIcon.SelectionColor = Color.LightBlue;
-            CustomContextMenuStripIcon.Size = new Size(61, 4);
+            CustomContextMenuStripIcon.Size = new Size(181, 26);
             // 
             // CustomGroupBoxStatus
             // 
@@ -4344,6 +4529,7 @@
             CustomGroupBoxStatus.Location = new Point(0, 0);
             CustomGroupBoxStatus.Margin = new Padding(1);
             CustomGroupBoxStatus.Name = "CustomGroupBoxStatus";
+            CustomGroupBoxStatus.RoundedCorners = 5;
             CustomGroupBoxStatus.Size = new Size(201, 400);
             CustomGroupBoxStatus.TabIndex = 8;
             CustomGroupBoxStatus.TabStop = false;
@@ -4430,6 +4616,8 @@
             TabPageConnect.ResumeLayout(false);
             TabPageSetDNS.ResumeLayout(false);
             TabPageSetDNS.PerformLayout();
+            CustomGroupBoxNicStatus.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)CustomDataGridViewNicStatus).EndInit();
             TabPageShare.ResumeLayout(false);
             TabPageShare.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownPDpiBeforeSniChunks).EndInit();
@@ -4760,5 +4948,12 @@
         private CustomControls.CustomDataGridView CustomDataGridViewStatus;
         private DataGridViewTextBoxColumn ColumnStatusName;
         private DataGridViewTextBoxColumn ColumnStatusText;
+        private CustomControls.CustomButton CustomButtonSettingQcStartup;
+        private CustomControls.CustomCheckBox CustomCheckBoxSettingQcUseSavedServers;
+        private CustomControls.CustomGroupBox CustomGroupBoxNicStatus;
+        private CustomControls.CustomDataGridView CustomDataGridViewNicStatus;
+        private DataGridViewTextBoxColumn ColumnNicStatusName;
+        private DataGridViewTextBoxColumn ColumnNicStatusText;
+        private CustomControls.CustomButton CustomButtonEnableDisableNic;
     }
 }

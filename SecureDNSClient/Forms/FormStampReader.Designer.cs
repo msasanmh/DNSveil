@@ -67,6 +67,7 @@
             CustomTextBoxStampUrl.Multiline = false;
             CustomTextBoxStampUrl.Name = "CustomTextBoxStampUrl";
             CustomTextBoxStampUrl.ReadOnly = false;
+            CustomTextBoxStampUrl.RoundedCorners = 0;
             CustomTextBoxStampUrl.ScrollBars = ScrollBars.None;
             CustomTextBoxStampUrl.ShortcutsEnabled = true;
             CustomTextBoxStampUrl.Size = new Size(500, 23);
@@ -111,6 +112,7 @@
             CustomTextBoxResult.Multiline = true;
             CustomTextBoxResult.Name = "CustomTextBoxResult";
             CustomTextBoxResult.ReadOnly = true;
+            CustomTextBoxResult.RoundedCorners = 5;
             CustomTextBoxResult.ScrollBars = ScrollBars.Vertical;
             CustomTextBoxResult.ShortcutsEnabled = true;
             CustomTextBoxResult.Size = new Size(673, 356);

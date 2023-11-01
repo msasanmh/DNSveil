@@ -28,12 +28,26 @@ public partial class FormMain
         int maxServers = 0;
         this.InvokeIt(() => maxServers = decimal.ToInt32(CustomNumericUpDownSettingMaxServers.Value));
 
+        if (File.Exists(TheDll))
+        {
+            try
+            {
+                File.Delete(TheDll);
+                Debug.WriteLine("DLL Deleted.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+        }
         TheDll = new SecureDNS().DnsProxyDll;
         using StreamWriter theDll = new(TheDll, false);
 
-        // Clear UsingDnsList, SavedEncodedDnsList & CurrentUsingCustomServers
-        SavedDnsList.Clear();
-        SavedEncodedDnsList.Clear();
+        // New SavedDnsList and SavedEncodedDnsList
+        List<string> savedDnsList = new();
+        List<string> savedEncodedDnsList = new();
+
+        // Clear CurrentUsingCustomServers
         CurrentUsingCustomServersList.Clear();
 
         // Find fastest servers, max 10
@@ -45,10 +59,10 @@ public partial class FormMain
             string host = latencyHost.Item2;
 
             // Add host to UsingDnsList
-            SavedDnsList.Add(host);
+            savedDnsList.Add(host);
 
             // Add encoded host to SavedEncodedDnsList
-            SavedEncodedDnsList.Add(EncodingTool.GetSHA512(host));
+            savedEncodedDnsList.Add(EncodingTool.GetSHA512(host));
 
             // Update Current Using Custom Servers
             if (!IsBuiltinMode)
@@ -60,6 +74,10 @@ public partial class FormMain
             countUsingServers = n + 1;
             if (n >= maxServers - 1) break;
         }
+
+        // Update Saved Dns List
+        SavedDnsList = new(savedDnsList);
+        SavedEncodedDnsList = new(savedEncodedDnsList);
 
         // Save encoded hosts to file
         SavedEncodedDnsList.SaveToFile(SecureDNS.SavedEncodedDnsPath);

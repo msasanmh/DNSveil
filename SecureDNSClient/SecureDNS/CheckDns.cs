@@ -94,23 +94,33 @@ public class CheckDns
 
     private static bool CheckDnsWork(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
     {
+        Process? process = null;
         var task = Task.Run(() =>
         {
+            Dictionary<string, string> evs = new();
+            evs.Add("JSON", "1");
             string args = domain + " " + dnsServer;
-            string? result = ProcessManager.Execute(out Process _, SecureDNS.DnsLookup, args, true, false, SecureDNS.CurrentPath, processPriorityClass);
+            string? result = ProcessManager.Execute(out process, SecureDNS.DnsLookup, evs, args, true, false, SecureDNS.CurrentPath, processPriorityClass, false);
 
-            if (!string.IsNullOrEmpty(result))
-            {
-                return result.Contains("ANSWER SECTION");
-            }
-            else
-                return false;
+            if (string.IsNullOrEmpty(result)) return false;
+            if (string.IsNullOrWhiteSpace(result)) return false;
+            if (result.Contains("[fatal]")) return false;
+
+            List<string> ips = GetDnsLookupAnswerRecordList(result);
+
+            return ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
         });
 
         if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
+        {
+            try { process?.Kill(true); } catch (Exception) { }
             return task.Result;
+        }
         else
+        {
+            try { process?.Kill(true); } catch (Exception) { }
             return false;
+        }
     }
 
     private static bool CheckDnsWork(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
@@ -202,25 +212,32 @@ public class CheckDns
 
     private static async Task<bool> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
     {
+        Process? process = null;
         try
         {
             Task<bool> task = Task.Run(() =>
             {
+                Dictionary<string, string> evs = new();
+                evs.Add("JSON", "1");
                 string args = domain + " " + dnsServer;
-                string? result = ProcessManager.Execute(out Process _, SecureDNS.DnsLookup, args, true, false, SecureDNS.CurrentPath, processPriorityClass);
+                string? result = ProcessManager.Execute(out process, SecureDNS.DnsLookup, evs, args, true, false, SecureDNS.CurrentPath, processPriorityClass, false);
 
-                if (!string.IsNullOrEmpty(result))
-                {
-                    return result.Contains("ANSWER SECTION");
-                }
-                else
-                    return false;
+                if (string.IsNullOrEmpty(result)) return false;
+                if (string.IsNullOrWhiteSpace(result)) return false;
+                if (result.Contains("[fatal]")) return false;
+
+                List<string> ips = GetDnsLookupAnswerRecordList(result);
+
+                return ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
             });
 
-            return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS));
+            bool result =  await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS));
+            try { process?.Kill(true); } catch (Exception) { }
+            return result;
         }
         catch (TimeoutException)
         {
+            try { process?.Kill(true); } catch (Exception) { }
             return false;
         }
     }
@@ -564,6 +581,7 @@ public class CheckDns
             catch (Exception ex)
             {
                 Debug.WriteLine("GetDnsLookupARecordList: " + ex.Message);
+                Debug.WriteLine("JSON String: " + jsonStr);
             }
         }
         return aRecStr;

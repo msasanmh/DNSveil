@@ -22,8 +22,11 @@ public class SetDnsOnNic
 
     }
 
-    private void AddOrUpdate(NetworkInterface nic, bool isSet)
+    private void AddOrUpdate(NetworkInterface nic)
     {
+        NetworkInterfaces nis = new(nic.Name);
+        bool isSet = nis.DnsAddresses.Any() && nis.DnsAddresses[0].Equals(IPAddress.Loopback.ToString());
+
         bool exist = false;
 
         for (int n = 0; n < DnsOnNics.Count; n++)
@@ -76,7 +79,7 @@ public class SetDnsOnNic
     {
         await Task.Run(async () => await NetworkTool.SetDnsIPv4(nic, dnss));
         await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nic)); // Unset IPv6
-        AddOrUpdate(nic, true);
+        AddOrUpdate(nic);
     }
 
     public async Task UnsetDnsToDHCP(NetworkInterface? nic)
@@ -88,7 +91,7 @@ public class SetDnsOnNic
             {
                 await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nic));
                 await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nic));
-                AddOrUpdate(nic, false);
+                AddOrUpdate(nic);
                 break;
             }
         }
@@ -119,7 +122,7 @@ public class SetDnsOnNic
                 dns2 = dns2.Trim();
                 await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nic, dns1, dns2));
                 await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nic));
-                AddOrUpdate(nic, false);
+                AddOrUpdate(nic);
                 break;
             }
         }
@@ -230,7 +233,8 @@ public class SetDnsOnNic
     public bool IsDnsSet(CustomComboBox ccb)
     {
         bool isDnsSet = false;
-        ccb.InvokeIt(() => isDnsSet = IsDnsSet(ccb.SelectedItem.ToString()));
+        if (ccb.SelectedItem != null) // Important
+            ccb.InvokeIt(() => isDnsSet = IsDnsSet(ccb.SelectedItem.ToString()));
         return isDnsSet;
     }
 

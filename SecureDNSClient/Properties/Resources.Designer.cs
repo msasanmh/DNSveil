@@ -131,6 +131,16 @@ namespace SecureDNSClient.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon SecureDNSClient_Icon_Multi {
+            get {
+                object obj = ResourceManager.GetObject("SecureDNSClient_Icon_Multi", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap SecureDNSClient_PNG {

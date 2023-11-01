@@ -65,7 +65,7 @@
             CustomRadioButtonSourceCloudflare.Location = new Point(12, 10);
             CustomRadioButtonSourceCloudflare.Name = "CustomRadioButtonSourceCloudflare";
             CustomRadioButtonSourceCloudflare.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSourceCloudflare.Size = new Size(77, 17);
+            CustomRadioButtonSourceCloudflare.Size = new Size(80, 17);
             CustomRadioButtonSourceCloudflare.TabIndex = 0;
             CustomRadioButtonSourceCloudflare.TabStop = true;
             CustomRadioButtonSourceCloudflare.Text = "Cloudflare";
@@ -95,6 +95,7 @@
             CustomNumericUpDownDelay.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownDelay.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownDelay.Name = "CustomNumericUpDownDelay";
+            CustomNumericUpDownDelay.RoundedCorners = 5;
             CustomNumericUpDownDelay.Size = new Size(45, 23);
             CustomNumericUpDownDelay.TabIndex = 2;
             CustomNumericUpDownDelay.Value = new decimal(new int[] { 2, 0, 0, 0 });
@@ -250,6 +251,7 @@
             CustomTextBoxCheckWebsite.Multiline = false;
             CustomTextBoxCheckWebsite.Name = "CustomTextBoxCheckWebsite";
             CustomTextBoxCheckWebsite.ReadOnly = false;
+            CustomTextBoxCheckWebsite.RoundedCorners = 0;
             CustomTextBoxCheckWebsite.ScrollBars = ScrollBars.None;
             CustomTextBoxCheckWebsite.ShortcutsEnabled = true;
             CustomTextBoxCheckWebsite.Size = new Size(200, 23);
@@ -284,6 +286,7 @@
             CustomNumericUpDownProxyPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownProxyPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownProxyPort.Name = "CustomNumericUpDownProxyPort";
+            CustomNumericUpDownProxyPort.RoundedCorners = 5;
             CustomNumericUpDownProxyPort.Size = new Size(55, 23);
             CustomNumericUpDownProxyPort.TabIndex = 12;
             CustomNumericUpDownProxyPort.Value = new decimal(new int[] { 8090, 0, 0, 0 });
@@ -299,7 +302,7 @@
             CustomCheckBoxRandomScan.Location = new Point(167, 115);
             CustomCheckBoxRandomScan.Name = "CustomCheckBoxRandomScan";
             CustomCheckBoxRandomScan.SelectionColor = Color.LightBlue;
-            CustomCheckBoxRandomScan.Size = new Size(131, 17);
+            CustomCheckBoxRandomScan.Size = new Size(134, 17);
             CustomCheckBoxRandomScan.TabIndex = 13;
             CustomCheckBoxRandomScan.Text = "Check IPs Randomly";
             CustomCheckBoxRandomScan.UseVisualStyleBackColor = false;
@@ -328,6 +331,7 @@
             CustomNumericUpDownCheckIpWithThisPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownCheckIpWithThisPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownCheckIpWithThisPort.Name = "CustomNumericUpDownCheckIpWithThisPort";
+            CustomNumericUpDownCheckIpWithThisPort.RoundedCorners = 5;
             CustomNumericUpDownCheckIpWithThisPort.Size = new Size(55, 23);
             CustomNumericUpDownCheckIpWithThisPort.TabIndex = 16;
             CustomNumericUpDownCheckIpWithThisPort.Value = new decimal(new int[] { 443, 0, 0, 0 });

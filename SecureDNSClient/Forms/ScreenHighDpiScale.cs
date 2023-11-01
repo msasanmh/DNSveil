@@ -19,7 +19,7 @@ public partial class FormMain
 
     public async Task ScreenHighDpiScaleStartup(Form form)
     {
-        //Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         using Graphics g = form.CreateGraphics();
         int sdpi = Convert.ToInt32(Math.Round(g.DpiX, 0, MidpointRounding.AwayFromZero));
         int sdpi2 = ScreenDPI.GetSystemDpi();
@@ -162,11 +162,19 @@ public partial class FormMain
         CustomComboBoxNICs.Left = CustomLabelSelectNIC.Left;
         CustomComboBoxNICs.Top = CustomLabelSelectNIC.Bottom + spaceV;
 
-        CustomButtonUpdateNICs.Left = CustomComboBoxNICs.Right + spaceHH;
-        CustomButtonUpdateNICs.Top = CustomComboBoxNICs.Top - 2;
+        CustomButtonUpdateNICs.Left = CustomComboBoxNICs.Left;
+        CustomButtonUpdateNICs.Top = CustomComboBoxNICs.Bottom + (spaceV / 2);
 
-        CustomLabelSetDNSInfo.Left = CustomLabelSelectNIC.Left;
-        CustomLabelSetDNSInfo.Top = CustomComboBoxNICs.Bottom + spaceV;
+        CustomButtonEnableDisableNic.Left = CustomButtonUpdateNICs.Right + spaceH;
+        CustomButtonEnableDisableNic.Top = CustomButtonUpdateNICs.Top;
+
+        CustomLabelSetDNSInfo.Left = CustomButtonUpdateNICs.Left;
+        CustomLabelSetDNSInfo.Top = CustomButtonUpdateNICs.Bottom + spaceV;
+
+        CustomGroupBoxNicStatus.Left = CustomLabelSetDNSInfo.Right + (spaceHH / 2);
+        CustomGroupBoxNicStatus.Top = 6;
+        CustomGroupBoxNicStatus.Width = TabPageSetDNS.Width - CustomGroupBoxNicStatus.Left - spaceRight;
+        CustomGroupBoxNicStatus.Height = TabPageSetDNS.Height - CustomGroupBoxNicStatus.Top - spaceBottom;
 
         CustomButtonSetDNS.Left = spaceHH;
         CustomButtonSetDNS.Top = TabPageSetDNS.Height - CustomButtonSetDNS.Height - spaceBottom;
@@ -480,7 +488,7 @@ public partial class FormMain
         CustomGroupBoxSettingCheckSDNS.Height = CustomCheckBoxSettingSdnsNoFilter.Bottom + CustomCheckBoxSettingSdnsNoFilter.Top - spaceBottom;
 
         // Settings Quick Connect
-        spaceV = 40;
+        spaceV = 30;
         CustomLabelSettingQcInfo.Location = new Point(20, 10);
 
         CustomLabelSettingQcConnectMode.Left = CustomLabelSettingQcInfo.Left;
@@ -489,11 +497,16 @@ public partial class FormMain
         CustomComboBoxSettingQcConnectMode.Left = CustomLabelSettingQcConnectMode.Right + (spaceH * 2);
         CustomComboBoxSettingQcConnectMode.Top = CustomLabelSettingQcConnectMode.Top - 2;
 
-        CustomCheckBoxSettingQcCheckAllServers.Left = CustomComboBoxSettingQcConnectMode.Right + spaceH;
-        CustomCheckBoxSettingQcCheckAllServers.Top = CustomLabelSettingQcConnectMode.Top;
+        spaceV = 10;
+        CustomCheckBoxSettingQcUseSavedServers.Left = CustomComboBoxSettingQcConnectMode.Left;
+        CustomCheckBoxSettingQcUseSavedServers.Top = CustomComboBoxSettingQcConnectMode.Bottom + spaceV;
 
+        CustomCheckBoxSettingQcCheckAllServers.Left = CustomCheckBoxSettingQcUseSavedServers.Right + spaceH;
+        CustomCheckBoxSettingQcCheckAllServers.Top = CustomCheckBoxSettingQcUseSavedServers.Top;
+
+        spaceV = 30;
         CustomCheckBoxSettingQcSetDnsTo.Left = CustomLabelSettingQcConnectMode.Left;
-        CustomCheckBoxSettingQcSetDnsTo.Top = CustomLabelSettingQcConnectMode.Bottom + spaceV;
+        CustomCheckBoxSettingQcSetDnsTo.Top = CustomCheckBoxSettingQcUseSavedServers.Bottom + spaceV;
 
         CustomComboBoxSettingQcNics.Left = CustomComboBoxSettingQcConnectMode.Left;
         CustomComboBoxSettingQcNics.Top = CustomCheckBoxSettingQcSetDnsTo.Top - 2;
@@ -519,6 +532,9 @@ public partial class FormMain
 
         CustomRadioButtonSettingQcGdAdvanced.Left = CustomComboBoxSettingQcGdBasic.Right + spaceHH;
         CustomRadioButtonSettingQcGdAdvanced.Top = CustomRadioButtonSettingQcGdBasic.Top;
+
+        CustomButtonSettingQcStartup.Left = TabPageSettingsQuickConnect.Width - CustomButtonSettingQcStartup.Width - spaceRight;
+        CustomButtonSettingQcStartup.Top = TabPageSettingsQuickConnect.Height - CustomButtonSettingQcStartup.Height - spaceBottom;
 
         // Settings Connect
         spaceV = 50;

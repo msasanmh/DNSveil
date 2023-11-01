@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms.Design;
@@ -59,6 +58,21 @@ namespace CustomControls
             }
         }
 
+        private int mRoundedCorners = 0;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Appearance"), Description("Rounded Corners")]
+        public int RoundedCorners
+        {
+            get { return mRoundedCorners; }
+            set
+            {
+                if (mRoundedCorners != value)
+                {
+                    mRoundedCorners = value;
+                }
+            }
+        }
+
         private Color mSelectionColor = Color.LightBlue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
@@ -73,6 +87,23 @@ namespace CustomControls
                     mSelectionColor = value;
                 }
             }
+        }
+
+        public CustomToolStripRenderer()
+        {
+            RenderToolStripBorder += CustomToolStripRenderer_RenderToolStripBorder;
+        }
+
+        private void CustomToolStripRenderer_RenderToolStripBorder(object? sender, ToolStripRenderEventArgs e)
+        {
+            // Menu Bar Border (On Top Of Everything Else)
+            Rectangle rect = e.AffectedBounds;
+            rect = new Rectangle(rect.X, rect.Y, rect.Width - 1, rect.Height - 1);
+            int r = RoundedCorners;
+            using Pen pen = new(BorderColor);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.DrawRoundedRectangle(pen, rect, r, r, r, r);
+            e.Graphics.SmoothingMode = SmoothingMode.Default;
         }
 
         protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
@@ -137,8 +168,14 @@ namespace CustomControls
 
         protected override void OnRenderImageMargin(ToolStripRenderEventArgs e)
         {
+            // Main and Sub Menu Border
             Rectangle rect = new(0, 0, e.ToolStrip.Width, e.ToolStrip.Height);
-            ControlPaint.DrawBorder(e.Graphics, rect, BorderColor, ButtonBorderStyle.Solid);
+            rect = new Rectangle(rect.X, rect.Y, rect.Width - 1, rect.Height - 1);
+            int r = RoundedCorners;
+            using Pen pen = new(BorderColor);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.DrawRoundedRectangle(pen, rect, r, r, r, r);
+            e.Graphics.SmoothingMode = SmoothingMode.Default;
         }
 
         protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e)
@@ -188,6 +225,5 @@ namespace CustomControls
             }
         }
 
-        
     }
 }

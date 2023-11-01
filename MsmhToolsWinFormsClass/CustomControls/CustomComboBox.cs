@@ -35,6 +35,22 @@ namespace CustomControls
             }
         }
 
+        private int mRoundedCorners = 0;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Appearance"), Description("Rounded Corners")]
+        public int RoundedCorners
+        {
+            get { return mRoundedCorners; }
+            set
+            {
+                if (mRoundedCorners != value)
+                {
+                    mRoundedCorners = value;
+                    Invalidate();
+                }
+            }
+        }
+
         private Color mSelectionColor = Color.DodgerBlue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
@@ -234,6 +250,8 @@ namespace CustomControls
             Color borderColor = GetBorderColor();
             Color backColorDarker = backColor.ChangeBrightness(-0.3f);
 
+            int r = RoundedCorners;
+            
             // Selected Border Color
             if (Focused && TabStop)
                 borderColor = GetBorderColor();
@@ -316,7 +334,11 @@ namespace CustomControls
             e.Graphics.DrawString(text, Font, textBrush, rectText, stringFormat);
 
             // Paint Border
-            ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle.Solid);
+            using Pen pen = new(borderColor);
+            rect = new Rectangle(rect.X, rect.Y, rect.Width - 1, rect.Height - 1);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            e.Graphics.DrawRoundedRectangle(pen, rect, r, 0, 0, r);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
 
             // ComboBox Height
             Size textSize = TextRenderer.MeasureText(text, Font);
@@ -324,6 +346,7 @@ namespace CustomControls
                 ItemHeight = 17;
             else
                 ItemHeight = textSize.Height + 2;
+
             base.OnPaint(e);
         }
 

@@ -114,7 +114,7 @@ public class ProcessConsole
     /// </summary>
     /// <param name="command">Command</param>
     /// <returns>Returns True if success</returns>
-    public async Task<bool> SendCommandAsync(string command)
+    public async Task<bool> SendCommandAsync(string command, int delayMS = 100, int timeoutSec = 5)
     {
         try
         {
@@ -123,10 +123,10 @@ public class ProcessConsole
                 Task<bool> timeout = Task.Run(async () =>
                 {
                     await Process_.StandardInput.WriteLineAsync(command);
-                    await Task.Delay(100);
+                    if (delayMS > 0) await Task.Delay(delayMS);
                     return true;
                 });
-                try { await timeout.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+                try { await timeout.WaitAsync(TimeSpan.FromSeconds(timeoutSec)); } catch (Exception) { }
                 return timeout.Result;
             }
             return false;

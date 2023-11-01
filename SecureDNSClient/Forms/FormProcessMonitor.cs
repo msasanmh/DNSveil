@@ -21,13 +21,15 @@ public partial class FormProcessMonitor : Form
         //FormMain.MonitorProcess.SetPID(FormMain.GetPids(false));
         FormMain.MonitorProcess.SetPID(); // Measure Whole System
 
+        // Initialize Status Top
+        InitializeStatus(CustomDataGridViewStatusTop);
+
         Shown -= FormProcessMonitor_Shown;
         Shown += FormProcessMonitor_Shown;
     }
 
     private void FormProcessMonitor_Shown(object? sender, EventArgs e)
     {
-        CustomRichTextBox logUP = CustomRichTextBoxUp;
         CustomRichTextBox logDown = CustomRichTextBoxDown;
 
         ProcessMonitor.ProcessStatistics ps = new();
@@ -36,38 +38,34 @@ public partial class FormProcessMonitor : Form
         {
             while (!Exit)
             {
-                this.InvokeIt(() => logUP.ResetText());
-
                 // Update PIDS
                 //FormMain.MonitorProcess.SetPID(FormMain.GetPids(false));
                 FormMain.MonitorProcess.SetPID(); // Measure Whole System
                 ps = FormMain.MonitorProcess.GetProcessStatistics();
 
-                string m01 = $"{NL} Data Sent: ";
-                string m02 = $"{ConvertTool.ConvertByteToHumanRead(ps.BytesSent)}{NL}";
+                // Update Bar Color
+                if (!FormMain.IsInActionState)
+                    this.InvokeIt(() => SplitContainerMain.BackColor = FormMain.IsDNSConnected ? Color.MediumSeaGreen : Color.IndianRed);
+                else
+                    this.InvokeIt(() => SplitContainerMain.BackColor = Color.DodgerBlue);
 
-                string m03 = $" Data Received: ";
-                string m04 = $"{ConvertTool.ConvertByteToHumanRead(ps.BytesReceived)}{NL}";
+                string dataSent = $"{ConvertTool.ConvertByteToHumanRead(ps.BytesSent)}";
+                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[0].Cells[1].Value = dataSent);
 
-                string m05 = $"{NL} Upload Speed: ";
-                string m06 = $"{ConvertTool.ConvertByteToHumanRead(ps.UploadSpeed)}/Sec{NL}";
+                string dataReceived = $"{ConvertTool.ConvertByteToHumanRead(ps.BytesReceived)}";
+                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[1].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[1].Cells[1].Value = dataReceived);
 
-                string m07 = $" Download Speed: ";
-                string m08 = $"{ConvertTool.ConvertByteToHumanRead(ps.DownloadSpeed)}/Sec{NL}";
+                string uploadSpeed = $"{ConvertTool.ConvertByteToHumanRead(ps.UploadSpeed)}/Sec";
+                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[2].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[2].Cells[1].Value = uploadSpeed);
 
-                this.InvokeIt(() => logUP.AppendText(m01, Color.LightGray));
-                this.InvokeIt(() => logUP.AppendText(m02, Color.DodgerBlue));
+                string downloadSpeed = $"{ConvertTool.ConvertByteToHumanRead(ps.DownloadSpeed)}/Sec";
+                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[3].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[3].Cells[1].Value = downloadSpeed);
 
-                this.InvokeIt(() => logUP.AppendText(m03, Color.LightGray));
-                this.InvokeIt(() => logUP.AppendText(m04, Color.DodgerBlue));
-
-                this.InvokeIt(() => logUP.AppendText(m05, Color.LightGray));
-                this.InvokeIt(() => logUP.AppendText(m06, Color.DodgerBlue));
-
-                this.InvokeIt(() => logUP.AppendText(m07, Color.LightGray));
-                this.InvokeIt(() => logUP.AppendText(m08, Color.DodgerBlue));
-
-                await Task.Delay(1000);
+                await Task.Delay(300);
             }
         });
 
@@ -143,6 +141,40 @@ public partial class FormProcessMonitor : Form
                 await Task.Delay(4000);
             }
         });
+    }
+
+    private void InitializeStatus(CustomDataGridView dgv)
+    {
+        dgv.SelectionChanged += (s, e) => dgv.ClearSelection();
+        dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
+        dgv.BorderStyle = BorderStyle.FixedSingle;
+        List<DataGridViewRow> rList = new();
+        for (int n = 0; n < 4; n++)
+        {
+            DataGridViewRow row = new();
+            row.CreateCells(dgv, "cell0", "cell1");
+            row.Height = TextRenderer.MeasureText("It doesn't matter what we write here!", dgv.Font).Height + 7;
+
+            string cellName = n switch
+            {
+                0 => "Data Sent",
+                1 => "Data Received",
+                2 => "Upload Speed",
+                3 => "Download Speed",
+                _ => string.Empty
+            };
+
+            if (n % 2 == 0)
+                row.DefaultCellStyle.BackColor = BackColor.ChangeBrightness(-0.2f);
+            else
+                row.DefaultCellStyle.BackColor = BackColor;
+
+            row.Cells[0].Value = cellName;
+            row.Cells[1].Value = string.Empty;
+            rList.Add(row);
+        }
+
+        dgv.Rows.AddRange(rList.ToArray());
     }
 
     private void FormProcessMonitor_FormClosing(object sender, FormClosingEventArgs e)

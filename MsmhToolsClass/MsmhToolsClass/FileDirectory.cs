@@ -2,13 +2,60 @@
 using System.Text;
 using System.Security.Cryptography;
 using System.Diagnostics;
+using System.IO;
 
 namespace MsmhToolsClass;
 
 public class FileDirectory
 {
     //-----------------------------------------------------------------------------------
+    public static async Task MoveDirectory(string sourceDir, string destDir, bool overWrite, CancellationToken token)
+    {
+        await Task.Run(async () =>
+        {
+            try
+            {
+                if (!Directory.Exists(sourceDir)) return;
+                CreateEmptyDirectory(destDir);
+                DirectoryInfo rootDirInfo = new(sourceDir);
 
+                FileInfo[] fileInfos = rootDirInfo.GetFiles();
+                for (int n = 0; n < fileInfos.Length; n++)
+                {
+                    FileInfo fileInfo = fileInfos[n];
+                    fileInfo.MoveTo(Path.GetFullPath(Path.Combine(destDir, fileInfo.Name)), overWrite);
+                }
+
+                DirectoryInfo[] dirInfos = rootDirInfo.GetDirectories();
+                for (int n2 = 0; n2 < dirInfos.Length; n2++)
+                {
+                    DirectoryInfo dirInfo = dirInfos[n2];
+                    await MoveDirectory(dirInfo.FullName, Path.GetFullPath(Path.Combine(destDir, dirInfo.Name)), overWrite, token);
+                }
+
+                if (Directory.Exists(sourceDir)) Directory.Delete(sourceDir, false);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("MoveDirectory: " + ex.Message);
+            }
+        }, token);
+    }
+    //-----------------------------------------------------------------------------------
+    public static bool IsRootDirectory()
+    {
+        bool isRoot = false;
+        try
+        {
+            DirectoryInfo info = new(Path.GetFullPath(AppContext.BaseDirectory));
+            if (info.Parent == null) isRoot = true;
+        }
+        catch (Exception)
+        {
+            isRoot = true;
+        }
+        return isRoot;
+    }
     //-----------------------------------------------------------------------------------
     /// <summary>
     /// Creates an empty file if not already exist.

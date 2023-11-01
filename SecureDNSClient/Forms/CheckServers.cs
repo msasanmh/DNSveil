@@ -242,11 +242,11 @@ public partial class FormMain
         int numberOfCheckedServers = 0;
 
         // Dummy check to fix first run
-        if (dnsList.Count > 1)
+        if (dnsList.Count > 0)
             await checkDns.CheckDnsAsync(blockedDomainNoWww, dnsList[0], 500);
-        if (dnsList.Count > 2)
+        if (dnsList.Count > 1)
             await checkDns.CheckDnsAsync(blockedDomainNoWww, dnsList[1], 500);
-        if (dnsList.Count > 3)
+        if (dnsList.Count > 2)
             await checkDns.CheckDnsAsync(blockedDomainNoWww, dnsList[2], 500);
 
         if (insecure)
@@ -319,21 +319,11 @@ public partial class FormMain
                     this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
                     this.InvokeIt(() => CustomProgressBarCheck.Value = n);
 
-                    var parallelLoopResult = Parallel.For(0, list.Count, async i =>
+                    await Parallel.ForEachAsync(list, async (dns, cancellationToken) =>
                     {
-                        string dns = list[i].Trim();
                         await checkOne(dns, -1);
                     });
-
-                    await Task.Run(async () =>
-                    {
-                        while (!parallelLoopResult.IsCompleted)
-                        {
-                            await Task.Delay(10);
-                            if (parallelLoopResult.IsCompleted) break;
-                        }
-                    });
-
+                    
                     // Percentage (100%)
                     if (n == lists.Count - 1)
                     {
@@ -398,7 +388,7 @@ public partial class FormMain
                     else
                     {
                         if (isParallel)
-                            checkDns.CheckDNS(blockedDomainNoWww, dns, timeoutMS);
+                            await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
                         else
                             await checkDns.CheckDnsAsync(false, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
                     }

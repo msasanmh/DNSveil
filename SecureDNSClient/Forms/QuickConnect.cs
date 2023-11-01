@@ -1,4 +1,5 @@
-﻿using MsmhToolsClass;
+﻿using CustomControls;
+using MsmhToolsClass;
 using SecureDNSClient.DPIBasic;
 using System.Diagnostics;
 
@@ -22,28 +23,10 @@ public partial class FormMain
             // Quick Connect
             IsQuickConnectWorking = true;
 
-            // Benchmark
-            QuickConnectBenchmark.Restart();
-
             await QuickConnect(groupName);
 
-            // Benchmark
-            string msg = $"Quick Connect finished";
-            if (!string.IsNullOrEmpty(groupName))
-            {
-                msg += $" (using {groupName})";
-                if (groupName.Equals("builtin"))
-                    msg = msg.Replace(groupName, "Built-In");
-            }
-
-            TimeSpan eTime = QuickConnectBenchmark.Elapsed;
-            string eTimeStr = ConvertTool.TimeSpanToHumanRead(eTime, true);
-
-            msg += $" in {eTimeStr}{NL}";
-            if (!StopQuickConnect)
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
-
-            QuickConnectBenchmark.Reset();
+            // Benchmark Stop
+            QuickConnectBenchmark.Stop();
             IsQuickConnectWorking = false;
         }
         else
@@ -82,6 +65,7 @@ public partial class FormMain
 
             if (!reconnect)
             {
+                Debug.WriteLine("It's Not Reconnect 1");
                 await DisconnectAll();
 
                 // Wait for full disconnect
@@ -102,11 +86,12 @@ public partial class FormMain
 
             StopQuickConnect = false;
 
+            if (!reconnect)
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Quick Connect Stopped.{NL}", Color.MediumSeaGreen));
+
             if (reconnect)
                 await QuickConnect(groupName);
-            {
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Quick Connect Stopped.{NL}", Color.MediumSeaGreen));
-            }
+
             IsQuickConnectWorking = false;
         }
     }
@@ -117,9 +102,14 @@ public partial class FormMain
         IsQuickConnecting = true;
         StopQuickConnect = false;
 
+        // Benchmark Start
+        QuickConnectBenchmark.Restart();
+
         // Get Connect Mode Settings
         ConnectMode connectMode = GetConnectModeByName(CustomComboBoxSettingQcConnectMode.SelectedItem.ToString());
         if (!string.IsNullOrEmpty(groupName)) connectMode = ConnectMode.ConnectToWorkingServers;
+        bool useSavedServers = false;
+        this.InvokeIt(() => useSavedServers = CustomCheckBoxSettingQcUseSavedServers.Checked && SavedDnsList.Any() && WorkingDnsList.Any() && groupName == null);
         bool checkAllServers = false;
         this.InvokeIt(() => checkAllServers = CustomCheckBoxSettingQcCheckAllServers.Checked && CustomCheckBoxSettingQcCheckAllServers.Enabled);
         bool setDns = true;
@@ -133,9 +123,9 @@ public partial class FormMain
         bool startGoodbyeDpi = false;
         this.InvokeIt(() => startGoodbyeDpi = CustomCheckBoxSettingQcStartGoodbyeDpi.Checked);
         bool startGoodbyeDpiBasic = false;
-        this.InvokeIt(() => startGoodbyeDpiBasic = CustomRadioButtonSettingQcGdBasic.Checked);
+        this.InvokeIt(() => startGoodbyeDpiBasic = startGoodbyeDpi && CustomRadioButtonSettingQcGdBasic.Checked);
         bool startGoodbyeDpiAdvanced = false;
-        this.InvokeIt(() => startGoodbyeDpiAdvanced = CustomRadioButtonSettingQcGdAdvanced.Checked);
+        this.InvokeIt(() => startGoodbyeDpiAdvanced = startGoodbyeDpi && CustomRadioButtonSettingQcGdAdvanced.Checked);
         DPIBasicBypassMode goodbyeDpiBasicMode = DPIBasicBypass.GetGoodbyeDpiModeBasicByName(CustomComboBoxSettingQcGdBasic.SelectedItem.ToString());
 
         // Begin
@@ -150,13 +140,12 @@ public partial class FormMain
 
         // Cancel
         bool stopP = !startProxy || (startProxy && !setProxy);
-        bool stopGd = !startGoodbyeDpi ||
-                       (startGoodbyeDpi && !startGoodbyeDpiBasic && IsGoodbyeDPIBasicActive) ||
-                       (startGoodbyeDpi && !startGoodbyeDpiAdvanced && IsGoodbyeDPIAdvancedActive);
+        bool stopGd = (!startGoodbyeDpiBasic && IsGoodbyeDPIBasicActive) ||
+                      (!startGoodbyeDpiAdvanced && IsGoodbyeDPIAdvancedActive);
         await QuickDisconnectInternal(IsCheckingStarted, IsConnecting, !setDns, !startProxy, stopP, stopGd);
 
         //== Check Servers
-        if (connectMode == ConnectMode.ConnectToWorkingServers)
+        if (connectMode == ConnectMode.ConnectToWorkingServers && !useSavedServers)
         {
             WorkingDnsList.Clear();
             StartCheck(groupName);
@@ -264,6 +253,7 @@ public partial class FormMain
             {
                 while (true)
                 {
+                    if (!IsConnected) break;
                     if (IsExiting || StopQuickConnect || !IsInternetAlive(false)) break;
                     if (IsDNSConnected || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
                     await Task.Delay(200);
@@ -395,7 +385,7 @@ public partial class FormMain
             }
 
             //== Start GoodbyeDPI
-            if (startGoodbyeDpi && startGoodbyeDpiBasic)
+            if (startGoodbyeDpiBasic)
             {
                 // Cancel
                 if (IsExiting || StopQuickConnect || !IsInternetAlive(true))
@@ -420,7 +410,7 @@ public partial class FormMain
                 await waitGoodbyeDpiBasic.WaitAsync(CancellationToken.None);
             }
 
-            if (startGoodbyeDpi && startGoodbyeDpiAdvanced)
+            if (startGoodbyeDpiAdvanced)
             {
                 // Cancel
                 if (IsExiting || StopQuickConnect || !IsInternetAlive(true))
@@ -446,14 +436,61 @@ public partial class FormMain
             }
         }
 
+        // Benchmark Stop
+        string msg = $"Quick Connect finished";
+        if (!string.IsNullOrEmpty(groupName))
+        {
+            msg += $" (using {groupName})";
+            if (groupName.Equals("builtin"))
+                msg = msg.Replace(groupName, "Built-In");
+        }
+
+        TimeSpan eTime = QuickConnectBenchmark.Elapsed;
+        string eTimeStr = ConvertTool.TimeSpanToHumanRead(eTime, true);
+
+        msg += $" in {eTimeStr}{NL}";
+        if (!StopQuickConnect)
+        {
+            if (IsDNSConnected &&
+                setDns == IsDNSSet &&
+                startProxy == IsProxyActivated &&
+                setProxy == IsProxySet &&
+                startGoodbyeDpiBasic == IsGoodbyeDPIBasicActive &&
+                startGoodbyeDpiAdvanced == IsGoodbyeDPIAdvancedActive)
+            {
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+            }
+        }
+
+        QuickConnectBenchmark.Reset();
+
+        // Reset Quick Connect Timer
         QuickConnectTimeout.Reset();
 
         // End Of Quick Connect
-        endOfQuickConnect();
-        void endOfQuickConnect()
+        endOfQuickConnect(true);
+        void endOfQuickConnect(bool showWarning = true)
         {
             QuickConnectTimeout.Reset();
             IsQuickConnecting = false;
+
+            if (showWarning && !IsExiting && !StopQuickConnect)
+            {
+                string msgNotifyUser = string.Empty;
+                if (!IsInternetOnline) msgNotifyUser += $"There is no Internet connectivity.{NL}";
+                else if (!IsConnected) msgNotifyUser += $"Couldn't Connect.{NL}";
+                else if (!IsDNSConnected) msgNotifyUser += $"Couldn't Connect to DNS Server.{NL}";
+                else if (setDns != IsDNSSet) msgNotifyUser += $"Couldn't Set DNS.{NL}";
+                else if (startProxy != IsProxyActivated) msgNotifyUser += $"Couldn't Start Proxy Server.{NL}";
+                else if (setProxy != IsProxySet) msgNotifyUser += $"Couldn't Set Proxy.{NL}";
+                else if (startGoodbyeDpiBasic != IsGoodbyeDPIBasicActive) msgNotifyUser += $"Couldn't Activate GoodbyeDPI Basic.{NL}";
+                else if (startGoodbyeDpiAdvanced != IsGoodbyeDPIAdvancedActive) msgNotifyUser += $"Couldn't Activate GoodbyeDPI Advanced.{NL}";
+                if (!string.IsNullOrEmpty(msgNotifyUser))
+                {
+                    msgNotifyUser += "Check your Quick Connect Settings.";
+                    CustomMessageBox.Show(this, msgNotifyUser, "Quick Connect Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
         }
     }
 

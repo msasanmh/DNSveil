@@ -1,6 +1,5 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -198,21 +197,24 @@ public class Settings
 
     public async Task SaveAsync(string xmlFilePath)
     {
-        try
+        await Task.Run(async () =>
         {
-            XmlWriterSettings xmlWriterSettings = new();
-            xmlWriterSettings.WriteEndDocumentOnClose = true;
-            xmlWriterSettings.Async = true;
-            xmlWriterSettings.Indent = true;
-            xmlWriterSettings.OmitXmlDeclaration = true;
-            xmlWriterSettings.Encoding = new UTF8Encoding(false);
-            using XmlWriter xmlWriter = XmlWriter.Create(xmlFilePath, xmlWriterSettings);
-            await XDoc.SaveAsync(xmlWriter, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Save Settings: {ex.Message}");
-        }
+            try
+            {
+                XmlWriterSettings xmlWriterSettings = new();
+                xmlWriterSettings.WriteEndDocumentOnClose = true;
+                xmlWriterSettings.Async = true;
+                xmlWriterSettings.Indent = true;
+                xmlWriterSettings.OmitXmlDeclaration = true;
+                xmlWriterSettings.Encoding = new UTF8Encoding(false);
+                using XmlWriter xmlWriter = XmlWriter.Create(xmlFilePath, xmlWriterSettings);
+                await XDoc.SaveAsync(xmlWriter, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Save Settings: {ex.Message}");
+            }
+        });
     }
 
     private void SaveToFileAsTXT(string txtFilePath)
@@ -370,22 +372,55 @@ public class Settings
             {
                 PropertyInfo property = properties[n2];
                 string propertyName = property.Name;
+                if (!property.CanRead || !property.CanWrite) continue;
+                if (propertyName.ToLower().Equals("item")) continue; // Avoid System.ArgumentException // Int to String
 
                 try
                 {
-                    object? propertyValue = property.GetValue(control, null);
+                    object? propertyValue = null;
 
-                    if (!string.IsNullOrWhiteSpace(control.Name) && !string.IsNullOrWhiteSpace(propertyName) && propertyValue != null)
+                    if (property.GetIndexParameters().Any())
                     {
-                        // Read filters (to speed up settings loading)
-                        for (int n3 = 0; n3 < ControlsAndPropertiesList.Count; n3++)
-                        {
-                            ControlsAndProperties controlsAndProperties = ControlsAndPropertiesList[n3];
-                            Type selectedControlType = controlsAndProperties.ControlType;
-                            string selectedPropertyName = controlsAndProperties.PropertyName;
+                        ParameterInfo[] parameters = property.GetIndexParameters();
+                        object[] index = new object[parameters.Length];
+                        for (int i = 0; i < index.Length; i++) index[i] = i;
 
-                            if (control.GetType() == selectedControlType && propertyName.Equals(selectedPropertyName))
-                                AddSetting(control, propertyName, propertyValue);
+                        try
+                        {
+                            propertyValue = property.GetValue(control, index);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine("Settings: Control Name: " + control.Name);
+                            Debug.WriteLine("Settings: Property Name: " + propertyName);
+                            Debug.WriteLine("Settings: Property Value: " + propertyValue);
+                            Debug.WriteLine("Settings: Exception: " + ex.Message);
+                            Debug.WriteLine("------------------------------");
+                            continue;
+                        }
+
+                        addSetting(propertyValue);
+                    }
+                    else
+                    {
+                        propertyValue = property.GetValue(control, null);
+                        addSetting(propertyValue);
+                    }
+
+                    void addSetting(object? propertyValue)
+                    {
+                        if (!string.IsNullOrWhiteSpace(control.Name) && !string.IsNullOrWhiteSpace(propertyName) && propertyValue != null)
+                        {
+                            // Read filters (to speed up settings loading)
+                            for (int n3 = 0; n3 < ControlsAndPropertiesList.Count; n3++)
+                            {
+                                ControlsAndProperties controlsAndProperties = ControlsAndPropertiesList[n3];
+                                Type selectedControlType = controlsAndProperties.ControlType;
+                                string selectedPropertyName = controlsAndProperties.PropertyName;
+
+                                if (control.GetType() == selectedControlType && propertyName.Equals(selectedPropertyName))
+                                    AddSetting(control, propertyName, propertyValue);
+                            }
                         }
                     }
                 }

@@ -193,6 +193,7 @@ public partial class FormIpScanner : Form
                 CustomDataGridViewResult.Rows[currentMouseOverRow].Cells[0].Selected = true;
                 CustomDataGridViewResult.Rows[currentMouseOverRow].Selected = true;
 
+                CustomContextMenuStripMain.RoundedCorners = 5;
                 CustomContextMenuStripMain.Show(CustomDataGridViewResult, e.X, e.Y);
             }
 

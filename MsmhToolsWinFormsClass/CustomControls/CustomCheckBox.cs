@@ -189,8 +189,7 @@ namespace CustomControls
 
         private void CustomCheckBox_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false)
-                return;
+            if (ApplicationIdle == false) return;
 
             if (sender is CheckBox checkBox)
             {
@@ -207,9 +206,12 @@ namespace CustomControls
                 checkBox.AutoSize = false;
                 checkBox.UseVisualStyleBackColor = false;
                 SizeF sizeF = checkBox.CreateGraphics().MeasureString(checkBox.Text, checkBox.Font);
-                int rectSize = 12;
-                checkBox.Height = (int)sizeF.Height;
-                checkBox.Width = (int)(sizeF.Width + rectSize + 5);
+                SizeF rectSizeF = sizeF;
+                if (checkBox.Text.Contains(Environment.NewLine))
+                    rectSizeF = checkBox.CreateGraphics().MeasureString(checkBox.Text.Split(Environment.NewLine)[0], checkBox.Font);
+                int rectSize = Convert.ToInt32(rectSizeF.Height - 2);
+                checkBox.Height = Convert.ToInt32(sizeF.Height);
+                checkBox.Width = Convert.ToInt32(sizeF.Width + rectSize + 5);
                 int x;
                 float textX;
 

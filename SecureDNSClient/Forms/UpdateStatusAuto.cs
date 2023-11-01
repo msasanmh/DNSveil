@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Media;
 using System.Net;
 using System.Reflection;
-using static System.Net.WebRequestMethods;
 using File = System.IO.File;
 
 namespace SecureDNSClient;
@@ -223,7 +222,7 @@ public partial class FormMain
             if (length > 90000)
             {
                 this.InvokeIt(() => CustomRichTextBoxLog.ResetText());
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Log Auto Clear.{NL}", Color.MediumSeaGreen));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{NL}Log Auto Clear.{NL}", Color.MediumSeaGreen));
             }
         };
         logAutoClearTimer.Start();
@@ -243,6 +242,10 @@ public partial class FormMain
 
     private async Task UpdateBools()
     {
+        // Update Startup Info
+        IsOnStartup = IsAppOnWindowsStartup(out bool isStartupPathOk);
+        IsStartupPathOk = isStartupPathOk;
+
         // Update Camouflage Bools
         IsBypassProxyActive = ProcessManager.FindProcessByPID(PIDCamouflageProxy);
         IsBypassDNSActive = CamouflageDNSServer != null && CamouflageDNSServer.IsRunning && !IsConnecting;
@@ -311,6 +314,9 @@ public partial class FormMain
                 if (string.IsNullOrEmpty(blockedDomain)) blockedDomain = "google.com";
                 int timeout = 10000;
                 await Task.Delay(timeout + 500);
+
+                IsInternetOnline = IsInternetAlive(false);
+
                 Parallel.Invoke(
                 () => UpdateBoolDnsOnce(timeout, blockedDomain),
                 () => UpdateBoolDohOnce(timeout, blockedDomain)
@@ -324,19 +330,17 @@ public partial class FormMain
         if (IsConnected)
         {
             // DNS
-            CheckDns checkDns = new(false, GetCPUPriority());
-            checkDns.CheckDNS(host, IPAddress.Loopback.ToString(), timeoutMS);
-            LocalDnsLatency = checkDns.DnsLatency;
-            IsDNSConnected = LocalDnsLatency != -1;
-            
-            try
+            if (IsInternetOnline)
             {
-                if (!string.IsNullOrEmpty(TheDll))
-                    if (File.Exists(TheDll) && IsDNSConnected) File.Delete(TheDll);
+                CheckDns checkDns = new(false, GetCPUPriority());
+                checkDns.CheckDNS(host, IPAddress.Loopback.ToString(), timeoutMS);
+                LocalDnsLatency = checkDns.DnsLatency;
+                IsDNSConnected = LocalDnsLatency != -1;
             }
-            catch (Exception ex)
+            else
             {
-                Debug.WriteLine(ex.Message);
+                LocalDnsLatency = -1;
+                IsDNSConnected = LocalDnsLatency != -1;
             }
         }
         else
@@ -351,24 +355,22 @@ public partial class FormMain
         if (IsConnected && CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
         {
             // DoH
-            string dohServer;
-            if (ConnectedDohPort == 443)
-                dohServer = $"https://{IPAddress.Loopback}/dns-query";
-            else
-                dohServer = $"https://{IPAddress.Loopback}:{ConnectedDohPort}/dns-query";
-            CheckDns checkDns = new(false, GetCPUPriority());
-            checkDns.CheckDNS(host, dohServer, timeoutMS);
-            LocalDohLatency = checkDns.DnsLatency;
-            IsDoHConnected = LocalDohLatency != -1;
-
-            try
+            if (IsInternetOnline)
             {
-                if (!string.IsNullOrEmpty(TheDll))
-                    if (File.Exists(TheDll) && IsDoHConnected) File.Delete(TheDll);
+                string dohServer;
+                if (ConnectedDohPort == 443)
+                    dohServer = $"https://{IPAddress.Loopback}/dns-query";
+                else
+                    dohServer = $"https://{IPAddress.Loopback}:{ConnectedDohPort}/dns-query";
+                CheckDns checkDns = new(false, GetCPUPriority());
+                checkDns.CheckDNS(host, dohServer, timeoutMS);
+                LocalDohLatency = checkDns.DnsLatency;
+                IsDoHConnected = LocalDohLatency != -1;
             }
-            catch (Exception ex)
+            else
             {
-                Debug.WriteLine(ex.Message);
+                LocalDohLatency = -1;
+                IsDoHConnected = LocalDohLatency != -1;
             }
         }
         else
@@ -397,7 +399,7 @@ public partial class FormMain
 
                 line = ProxyConsole.GetStdout;
 #if DEBUG
-                Debug.WriteLine($"Line({isCmdSent}): " + line);
+                //Debug.WriteLine($"Line({isCmdSent}): " + line);
 #endif
 
                 if (!isCmdSent || string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line))
@@ -474,7 +476,19 @@ public partial class FormMain
         {
             while (true)
             {
-                await Task.Delay(300);
+                await Task.Delay(250);
+                try
+                {
+                    if (File.Exists(TheDll) && !IsConnecting)
+                    {
+                        File.Delete(TheDll);
+                        Debug.WriteLine("DLL Deleted.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
                 this.InvokeIt(() => UpdateStatusShort());
             }
         });
@@ -484,7 +498,7 @@ public partial class FormMain
     {
         // Hide Label Moving After a period of time
         LabelMovingHide();
-
+        
         // Update Min Size of Main Container Panel 1
         SplitContainerMain.Panel1MinSize = PictureBoxFarvahar.Bottom + PictureBoxFarvahar.Height;
 
@@ -516,9 +530,14 @@ public partial class FormMain
         if (!IsCheckingStarted)
             CustomProgressBarCheck.StopTimer = true;
 
-        // Insecure and parallel CheckBox
+        // Insecure and Parallel CheckBox
         if (CustomCheckBoxInsecure.Checked)
+        {
+            CustomCheckBoxCheckInParallel.Enabled = false;
             CustomCheckBoxCheckInParallel.Checked = false;
+        }
+        else
+            CustomCheckBoxCheckInParallel.Enabled = true;
 
         // Check Button Text
         if (StopChecking) CustomButtonCheck.Text = "Stopping...";
@@ -592,8 +611,15 @@ public partial class FormMain
 
         // Settings -> Quick Connect
         ConnectMode cMode = GetConnectModeByName(CustomComboBoxSettingQcConnectMode.SelectedItem.ToString());
-        CustomCheckBoxSettingQcCheckAllServers.Enabled = cMode == ConnectMode.ConnectToWorkingServers;
+        CustomCheckBoxSettingQcUseSavedServers.Enabled = cMode == ConnectMode.ConnectToWorkingServers;
+        CustomCheckBoxSettingQcCheckAllServers.Enabled = cMode == ConnectMode.ConnectToWorkingServers && !CustomCheckBoxSettingQcUseSavedServers.Checked;
         CustomCheckBoxSettingQcSetProxy.Enabled = CustomCheckBoxSettingQcStartProxyServer.Checked;
+
+        // Settings -> Quick Connect -> Startup Button Text
+        if (IsOnStartup)
+            CustomButtonSettingQcStartup.Text = IsStartupPathOk ? "Remove from Stratup" : "Fix Startup";
+        else
+            CustomButtonSettingQcStartup.Text = "Apply to Startup";
 
         // Settings -> Share -> Advanced
         CustomTextBoxSettingProxyCfCleanIP.Enabled = CustomCheckBoxSettingProxyCfCleanIP.Checked;
@@ -686,6 +712,10 @@ public partial class FormMain
         this.InvokeIt(() => CustomDataGridViewStatus.Rows[11].Cells[1].Style.ForeColor = colorGoodbyeDPI);
         this.InvokeIt(() => CustomDataGridViewStatus.Rows[11].Cells[1].Value = textGoodbyeDPI);
 
+        // Internet Status
+        //if (IsConnected && !IsConnecting && !IsDNSConnected)
+            WriteNetworkStatus();
+
         // Play Audio Alert
         if (!CustomCheckBoxSettingDisableAudioAlert.Checked && !IsCheckingStarted && !IsExiting)
         {
@@ -695,7 +725,8 @@ public partial class FormMain
         }
 
         // Bar Color
-        if (!IsInAction(false, true, true, true, true, true, true, true, true, true, true))
+        IsInActionState = IsInAction(false, true, true, true, true, true, true, true, true, true, true);
+        if (!IsInActionState)
             this.InvokeIt(() => SplitContainerMain.BackColor = IsDNSConnected ? Color.MediumSeaGreen : Color.IndianRed);
         else
             this.InvokeIt(() => SplitContainerMain.BackColor = Color.DodgerBlue);
@@ -703,6 +734,134 @@ public partial class FormMain
         // Remove Connect ToolTip
         if (!IsConnected)
             this.InvokeIt(() => CustomButtonConnect.SetToolTip(MainToolTip, string.Empty, string.Empty));
+    }
+
+    private async void UpdateStatusNicAuto()
+    {
+        await Task.Run(async () =>
+        {
+            while (true)
+            {
+                await Task.Delay(500);
+                await Task.Run(() => UpdateStatusNic());
+            }
+        });
+    }
+
+    private void UpdateStatusNic()
+    {
+        // Update Size Of GroupBoxNicStatus
+        int space = 6;
+        this.InvokeIt(() => CustomGroupBoxNicStatus.Width = TabPageSetDNS.Width - CustomGroupBoxNicStatus.Left - space);
+        this.InvokeIt(() => CustomGroupBoxNicStatus.Height = TabPageSetDNS.Height - CustomGroupBoxNicStatus.Top - space);
+
+        // Variables
+        bool isNicDisabled = false;
+        string e = string.Empty;
+        string name = e, description = e, adapterType = e, availability = e, status = e, netStatus = e, dnsAddresses = e;
+        bool isPhysicalAdapter = false;
+        string guid = e, macAddress = e, manufacturer = e, serviceName = e, speed = e, timeOfLastReset = e;
+
+        string? nicName = null;
+        object? selectedItem = null;
+        this.InvokeIt(() => selectedItem = CustomComboBoxNICs.SelectedItem);
+        if (selectedItem != null)
+        {
+            this.InvokeIt(() => nicName = selectedItem.ToString());
+            if (!string.IsNullOrEmpty(nicName))
+            {
+                NetworkInterfaces nis = new(nicName);
+                isNicDisabled = nis.ConfigManagerErrorCode == 22;
+                name = nis.NetConnectionID;
+                description = nis.Description;
+                if (string.IsNullOrEmpty(description)) description = nis.Name;
+                if (string.IsNullOrEmpty(description)) description = nis.ProductName;
+                adapterType = nis.AdapterTypeIDMessage;
+                availability = nis.AvailabilityMessage;
+                status = nis.ConfigManagerErrorCodeMessage;
+                netStatus = nis.NetConnectionStatusMessage;
+
+                for (int n = 0; n < nis.DnsAddresses.Count; n++)
+                    dnsAddresses += $"{nis.DnsAddresses[n]}, ";
+                dnsAddresses = dnsAddresses.Trim();
+                if (dnsAddresses.EndsWith(',')) dnsAddresses = dnsAddresses.TrimEnd(',');
+
+                isPhysicalAdapter = nis.PhysicalAdapter;
+                guid = nis.GUID;
+                macAddress = nis.MACAddress;
+                manufacturer = nis.Manufacturer;
+                serviceName = nis.ServiceName;
+                speed = $"{ConvertTool.ConvertByteToHumanRead(nis.Speed / 8)}/s";
+                timeOfLastReset = $"{nis.TimeOfLastReset:yyyy/MM/dd HH:mm:ss}";
+
+                this.InvokeIt(() => CustomButtonEnableDisableNic.Enabled = true);
+            }
+            else
+                this.InvokeIt(() => CustomButtonEnableDisableNic.Enabled = false);
+        }
+        else
+            this.InvokeIt(() => CustomButtonEnableDisableNic.Enabled = false);
+
+        // Update CustomButtonEnableDisableNic Text
+        this.InvokeIt(() => CustomButtonEnableDisableNic.Text = isNicDisabled ? "Enable NIC" : "Disable NIC");
+
+        // Update Name
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[0].Cells[1].Value = name);
+
+        // Update Description
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].Value = description);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].ToolTipText = description);
+
+        // Update AdapterType
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[2].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[2].Cells[1].Value = adapterType);
+
+        // Update Availability
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[3].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[3].Cells[1].Value = availability);
+
+        // Update Status
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[4].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[4].Cells[1].Value = status);
+
+        // Update Net Status
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[5].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[5].Cells[1].Value = netStatus);
+
+        // Update DNSAddresses
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].Value = dnsAddresses);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].ToolTipText = dnsAddresses);
+
+        // Update GUID
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[7].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[7].Cells[1].Value = guid);
+
+        // Update MACAddress
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[8].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[8].Cells[1].Value = macAddress);
+
+        // Update Manufacturer
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[9].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[9].Cells[1].Value = manufacturer);
+
+        // Update IsPhysicalAdapter
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[10].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[10].Cells[1].Value = isPhysicalAdapter);
+
+        // Update ServiceName
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[11].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[11].Cells[1].Value = serviceName);
+
+        // Update Speed
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[12].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[12].Cells[1].Value = speed);
+
+        // Update TimeOfLastReset
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[13].Cells[1].Style.ForeColor = Color.DodgerBlue);
+        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[13].Cells[1].Value = timeOfLastReset);
     }
 
     private void UpdateStatusCpuUsageAuto()
@@ -761,28 +920,51 @@ public partial class FormMain
         return result > 100 ? 100 : result;
     }
 
-    private void AutoSaveSettings()
+    private void SaveSettingsAuto()
     {
         // Using System.Timers.Timer needs Invoke.
         System.Windows.Forms.Timer autoSaveTimer = new();
         autoSaveTimer.Interval = Convert.ToInt32(TimeSpan.FromMinutes(2).TotalMilliseconds);
         autoSaveTimer.Tick += async (s, e) =>
         {
-            // Select Control type and properties to save
-            AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
-            AppSettings.AddSelectedControlAndProperty(typeof(CustomNumericUpDown), "Value");
-            AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
-            AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
-            AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
-            AppSettings.AddSelectedControlAndProperty(typeof(CustomComboBox), "SelectedIndex");
-
-            // Add Settings to save
-            AppSettings.AddSelectedSettings(this);
-
-            // Save Application Settings
-            await AppSettings.SaveAsync(SecureDNS.SettingsXmlPath);
+            await SaveSettings();
         };
         autoSaveTimer.Start();
+    }
+
+    private async Task SaveSettings()
+    {
+        // Select Control type and properties to save
+        if (AppSettings == null) return;
+        AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
+        AppSettings.AddSelectedControlAndProperty(typeof(CustomNumericUpDown), "Value");
+        AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
+        AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
+        AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
+        AppSettings.AddSelectedControlAndProperty(typeof(CustomComboBox), "SelectedIndex");
+
+        // Add Settings to save
+        AppSettings.AddSelectedSettings(this);
+
+        // Save Application Settings
+        await AppSettings.SaveAsync(SecureDNS.SettingsXmlPath);
+    }
+
+    private void WriteNetworkStatus()
+    {
+        if (InternetOffline && !IsInternetOnline)
+        {
+            InternetOffline = false;
+            InternetOnline = true;
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{NL}There is no Internet connectivity.{NL}", Color.IndianRed));
+        }
+
+        if (InternetOnline && IsInternetOnline)
+        {
+            InternetOnline = false;
+            InternetOffline = true;
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{NL}Back Online.{NL}", Color.MediumSeaGreen));
+        }
     }
 
     private void PlayAudioAlert()

@@ -186,8 +186,7 @@ namespace CustomControls
         
         private void CustomRadioButton_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false)
-                return;
+            if (ApplicationIdle == false) return;
             
             if (sender is RadioButton rb)
             {
@@ -204,9 +203,12 @@ namespace CustomControls
                 rb.AutoSize = false;
                 rb.UseVisualStyleBackColor = false;
                 SizeF sizeF = rb.CreateGraphics().MeasureString(rb.Text, rb.Font);
-                int rectSize = 12;
-                rb.Height = (int)sizeF.Height;
-                rb.Width = (int)(sizeF.Width + rectSize + 5);
+                SizeF rectSizeF = sizeF;
+                if (rb.Text.Contains(Environment.NewLine))
+                    rectSizeF = rb.CreateGraphics().MeasureString(rb.Text.Split(Environment.NewLine)[0], rb.Font);
+                int rectSize = Convert.ToInt32(rectSizeF.Height - 2);
+                rb.Height = Convert.ToInt32(sizeF.Height);
+                rb.Width = Convert.ToInt32(sizeF.Width + rectSize + 5);
                 int x;
                 float textX;
 

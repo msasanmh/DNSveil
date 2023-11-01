@@ -2,7 +2,6 @@
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -12,7 +11,6 @@ namespace SecureDNSClient;
 
 public partial class FormCustomServers : Form
 {
-    private readonly CustomLabel LabelScreen = new();
     private readonly CustomLabel LabelMoving = new();
     private static XDocument XDoc = new();
     private static readonly List<string> ListGroupNames = new();
@@ -73,9 +71,6 @@ public partial class FormCustomServers : Form
         LabelMoving.Visible = false;
         LabelMoving.SendToBack();
 
-        LabelScreen.Text = "MSasanMH";
-        LabelScreen.Font = Font;
-
         Shown += FormCustomServers_Shown;
         Move += FormCustomServers_Move;
         ResizeEnd += FormCustomServers_ResizeEnd;
@@ -91,7 +86,7 @@ public partial class FormCustomServers : Form
 
         // Fix Controls Location
         int spaceBottom = 6, spaceRight = 6, spaceV = 6, spaceH = 6;
-        CustomDataGridViewGroups.Location = new Point(spaceRight, LabelScreen.Height);
+        CustomDataGridViewGroups.Location = new Point(spaceRight, FormMain.LabelScreen.Height);
 
         CustomButtonExport.Left = CustomGroupBoxGroups.Width - CustomButtonExport.Width - spaceRight;
         CustomButtonExport.Top = CustomGroupBoxGroups.Height - CustomButtonNewGroup.Height - spaceBottom;
@@ -106,7 +101,7 @@ public partial class FormCustomServers : Form
         CustomDataGridViewGroups.Width = CustomGroupBoxGroups.Width - (spaceH * 2);
         CustomDataGridViewGroups.Height = CustomButtonNewGroup.Top - CustomDataGridViewGroups.Top - spaceV;
 
-        CustomDataGridViewDNSs.Location = new Point(spaceRight, LabelScreen.Height);
+        CustomDataGridViewDNSs.Location = new Point(spaceRight, FormMain.LabelScreen.Height);
 
         CustomButtonModifyDNS.Left = CustomGroupBoxDNSs.Width - CustomButtonModifyDNS.Width - spaceRight;
         CustomButtonModifyDNS.Top = CustomGroupBoxDNSs.Height - CustomButtonModifyDNS.Height - spaceBottom;
@@ -788,6 +783,7 @@ public partial class FormCustomServers : Form
             }
 
             Theme.SetColors(MG);
+            MG.RoundedCorners = 5;
             MG.Show(dgvG, new Point(e.X, e.Y));
         }
     }
@@ -1328,11 +1324,13 @@ public partial class FormCustomServers : Form
 
             Form Import = new()
             {
-                Size = new(300, 400),
+                Size = new(400, Height - 100),
                 Text = "Import...",
                 FormBorderStyle = FormBorderStyle.FixedToolWindow,
                 ShowInTaskbar = false,
-                StartPosition = FormStartPosition.CenterParent
+                StartPosition = FormStartPosition.CenterParent,
+                AutoScaleMode = AutoScaleMode.Dpi,
+                AutoSizeMode = AutoSizeMode.GrowOnly
             };
 
             Label text = new()
@@ -1344,22 +1342,27 @@ public partial class FormCustomServers : Form
             Import.Controls.Add(text);
             int textHeight = text.GetPreferredSize(Size.Empty).Height;
 
+            // Form Width
+            Import.Width = TextRenderer.MeasureText(text.Text, Font).Width + 150;
+
             CustomButton buttonCancel = new()
             {
+                AutoSize = true,
                 Text = "Cancel",
                 RoundedCorners = 5,
                 DialogResult = DialogResult.Cancel,
             };
-            buttonCancel.Location = new(Import.ClientRectangle.Width - buttonCancel.Width - 5, Import.ClientRectangle.Height - buttonCancel.Height - 5);
+            buttonCancel.Location = new(Import.ClientRectangle.Width - buttonCancel.Width - 5, Import.ClientRectangle.Height - buttonCancel.Height - (buttonCancel.Height / 2));
             Import.Controls.Add(buttonCancel);
 
             CustomButton buttonOK = new()
             {
+                AutoSize = true,
                 Text = "OK",
                 RoundedCorners = 5,
                 DialogResult = DialogResult.OK,
             };
-            buttonOK.Location = new(Import.ClientRectangle.Width - buttonOK.Width - 5 - buttonCancel.Width - 5, Import.ClientRectangle.Height - buttonOK.Height - 5);
+            buttonOK.Location = new(Import.ClientRectangle.Width - buttonOK.Width - 5 - buttonCancel.Width - 5, Import.ClientRectangle.Height - buttonOK.Height - (buttonOK.Height / 2));
             Import.Controls.Add(buttonOK);
 
             CustomPanel panel = new()
@@ -1373,6 +1376,14 @@ public partial class FormCustomServers : Form
             };
             Import.Controls.Add(panel);
 
+            // Modify Buttons Location
+            buttonCancel.Top = panel.Bottom + 5;
+            buttonOK.Top = buttonCancel.Top;
+
+            // Measure Text Height Based On Font
+            int labelScreenHeight = TextRenderer.MeasureText("MSasanMH", Font).Height;
+            labelScreenHeight += labelScreenHeight / 2;
+
             for (int n = 0; n < nodesGroups.Count(); n++)
             {
                 XElement nodeG = nodesGroups.ToList()[n];
@@ -1383,7 +1394,7 @@ public partial class FormCustomServers : Form
                 CustomCheckBox box = new();
                 box.Checked = true;
                 box.Text = group;
-                box.Location = new(5, 5 + (n * 20));
+                box.Location = new(5, (labelScreenHeight / 2) + (n * labelScreenHeight));
                 panel.Controls.Add(box);
                 box.MouseDown += (s, e) =>
                 {
@@ -1534,11 +1545,13 @@ public partial class FormCustomServers : Form
 
         Form Export = new()
         {
-            Size = new(300, 400),
+            Size = new(400, Height - 100),
             Text = "Export...",
             FormBorderStyle = FormBorderStyle.FixedToolWindow,
             ShowInTaskbar = false,
-            StartPosition = FormStartPosition.CenterParent
+            StartPosition = FormStartPosition.CenterParent,
+            AutoScaleMode = AutoScaleMode.Dpi,
+            AutoSizeMode = AutoSizeMode.GrowOnly
         };
 
         Label text = new()
@@ -1550,22 +1563,27 @@ public partial class FormCustomServers : Form
         Export.Controls.Add(text);
         int textHeight = text.GetPreferredSize(Size.Empty).Height;
 
+        // Form Width
+        Export.Width = TextRenderer.MeasureText(text.Text, Font).Width + 150;
+
         CustomButton buttonCancel = new()
         {
+            AutoSize = true,
             Text = "Cancel",
             RoundedCorners = 5,
             DialogResult = DialogResult.Cancel,
         };
-        buttonCancel.Location = new(Export.ClientRectangle.Width - buttonCancel.Width - 5, Export.ClientRectangle.Height - buttonCancel.Height - 5);
+        buttonCancel.Location = new(Export.ClientRectangle.Width - buttonCancel.Width - 5, Export.ClientRectangle.Height - buttonCancel.Height - (buttonCancel.Height / 2));
         Export.Controls.Add(buttonCancel);
 
         CustomButton buttonOK = new()
         {
+            AutoSize = true,
             Text = "OK",
             RoundedCorners = 5,
             DialogResult = DialogResult.OK,
         };
-        buttonOK.Location = new(Export.ClientRectangle.Width - buttonOK.Width - 5 - buttonCancel.Width - 5, Export.ClientRectangle.Height - buttonOK.Height - 5);
+        buttonOK.Location = new(Export.ClientRectangle.Width - buttonOK.Width - 5 - buttonCancel.Width - 5, Export.ClientRectangle.Height - buttonOK.Height - (buttonOK.Height / 2));
         Export.Controls.Add(buttonOK);
 
         CustomPanel panel = new()
@@ -1579,13 +1597,21 @@ public partial class FormCustomServers : Form
         };
         Export.Controls.Add(panel);
 
+        // Modify Buttons Location
+        buttonCancel.Top = panel.Bottom + 5;
+        buttonOK.Top = buttonCancel.Top;
+
+        // Measure Text Height Based On Font
+        int labelScreenHeight = TextRenderer.MeasureText("MSasanMH", Font).Height;
+        labelScreenHeight += labelScreenHeight / 2;
+
         for (int n = 0; n < ListGroupNames.Count; n++)
         {
             string group = ListGroupNames[n];
             CustomCheckBox box = new();
             box.Checked = true;
             box.Text = group;
-            box.Location = new(5, 5 + (n * 20));
+            box.Location = new(5, (labelScreenHeight / 2) + (n * labelScreenHeight));
             panel.Controls.Add(box);
             box.MouseDown += (s, e) =>
             {
@@ -2034,6 +2060,7 @@ public partial class FormCustomServers : Form
             }
 
             Theme.SetColors(MD);
+            MD.RoundedCorners = 5;
             MD.Show(dgvS, new Point(e.X, e.Y));
         }
     }
@@ -2875,6 +2902,7 @@ public partial class FormCustomServers : Form
                 Add.Items.Remove(MenuAddBelowSelected);
 
         Theme.SetColors(Add);
+        Add.RoundedCorners = 5;
         Add.Show(CustomButtonAddServers, 0, -5);
 
         void MenuAddBelowSelected_Click(object? sender, EventArgs e)

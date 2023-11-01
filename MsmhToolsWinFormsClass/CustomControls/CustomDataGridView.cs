@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -157,6 +156,7 @@ namespace CustomControls
             }
         }
 
+        private readonly string LabelScreen = "MSasanMH";
         private Color BackColorDarker { get; set; }
         public Color SelectionUnfocused { get; private set; }
 
@@ -249,8 +249,7 @@ namespace CustomControls
 
         private void DataGridView_HandleCreated(object? sender, EventArgs e)
         {
-            if (sender is null || e is null)
-                return;
+            if (sender is null || e is null) return;
             BackColorDarker = mBackColor.ChangeBrightness(-0.3f);
             SelectionUnfocused = mSelectionColor.ChangeBrightness(0.3f);
             if (sender is DataGridView gv)
@@ -436,7 +435,7 @@ namespace CustomControls
         private void DataGridView_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
         {
             if (sender is not DataGridView gv) return;
-
+            
             // Update Colors
             DataGridViewColor(gv);
 
@@ -451,22 +450,24 @@ namespace CustomControls
 
             if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
             {
-                var cell = gv[e.ColumnIndex, e.RowIndex];
+                DataGridViewCell cell = gv[e.ColumnIndex, e.RowIndex];
 
                 // DataGridViewCheckBoxCell
                 if (cell.GetType().ToString().Contains("CheckBox", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (cell.Value is DBNull)
-                        cell.Value = false;
+                    if (cell.Value is DBNull) cell.Value = false;
 
                     Rectangle rectCell = gv.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
                     if (cell is not DataGridViewCheckBoxCell checkBox) return;
-
+                    
                     e.Handled = true;
                     e.PaintBackground(rectCell, true);
 
                     rectCell = new(rectCell.X, rectCell.Y, rectCell.Width - 2, rectCell.Height - 2);
-                    int checkSize = 13;
+                    
+                    // Measure Text Height Based On Font
+                    SizeF labelScreenSizeF = TextRenderer.MeasureText(LabelScreen, Font);
+                    int checkSize = Convert.ToInt32(labelScreenSizeF.Height - 2);
                     checkSize = Math.Min(checkSize, rectCell.Width);
                     checkSize = Math.Min(checkSize, rectCell.Height);
                     int centerX = rectCell.X + rectCell.Width / 2 - checkSize / 2;
@@ -482,8 +483,7 @@ namespace CustomControls
                     if (cell.Value != DBNull.Value)
                     {
                         int rectCheck = rectCell.Height - 1;
-                        if (rectCheck <= 0)
-                            rectCheck = 1;
+                        if (rectCheck <= 0) rectCheck = 1;
 
                         if (rectCheck > 1)
                         {
@@ -537,7 +537,7 @@ namespace CustomControls
                     // Fill Background
                     using SolidBrush sb = new(backColor);
                     e.Graphics.FillRectangle(sb, rectCell);
-
+                    
                     // Draw Border
                     using Pen p = new(gridColor, 1);
                     Rectangle modRect1 = new(rectCell.Left, rectCell.Top, rectCell.Width - 1, rectCell.Height - 1);
@@ -596,15 +596,17 @@ namespace CustomControls
             // Update Colors
             DataGridViewColor(gv);
 
-            if (ApplicationIdle == false)
-                return;
+            if (ApplicationIdle == false) return;
 
             Rectangle rectGv = new(0, 0, ClientSize.Width, ClientSize.Height);
 
             Color borderColor = GetBorderColor();
+            using Pen pen = new(borderColor);
 
             if (BorderStyle == BorderStyle.FixedSingle)
+            {
                 ControlPaint.DrawBorder(e.Graphics, rectGv, borderColor, ButtonBorderStyle.Solid);
+            }
             else if (BorderStyle == BorderStyle.Fixed3D)
             {
                 Color secondBorderColor;

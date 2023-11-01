@@ -1,12 +1,34 @@
-﻿using System;
-using System.Drawing.Drawing2D;
+﻿using System.Drawing.Drawing2D;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 namespace MsmhToolsClass;
 
 public static class DrawingTool
 {
+    //-----------------------------------------------------------------------------------
+    [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+    private static extern int ExtractIconEx(string sFile, int iIndex, out IntPtr piLargeVersion, out IntPtr piSmallVersion, int amountIcons);
+    /// <summary>
+    /// Extract Icon From DLL (Windows Only)
+    /// </summary>
+    /// <returns>Returns null if fail</returns>
+    public static Icon? ExtractIcon(string dllPath, int index, bool largeIcon)
+    {
+        Icon? icon = null;
+        if (!OperatingSystem.IsWindows()) return icon;
+        _ = ExtractIconEx(dllPath, index, out IntPtr large, out IntPtr small, 1);
+        try
+        {
+            icon = Icon.FromHandle(largeIcon ? large : small);
+        }
+        catch
+        {
+            // do nothing
+        }
+        return icon;
+    }
     //-----------------------------------------------------------------------------------
     /// <summary>
     /// Windows Only

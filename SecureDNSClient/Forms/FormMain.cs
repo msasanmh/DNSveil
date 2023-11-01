@@ -11,6 +11,7 @@ using MsmhToolsClass.ProxyServerPrograms;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using SecureDNSClient.DPIBasic;
+using System.Runtime.InteropServices;
 // https://github.com/msasanmh/SecureDNSClient
 
 namespace SecureDNSClient;
@@ -19,7 +20,7 @@ public partial class FormMain : Form
 {
     public static ToolTip MainToolTip { get; set; } = new();
     private FormWindowState LastWindowState;
-    private readonly CustomLabel LabelScreen = new();
+    public static readonly CustomLabel LabelScreen = new();
     private Stopwatch LabelMovingStopWatch = new();
     private static readonly CustomLabel LabelMoving = new();
     public List<Tuple<long, string>> WorkingDnsList = new();
@@ -29,7 +30,13 @@ public partial class FormMain : Form
     private List<string> WorkingDnsListToFile = new();
     private List<Tuple<long, string>> WorkingDnsAndLatencyListToFile = new();
     public static ProcessMonitor MonitorProcess { get; set; } = new();
+    private bool InternetOnline = false;
+    private bool InternetOffline = true;
+    public static bool IsInternetOnline { get; set; } = false;
     private bool Once { get; set; } = true;
+    public static bool IsInActionState { get; set; } = false;
+    private bool IsOnStartup { get; set; } = false;
+    private bool IsStartupPathOk { get; set; } = false;
     private bool IsCheckingForUpdate { get; set; } = false;
     private int NumberOfWorkingServers { get; set; } = 0;
     public static bool IsCheckingStarted { get; set; } = false;
@@ -57,7 +64,7 @@ public partial class FormMain : Form
     private bool IsGoodbyeDPIAdvancedActive { get; set; } = false;
     private bool ConnectAllClicked { get; set; } = false;
     public static IPAddress? LocalIP { get; set; } = IPAddress.Loopback; // as default
-    public Settings AppSettings { get; set; }
+    public Settings? AppSettings { get; set; }
     private readonly ToolStripMenuItem ToolStripMenuItemIcon = new();
     private bool AudioAlertOnline = true;
     private bool AudioAlertOffline = false;
@@ -121,20 +128,35 @@ public partial class FormMain : Form
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         InitializeComponent();
 
+        Start();
+
+        Shown += FormMain_Shown;
+        Move += FormMain_Move;
+        Resize += FormMain_Resize;
+        LocationChanged += FormMain_LocationChanged;
+        SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+    }
+
+    private async void Start()
+    {
         // Invariant Culture
         Info.SetCulture(CultureInfo.InvariantCulture);
 
+        // Add SDC Binaries to Windows Firewall if Firewall is Enabled
+        AddOrUpdateFirewallRulesNoLog();
+
         // Load Theme
         Theme.LoadTheme(this, Theme.Themes.Dark);
+        CustomMessageBox.FormIcon = Properties.Resources.SecureDNSClient_Icon_Multi;
 
         // Update NICs
-        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+        SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
 
         // Update Connect Modes (Quick Connect Settings)
         UpdateConnectModes(CustomComboBoxSettingQcConnectMode);
 
         // Update NICs (Quick Connect Settings)
-        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, out _);
+        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, false, out _);
 
         // Update GoodbyeDPI Basic Modes (Quick Connect Settings)
         DPIBasicBypass.UpdateGoodbyeDpiBasicModes(CustomComboBoxSettingQcGdBasic);
@@ -144,9 +166,24 @@ public partial class FormMain : Form
         LabelScreen.Font = Font;
 
         // Startup Defaults
+        Architecture archOs = RuntimeInformation.OSArchitecture;
+        Architecture archProcess = RuntimeInformation.ProcessArchitecture;
         string productName = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName ?? "SDC - Secure DNS Client";
         string productVersion = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion ?? "0.0.0";
-        Text = $"{productName} v{productVersion}";
+        string archText = getArchText(archOs, archProcess);
+
+        static string getArchText(Architecture archOs, Architecture archProcess)
+        {
+            string archOsStr = archOs.ToString().ToLower();
+            string archProcessStr = archProcess.ToString().ToLower();
+            if (archOs == archProcess) return archProcessStr;
+            else if (archOs == Architecture.X64 && archProcess == Architecture.X86)
+                return $"{archProcessStr} on {archOsStr} OS";
+            else
+                return $"{archProcessStr} on {archOsStr} OS (Experimental)";
+        }
+
+        Text = $"{productName} {archText} v{productVersion}";
         CustomButtonSetDNS.Enabled = false;
         CustomButtonSetProxy.Enabled = false;
         CustomTextBoxHTTPProxy.Enabled = false;
@@ -158,8 +195,8 @@ public partial class FormMain : Form
         // Create User Dir if not Exist
         FileDirectory.CreateEmptyDirectory(SecureDNS.UserDataDirPath);
 
-        // Move User Data to the new location
-        MoveToNewLocation();
+        // Move User Data and Certificate to the new location
+        await MoveToNewLocation();
 
         // Add Tooltips
         string msgCheckInParallel = "a) Don't use parallel on slow network.";
@@ -215,7 +252,8 @@ public partial class FormMain : Form
 
         // Add colors and texts to About page
         CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
-        CustomLabelAboutVersion.Text = " v" + Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion;
+        string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({archProcess.ToString().ToLower()})";
+        CustomLabelAboutVersion.Text = aboutVer;
         CustomLabelAboutThis2.ForeColor = Color.IndianRed;
 
         // Initialize and load Settings
@@ -227,6 +265,10 @@ public partial class FormMain : Form
         // Initialize Status
         InitializeStatus(CustomDataGridViewStatus);
 
+        // Initialize NIC Status
+        InitializeNicStatus(CustomDataGridViewNicStatus);
+
+        IsInternetOnline = IsInternetAlive(false);
         UpdateNotifyIconIconAuto();
         CheckUpdateAuto();
         LogClearAuto();
@@ -235,10 +277,11 @@ public partial class FormMain : Form
         UpdateBoolProxyAuto();
         UpdateStatusShortAuto();
         UpdateStatusLongAuto();
+        UpdateStatusNicAuto();
         UpdateStatusCpuUsageAuto();
 
         // Auto Save Settings (Timer)
-        AutoSaveSettings();
+        SaveSettingsAuto();
 
         // Set Window State
         LastWindowState = WindowState;
@@ -257,42 +300,35 @@ public partial class FormMain : Form
         // Save Log to File
         CustomRichTextBoxLog.TextAppended += CustomRichTextBoxLog_TextAppended;
 
-        Shown += FormMain_Shown;
-        Move += FormMain_Move;
-        Resize += FormMain_Resize;
-        LocationChanged += FormMain_LocationChanged;
-        SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
-    }
+        // Write binaries if not exist or needs update
+        await WriteNecessaryFilesToDisk();
 
-    private void HideLabelMoving()
-    {
-        LabelMoving.Visible = false;
-        LabelMoving.SendToBack();
-        SplitContainerMain.Visible = true;
-    }
+        // Load Saved Servers
+        SavedDnsLoad();
 
-    private void LabelMovingHide()
-    {
-        if (LabelMovingStopWatch.ElapsedMilliseconds > 300)
+        // In case application closed unexpectedly Kill processes and set DNS to dynamic
+        if (!DoesAppClosedNormally())
         {
-            HideLabelMoving();
-            LabelMovingStopWatch.Reset();
+            await KillAll(true);
+            await UnsetSavedDNS();
         }
-    }
+        AppClosedNormally(false);
 
-    private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
-    {
-        if (ScreenDPI.GetSystemDpi() != 96)
-        {
-            using Graphics g = CreateGraphics();
-            PaintEventArgs args = new(g, DisplayRectangle);
-            OnPaint(args);
-            string msg = "Display Settings Changed.\n";
-            msg += "You may need restart the app to fix display blurriness.";
-            CustomMessageBox.Show(this, msg);
-        }
+        // Delete Log File on > 500KB
+        DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
 
-        HideLabelMoving();
+        // Load Proxy Port
+        ProxyPort = GetProxyPortSetting();
+
+        // Start Trace Event Session
+        MonitorProcess.SetPID(); // Measure Whole System
+        MonitorProcess.Start(true);
+
+        // Drag bar color
+        SplitContainerMain.BackColor = Color.IndianRed;
+
+        // Startup
+        if (Program.Startup) StartupTask();
     }
 
     private void CustomRichTextBoxLog_TextAppended(object? sender, EventArgs e)
@@ -312,42 +348,34 @@ public partial class FormMain : Form
         }
     }
 
+    private void HideLabelMoving()
+    {
+        LabelMoving.Visible = false;
+        LabelMoving.SendToBack();
+        SplitContainerMain.Visible = true;
+    }
+
+    private void LabelMovingHide()
+    {
+        if (LabelMovingStopWatch.ElapsedMilliseconds > 300)
+        {
+            HideLabelMoving();
+            LabelMovingStopWatch.Reset();
+        }
+    }
+
     private async void FormMain_Shown(object? sender, EventArgs e)
     {
         if (Once)
         {
-            // Fix Microsoft bugs. Like always!
-            await ScreenHighDpiScaleStartup(this);
-
-            // Write binaries if not exist or needs update
-            await WriteNecessaryFilesToDisk();
-
-            // Load Saved Servers
-            SavedDnsLoad();
-
-            // In case application closed unexpectedly Kill processes and set DNS to dynamic
-            if (!DoesAppClosedNormally())
-            {
-                KillAll(true);
-                await UnsetSavedDNS();
-            }
-            AppClosedNormally(false);
-
-            // Delete Log File on > 500KB
-            DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
-
-            // Load Proxy Port
-            ProxyPort = GetProxyPortSetting();
-
-            // Start Trace Event Session
-            MonitorProcess.SetPID(); // Measure Whole System
-            MonitorProcess.Start(true);
-
-            // Drag bar color
-            SplitContainerMain.BackColor = Color.IndianRed;
+            // Startup
+            if (Program.Startup) Hide();
 
             Once = false;
         }
+
+        // Fix Microsoft bugs. Like always!
+        await ScreenHighDpiScaleStartup(this);
     }
 
     private void FormMain_Move(object? sender, EventArgs e)
@@ -380,6 +408,21 @@ public partial class FormMain : Form
     private void FormMain_LocationChanged(object? sender, EventArgs e)
     {
         LabelMovingStopWatch.Restart();
+    }
+
+    private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        if (ScreenDPI.GetSystemDpi() != 96)
+        {
+            using Graphics g = CreateGraphics();
+            PaintEventArgs args = new(g, DisplayRectangle);
+            OnPaint(args);
+            string msg = "Display Settings Changed.\n";
+            msg += "You may need restart the app to fix display blurriness.";
+            CustomMessageBox.Show(this, msg);
+        }
+
+        HideLabelMoving();
     }
 
     //============================== Buttons
@@ -447,6 +490,7 @@ public partial class FormMain : Form
         cms.Items.Add(tsiClearWorkingServers);
         Theme.SetColors(cms);
         Control b = CustomButtonEditCustomServers;
+        cms.RoundedCorners = 5;
         cms.Show(b, 0, 0);
 
         void edit()
@@ -503,7 +547,18 @@ public partial class FormMain : Form
     private void CustomButtonUpdateNICs_Click(object sender, EventArgs e)
     {
         // Update NICs
-        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+        SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
+    }
+
+    private void CustomButtonEnableDisableNic_Click(object sender, EventArgs e)
+    {
+        if (CustomComboBoxNICs.SelectedItem == null) return;
+        string? nicName = CustomComboBoxNICs.SelectedItem.ToString();
+        if (string.IsNullOrEmpty(nicName)) return;
+        if (CustomButtonEnableDisableNic.Text.Contains("Enable"))
+            NetworkTool.EnableNIC(nicName);
+        else
+            NetworkTool.DisableNIC(nicName);
     }
 
     private async void CustomButtonSetDNS_Click(object sender, EventArgs e)
@@ -677,7 +732,47 @@ public partial class FormMain : Form
     private void CustomButtonSettingQcUpdateNics_Click(object sender, EventArgs e)
     {
         // Update NICs (Quick Connect Settings)
-        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, out _);
+        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, false, out _);
+    }
+
+    private void CustomButtonSettingQcStartup_Click(object sender, EventArgs e)
+    {
+        if (IsOnStartup)
+        {
+            if (IsStartupPathOk)
+            {
+                // Remove From Startup
+                ActivateWindowsStartup(false);
+                IsOnStartup = IsAppOnWindowsStartup(out bool isStartupPathOk);
+                IsStartupPathOk = isStartupPathOk;
+                if (!IsOnStartup)
+                    CustomMessageBox.Show(this, "Successfully removed from Startup.", "Startup", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                else
+                    CustomMessageBox.Show(this, "Couldn't remove from Startup!", "Startup", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else
+            {
+                // Fix Startup Path
+                ActivateWindowsStartup(true);
+                IsOnStartup = IsAppOnWindowsStartup(out bool isStartupPathOk);
+                IsStartupPathOk = isStartupPathOk;
+                if (IsStartupPathOk)
+                    CustomMessageBox.Show(this, "Successfully fixed Startup path.", "Startup", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                else
+                    CustomMessageBox.Show(this, "Couldn't fix Startup path!", "Startup", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        else
+        {
+            // Apply to Startup
+            ActivateWindowsStartup(true);
+            IsOnStartup = IsAppOnWindowsStartup(out bool isStartupPathOk);
+            IsStartupPathOk = isStartupPathOk;
+            if (IsOnStartup)
+                CustomMessageBox.Show(this, "Successfully applied to Startup.", "Startup", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            else
+                CustomMessageBox.Show(this, "Couldn't apply to Startup!", "Startup", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void CustomButtonSettingProxyFakeDNS_Click(object sender, EventArgs e)
@@ -742,7 +837,7 @@ public partial class FormMain : Form
         CustomRichTextBoxLog.AppendText(msgDefault, Color.MediumSeaGreen);
     }
 
-    private void CustomButtonExportUserData_Click(object sender, EventArgs e)
+    private async void CustomButtonExportUserData_Click(object sender, EventArgs e)
     {
         using SaveFileDialog sfd = new();
         sfd.Filter = "SDC User Data (*.sdcud)|*.sdcud";
@@ -754,6 +849,10 @@ public partial class FormMain : Form
         {
             try
             {
+                // Save Settings
+                await SaveSettings();
+                await Task.Delay(200);
+
                 ZipFile.CreateFromDirectory(SecureDNS.UserDataDirPath, sfd.FileName);
                 CustomMessageBox.Show(this, "Data exported successfully.", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -764,7 +863,7 @@ public partial class FormMain : Form
         }
     }
 
-    private void CustomButtonImportUserData_Click(object sender, EventArgs e)
+    private async void CustomButtonImportUserData_Click(object sender, EventArgs e)
     {
         using OpenFileDialog ofd = new();
         ofd.Filter = "SDC User Data (*.sdcud)|*.sdcud";
@@ -776,7 +875,7 @@ public partial class FormMain : Form
             try
             {
                 ZipFile.ExtractToDirectory(ofd.FileName, SecureDNS.UserDataDirPath, true);
-                Task.Delay(1000).Wait();
+                await Task.Delay(1000);
 
                 try
                 {
@@ -874,7 +973,7 @@ public partial class FormMain : Form
     //============================== Closing
     private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
     {
-        if (e.CloseReason == CloseReason.UserClosing || e.CloseReason == CloseReason.WindowsShutDown)
+        if (e.CloseReason == CloseReason.UserClosing)
         {
             e.Cancel = true;
             Hide();
@@ -882,6 +981,11 @@ public partial class FormMain : Form
             NotifyIconMain.BalloonTipText = "Minimized to tray.";
             NotifyIconMain.BalloonTipIcon = ToolTipIcon.Info;
             NotifyIconMain.ShowBalloonTip(500);
+        }
+        else if (e.CloseReason == CloseReason.WindowsShutDown)
+        {
+            e.Cancel = true;
+            Exit_Click(null, null);
         }
     }
 
@@ -891,6 +995,7 @@ public partial class FormMain : Form
         {
             this.SetDarkTitleBar(true); // Just in case
             Show();
+            Opacity = 1;
             BringToFront();
         }
         else if (e.Button == MouseButtons.Right)

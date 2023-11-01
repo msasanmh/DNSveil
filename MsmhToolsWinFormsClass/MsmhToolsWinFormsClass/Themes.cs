@@ -1,6 +1,6 @@
-﻿using System;
-using CustomControls;
+﻿using CustomControls;
 using MsmhToolsClass;
+using System.Windows.Forms;
 
 namespace MsmhToolsWinFormsClass.Themes;
 
@@ -42,6 +42,17 @@ public static class Theme
 
         // Set Static CustomMessageBox Parent
         CustomMessageBox.SetParent = form;
+    }
+    //=======================================================================================
+    internal static bool OverrideColors { get; set; } = false;
+    internal static Color OverrideBorderColor { get; set; }
+    public static void ChangeBorderColor(Form form, Color color)
+    {
+        OverrideColors = true;
+        OverrideBorderColor = color;
+        Colors.Border = OverrideBorderColor;
+        foreach (Control c in Controllers.GetAllControls(form)) SetColors(c);
+        SetColorsByType(form);
     }
     //=======================================================================================
     private static void SetColorsByType(Form form)
@@ -195,7 +206,7 @@ public static class Theme
         }
     }
     //=======================================================================================
-    private sealed class Colors
+    internal sealed class Colors
     {
         internal static Color BackColor { get; set; }
         internal static Color BackColorDisabled { get; set; }
@@ -231,6 +242,7 @@ public static class Theme
             ForeColor = Color.Black;
             ForeColorDisabled = ForeColor.ChangeBrightness(0.3f);
             Border = Color.DodgerBlue;
+            if (OverrideColors) Border = OverrideBorderColor;
             BorderDisabled = Border.ChangeBrightness(0.3f);
             Chunks = Color.DodgerBlue;
             GridLines = ForeColor.ChangeBrightness(0.5f);
@@ -258,6 +270,7 @@ public static class Theme
             ForeColor = Color.LightGray;
             ForeColorDisabled = ForeColor.ChangeBrightness(-0.3f);
             Border = Color.DodgerBlue;
+            if (OverrideColors) Border = OverrideBorderColor;
             BorderDisabled = Border.ChangeBrightness(-0.3f);
             Chunks = Color.DodgerBlue;
             GridLines = ForeColor.ChangeBrightness(-0.5f);

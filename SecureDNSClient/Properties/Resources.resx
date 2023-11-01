@@ -139,6 +139,9 @@
   <data name="SecureDNSClient_B_Multi" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\SdcResources\SecureDNSClient_B_Multi.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="SecureDNSClient_Icon_Multi" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\SecureDNSClientMulti.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="SecureDNSClient_PNG" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\SdcResources\SecureDNSClient_PNG.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

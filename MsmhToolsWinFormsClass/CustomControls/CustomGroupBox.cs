@@ -1,7 +1,7 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms.Design;
 /*
 * Copyright MSasanMH, May 01, 2022.
@@ -61,6 +61,22 @@ namespace CustomControls
                 if (mBorderColor != value)
                 {
                     mBorderColor = value;
+                    Invalidate();
+                }
+            }
+        }
+
+        private int mRoundedCorners = 0;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Appearance"), Description("Rounded Corners")]
+        public int RoundedCorners
+        {
+            get { return mRoundedCorners; }
+            set
+            {
+                if (mRoundedCorners != value)
+                {
+                    mRoundedCorners = value;
                     Invalidate();
                 }
             }
@@ -210,8 +226,7 @@ namespace CustomControls
 
         private void CustomGroupBox_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false)
-                return;
+            if (ApplicationIdle == false) return;
 
             GetPoint = PointToScreen(Location);
             GetName = Name;
@@ -235,32 +250,109 @@ namespace CustomControls
                 // Draw Border
                 using Pen penBorder = new(borderColor);
 
+                int radius = RoundedCorners;
+                int diameter = radius * 2;
+                int spacer = diameter + box.Padding.Left + 1;
+
+                Point p1 = new (0, 0);
+                Point p2 = new(0, 0);
+                Point p3 = new(0, 0);
+                Point p4 = new(0, 0);
+                Point p5 = new(0, 0);
+                Point p6 = new(0, 0);
+                Point p7 = new(0, 0);
+                Point p8 = new(0, 0);
+                Point p9 = new(0, 0);
+                Point p10 = new(0, 0);
+
                 if (box.RightToLeft == RightToLeft.Yes)
                 {
-                    // Draw Text
-                    e.Graphics.DrawString(box.Text, box.Font, sbForeColor, box.Width - (box.Padding.Left + 1) - strSize.Width, 0);
-                    // Draw Border TopLeft
-                    e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y), new Point((rect.X + rect.Width) - (box.Padding.Left + 1) - (int)strSize.Width, rect.Y));
-                    // Draw Border TopRight
-                    e.Graphics.DrawLine(penBorder, new Point((rect.X + rect.Width) - (box.Padding.Left + 1), rect.Y), new Point(rect.X + rect.Width, rect.Y));
+                    if (string.IsNullOrEmpty(box.Text))
+                        p1 = new(rect.X + (rect.Width / 2), rect.Y);
+                    else
+                        p1 = new(rect.X + rect.Width - box.Padding.Left - 1 - diameter, rect.Y);
+                    p2 = new(rect.X + rect.Width, rect.Y);
+                    p3 = new(rect.X + rect.Width, rect.Y + rect.Height);
+                    p4 = new(rect.X + rect.Width, rect.Y);
+                    p5 = new(rect.X + rect.Width, rect.Y + rect.Height);
+                    p6 = new(rect.X, rect.Y + rect.Height);
+                    p7 = new(rect.X, rect.Y + rect.Height);
+                    p8 = rect.Location;
+                    p9 = new(rect.X, rect.Y);
+                    p10 = new(rect.X + rect.Width - box.Padding.Left - 1 - Convert.ToInt32(strSize.Width), rect.Y);
                 }
                 else
                 {
-                    // Draw Text
-                    e.Graphics.DrawString(box.Text, box.Font, sbForeColor, (box.Padding.Left + 1), 0);
-                    // Draw Border TopLeft
-                    e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y), new Point(rect.X + (box.Padding.Left + 1), rect.Y));
-                    // Draw Border TopRight
-                    e.Graphics.DrawLine(penBorder, new Point(rect.X + (box.Padding.Left + 1) + (int)strSize.Width, rect.Y), new Point(rect.X + rect.Width, rect.Y));
+                    p1 = new(rect.X + box.Padding.Left - 1 + Convert.ToInt32(strSize.Width), rect.Y);
+                    p2 = new(rect.X + rect.Width, rect.Y);
+                    p3 = new(rect.X + rect.Width, rect.Y + rect.Height);
+                    p4 = new(rect.X + rect.Width, rect.Y);
+                    p5 = new(rect.X + rect.Width, rect.Y + rect.Height);
+                    p6 = new(rect.X, rect.Y + rect.Height);
+                    p7 = new(rect.X, rect.Y + rect.Height);
+                    p8 = rect.Location;
+                    p9 = new(rect.X, rect.Y);
+                    if (string.IsNullOrEmpty(box.Text))
+                        p10 = new(rect.X + (rect.Width / 2), rect.Y);
+                    else
+                        p10 = new(rect.X + box.Padding.Left + radius, rect.Y);
                 }
 
-                // Draw Border Left
-                e.Graphics.DrawLine(penBorder, rect.Location, new Point(rect.X, rect.Y + rect.Height));
-                // Draw Border Bottom
-                e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y + rect.Height), new Point(rect.X + rect.Width, rect.Y + rect.Height));
-                // Draw Border Right
-                e.Graphics.DrawLine(penBorder, new Point(rect.X + rect.Width, rect.Y), new Point(rect.X + rect.Width, rect.Y + rect.Height));
+                Point[] points = new Point[] { p1, p2, p3, p4, p5, p6, p7, p8, p9, p10 };
+                
+                // Draw Text
+                if (box.RightToLeft == RightToLeft.Yes)
+                    e.Graphics.DrawString(box.Text, box.Font, sbForeColor, box.Width - spacer - strSize.Width, 0);
+                else
+                    e.Graphics.DrawString(box.Text, box.Font, sbForeColor, spacer, 0);
 
+                GraphicsPath path = new();
+                if (box.RightToLeft != RightToLeft.Yes)
+                    p1.X += spacer;
+                p2.X -= diameter;
+                path.AddLine(p1, p2);
+                Rectangle r = new(p2, new Size(diameter, diameter));
+                if (radius == 0)
+                    path.AddLine(r.Location, r.Location);
+                else
+                    path.AddArc(r, 270, 90);
+                p3.Y -= diameter;
+                p4.Y += diameter;
+                path.AddLine(p3, p4);
+                p5.X -= diameter;
+                p5.Y -= diameter;
+                r = new(p5, new Size(diameter, diameter));
+                if (radius == 0)
+                    path.AddLine(r.Location, r.Location);
+                else
+                    path.AddArc(r, 0, 90);
+                p5.Y += diameter;
+                p6.X += diameter;
+                path.AddLine(p5, p6);
+                p6.X -= diameter;
+                p6.Y -= diameter;
+                r = new(p6, new Size(diameter, diameter));
+                if (radius == 0)
+                    path.AddLine(r.Location, r.Location);
+                else
+                    path.AddArc(r, 90, 90);
+                p7.Y -= diameter;
+                p8.Y += diameter;
+                path.AddLine(p7, p8);
+                p8.Y -= diameter;
+                r = new(p8, new Size(diameter, diameter));
+                if (radius == 0)
+                    path.AddLine(r.Location, r.Location);
+                else
+                    path.AddArc(r, 180, 90);
+                p9.X += diameter;
+                if (box.RightToLeft == RightToLeft.Yes)
+                    p10.X -= spacer;
+                path.AddLine(p9, p10);
+
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.DrawPath(penBorder, path);
+                e.Graphics.SmoothingMode = SmoothingMode.Default;
             }
         }
 

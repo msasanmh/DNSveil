@@ -1,5 +1,4 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -23,7 +22,7 @@ public static class NetworkTool
         string result = string.Empty;
         baseHost = string.Empty;
         if (!OperatingSystem.IsWindows()) return result;
-        string content = ProcessManager.Execute(out _, "nslookup", ip, true, true);
+        string content = ProcessManager.Execute(out _, "nslookup", null, ip, true, true);
         if (string.IsNullOrEmpty(content)) return result;
         content = content.ToLower();
         string[] split = content.Split(Environment.NewLine);
@@ -117,8 +116,8 @@ public static class NetworkTool
         // Windows 10 above
         try
         {
-            await ProcessManager.ExecuteAsync("net", "stop winnat", true, true);
-            await ProcessManager.ExecuteAsync("net", "start winnat", true, true);
+            await ProcessManager.ExecuteAsync("net", null, "stop winnat", true, true);
+            await ProcessManager.ExecuteAsync("net", null, "start winnat", true, true);
         }
         catch (Exception)
         {
@@ -441,7 +440,7 @@ public static class NetworkTool
     {
         if (!OperatingSystem.IsWindows()) return true;
         string args = $"-n 2 {ipStr}";
-        string content = ProcessManager.Execute(out _, "ping", args, true, false);
+        string content = ProcessManager.Execute(out _, "ping", null, args, true, false);
         return !content.Contains("transmit failed") && !content.Contains("General failure");
     }
 
@@ -496,6 +495,18 @@ public static class NetworkTool
         return nicList;
     }
 
+    public static void EnableNIC(string nicName)
+    {
+        string args = $"interface set interface \"{nicName}\" enable";
+        ProcessManager.ExecuteOnly(out _, "netsh", args, true, true);
+    }
+
+    public static void DisableNIC(string nicName)
+    {
+        string args = $"interface set interface \"{nicName}\" disable";
+        ProcessManager.ExecuteOnly(out _, "netsh", args, true, true);
+    }
+
     public static NetworkInterface? GetNICByName(string name)
     {
         NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
@@ -546,10 +557,10 @@ public static class NetworkTool
             string processArgs1 = $"interface ipv4 delete dnsservers {nic.Name} all";
             string processArgs2 = $"interface ipv4 set dnsservers {nic.Name} static {dnsServer1} primary";
             string processArgs3 = $"interface ipv4 add dnsservers {nic.Name} {dnsServer2} index=2";
-            await ProcessManager.ExecuteAsync(processName, processArgs1, true, true);
-            await ProcessManager.ExecuteAsync(processName, processArgs2, true, true);
+            await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
+            await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
             if (!string.IsNullOrEmpty(dnsServer2))
-                await ProcessManager.ExecuteAsync(processName, processArgs3, true, true);
+                await ProcessManager.ExecuteAsync(processName, null, processArgs3, true, true);
         }
         catch (Exception e)
         {
@@ -597,8 +608,8 @@ public static class NetworkTool
             string processName = "netsh";
             string processArgs1 = $"interface ipv4 delete dnsservers {nic.Name} all";
             string processArgs2 = $"interface ipv4 set dnsservers {nic.Name} source=dhcp";
-            await ProcessManager.ExecuteAsync(processName, processArgs1, true, true);
-            await ProcessManager.ExecuteAsync(processName, processArgs2, true, true);
+            await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
+            await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
         }
         catch (Exception ex)
         {
@@ -656,8 +667,8 @@ public static class NetworkTool
             string processName = "netsh";
             string processArgs1 = $"interface ipv6 delete dnsservers {nic.Name} all";
             string processArgs2 = $"interface ipv6 set dnsservers {nic.Name} source=dhcp";
-            await ProcessManager.ExecuteAsync(processName, processArgs1, true, true);
-            await ProcessManager.ExecuteAsync(processName, processArgs2, true, true);
+            await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
+            await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
         }
         catch (Exception ex)
         {
@@ -673,7 +684,7 @@ public static class NetworkTool
         bool result = false;
         host = ip = string.Empty;
         if (!OperatingSystem.IsWindows()) return result;
-        string content = ProcessManager.Execute(out _, "nslookup", "0.0.0.0", true, true);
+        string content = ProcessManager.Execute(out _, "nslookup", null, "0.0.0.0", true, true);
         if (string.IsNullOrEmpty(content)) return result;
         content = content.ToLower();
         string[] split = content.Split(Environment.NewLine);
@@ -710,7 +721,7 @@ public static class NetworkTool
 
         string processName = "netsh";
         string processArgs = $"interface ipv4 show dnsservers {nic.Name}";
-        string stdout = ProcessManager.Execute(out Process _, processName, processArgs, true, false);
+        string stdout = ProcessManager.Execute(out Process _, processName, null, processArgs, true, false);
 
         List<string> lines = stdout.SplitToLines();
         for (int n = 0; n < lines.Count; n++)

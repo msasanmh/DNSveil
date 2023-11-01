@@ -32,7 +32,7 @@ public partial class FormMain
                 SecureDNS.GenerateUid(this);
 
                 // Update NICs
-                SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+                SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
 
                 Task taskConnect = Task.Run(async () =>
                 {
@@ -177,7 +177,7 @@ public partial class FormMain
         }
 
         // Flush DNS
-        FlushDNS(false);
+        await FlushDNS(false);
 
         // Generate Certificate for DoH
         if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
@@ -198,6 +198,7 @@ public partial class FormMain
                     if (IsDisconnecting) break;
                     if (IsDNSConnected) break;
                     if (!ProcessManager.FindProcessByPID(PIDDNSProxy)) break;
+                    if (!IsInternetOnline) break;
                     await Task.Delay(100);
                 }
             });

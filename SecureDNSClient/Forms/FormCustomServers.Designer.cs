@@ -94,6 +94,7 @@
             CustomGroupBoxGroups.Dock = DockStyle.Fill;
             CustomGroupBoxGroups.Location = new Point(0, 0);
             CustomGroupBoxGroups.Name = "CustomGroupBoxGroups";
+            CustomGroupBoxGroups.RoundedCorners = 5;
             CustomGroupBoxGroups.Size = new Size(240, 461);
             CustomGroupBoxGroups.TabIndex = 0;
             CustomGroupBoxGroups.TabStop = false;
@@ -153,6 +154,7 @@
             CustomDataGridViewGroups.AllowUserToResizeRows = false;
             CustomDataGridViewGroups.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             CustomDataGridViewGroups.BorderColor = Color.Blue;
+            CustomDataGridViewGroups.BorderStyle = BorderStyle.None;
             CustomDataGridViewGroups.CellBorderStyle = DataGridViewCellBorderStyle.None;
             CustomDataGridViewGroups.CheckColor = Color.Blue;
             CustomDataGridViewGroups.ColumnHeadersBorder = false;
@@ -227,6 +229,7 @@
             CustomGroupBoxDNSs.Dock = DockStyle.Fill;
             CustomGroupBoxDNSs.Location = new Point(0, 0);
             CustomGroupBoxDNSs.Name = "CustomGroupBoxDNSs";
+            CustomGroupBoxDNSs.RoundedCorners = 5;
             CustomGroupBoxDNSs.Size = new Size(730, 461);
             CustomGroupBoxDNSs.TabIndex = 0;
             CustomGroupBoxDNSs.TabStop = false;
@@ -280,13 +283,14 @@
             CustomTextBoxDescription.Multiline = false;
             CustomTextBoxDescription.Name = "CustomTextBoxDescription";
             CustomTextBoxDescription.ReadOnly = false;
+            CustomTextBoxDescription.RoundedCorners = 0;
             CustomTextBoxDescription.ScrollBars = ScrollBars.None;
             CustomTextBoxDescription.ShortcutsEnabled = true;
             CustomTextBoxDescription.Size = new Size(543, 23);
             CustomTextBoxDescription.TabIndex = 0;
             CustomTextBoxDescription.TextAlign = HorizontalAlignment.Left;
             CustomTextBoxDescription.Texts = "";
-            CustomTextBoxDescription.UnderlinedStyle = false;
+            CustomTextBoxDescription.UnderlinedStyle = true;
             CustomTextBoxDescription.UsePasswordChar = false;
             CustomTextBoxDescription.WordWrap = true;
             // 
@@ -308,13 +312,14 @@
             CustomTextBoxDNS.Multiline = false;
             CustomTextBoxDNS.Name = "CustomTextBoxDNS";
             CustomTextBoxDNS.ReadOnly = false;
+            CustomTextBoxDNS.RoundedCorners = 0;
             CustomTextBoxDNS.ScrollBars = ScrollBars.None;
             CustomTextBoxDNS.ShortcutsEnabled = true;
             CustomTextBoxDNS.Size = new Size(543, 23);
             CustomTextBoxDNS.TabIndex = 0;
             CustomTextBoxDNS.TextAlign = HorizontalAlignment.Left;
             CustomTextBoxDNS.Texts = "";
-            CustomTextBoxDNS.UnderlinedStyle = false;
+            CustomTextBoxDNS.UnderlinedStyle = true;
             CustomTextBoxDNS.UsePasswordChar = false;
             CustomTextBoxDNS.WordWrap = true;
             // 

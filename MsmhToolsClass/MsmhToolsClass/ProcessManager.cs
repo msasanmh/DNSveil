@@ -1,7 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Management;
-using Microsoft.Diagnostics.Tracing.AutomatedAnalysis;
 using Process = System.Diagnostics.Process;
 
 namespace MsmhToolsClass;
@@ -147,76 +146,91 @@ public static class ProcessManager
     /// <summary>
     /// Returns stdout or Stderr after process finished.
     /// </summary>
-    public static async Task<string> ExecuteAsync(string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
+    public static async Task<string> ExecuteAsync(string processName, Dictionary<string, string>? environmentVariables = null, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
     {
-        // Create process
-        Process process0 = new();
-        process0.StartInfo.FileName = processName;
-
-        if (args != null)
-            process0.StartInfo.Arguments = args;
-
-        if (hideWindow)
+        return await Task.Run(async () =>
         {
-            process0.StartInfo.CreateNoWindow = true;
-            process0.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-        }
-        else
-        {
-            process0.StartInfo.CreateNoWindow = false;
-            process0.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-        }
+            // Create process
+            Process process0 = new();
+            process0.StartInfo.FileName = processName;
 
-        if (runAsAdmin)
-        {
-            process0.StartInfo.Verb = "runas";
-        }
-        else
-        {
-            process0.StartInfo.Verb = "";
-        }
+            if (environmentVariables != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in environmentVariables)
+                    process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+            }
 
-        // Redirect input output to get ability of sending and reading process output
-        process0.StartInfo.UseShellExecute = false;
-        process0.StartInfo.RedirectStandardInput = true;
-        process0.StartInfo.RedirectStandardOutput = true;
-        process0.StartInfo.RedirectStandardError = true;
+            if (args != null)
+                process0.StartInfo.Arguments = args;
 
-        if (workingDirectory != null)
-            process0.StartInfo.WorkingDirectory = workingDirectory;
+            if (hideWindow)
+            {
+                process0.StartInfo.CreateNoWindow = true;
+                process0.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            }
+            else
+            {
+                process0.StartInfo.CreateNoWindow = false;
+                process0.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+            }
 
-        try
-        {
-            process0.Start();
+            if (runAsAdmin)
+            {
+                process0.StartInfo.Verb = "runas";
+            }
+            else
+            {
+                process0.StartInfo.Verb = "";
+            }
 
-            // Set process priority
-            process0.PriorityClass = processPriorityClass;
+            // Redirect input output to get ability of reading process output
+            process0.StartInfo.UseShellExecute = false;
+            process0.StartInfo.RedirectStandardInput = false; // We're not sending
+            process0.StartInfo.RedirectStandardOutput = true;
+            process0.StartInfo.RedirectStandardError = true;
 
-            string stdout = process0.StandardOutput.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
-            string errout = process0.StandardError.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
-            string output = stdout + Environment.NewLine + errout;
+            if (workingDirectory != null)
+                process0.StartInfo.WorkingDirectory = workingDirectory;
 
-            // Wait for process to finish
-            await process0.WaitForExitAsync();
+            try
+            {
+                process0.Start();
 
-            return output;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-            return string.Empty;
-        }
+                // Set process priority
+                process0.PriorityClass = processPriorityClass;
+
+                string stdout = process0.StandardOutput.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
+                string errout = process0.StandardError.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
+                string output = stdout + Environment.NewLine + errout;
+
+                // Wait for process to finish
+                await process0.WaitForExitAsync();
+
+                return output;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                return string.Empty;
+            }
+        });
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
     /// Returns stdout or Stderr after process finished. Set waitForExit to false to get out Process.
     /// </summary>
-    public static string Execute(out Process process, string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal, bool waitForExit = true)
+    public static string Execute(out Process process, string processName, Dictionary<string, string>? environmentVariables = null, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal, bool waitForExit = true)
     {
         // Create process
         Process process0 = new();
         process = process0;
         process0.StartInfo.FileName = processName;
+
+        if (environmentVariables != null)
+        {
+            foreach (KeyValuePair<string, string> kvp in environmentVariables)
+                process.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+        }
 
         if (args != null)
             process0.StartInfo.Arguments = args;
@@ -395,7 +409,7 @@ public static class ProcessManager
     public static int GetProcessPidByListeningPort(int port)
     {
         string netstatArgs = "-a -n -o";
-        string? stdout = Execute(out Process _, "netstat", netstatArgs);
+        string? stdout = Execute(out Process _, "netstat", null, netstatArgs);
         if (!string.IsNullOrWhiteSpace(stdout))
         {
             List<string> lines = stdout.SplitToLines();

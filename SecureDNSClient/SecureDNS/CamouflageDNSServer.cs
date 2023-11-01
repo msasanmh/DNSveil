@@ -1,5 +1,4 @@
-﻿using System;
-using ARSoft.Tools.Net;
+﻿using ARSoft.Tools.Net;
 using ARSoft.Tools.Net.Dns;
 using System.Net;
 using MsmhToolsClass;
@@ -54,7 +53,6 @@ public class CamouflageDNSServer
 
     private async Task DnsServer_QueryReceived(object sender, QueryReceivedEventArgs eventArgs)
     {
-        Debug.WriteLine("HHHHHHHHHHHHHHHHHHH");
         if (eventArgs.Query is not DnsMessage message) return;
         
         DnsMessage response = message.CreateResponseInstance();

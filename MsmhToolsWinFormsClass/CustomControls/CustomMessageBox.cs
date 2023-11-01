@@ -1,6 +1,7 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 /*
  * Copyright MSasanMH, April 14, 2022.
@@ -19,12 +20,15 @@ namespace CustomControls
         [DllImport("user32.dll")]
         private static extern bool ReleaseCapture();
 
+        private readonly string LabelScreen = "MSasanMH";
         private readonly int ButtonRoundedCorners = 5;
+        private readonly int RoundedCorners = -1;
         private static DialogResult dialogResult;
         public static Form? SetParent { get; set; }
         public new static Color BackColor { get; set; }
         public new static Color ForeColor { get; set; }
         public static Color BorderColor { get; set; }
+        public static Icon? FormIcon { get; set; }
 
         private static int ImageBox(int iconOffset, Icon icon, Panel textPanel)
         {
@@ -38,15 +42,31 @@ namespace CustomControls
 
         public CustomMessageBox(string text, string? caption, MessageBoxButtons? buttons, MessageBoxIcon? icon) : base()
         {
-            AutoScaleMode = AutoScaleMode.None;
+            AutoScaleMode = AutoScaleMode.Dpi;
             FormBorderStyle = FormBorderStyle.None;
+            //ControlBox = false;
             ShowInTaskbar = true;
+
+            string dllPath = Path.GetFullPath(Path.Combine(Environment.SystemDirectory, "shell32.dll"));
+            FormIcon ??= MsmhToolsClass.DrawingTool.ExtractIcon(dllPath, 23, false);
+            if (FormIcon != null) Icon = FormIcon;
+
             TopMost = true;
+            AllowTransparency = true;
+            RoundedCorners = ButtonRoundedCorners * 2;
 
             int iconOffset = 5;
             int buttonOffset = 5;
             int testLabelOffset = iconOffset;
             Rectangle screen = Screen.FromControl(this).Bounds;
+
+            // Measure Text Height Based On Font
+            SizeF labelScreenSizeF = TextRenderer.MeasureText(LabelScreen, Font);
+            int titlePanelHeight = Convert.ToInt32(labelScreenSizeF.Height + 10);
+            int buttonWidth = Convert.ToInt32(labelScreenSizeF.Width + 10);
+            int buttonHeight = Convert.ToInt32(labelScreenSizeF.Height + 10);
+            int buttonPanelHeight = buttonHeight + 10;
+            int topAndBottom = titlePanelHeight + buttonPanelHeight + 40;
 
             // Box Size (Auto)
             ////// Box Width
@@ -61,7 +81,7 @@ namespace CustomControls
                 mWidth += iconWidth + iconOffset;
                 testLabelOffset = iconWidth - iconOffset * 2;
             }
-            int buttonWidth = 75;
+            
             if (buttons == null || buttons == MessageBoxButtons.OK)
             {
                 int previousWidth = mWidth;
@@ -95,35 +115,35 @@ namespace CustomControls
             testLabel.TextAlign = ContentAlignment.MiddleLeft;
             testLabel.Text = text;
             Size testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-            int mHeight = testLabelSize.Height + 100;
+            int mHeight = testLabelSize.Height + topAndBottom;
             mHeight = Math.Max(minHeight, mHeight);
             if (mHeight > maxHeight)
             {
                 mWidth += maxWidth;
                 testLabel.MaximumSize = new Size(mWidth - 2 - testLabelOffset, 0);
                 testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-                mHeight = testLabelSize.Height + 100;
+                mHeight = testLabelSize.Height + topAndBottom;
                 mHeight = Math.Max(minHeight, mHeight);
                 if (mHeight > maxHeight)
                 {
                     mWidth += maxWidth;
                     testLabel.MaximumSize = new Size(mWidth - 2 - testLabelOffset, 0);
                     testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-                    mHeight = testLabelSize.Height + 100;
+                    mHeight = testLabelSize.Height + topAndBottom;
                     mHeight = Math.Max(minHeight, mHeight);
                     if (mHeight > maxHeight)
                     {
                         mWidth += maxWidth;
                         testLabel.MaximumSize = new Size(mWidth - 2 - testLabelOffset, 0);
                         testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-                        mHeight = testLabelSize.Height + 100;
+                        mHeight = testLabelSize.Height + topAndBottom;
                         mHeight = Math.Max(minHeight, mHeight);
                         if (mHeight > maxHeight)
                         {
                             mWidth += maxWidth;
                             testLabel.MaximumSize = new Size(mWidth - 2 - testLabelOffset, 0);
                             testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-                            mHeight = testLabelSize.Height + 100;
+                            mHeight = testLabelSize.Height + topAndBottom;
                             mHeight = Math.Max(minHeight, mHeight);
                             if (mWidth > screen.Width)
                             {
@@ -136,10 +156,54 @@ namespace CustomControls
             }
             Size = new(mWidth, mHeight);
 
+            int radius = RoundedCorners;
+            int diameter = radius * 2;
+            Rectangle rec = new(0, 0, Width, Height);
+            if (radius > 0)
+            {
+                Size = new(mWidth + (diameter * 2), mHeight + (diameter * 2));
+                rec = new(0, 0, Width, Height);
+                GraphicsPath path = new();
+                path.AddArc(rec.X, rec.Y, radius, radius, 180, 90);
+                path.AddArc(rec.X + rec.Width - diameter, rec.Y, radius, radius, 270, 90);
+                path.AddArc(rec.X + rec.Width - diameter, rec.Y + rec.Height - diameter, radius, radius, 0, 90);
+                path.AddArc(rec.X, rec.Y + rec.Height - diameter, radius, radius, 90, 90);
+                path.CloseAllFigures();
+                Region = new Region(path);
+            }
+
+            // Main Panel to Draw Border
+            Panel panel = new();
+            panel.BorderStyle = BorderStyle.None;
+            panel.BackColor = BackColor;
+            panel.Size = Size;
+            panel.Paint += (s, e) =>
+            {
+                e.Graphics.Clear(BackColor);
+                Rectangle rectBorder = new(0, 0, panel.Width - 1 - radius, panel.Height - 1 - radius);
+                using Pen pen = new(BorderColor);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.DrawRoundedRectangle(pen, rectBorder, radius, radius, radius, radius);
+                e.Graphics.SmoothingMode = SmoothingMode.Default;
+            };
+            panel.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    ReleaseCapture();
+                    _ = SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                    Invalidate();
+                }
+            };
+            Controls.Add(panel);
+            panel.Location = new(0, 0);
+            panel.Dock = DockStyle.Fill;
+
             // Rectangle
-            Rectangle rect = new(ClientRectangle.X + 1, ClientRectangle.Y + 1, ClientRectangle.Width - 2, ClientRectangle.Height - 2);
-            int buttonPanelHeight = 30;
-            int titlePanelHeight = 25;
+            Rectangle rect = new(1, 1, ClientRectangle.Width - 2, ClientRectangle.Height - 2);
+            rect.Width -= radius;
+            rect.Height -= radius;
+
             Paint += CustomMessageBox_Paint;
             MouseDown += CustomMessageBox_MouseDown;
             Move += CustomMessageBox_Move;
@@ -153,8 +217,17 @@ namespace CustomControls
                 titleLabel.Text = caption;
                 titleLabel.BackColor = BackColor;
                 titleLabel.ForeColor = ForeColor;
-                titleLabel.Location = new(2, rect.Y + titlePanelHeight / 2 - titleLabel.GetPreferredSize(Size.Empty).Height / 2);
-                Controls.Add(titleLabel);
+                titleLabel.Location = new(2 + radius, rect.Y + titlePanelHeight / 2 - titleLabel.GetPreferredSize(Size.Empty).Height / 2);
+                titleLabel.MouseDown += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Left)
+                    {
+                        ReleaseCapture();
+                        _ = SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                        Invalidate();
+                    }
+                };
+                panel.Controls.Add(titleLabel);
             }
 
             // Text Body
@@ -164,9 +237,9 @@ namespace CustomControls
             textPanel.BorderStyle = BorderStyle.None;
             textPanel.Margin = new Padding(0);
             textPanel.Location = new(rect.X, titlePanelHeight);
-            textPanel.Size = new(rect.Width, rect.Height - titlePanelHeight - buttonPanelHeight);
+            textPanel.Size = new(rect.Width, rect.Height - radius - titlePanelHeight - buttonPanelHeight);
             textPanel.Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom;
-            Controls.Add(textPanel);
+            panel.Controls.Add(textPanel);
 
             // Enum MessageBoxIcon
             if (icon != null)
@@ -226,6 +299,7 @@ namespace CustomControls
                 }
             }
 
+            // Text Body Label
             Label textLabel = new();
             textLabel.AutoSize = true;
             textLabel.MaximumSize = new Size(rect.Width - iconOffset, 0);
@@ -241,19 +315,28 @@ namespace CustomControls
             buttonPanel.ForeColor = ForeColor;
             buttonPanel.BorderStyle = BorderStyle.None;
             buttonPanel.Margin = new Padding(0);
-            buttonPanel.Location = new(rect.X, Height - buttonPanelHeight - 1); // 1 is bottom border
+            buttonPanel.Location = new(rect.X, textPanel.Bottom + 1); // 1 is bottom border // Or: Height - diameter - buttonPanelHeight - 1
             buttonPanel.Size = new(rect.Width, buttonPanelHeight);
             buttonPanel.Anchor = AnchorStyles.Left | AnchorStyles.Bottom | AnchorStyles.Right;
-            Controls.Add(buttonPanel);
+            panel.Controls.Add(buttonPanel);
 
             // Enum DialogResult
-            if (buttons == null)
-                buttons = MessageBoxButtons.OK;
+            buttons ??= MessageBoxButtons.OK;
             if (buttons == MessageBoxButtons.AbortRetryIgnore)
             {
                 CustomButton btn1 = new();
                 CustomButton btn2 = new();
                 CustomButton btn3 = new();
+
+                btn1.AutoSize = false;
+                btn1.Width = buttonWidth;
+                btn1.Height = buttonHeight;
+                btn2.AutoSize = false;
+                btn2.Width = buttonWidth;
+                btn2.Height = buttonHeight;
+                btn3.AutoSize = false;
+                btn3.Width = buttonWidth;
+                btn3.Height = buttonHeight;
 
                 btn1.Location = new(rect.Width - btn1.Width - buttonOffset - btn2.Width - buttonOffset - btn3.Width - buttonOffset, buttonPanel.Height / 2 - btn1.Height / 2);
                 btn1.Text = "Abort";
@@ -291,6 +374,16 @@ namespace CustomControls
                 CustomButton btn2 = new();
                 CustomButton btn3 = new();
 
+                btn1.AutoSize = false;
+                btn1.Width = buttonWidth;
+                btn1.Height = buttonHeight;
+                btn2.AutoSize = false;
+                btn2.Width = buttonWidth;
+                btn2.Height = buttonHeight;
+                btn3.AutoSize = false;
+                btn3.Width = buttonWidth;
+                btn3.Height = buttonHeight;
+
                 btn1.Location = new(rect.Width - btn1.Width - buttonOffset - btn2.Width - buttonOffset - btn3.Width - buttonOffset, buttonPanel.Height / 2 - btn1.Height / 2);
                 btn1.Text = "Cancel";
                 btn1.DialogResult = DialogResult.Cancel;
@@ -325,6 +418,10 @@ namespace CustomControls
             {
                 CustomButton btn1 = new();
 
+                btn1.AutoSize = false;
+                btn1.Width = buttonWidth;
+                btn1.Height = buttonHeight;
+
                 btn1.Location = new(rect.Width - btn1.Width - buttonOffset, buttonPanel.Height / 2 - btn1.Height / 2);
                 btn1.Text = "OK";
                 btn1.DialogResult = DialogResult.OK;
@@ -340,6 +437,13 @@ namespace CustomControls
             {
                 CustomButton btn1 = new();
                 CustomButton btn2 = new();
+
+                btn1.AutoSize = false;
+                btn1.Width = buttonWidth;
+                btn1.Height = buttonHeight;
+                btn2.AutoSize = false;
+                btn2.Width = buttonWidth;
+                btn2.Height = buttonHeight;
 
                 btn1.Location = new(rect.Width - btn1.Width - buttonOffset - btn2.Width - buttonOffset, buttonPanel.Height / 2 - btn1.Height / 2);
                 btn1.Text = "OK";
@@ -367,6 +471,13 @@ namespace CustomControls
                 CustomButton btn1 = new();
                 CustomButton btn2 = new();
 
+                btn1.AutoSize = false;
+                btn1.Width = buttonWidth;
+                btn1.Height = buttonHeight;
+                btn2.AutoSize = false;
+                btn2.Width = buttonWidth;
+                btn2.Height = buttonHeight;
+
                 btn1.Location = new(rect.Width - btn1.Width - buttonOffset - btn2.Width - buttonOffset, buttonPanel.Height / 2 - btn1.Height / 2);
                 btn1.Text = "Retry";
                 btn1.DialogResult = DialogResult.Retry;
@@ -392,6 +503,13 @@ namespace CustomControls
             {
                 CustomButton btn1 = new();
                 CustomButton btn2 = new();
+
+                btn1.AutoSize = false;
+                btn1.Width = buttonWidth;
+                btn1.Height = buttonHeight;
+                btn2.AutoSize = false;
+                btn2.Width = buttonWidth;
+                btn2.Height = buttonHeight;
 
                 btn1.Location = new(rect.Width - btn1.Width - buttonOffset - btn2.Width - buttonOffset, buttonPanel.Height / 2 - btn1.Height / 2);
                 btn1.Text = "Yes";
@@ -419,6 +537,16 @@ namespace CustomControls
                 CustomButton btn1 = new();
                 CustomButton btn2 = new();
                 CustomButton btn3 = new();
+
+                btn1.AutoSize = false;
+                btn1.Width = buttonWidth;
+                btn1.Height = buttonHeight;
+                btn2.AutoSize = false;
+                btn2.Width = buttonWidth;
+                btn2.Height = buttonHeight;
+                btn3.AutoSize = false;
+                btn3.Width = buttonWidth;
+                btn3.Height = buttonHeight;
 
                 btn1.Location = new(rect.Width - btn1.Width - buttonOffset - btn2.Width - buttonOffset - btn3.Width - buttonOffset, buttonPanel.Height / 2 - btn1.Height / 2);
                 btn1.Text = "Yes";
@@ -620,16 +748,7 @@ namespace CustomControls
         
         private void CustomMessageBox_Paint(object? sender, PaintEventArgs e)
         {
-            Rectangle rect = new(e.ClipRectangle.X, e.ClipRectangle.Y, e.ClipRectangle.Width - 1, e.ClipRectangle.Height - 1);
-            Graphics g = e.Graphics;
-
-            // Fill BackColor (Static)
-            using SolidBrush sb = new(BackColor);
-            g.FillRectangle(sb, rect);
-
-            // Draw Border
-            using Pen pen = new(BorderColor);
-            g.DrawRectangle(pen, rect);
+            e.Graphics.Clear(BackColor);
         }
 
         private void CustomMessageBox_MouseDown(object? sender, MouseEventArgs e)

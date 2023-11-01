@@ -108,7 +108,7 @@
             CustomCheckBoxCheckInsecure.Location = new Point(387, 134);
             CustomCheckBoxCheckInsecure.Name = "CustomCheckBoxCheckInsecure";
             CustomCheckBoxCheckInsecure.SelectionColor = Color.LightBlue;
-            CustomCheckBoxCheckInsecure.Size = new Size(176, 17);
+            CustomCheckBoxCheckInsecure.Size = new Size(179, 17);
             CustomCheckBoxCheckInsecure.TabIndex = 30;
             CustomCheckBoxCheckInsecure.Text = "Check insecure if secure fails";
             CustomCheckBoxCheckInsecure.UseVisualStyleBackColor = false;
@@ -125,7 +125,7 @@
             CustomCheckBoxClearExportData.Location = new Point(387, 111);
             CustomCheckBoxClearExportData.Name = "CustomCheckBoxClearExportData";
             CustomCheckBoxClearExportData.SelectionColor = Color.LightBlue;
-            CustomCheckBoxClearExportData.Size = new Size(185, 17);
+            CustomCheckBoxClearExportData.Size = new Size(189, 17);
             CustomCheckBoxClearExportData.TabIndex = 27;
             CustomCheckBoxClearExportData.Text = "Clear export data on new scan";
             CustomCheckBoxClearExportData.UseVisualStyleBackColor = false;
@@ -139,7 +139,7 @@
             CustomCheckBoxSmartDNS.Location = new Point(12, 102);
             CustomCheckBoxSmartDNS.Name = "CustomCheckBoxSmartDNS";
             CustomCheckBoxSmartDNS.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSmartDNS.Size = new Size(234, 17);
+            CustomCheckBoxSmartDNS.Size = new Size(237, 17);
             CustomCheckBoxSmartDNS.TabIndex = 24;
             CustomCheckBoxSmartDNS.Text = "Select domains to check for SmartDNS:";
             CustomCheckBoxSmartDNS.UseVisualStyleBackColor = false;
@@ -197,6 +197,7 @@
             CustomNumericUpDownBootstrapPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownBootstrapPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownBootstrapPort.Name = "CustomNumericUpDownBootstrapPort";
+            CustomNumericUpDownBootstrapPort.RoundedCorners = 5;
             CustomNumericUpDownBootstrapPort.Size = new Size(60, 23);
             CustomNumericUpDownBootstrapPort.TabIndex = 15;
             CustomNumericUpDownBootstrapPort.Value = new decimal(new int[] { 53, 0, 0, 0 });
@@ -233,6 +234,7 @@
             CustomTextBoxBootstrapIpPort.Multiline = false;
             CustomTextBoxBootstrapIpPort.Name = "CustomTextBoxBootstrapIpPort";
             CustomTextBoxBootstrapIpPort.ReadOnly = false;
+            CustomTextBoxBootstrapIpPort.RoundedCorners = 0;
             CustomTextBoxBootstrapIpPort.ScrollBars = ScrollBars.None;
             CustomTextBoxBootstrapIpPort.ShortcutsEnabled = true;
             CustomTextBoxBootstrapIpPort.Size = new Size(100, 23);
@@ -269,6 +271,7 @@
             CustomNumericUpDownDnsTimeout.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownDnsTimeout.Minimum = new decimal(new int[] { 5, 0, 0, 65536 });
             CustomNumericUpDownDnsTimeout.Name = "CustomNumericUpDownDnsTimeout";
+            CustomNumericUpDownDnsTimeout.RoundedCorners = 5;
             CustomNumericUpDownDnsTimeout.Size = new Size(60, 23);
             CustomNumericUpDownDnsTimeout.TabIndex = 10;
             CustomNumericUpDownDnsTimeout.Value = new decimal(new int[] { 5, 0, 0, 0 });
@@ -341,7 +344,7 @@
             CustomRadioButtonCustomServers.Location = new Point(12, 72);
             CustomRadioButtonCustomServers.Name = "CustomRadioButtonCustomServers";
             CustomRadioButtonCustomServers.SelectionColor = Color.LightBlue;
-            CustomRadioButtonCustomServers.Size = new Size(133, 17);
+            CustomRadioButtonCustomServers.Size = new Size(136, 17);
             CustomRadioButtonCustomServers.TabIndex = 3;
             CustomRadioButtonCustomServers.Text = "Custom DNS Servers";
             CustomRadioButtonCustomServers.UseVisualStyleBackColor = false;
@@ -355,7 +358,7 @@
             CustomRadioButtonDnsBrowse.Location = new Point(12, 42);
             CustomRadioButtonDnsBrowse.Name = "CustomRadioButtonDnsBrowse";
             CustomRadioButtonDnsBrowse.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDnsBrowse.Size = new Size(69, 17);
+            CustomRadioButtonDnsBrowse.Size = new Size(73, 17);
             CustomRadioButtonDnsBrowse.TabIndex = 2;
             CustomRadioButtonDnsBrowse.Text = "DNS List:";
             CustomRadioButtonDnsBrowse.UseVisualStyleBackColor = false;
@@ -379,6 +382,7 @@
             CustomTextBoxDnsUrl.Multiline = false;
             CustomTextBoxDnsUrl.Name = "CustomTextBoxDnsUrl";
             CustomTextBoxDnsUrl.ReadOnly = false;
+            CustomTextBoxDnsUrl.RoundedCorners = 0;
             CustomTextBoxDnsUrl.ScrollBars = ScrollBars.None;
             CustomTextBoxDnsUrl.ShortcutsEnabled = true;
             CustomTextBoxDnsUrl.Size = new Size(506, 23);
@@ -399,7 +403,7 @@
             CustomRadioButtonDnsUrl.Location = new Point(12, 12);
             CustomRadioButtonDnsUrl.Name = "CustomRadioButtonDnsUrl";
             CustomRadioButtonDnsUrl.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDnsUrl.Size = new Size(48, 17);
+            CustomRadioButtonDnsUrl.Size = new Size(51, 17);
             CustomRadioButtonDnsUrl.TabIndex = 0;
             CustomRadioButtonDnsUrl.TabStop = true;
             CustomRadioButtonDnsUrl.Text = "DNS:";
@@ -427,6 +431,7 @@
             CustomRichTextBoxLog.Name = "CustomRichTextBoxLog";
             CustomRichTextBoxLog.ReadOnly = true;
             CustomRichTextBoxLog.RightMargin = 0;
+            CustomRichTextBoxLog.RoundedCorners = 5;
             CustomRichTextBoxLog.ScrollBars = ScrollBars.Vertical;
             CustomRichTextBoxLog.ScrollToBottom = false;
             CustomRichTextBoxLog.SelectionColor = Color.White;

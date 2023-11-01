@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Drawing.Design;
 using System.Runtime.InteropServices;
@@ -87,6 +86,22 @@ namespace CustomControls
                 if (mBorderSize != value)
                 {
                     mBorderSize = value;
+                    Invalidate();
+                }
+            }
+        }
+
+        private int mRoundedCorners = 0;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Appearance"), Description("Rounded Corners")]
+        public int RoundedCorners
+        {
+            get { return mRoundedCorners; }
+            set
+            {
+                if (mRoundedCorners != value)
+                {
+                    mRoundedCorners = value;
                     Invalidate();
                 }
             }
@@ -543,7 +558,12 @@ namespace CustomControls
                 if (mUnderlinedStyle) // Line Style
                     e.Graphics.DrawLine(penBorder, 0, Height - 1, Width, Height - 1);
                 else //Normal Style
-                    e.Graphics.DrawRectangle(penBorder, 0, 0, Width - 0.5F, Height - 0.5F);
+                {
+                    int r = RoundedCorners;
+                    e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    e.Graphics.DrawRoundedRectangle(penBorder, new Rectangle(0, 0, Width - 1, Height - 1), r, r, r, r);
+                    e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+                }
             }
         }
 

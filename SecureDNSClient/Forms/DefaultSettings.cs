@@ -95,10 +95,11 @@ public partial class FormMain : Form
 
         // Settings Quick Connect
         CustomComboBoxSettingQcConnectMode.SelectedIndex = 0; // Working Servers Mode
+        CustomCheckBoxSettingQcUseSavedServers.Checked = false;
         CustomCheckBoxSettingQcCheckAllServers.Checked = false;
         CustomCheckBoxSettingQcSetDnsTo.Checked = true;
         // Update NICs (Quick Connect Settings)
-        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, out _);
+        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, false, out _);
         CustomComboBoxSettingQcNics.SelectedIndex = CustomComboBoxSettingQcNics.Items.Count > 0 ? 0 : -1;
         CustomCheckBoxSettingQcStartProxyServer.Checked = false;
         CustomCheckBoxSettingQcSetProxy.Checked = false;
