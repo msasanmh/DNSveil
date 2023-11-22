@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
@@ -32,17 +31,6 @@ public class ResourceTool
             await resource.CopyToAsync(file);
         else
             Debug.WriteLine("WriteResourceToFile: Copy to disk faild, resource was null.");
-    }
-
-    /// <summary>
-    /// Only binaries not text files.
-    /// </summary>
-    /// <param name="resource"></param>
-    /// <param name="filePath"></param>
-    /// <returns></returns>
-    public static async Task WriteResourceToFileAsync(byte[] resource, string filePath)
-    {
-        await File.WriteAllBytesAsync(filePath, resource);
     }
 
     public static string? GetResourceTextFile(string resourcePath, Assembly assembly)

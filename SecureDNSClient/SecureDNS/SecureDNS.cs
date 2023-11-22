@@ -185,7 +185,7 @@ public class SecureDNS
         domain = domain.Trim();
         if (domain.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) domain = domain[7..];
         if (domain.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) domain = domain[8..];
-        if (domain.EndsWith("/", StringComparison.OrdinalIgnoreCase)) domain = domain.TrimEnd('/');
+        if (domain.EndsWith('/')) domain = domain.TrimEnd('/');
 
         // Check blocked domain is valid
         bool isBlockedDomainValid = IsDomainValid(domain);

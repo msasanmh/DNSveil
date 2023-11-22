@@ -64,20 +64,25 @@ public partial class FormMain
         // Get and check blocked domain is valid
         string defaultAddr = "www.youtube.com";
 
-        CustomTextBoxSettingCheckDPIHost.LostFocus -= CustomTextBoxSettingCheckDPIHost_LostFocus;
-        CustomTextBoxSettingCheckDPIHost.LostFocus += CustomTextBoxSettingCheckDPIHost_LostFocus;
-        void CustomTextBoxSettingCheckDPIHost_LostFocus(object? sender, EventArgs e)
-        {
-            this.InvokeIt(() => CustomTextBoxSettingCheckDPIHost.Text = defaultAddr);
-        }
-
         bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, out string blockedDomain);
         if (!isBlockedDomainValid)
         {
-            blockedDomainNoWww = defaultAddr[4..];
+            this.InvokeIt(() =>
+            {
+                if (!CustomTextBoxSettingCheckDPIHost.Focused)
+                    CustomTextBoxSettingCheckDPIHost.Text = defaultAddr;
+            });
 
+            blockedDomainNoWww = defaultAddr[4..];
             return defaultAddr;
         }
+
+        this.InvokeIt(() =>
+        {
+            if (!CustomTextBoxSettingCheckDPIHost.Text.Equals(blockedDomain))
+                if (!CustomTextBoxSettingCheckDPIHost.Focused)
+                    CustomTextBoxSettingCheckDPIHost.Text = blockedDomain;
+        });
 
         // strip www. from blocked domain
         string blockedDomainNoWwwD = blockedDomain;

@@ -6,7 +6,6 @@ using MsmhToolsClass.ProxyServerPrograms;
 using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
 using System.Net;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using Task = System.Threading.Tasks.Task;
 
@@ -523,32 +522,33 @@ public partial class FormMain
     {
         await Task.Run(() =>
         {
-            if (killByName)
+            try
             {
-                while (ProcessManager.FindProcessByName("SDCProxyServer"))
+                if (killByName)
+                {
                     ProcessManager.KillProcessByName("SDCProxyServer");
-                while (ProcessManager.FindProcessByName("dnslookup"))
                     ProcessManager.KillProcessByName("dnslookup");
-                while (ProcessManager.FindProcessByName("dnsproxy"))
                     ProcessManager.KillProcessByName("dnsproxy");
-                while (ProcessManager.FindProcessByName("dnscrypt-proxy"))
                     ProcessManager.KillProcessByName("dnscrypt-proxy");
-                while (ProcessManager.FindProcessByName("goodbyedpi"))
                     ProcessManager.KillProcessByName("goodbyedpi");
-            }
-            else
-            {
-                ProcessManager.KillProcessByPID(PIDProxy);
-                ProcessManager.KillProcessByPID(PIDFakeProxy);
-                while (ProcessManager.FindProcessByName("dnslookup"))
+                }
+                else
+                {
+                    ProcessManager.KillProcessByPID(PIDProxy);
+                    ProcessManager.KillProcessByPID(PIDFakeProxy);
                     ProcessManager.KillProcessByName("dnslookup");
-                ProcessManager.KillProcessByPID(PIDDNSProxy);
-                ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
-                ProcessManager.KillProcessByPID(PIDDNSCrypt);
-                ProcessManager.KillProcessByPID(PIDDNSCryptBypass);
-                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
-                ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
-                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+                    ProcessManager.KillProcessByPID(PIDDNSProxy);
+                    ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
+                    ProcessManager.KillProcessByPID(PIDDNSCrypt);
+                    ProcessManager.KillProcessByPID(PIDDNSCryptBypass);
+                    ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
+                    ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
+                    ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("KillAll: " + ex.Message);
             }
         });
     }
@@ -587,8 +587,9 @@ public partial class FormMain
             return true;
     }
 
-    private async Task WriteNecessaryFilesToDisk()
+    private async Task<bool> WriteNecessaryFilesToDisk()
     {
+        bool success = true;
         Architecture arch = RuntimeInformation.ProcessArchitecture;
         // Get New Versions
         string dnslookupNewVer = SecureDNS.GetBinariesVersionFromResource("dnslookup", arch);
@@ -618,74 +619,86 @@ public partial class FormMain
             string msg1 = $"Creating/Updating {arch} binaries. Please Wait..." + NL;
             CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
 
-            await writeBinariesAsync();
+            success = await writeBinariesAsync();
         }
 
-        async Task writeBinariesAsync()
+        return success;
+
+        async Task<bool> writeBinariesAsync()
         {
-            if (!Directory.Exists(SecureDNS.BinaryDirPath))
-                Directory.CreateDirectory(SecureDNS.BinaryDirPath);
-
-            if (!File.Exists(SecureDNS.DnsLookup) || dnslookupResult == 1)
+            try
             {
-                if (arch == Architecture.X64)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnslookup_X64, SecureDNS.DnsLookup);
-                if (arch == Architecture.X86)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnslookup_X86, SecureDNS.DnsLookup);
-            }
-                
+                if (!Directory.Exists(SecureDNS.BinaryDirPath))
+                    Directory.CreateDirectory(SecureDNS.BinaryDirPath);
 
-            if (!File.Exists(SecureDNS.DnsProxy) || dnsproxyResult == 1)
+                if (!File.Exists(SecureDNS.DnsLookup) || dnslookupResult == 1)
+                {
+                    if (arch == Architecture.X64)
+                        await File.WriteAllBytesAsync(SecureDNS.DnsLookup, NecessaryFiles.Resource1.dnslookup_X64);
+                    if (arch == Architecture.X86)
+                        await File.WriteAllBytesAsync(SecureDNS.DnsLookup, NecessaryFiles.Resource1.dnslookup_X86);
+                }
+
+
+                if (!File.Exists(SecureDNS.DnsProxy) || dnsproxyResult == 1)
+                {
+                    if (arch == Architecture.X64)
+                        await File.WriteAllBytesAsync(SecureDNS.DnsProxy, NecessaryFiles.Resource1.dnsproxy_X64);
+                    if (arch == Architecture.X86)
+                        await File.WriteAllBytesAsync(SecureDNS.DnsProxy, NecessaryFiles.Resource1.dnsproxy_X86);
+                }
+
+                if (!File.Exists(SecureDNS.DNSCrypt) || dnscryptResult == 1)
+                {
+                    if (arch == Architecture.X64)
+                        await File.WriteAllBytesAsync(SecureDNS.DNSCrypt, NecessaryFiles.Resource1.dnscrypt_proxy_X64);
+                    if (arch == Architecture.X86)
+                        await File.WriteAllBytesAsync(SecureDNS.DNSCrypt, NecessaryFiles.Resource1.dnscrypt_proxy_X86);
+                }
+
+                if (!File.Exists(SecureDNS.DNSCryptConfigPath))
+                    await File.WriteAllBytesAsync(SecureDNS.DNSCryptConfigPath, NecessaryFiles.Resource1.dnscrypt_proxyTOML);
+
+                if (!File.Exists(SecureDNS.DNSCryptConfigFakeProxyPath))
+                    await File.WriteAllBytesAsync(SecureDNS.DNSCryptConfigFakeProxyPath, NecessaryFiles.Resource1.dnscrypt_proxy_fakeproxyTOML);
+
+                if (!File.Exists(SecureDNS.ProxyServerPath) || sdcproxyserverResult == 1)
+                {
+                    if (arch == Architecture.X64)
+                        await File.WriteAllBytesAsync(SecureDNS.ProxyServerPath, NecessaryFiles.Resource1.SDCProxyServer_X64);
+                    if (arch == Architecture.X86)
+                        await File.WriteAllBytesAsync(SecureDNS.ProxyServerPath, NecessaryFiles.Resource1.SDCProxyServer_X86);
+                }
+
+                if (!File.Exists(SecureDNS.GoodbyeDpi) || goodbyedpiResult == 1)
+                    if (arch == Architecture.X64 || arch == Architecture.X86)
+                        await File.WriteAllBytesAsync(SecureDNS.GoodbyeDpi, NecessaryFiles.Resource1.goodbyedpi);
+
+                if (!File.Exists(SecureDNS.WinDivert))
+                    if (arch == Architecture.X64 || arch == Architecture.X86)
+                        await File.WriteAllBytesAsync(SecureDNS.WinDivert, NecessaryFiles.Resource1.WinDivert);
+
+                if (!File.Exists(SecureDNS.WinDivert32))
+                    if (arch == Architecture.X64 || arch == Architecture.X86)
+                        await File.WriteAllBytesAsync(SecureDNS.WinDivert32, NecessaryFiles.Resource1.WinDivert32);
+
+                if (!File.Exists(SecureDNS.WinDivert64))
+                    if (arch == Architecture.X64 || arch == Architecture.X86)
+                        await File.WriteAllBytesAsync(SecureDNS.WinDivert64, NecessaryFiles.Resource1.WinDivert64);
+
+                // Update old version numbers
+                await File.WriteAllTextAsync(SecureDNS.BinariesVersionPath, NecessaryFiles.Resource1.versions);
+
+                return true;
+            }
+            catch (Exception ex)
             {
-                if (arch == Architecture.X64)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnsproxy_X64, SecureDNS.DnsProxy);
-                if (arch == Architecture.X86)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnsproxy_X86, SecureDNS.DnsProxy);
+                string msg = $"{ex.Message}{NL}";
+                msg += $"Couldn't write binaries to disk.{NL}";
+                msg += "Please End Task the problematic process from Task Manager and Restart the Application.";
+                CustomMessageBox.Show(this, msg, "Write Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
-
-            if (!File.Exists(SecureDNS.DNSCrypt) || dnscryptResult == 1)
-            {
-                if (arch == Architecture.X64)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxy_X64, SecureDNS.DNSCrypt);
-                if (arch == Architecture.X86)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxy_X86, SecureDNS.DNSCrypt);
-            }
-
-            if (!File.Exists(SecureDNS.DNSCryptConfigPath))
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxyTOML, SecureDNS.DNSCryptConfigPath);
-
-            if (!File.Exists(SecureDNS.DNSCryptConfigFakeProxyPath))
-                await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.dnscrypt_proxy_fakeproxyTOML, SecureDNS.DNSCryptConfigFakeProxyPath);
-
-            if (!File.Exists(SecureDNS.ProxyServerPath) || sdcproxyserverResult == 1)
-            {
-                if (arch == Architecture.X64)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.SDCProxyServer_X64, SecureDNS.ProxyServerPath);
-                if (arch == Architecture.X86)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.SDCProxyServer_X86, SecureDNS.ProxyServerPath);
-            }
-
-            if (!File.Exists(SecureDNS.GoodbyeDpi) || goodbyedpiResult == 1)
-                if (arch == Architecture.X64 || arch == Architecture.X86)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.goodbyedpi, SecureDNS.GoodbyeDpi);
-
-            if (!File.Exists(SecureDNS.WinDivert))
-                if (arch == Architecture.X64 || arch == Architecture.X86)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert, SecureDNS.WinDivert);
-
-            if (!File.Exists(SecureDNS.WinDivert32))
-                if (arch == Architecture.X64 || arch == Architecture.X86)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert32, SecureDNS.WinDivert32);
-
-            if (!File.Exists(SecureDNS.WinDivert64))
-                if (arch == Architecture.X64 || arch == Architecture.X86)
-                    await ResourceTool.WriteResourceToFileAsync(NecessaryFiles.Resource1.WinDivert64, SecureDNS.WinDivert64);
-
-            // Update old version numbers
-            await File.WriteAllTextAsync(SecureDNS.BinariesVersionPath, NecessaryFiles.Resource1.versions);
-
-            string msg2 = $"{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName} is ready.{NL}";
-            CustomRichTextBoxLog.AppendText(msg2, Color.LightGray);
         }
     }
 

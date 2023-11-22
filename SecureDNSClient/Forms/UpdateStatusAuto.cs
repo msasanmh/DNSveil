@@ -384,13 +384,14 @@ public partial class FormMain
             while (true)
             {
                 int timeoutMS = 10000;
+                if (!IsConnected) timeoutMS = 500;
                 await Task.Delay(timeoutMS + 500);
-
-                if (!IsAppReady) continue;
-                if (!IsConnected) continue;
 
                 string blockedDomain = GetBlockedDomainSetting(out string _);
                 if (string.IsNullOrEmpty(blockedDomain)) blockedDomain = "google.com";
+
+                if (!IsAppReady) continue;
+                if (!IsConnected) continue;
 
                 Parallel.Invoke(() => UpdateBoolDnsOnce(timeoutMS, blockedDomain),
                                 () => UpdateBoolDohOnce(timeoutMS, blockedDomain));

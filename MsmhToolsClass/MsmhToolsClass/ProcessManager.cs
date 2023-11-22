@@ -386,9 +386,16 @@ public static class ProcessManager
     //-----------------------------------------------------------------------------------
     public static void KillProcessByName(string processName, bool killEntireProcessTree = false)
     {
-        Process[] processes = Process.GetProcessesByName(processName);
-        for (int n = 0; n < processes.Length; n++)
-            processes[n].Kill(killEntireProcessTree);
+        try
+        {
+            Process[] processes = Process.GetProcessesByName(processName);
+            for (int n = 0; n < processes.Length; n++)
+                processes[n].Kill(killEntireProcessTree);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     public static void KillProcessByPID(int pid, bool killEntireProcessTree = false)

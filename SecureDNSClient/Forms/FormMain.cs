@@ -131,9 +131,19 @@ public partial class FormMain : Form
         InitializeNicStatus(CustomDataGridViewNicStatus);
 
         // Write binaries if not exist or needs update
-        await WriteNecessaryFilesToDisk();
+        bool successWrite = await WriteNecessaryFilesToDisk();
+        if (successWrite)
+        {
+            string msgWB = $"{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName} is ready.{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWB, Color.LightGray));
+        }
+        else
+        {
+            string msgWB = $"Couldn't write binaries to disk.{NL}";
+            msgWB += $"Restart Application.{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWB, Color.IndianRed));
+        }
 
-        //IsInternetOnline = await IsInternetAlive(false, false);
         UpdateAllAuto(); // CPU Friendly
         //UpdateBoolInternetAccessAuto(); // 3 Included In UpdateAllAuto
         UpdateNotifyIconIconAuto();
