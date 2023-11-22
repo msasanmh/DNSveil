@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Globalization;
+using System.Net;
 using MsmhToolsClass;
 
 namespace SecureDNSClient;
@@ -6,6 +7,13 @@ namespace SecureDNSClient;
 public partial class FormMain
 {
     //============================== Get Settings Vars
+    public int GetParallelSizeSetting()
+    {
+        int parallelSize = 5;
+        this.InvokeIt(() => parallelSize = Convert.ToInt32(CustomNumericUpDownCheckInParallel.Value));
+        return parallelSize;
+    }
+
     public int GetKillOnCpuUsageSetting()
     {
         int killOnCpuUsage = 40;
@@ -16,13 +24,36 @@ public partial class FormMain
     public IPAddress GetBootstrapSetting(out int bootstrapPort)
     {
         // Get Bootstrap IP and Port
-        IPAddress bootstrap = SecureDNS.BootstrapDnsIPv4;
-        int bootstrapPortD = SecureDNS.BootstrapDnsPort;
+        IPAddress bootstrap;
+        int bootstrapPortD;
         bool isBootstrap = NetworkTool.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? bootstrapIP);
         if (isBootstrap && bootstrapIP != null)
         {
             bootstrap = bootstrapIP;
             bootstrapPortD = Convert.ToInt32(CustomNumericUpDownSettingBootstrapDnsPort.Value);
+        }
+        else
+        {
+            bootstrap = CultureInfo.InstalledUICulture switch
+            {
+                { Name: string n } when n.ToLower().StartsWith("fa") => IPAddress.Parse("8.8.8.8"), // Iran
+                { Name: string n } when n.ToLower().StartsWith("ru") => IPAddress.Parse("77.88.8.7"), // Russia
+                { Name: string n } when n.ToLower().StartsWith("zh") => IPAddress.Parse("223.6.6.6"), // China
+                _ => SecureDNS.BootstrapDnsIPv4 // Others
+            };
+            if (bootstrap.Equals(SecureDNS.BootstrapDnsIPv4))
+                bootstrapPortD = SecureDNS.BootstrapDnsPort;
+            else
+                bootstrapPortD = 53;
+
+            this.InvokeIt(() =>
+            {
+                if (!CustomTextBoxSettingBootstrapDnsIP.Focused)
+                {
+                    CustomTextBoxSettingBootstrapDnsIP.Text = bootstrap.ToString();
+                    CustomNumericUpDownSettingBootstrapDnsPort.Value = bootstrapPortD;
+                }
+            });
         }
         bootstrapPort = bootstrapPortD;
         return bootstrap;
@@ -31,11 +62,21 @@ public partial class FormMain
     public string GetBlockedDomainSetting(out string blockedDomainNoWww)
     {
         // Get and check blocked domain is valid
-        bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, CustomRichTextBoxLog, out string blockedDomain);
+        string defaultAddr = "www.youtube.com";
+
+        CustomTextBoxSettingCheckDPIHost.LostFocus -= CustomTextBoxSettingCheckDPIHost_LostFocus;
+        CustomTextBoxSettingCheckDPIHost.LostFocus += CustomTextBoxSettingCheckDPIHost_LostFocus;
+        void CustomTextBoxSettingCheckDPIHost_LostFocus(object? sender, EventArgs e)
+        {
+            this.InvokeIt(() => CustomTextBoxSettingCheckDPIHost.Text = defaultAddr);
+        }
+
+        bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, out string blockedDomain);
         if (!isBlockedDomainValid)
         {
-            blockedDomainNoWww = string.Empty;
-            return string.Empty;
+            blockedDomainNoWww = defaultAddr[4..];
+
+            return defaultAddr;
         }
 
         // strip www. from blocked domain

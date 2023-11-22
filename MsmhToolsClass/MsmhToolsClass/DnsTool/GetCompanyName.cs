@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace MsmhToolsClass.DnsTool;
 
@@ -17,7 +16,7 @@ public static class GetCompanyName
                 for (int n = 0; n < split.Count; n++)
                 {
                     string hostToCom = split[n];
-                    if (hostToCom.Contains(host))
+                    if (hostToCom.Contains(host) && hostToCom.Contains('|'))
                     {
                         string com = hostToCom.Split('|')[1];
                         if (!string.IsNullOrWhiteSpace(com))

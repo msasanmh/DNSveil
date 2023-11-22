@@ -33,13 +33,23 @@ public class CamouflageDNSServer
         IServerTransport[] serverTransports = new IServerTransport[] { udpServerTransport, tcpServerTransport };
         if (DNSServer == null)
         {
-            DNSServer = new(serverTransports);
-            DNSServer.QueryReceived -= DnsServer_QueryReceived;
-            DNSServer.QueryReceived += DnsServer_QueryReceived;
-            DNSServer.Start();
-            IsRunning = true;
+            try
+            {
+                DNSServer = new(serverTransports);
+                DNSServer.QueryReceived -= DnsServer_QueryReceived;
+                DNSServer.QueryReceived += DnsServer_QueryReceived;
+                DNSServer.Start();
+                IsRunning = true;
+            }
+            catch (Exception)
+            {
+                DNSServer = new(udpServerTransport);
+                DNSServer.QueryReceived -= DnsServer_QueryReceived;
+                DNSServer.QueryReceived += DnsServer_QueryReceived;
+                DNSServer.Start();
+                IsRunning = true;
+            }
         }
-
     }
 
     public void Stop()

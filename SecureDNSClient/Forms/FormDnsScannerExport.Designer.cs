@@ -37,6 +37,8 @@
             CustomRadioButtonSortBySecure = new CustomControls.CustomRadioButton();
             CustomRadioButtonSortByInsecure = new CustomControls.CustomRadioButton();
             CustomButtonExport = new CustomControls.CustomButton();
+            CustomCheckBoxBingSafeSearchActive = new CustomControls.CustomCheckBox();
+            CustomCheckBoxYoutubeRestrictActive = new CustomControls.CustomCheckBox();
             SuspendLayout();
             // 
             // CustomLabelFilterExport
@@ -65,7 +67,7 @@
             CustomCheckBoxSecureOnline.Location = new Point(12, 40);
             CustomCheckBoxSecureOnline.Name = "CustomCheckBoxSecureOnline";
             CustomCheckBoxSecureOnline.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSecureOnline.Size = new Size(141, 17);
+            CustomCheckBoxSecureOnline.Size = new Size(145, 17);
             CustomCheckBoxSecureOnline.TabIndex = 1;
             CustomCheckBoxSecureOnline.Text = "Secure status is online";
             CustomCheckBoxSecureOnline.ThreeState = true;
@@ -79,10 +81,10 @@
             CustomCheckBoxInsecureOnline.Checked = true;
             CustomCheckBoxInsecureOnline.CheckState = CheckState.Indeterminate;
             CustomCheckBoxInsecureOnline.ForeColor = Color.White;
-            CustomCheckBoxInsecureOnline.Location = new Point(12, 63);
+            CustomCheckBoxInsecureOnline.Location = new Point(225, 40);
             CustomCheckBoxInsecureOnline.Name = "CustomCheckBoxInsecureOnline";
             CustomCheckBoxInsecureOnline.SelectionColor = Color.LightBlue;
-            CustomCheckBoxInsecureOnline.Size = new Size(150, 17);
+            CustomCheckBoxInsecureOnline.Size = new Size(154, 17);
             CustomCheckBoxInsecureOnline.TabIndex = 2;
             CustomCheckBoxInsecureOnline.Text = "Insecure status is online";
             CustomCheckBoxInsecureOnline.ThreeState = true;
@@ -94,10 +96,10 @@
             CustomCheckBoxGoogleSafeSearchActive.BorderColor = Color.Blue;
             CustomCheckBoxGoogleSafeSearchActive.CheckColor = Color.Blue;
             CustomCheckBoxGoogleSafeSearchActive.ForeColor = Color.White;
-            CustomCheckBoxGoogleSafeSearchActive.Location = new Point(225, 40);
+            CustomCheckBoxGoogleSafeSearchActive.Location = new Point(12, 63);
             CustomCheckBoxGoogleSafeSearchActive.Name = "CustomCheckBoxGoogleSafeSearchActive";
             CustomCheckBoxGoogleSafeSearchActive.SelectionColor = Color.LightBlue;
-            CustomCheckBoxGoogleSafeSearchActive.Size = new Size(170, 17);
+            CustomCheckBoxGoogleSafeSearchActive.Size = new Size(174, 17);
             CustomCheckBoxGoogleSafeSearchActive.TabIndex = 3;
             CustomCheckBoxGoogleSafeSearchActive.Text = "Google safe search is active";
             CustomCheckBoxGoogleSafeSearchActive.ThreeState = true;
@@ -109,10 +111,10 @@
             CustomCheckBoxAdultContentFilter.BorderColor = Color.Blue;
             CustomCheckBoxAdultContentFilter.CheckColor = Color.Blue;
             CustomCheckBoxAdultContentFilter.ForeColor = Color.White;
-            CustomCheckBoxAdultContentFilter.Location = new Point(225, 63);
+            CustomCheckBoxAdultContentFilter.Location = new Point(225, 86);
             CustomCheckBoxAdultContentFilter.Name = "CustomCheckBoxAdultContentFilter";
             CustomCheckBoxAdultContentFilter.SelectionColor = Color.LightBlue;
-            CustomCheckBoxAdultContentFilter.Size = new Size(135, 17);
+            CustomCheckBoxAdultContentFilter.Size = new Size(138, 17);
             CustomCheckBoxAdultContentFilter.TabIndex = 4;
             CustomCheckBoxAdultContentFilter.Text = "Adult content is filter";
             CustomCheckBoxAdultContentFilter.ThreeState = true;
@@ -125,10 +127,10 @@
             CustomRadioButtonSortBySecure.CheckColor = Color.Blue;
             CustomRadioButtonSortBySecure.Checked = true;
             CustomRadioButtonSortBySecure.ForeColor = Color.White;
-            CustomRadioButtonSortBySecure.Location = new Point(12, 100);
+            CustomRadioButtonSortBySecure.Location = new Point(12, 128);
             CustomRadioButtonSortBySecure.Name = "CustomRadioButtonSortBySecure";
             CustomRadioButtonSortBySecure.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSortBySecure.Size = new Size(140, 17);
+            CustomRadioButtonSortBySecure.Size = new Size(143, 17);
             CustomRadioButtonSortBySecure.TabIndex = 5;
             CustomRadioButtonSortBySecure.TabStop = true;
             CustomRadioButtonSortBySecure.Text = "Sort by secure latency";
@@ -140,10 +142,10 @@
             CustomRadioButtonSortByInsecure.BorderColor = Color.Blue;
             CustomRadioButtonSortByInsecure.CheckColor = Color.Blue;
             CustomRadioButtonSortByInsecure.ForeColor = Color.White;
-            CustomRadioButtonSortByInsecure.Location = new Point(225, 100);
+            CustomRadioButtonSortByInsecure.Location = new Point(225, 128);
             CustomRadioButtonSortByInsecure.Name = "CustomRadioButtonSortByInsecure";
             CustomRadioButtonSortByInsecure.SelectionColor = Color.LightBlue;
-            CustomRadioButtonSortByInsecure.Size = new Size(150, 17);
+            CustomRadioButtonSortByInsecure.Size = new Size(153, 17);
             CustomRadioButtonSortByInsecure.TabIndex = 6;
             CustomRadioButtonSortByInsecure.Text = "Sort by insecure latency";
             CustomRadioButtonSortByInsecure.UseVisualStyleBackColor = false;
@@ -153,7 +155,7 @@
             CustomButtonExport.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomButtonExport.BorderColor = Color.Blue;
             CustomButtonExport.FlatStyle = FlatStyle.Flat;
-            CustomButtonExport.Location = new Point(316, 140);
+            CustomButtonExport.Location = new Point(316, 170);
             CustomButtonExport.Name = "CustomButtonExport";
             CustomButtonExport.RoundedCorners = 5;
             CustomButtonExport.SelectionColor = Color.LightBlue;
@@ -163,12 +165,44 @@
             CustomButtonExport.UseVisualStyleBackColor = true;
             CustomButtonExport.Click += CustomButtonExport_Click;
             // 
+            // CustomCheckBoxBingSafeSearchActive
+            // 
+            CustomCheckBoxBingSafeSearchActive.BackColor = Color.DimGray;
+            CustomCheckBoxBingSafeSearchActive.BorderColor = Color.Blue;
+            CustomCheckBoxBingSafeSearchActive.CheckColor = Color.Blue;
+            CustomCheckBoxBingSafeSearchActive.ForeColor = Color.White;
+            CustomCheckBoxBingSafeSearchActive.Location = new Point(225, 63);
+            CustomCheckBoxBingSafeSearchActive.Name = "CustomCheckBoxBingSafeSearchActive";
+            CustomCheckBoxBingSafeSearchActive.SelectionColor = Color.LightBlue;
+            CustomCheckBoxBingSafeSearchActive.Size = new Size(159, 17);
+            CustomCheckBoxBingSafeSearchActive.TabIndex = 8;
+            CustomCheckBoxBingSafeSearchActive.Text = "Bing safe search is active";
+            CustomCheckBoxBingSafeSearchActive.ThreeState = true;
+            CustomCheckBoxBingSafeSearchActive.UseVisualStyleBackColor = false;
+            // 
+            // CustomCheckBoxYoutubeRestrictActive
+            // 
+            CustomCheckBoxYoutubeRestrictActive.BackColor = Color.DimGray;
+            CustomCheckBoxYoutubeRestrictActive.BorderColor = Color.Blue;
+            CustomCheckBoxYoutubeRestrictActive.CheckColor = Color.Blue;
+            CustomCheckBoxYoutubeRestrictActive.ForeColor = Color.White;
+            CustomCheckBoxYoutubeRestrictActive.Location = new Point(12, 86);
+            CustomCheckBoxYoutubeRestrictActive.Name = "CustomCheckBoxYoutubeRestrictActive";
+            CustomCheckBoxYoutubeRestrictActive.SelectionColor = Color.LightBlue;
+            CustomCheckBoxYoutubeRestrictActive.Size = new Size(175, 17);
+            CustomCheckBoxYoutubeRestrictActive.TabIndex = 9;
+            CustomCheckBoxYoutubeRestrictActive.Text = "Youtube restriction is active";
+            CustomCheckBoxYoutubeRestrictActive.ThreeState = true;
+            CustomCheckBoxYoutubeRestrictActive.UseVisualStyleBackColor = false;
+            // 
             // FormDnsScannerExport
             // 
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
-            ClientSize = new Size(419, 186);
+            ClientSize = new Size(419, 220);
+            Controls.Add(CustomCheckBoxYoutubeRestrictActive);
+            Controls.Add(CustomCheckBoxBingSafeSearchActive);
             Controls.Add(CustomButtonExport);
             Controls.Add(CustomRadioButtonSortByInsecure);
             Controls.Add(CustomRadioButtonSortBySecure);
@@ -198,5 +232,7 @@
         private CustomControls.CustomRadioButton CustomRadioButtonSortBySecure;
         private CustomControls.CustomRadioButton CustomRadioButtonSortByInsecure;
         private CustomControls.CustomButton CustomButtonExport;
+        private CustomControls.CustomCheckBox CustomCheckBoxBingSafeSearchActive;
+        private CustomControls.CustomCheckBox CustomCheckBoxYoutubeRestrictActive;
     }
 }

@@ -12,75 +12,125 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
+    private TimeSpan UpdateAllAutoBenchmark = TimeSpan.Zero;
+    private async void UpdateAllAuto()
+    {
+        await Task.Run(async () =>
+        {
+            while (true)
+            {
+                UpdateAllAutoBenchmark = AppUpTime.Elapsed;
+                int delay = 20;
+                
+                if (IsAppReady)
+                {
+                    await UpdateBoolInternetAccess();
+                    await Task.Delay(delay);
+                }
+                
+                await UpdateBools();
+                await Task.Delay(delay);
+
+                await UpdateBoolProxy();
+                await Task.Delay(delay);
+
+                await Task.Run(() => UpdateStatusLong());
+                await Task.Delay(delay);
+
+                if (Visible)
+                {
+                    await UpdateStatusCpuUsage();
+                    await Task.Delay(delay);
+                }
+
+#if DEBUG
+                TimeSpan eTime = AppUpTime.Elapsed - UpdateAllAutoBenchmark;
+                //Debug.WriteLine("UpdateAllAuto: " + ConvertTool.TimeSpanToHumanRead(eTime, true));
+#endif
+            }
+        });
+    }
+
     private async void UpdateNotifyIconIconAuto()
     {
-        NotifyIcon ni = NotifyIconMain;
-
         await Task.Run(async () =>
         {
             while (true)
             {
                 await Task.Delay(2000);
-                if (IsInAction(false, true, true, true, true, true, true, true, true, true, true))
-                {
-                    await Task.Run(async () =>
-                    {
-                        while (true)
-                        {
-                            if (!IsInAction(false, true, true, true, true, true, true, true, true, true, true)) break;
-
-                            ni.Text = "In Action...";
-
-                            // Loading
-                            ni.Icon = Properties.Resources.SecureDNSClient_B_Multi;
-                            await Task.Delay(200);
-                            ni.Icon = Properties.Resources.SecureDNSClient_BR_Multi;
-                            await Task.Delay(200);
-                            ni.Icon = Properties.Resources.SecureDNSClient_R_Multi;
-                            await Task.Delay(200);
-                            ni.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-                            await Task.Delay(200);
-                        }
-                    });
-                }
-                else
-                {
-                    if (!IsDNSConnected & !IsDNSSet & !IsProxyRunning & !IsProxySet & !IsDPIActive)
-                        ni.Icon = Properties.Resources.SecureDNSClient_R_Multi;
-                    else if (IsDNSConnected & IsDNSSet & IsProxyRunning & IsProxySet & IsDPIActive)
-                        ni.Icon = Properties.Resources.SecureDNSClient_B_Multi;
-                    else if (!IsDNSConnected & !IsDNSSet & IsProxyRunning & IsProxySet & IsDPIActive)
-                        ni.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-                    else if (!IsDNSConnected & !IsDNSSet & IsProxyRunning & IsDPIActive)
-                        ni.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-                    else if (IsDNSConnected & IsDNSSet & !IsProxyRunning & !IsProxySet & !IsDPIActive)
-                        ni.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-                    else if (IsDNSConnected & IsDNSSet & !IsProxyRunning & !IsDPIActive)
-                        ni.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-                    else
-                        ni.Icon = Properties.Resources.SecureDNSClient_BR_Multi;
-
-                    // Message (Max 128 chars)
-                    string msg = string.Empty;
-                    if (IsDNSConnected & !IsDNSSet) msg += $"DNS: Online{NL}";
-                    else if (IsDNSConnected & IsDNSSet) msg += $"DNS: Online & Set{NL}";
-                    if (IsDoHConnected) msg += $"DoH: Online{NL}";
-                    if (IsProxyRunning & !IsProxySet) msg += $"Proxy Server: Online{NL}";
-                    else if (IsProxyRunning & IsProxySet) msg += $"Proxy Server: Online & Set{NL}";
-                    if (IsDPIActive) msg += $"DPI Bypass: Active{NL}";
-
-                    if (msg.EndsWith(NL)) msg = msg.TrimEnd(NL.ToCharArray());
-                    if (string.IsNullOrEmpty(msg)) msg = Text;
-
-                    try { ni.Text = msg; } catch (Exception) { }
-                }
+                await UpdateNotifyIconIcon();
             }
         });
     }
 
+    private async Task UpdateNotifyIconIcon()
+    {
+        if (!IsAppReady)
+        {
+            NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_R_Multi;
+            NotifyIconMain.Text = "Waiting For Network...";
+            return;
+        }
+
+        if (IsInActionState)
+        {
+            await Task.Run(async () =>
+            {
+                while (true)
+                {
+                    if (!IsInActionState) break;
+
+                    NotifyIconMain.Text = "In Action...";
+
+                    // Loading
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_B_Multi;
+                    await Task.Delay(200);
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_BR_Multi;
+                    await Task.Delay(200);
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_R_Multi;
+                    await Task.Delay(200);
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+                    await Task.Delay(200);
+                }
+            });
+        }
+        else
+        {
+            if (!IsDNSConnected & !IsDNSSet & !IsProxyRunning & !IsProxySet & !IsDPIActive)
+                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_R_Multi;
+            else if (IsDNSConnected & IsDNSSet & IsProxyRunning & IsProxySet & IsDPIActive)
+                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_B_Multi;
+            else if (!IsDNSConnected & !IsDNSSet & IsProxyRunning & IsProxySet & IsDPIActive)
+                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+            else if (!IsDNSConnected & !IsDNSSet & IsProxyRunning & IsDPIActive)
+                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+            else if (IsDNSConnected & IsDNSSet & !IsProxyRunning & !IsProxySet & !IsDPIActive)
+                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+            else if (IsDNSConnected & IsDNSSet & !IsProxyRunning & !IsDPIActive)
+                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+            else
+                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_BR_Multi;
+
+            // Message (Max 128 chars)
+            string msg = string.Empty;
+            if (IsDNSConnected & !IsDNSSet) msg += $"DNS: Online{NL}";
+            else if (IsDNSConnected & IsDNSSet) msg += $"DNS: Online & Set{NL}";
+            if (IsDoHConnected) msg += $"DoH: Online{NL}";
+            if (IsProxyRunning & !IsProxySet) msg += $"Proxy Server: Online{NL}";
+            else if (IsProxyRunning & IsProxySet) msg += $"Proxy Server: Online & Set{NL}";
+            if (IsDPIActive) msg += $"DPI Bypass: Active{NL}";
+
+            if (msg.EndsWith(NL)) msg = msg.TrimEnd(NL.ToCharArray());
+            if (string.IsNullOrEmpty(msg)) msg = Text;
+
+            try { NotifyIconMain.Text = msg; } catch (Exception) { }
+        }
+    }
+
     private void CheckUpdateAuto()
     {
-        Task.Run(async () => await CheckUpdate());
+        if (!Program.Startup) Task.Run(async () => await CheckUpdate());
+
         System.Timers.Timer savedDnsUpdateTimer = new();
         savedDnsUpdateTimer.Interval = TimeSpan.FromHours(6).TotalMilliseconds;
         savedDnsUpdateTimer.Elapsed += (s, e) =>
@@ -93,10 +143,9 @@ public partial class FormMain
     private async Task CheckUpdate(bool showMsg = false)
     {
         if (IsCheckingStarted) return;
-        if (!IsInternetAlive(true)) return;
+        if (!IsInternetOnline) return;
         if (IsCheckingForUpdate) return;
-        if (showMsg)
-            IsCheckingForUpdate = true;
+        if (showMsg) IsCheckingForUpdate = true;
 
         string updateUrl = "https://github.com/msasanmh/SecureDNSClient/raw/main/update";
         string update = string.Empty;
@@ -214,7 +263,7 @@ public partial class FormMain
 
     private void LogClearAuto()
     {
-        System.Timers.Timer logAutoClearTimer = new(5000);
+        System.Timers.Timer logAutoClearTimer = new(10000);
         logAutoClearTimer.Elapsed += (s, e) =>
         {
             int length = 0;
@@ -242,6 +291,9 @@ public partial class FormMain
 
     private async Task UpdateBools()
     {
+        // Update Is In Action
+        IsInActionState = IsInAction(false, true, true, true, true, true, true, true, true, true, true);
+
         // Update Startup Info
         IsOnStartup = IsAppOnWindowsStartup(out bool isStartupPathOk);
         IsStartupPathOk = isStartupPathOk;
@@ -301,7 +353,28 @@ public partial class FormMain
         IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
 
         // Update bool IsDPIActive
-        IsDPIActive = IsProxyDpiBypassActive || IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive;
+        IsDPIActive = IsProxyDpiBypassActive || IsProxySSLChangeSniToIpActive || IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive;
+    }
+
+    private async void UpdateBoolInternetAccessAuto()
+    {
+        await Task.Run(async () =>
+        {
+            while (true)
+            {
+                await Task.Delay(1000);
+                if (!IsAppReady) continue;
+
+                await UpdateBoolInternetAccess();
+            }
+        });
+    }
+
+    private async Task UpdateBoolInternetAccess()
+    {
+        int timeoutMS = 5000;
+        bool isNetOn = await IsInternetAlive(false, true, timeoutMS);
+        IsInternetOnline = isNetOn ? isNetOn : await IsInternetAlive(false, true, timeoutMS);
     }
 
     private async void UpdateBoolDnsDohAuto()
@@ -310,30 +383,30 @@ public partial class FormMain
         {
             while (true)
             {
+                int timeoutMS = 10000;
+                await Task.Delay(timeoutMS + 500);
+
+                if (!IsAppReady) continue;
+                if (!IsConnected) continue;
+
                 string blockedDomain = GetBlockedDomainSetting(out string _);
                 if (string.IsNullOrEmpty(blockedDomain)) blockedDomain = "google.com";
-                int timeout = 10000;
-                await Task.Delay(timeout + 500);
 
-                IsInternetOnline = IsInternetAlive(false);
-
-                Parallel.Invoke(
-                () => UpdateBoolDnsOnce(timeout, blockedDomain),
-                () => UpdateBoolDohOnce(timeout, blockedDomain)
-                );
+                Parallel.Invoke(() => UpdateBoolDnsOnce(timeoutMS, blockedDomain),
+                                () => UpdateBoolDohOnce(timeoutMS, blockedDomain));
             }
         });
     }
 
-    private void UpdateBoolDnsOnce(int timeoutMS, string host = "google.com")
+    private async void UpdateBoolDnsOnce(int timeoutMS, string host = "google.com")
     {
         if (IsConnected)
         {
             // DNS
             if (IsInternetOnline)
             {
-                CheckDns checkDns = new(false, GetCPUPriority());
-                checkDns.CheckDNS(host, IPAddress.Loopback.ToString(), timeoutMS);
+                CheckDns checkDns = new(false, false, GetCPUPriority());
+                await checkDns.CheckDnsAsync(host, IPAddress.Loopback.ToString(), timeoutMS);
                 LocalDnsLatency = checkDns.DnsLatency;
                 IsDNSConnected = LocalDnsLatency != -1;
             }
@@ -350,7 +423,7 @@ public partial class FormMain
         }
     }
 
-    private void UpdateBoolDohOnce(int timeoutMS, string host = "google.com")
+    private async void UpdateBoolDohOnce(int timeoutMS, string host = "google.com")
     {
         if (IsConnected && CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
         {
@@ -362,8 +435,8 @@ public partial class FormMain
                     dohServer = $"https://{IPAddress.Loopback}/dns-query";
                 else
                     dohServer = $"https://{IPAddress.Loopback}:{ConnectedDohPort}/dns-query";
-                CheckDns checkDns = new(false, GetCPUPriority());
-                checkDns.CheckDNS(host, dohServer, timeoutMS);
+                CheckDns checkDns = new(false, false, GetCPUPriority());
+                await checkDns.CheckDnsAsync(host, dohServer, timeoutMS);
                 LocalDohLatency = checkDns.DnsLatency;
                 IsDoHConnected = LocalDohLatency != -1;
             }
@@ -387,33 +460,48 @@ public partial class FormMain
             while (true)
             {
                 await Task.Delay(500);
+                await UpdateBoolProxy();
+            }
+        });
+    }
 
-                IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
+    private async Task UpdateBoolProxy()
+    {
+        if (!IsAppReady) return;
+        await Task.Run(async () =>
+        {
+            IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
 
-                string line = string.Empty;
-                if (!UpdateProxyBools) continue;
-                if (IsProxyActivating) continue;
-                //if (CheckDpiBypassCTS != null && CheckDpiBypassCTS.IsCancellationRequested) continue;
+            string line = string.Empty;
+            if (!UpdateProxyBools) return;
+            if (IsProxyActivating) return;
+            //if (CheckDpiBypassCTS != null && CheckDpiBypassCTS.IsCancellationRequested) continue;
 
-                bool isCmdSent = await ProxyConsole.SendCommandAsync("out");
+            bool isCmdSent = await ProxyConsole.SendCommandAsync("out");
 
-                line = ProxyConsole.GetStdout;
+            line = ProxyConsole.GetStdout;
 #if DEBUG
-                //Debug.WriteLine($"Line({isCmdSent}): " + line);
+            //Debug.WriteLine($"Line({isCmdSent}): " + line);
 #endif
 
-                if (!isCmdSent || string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line))
+            if (!isCmdSent || string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line))
+            {
+                IsProxyRunning = false; ProxyRequests = 0; ProxyMaxRequests = 250; IsProxyDpiBypassActive = false;
+                IsProxySSLDecryptionActive = false; IsProxySSLChangeSniToIpActive = false;
+            }
+            else if (line.StartsWith("details"))
+            {
+                string[] split = line.Split('|');
+                if (split.Length == 15)
                 {
-                    IsProxyRunning = false; ProxyRequests = 0; ProxyMaxRequests = 250; IsProxyDpiBypassActive = false;
-                }
-                else if (line.StartsWith("details"))
-                {
-                    string[] split = line.Split('|');
                     if (bool.TryParse(split[1].ToLower(), out bool sharing)) IsProxyRunning = sharing;
                     if (int.TryParse(split[2].ToLower(), out int port)) ProxyPort = port;
                     if (int.TryParse(split[3].ToLower(), out int requests)) ProxyRequests = requests;
                     if (int.TryParse(split[4].ToLower(), out int maxRequests)) ProxyMaxRequests = maxRequests;
-                    if (bool.TryParse(split[5].ToLower(), out bool dpiActive)) IsProxyDpiBypassActive = dpiActive;
+                    if (bool.TryParse(split[5].ToLower(), out bool dpiActive))
+                    {
+                        IsProxyDpiBypassActive = !IsProxySSLDecryptionActive && dpiActive;
+                    }
 
                     if (split[6].ToLower().Equals("disable")) ProxyStaticDPIBypassMode = ProxyProgram.DPIBypass.Mode.Disable;
                     else if (split[6].ToLower().Equals("program")) ProxyStaticDPIBypassMode = ProxyProgram.DPIBypass.Mode.Program;
@@ -444,17 +532,23 @@ public partial class FormMain
                     else if (split[12].ToLower().Equals("file")) DontBypassMode = ProxyProgram.DontBypass.Mode.File;
                     else if (split[12].ToLower().Equals("text")) DontBypassMode = ProxyProgram.DontBypass.Mode.Text;
 
+                    if (bool.TryParse(split[13].ToLower(), out bool sslDecryptionActive)) IsProxySSLDecryptionActive = sslDecryptionActive;
+                    if (bool.TryParse(split[14].ToLower(), out bool sslChangeSniToIpActive)) IsProxySSLChangeSniToIpActive = sslDecryptionActive && sslChangeSniToIpActive;
                 }
-
-                // Update Proxy PID (Rare case)
-                if (IsProxyRunning) PIDProxy = ProxyConsole.GetPid;
             }
+
+            // Update Proxy PID (Rare case)
+            if (IsProxyRunning) PIDProxy = ProxyConsole.GetPid;
         });
     }
 
     private bool UpdateBoolIsProxySet()
     {
-        bool isAnyProxySet = NetworkTool.IsProxySet(out string _, out string _, out string _, out string proxy);
+        bool isAnyProxySet = NetworkTool.IsProxySet(out string proxy, out _, out _, out _); // HTTP
+        if (string.IsNullOrEmpty(proxy))
+            isAnyProxySet = NetworkTool.IsProxySet(out _, out proxy, out _, out _); // HTTPS
+        if (string.IsNullOrEmpty(proxy))
+            isAnyProxySet = NetworkTool.IsProxySet(out _, out _, out _, out proxy); // SOCKS
         if (isAnyProxySet)
             if (!string.IsNullOrEmpty(proxy))
                 if (proxy.Contains(':'))
@@ -489,7 +583,8 @@ public partial class FormMain
                 {
                     Debug.WriteLine(ex.Message);
                 }
-                this.InvokeIt(() => UpdateStatusShort());
+
+                if (Visible) this.InvokeIt(() => UpdateStatusShort());
             }
         });
     }
@@ -501,6 +596,10 @@ public partial class FormMain
         
         // Update Min Size of Main Container Panel 1
         SplitContainerMain.Panel1MinSize = PictureBoxFarvahar.Bottom + PictureBoxFarvahar.Height;
+
+        // Update Height of Vertical Separator in Share Tab
+        int spaceBottom = 6;
+        CustomLabelShareSeparator2.Height = CustomButtonShare.Top - CustomLabelShareSeparator2.Top - spaceBottom;
 
         // Update Min Size of Status
         SplitContainerTop.IsSplitterFixed = true;
@@ -519,7 +618,10 @@ public partial class FormMain
             int minS = CustomDataGridViewStatus.Width + (CustomDataGridViewStatus.Left * 2) + 2;
             int distance = SplitContainerTop.Width - SplitContainerTop.SplitterIncrement - minS;
             if (distance > SplitContainerTop.Panel1MinSize && distance < SplitContainerTop.Width - SplitContainerTop.Panel2MinSize)
+            {
                 SplitContainerTop.SplitterDistance = distance;
+                if (!LabelMainStopWatch.IsRunning) LabelMainStopWatch.Start();
+            }
         }
         catch (Exception ex)
         {
@@ -530,14 +632,10 @@ public partial class FormMain
         if (!IsCheckingStarted)
             CustomProgressBarCheck.StopTimer = true;
 
-        // Insecure and Parallel CheckBox
-        if (CustomCheckBoxInsecure.Checked)
-        {
-            CustomCheckBoxCheckInParallel.Enabled = false;
-            CustomCheckBoxCheckInParallel.Checked = false;
-        }
-        else
-            CustomCheckBoxCheckInParallel.Enabled = true;
+        // Update Size Of GroupBoxNicStatus
+        int space = 6;
+        this.InvokeIt(() => CustomGroupBoxNicStatus.Width = TabPageSetDNS.Width - CustomGroupBoxNicStatus.Left - space);
+        this.InvokeIt(() => CustomGroupBoxNicStatus.Height = TabPageSetDNS.Height - CustomGroupBoxNicStatus.Top - space);
 
         // Check Button Text
         if (StopChecking) CustomButtonCheck.Text = "Stopping...";
@@ -583,6 +681,25 @@ public partial class FormMain
         // SetDNS Button Enable
         CustomButtonSetDNS.Enabled = (IsConnected && (IsDNSConnected || IsDoHConnected) && !IsDNSSetting && !IsDNSUnsetting);
 
+        bool isSSLDecryptionEnable = IsSSLDecryptionEnable() || IsProxySSLDecryptionActive;
+        
+        // Regular DPI Bypass Enable
+        if (isSSLDecryptionEnable)
+        {
+            CustomCheckBoxPDpiEnableDpiBypass.Text = "Enable DPI Bypass (Ignored. SSL Decryption is active.)";
+            CustomCheckBoxPDpiEnableDpiBypass.ForeColor = Color.DodgerBlue;
+            CustomCheckBoxPDpiEnableDpiBypass.Enabled = false;
+        }
+        else
+        {
+            CustomCheckBoxPDpiEnableDpiBypass.Text = "Enable DPI Bypass";
+            CustomCheckBoxPDpiEnableDpiBypass.ForeColor = Color.MediumSeaGreen;
+            CustomCheckBoxPDpiEnableDpiBypass.Enabled = true;
+
+            // Uncheck SSL
+            if (CustomCheckBoxProxyEnableSSL.Checked) CustomCheckBoxProxyEnableSSL.Checked = false;
+        }
+
         // StartProxy Buttom Text
         if (IsProxyDeactivating) CustomButtonShare.Text = "Stopping...";
         else if (IsProxyActivating) CustomButtonShare.Text = "Starting...";
@@ -594,8 +711,43 @@ public partial class FormMain
         // SetProxy Button Text
         CustomButtonSetProxy.Text = IsProxySet ? "Unset Proxy" : "Set Proxy";
 
-        // SetProxy Button Enable
-        CustomButtonSetProxy.Enabled = IsProxyActivated && IsProxyRunning;
+        // SetProxy Button Enable & Color
+        if (IsProxyActivated && IsProxyRunning)
+        {
+            CustomButtonSetProxy.Enabled = true;
+            if (!IsProxyDeactivating)
+            {
+                CustomButtonSetProxy.ForeColor = !IsProxySet ? BackColor : ForeColor;
+                CustomButtonSetProxy.BackColor = !IsProxySet ? Color.MediumSeaGreen : BackColor;
+                CustomButtonSetProxy.Font = !IsProxySet ? new(Font.FontFamily, Font.Size, FontStyle.Bold) : new(Font.FontFamily, Font.Size, FontStyle.Regular);
+            }
+        }
+        else
+        {
+            CustomButtonSetProxy.Enabled = false;
+            CustomButtonSetProxy.ForeColor = ForeColor;
+            CustomButtonSetProxy.BackColor = BackColor;
+            CustomButtonSetProxy.Font = new(Font.FontFamily, Font.Size, FontStyle.Regular);
+        }
+
+        // ApplyDpiBypassChanges Button Color
+        if (IsProxyActivated && IsProxyRunning && !IsProxyActivating && !IsProxyDeactivating)
+        {
+            bool proxyChanged = (IsProxyDpiBypassActive != CustomCheckBoxPDpiEnableDpiBypass.Checked && CustomCheckBoxPDpiEnableDpiBypass.Enabled) ||
+                                (CustomCheckBoxPDpiEnableDpiBypass.Checked && CustomCheckBoxPDpiEnableDpiBypass.Enabled && !LastDpiBypassProgramCommand.Equals(GetDpiBypassProgramCommand())) ||
+                                (IsProxySSLDecryptionActive != CustomCheckBoxProxyEnableSSL.Checked) ||
+                                (IsProxySSLChangeSniToIpActive != CustomCheckBoxProxySSLChangeSniToIP.Checked && CustomCheckBoxProxyEnableSSL.Checked);
+            
+            CustomButtonPDpiApplyChanges.ForeColor = proxyChanged ? BackColor : ForeColor;
+            CustomButtonPDpiApplyChanges.BackColor = proxyChanged ? Color.MediumSeaGreen : BackColor;
+            CustomButtonPDpiApplyChanges.Font = proxyChanged ? new(Font.FontFamily, Font.Size, FontStyle.Bold) : new(Font.FontFamily, Font.Size, FontStyle.Regular);
+        }
+        else
+        {
+            CustomButtonPDpiApplyChanges.ForeColor = ForeColor;
+            CustomButtonPDpiApplyChanges.BackColor = BackColor;
+            CustomButtonPDpiApplyChanges.Font = new(Font.FontFamily, Font.Size, FontStyle.Regular);
+        }
 
         // GoodbyeDPI Basic Activate/Reactivate Button Text
         CustomButtonDPIBasicActivate.Text = IsGoodbyeDPIBasicActive ? "Reactivate" : "Activate";
@@ -610,7 +762,9 @@ public partial class FormMain
         CustomButtonDPIAdvDeactivate.Enabled = IsGoodbyeDPIAdvancedActive;
 
         // Settings -> Quick Connect
-        ConnectMode cMode = GetConnectModeByName(CustomComboBoxSettingQcConnectMode.SelectedItem.ToString());
+        ConnectMode cMode = ConnectMode.ConnectToWorkingServers;
+        if (CustomComboBoxSettingQcConnectMode.SelectedItem != null)
+            cMode = GetConnectModeByName(CustomComboBoxSettingQcConnectMode.SelectedItem.ToString());
         CustomCheckBoxSettingQcUseSavedServers.Enabled = cMode == ConnectMode.ConnectToWorkingServers;
         CustomCheckBoxSettingQcCheckAllServers.Enabled = cMode == ConnectMode.ConnectToWorkingServers && !CustomCheckBoxSettingQcUseSavedServers.Checked;
         CustomCheckBoxSettingQcSetProxy.Enabled = CustomCheckBoxSettingQcStartProxyServer.Checked;
@@ -631,7 +785,7 @@ public partial class FormMain
         {
             while (true)
             {
-                await Task.Delay(1000);
+                await Task.Delay(1500);
                 await Task.Run(() => UpdateStatusLong());
             }
         });
@@ -639,82 +793,92 @@ public partial class FormMain
 
     private void UpdateStatusLong()
     {
-        // Update Status Working Servers
+        // Update Int Working Servers
         NumberOfWorkingServers = WorkingDnsList.Count;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Value = NumberOfWorkingServers);
 
-        // Update Status IsConnected
-        string textConnect = IsConnected ? "Yes" : "No";
-        Color colorConnect = IsConnected ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[1].Cells[1].Style.ForeColor = colorConnect);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[1].Cells[1].Value = textConnect);
+        if (CustomDataGridViewStatus.RowCount == 14 && Visible)
+        {
+            // Update Status Working Servers
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Value = NumberOfWorkingServers);
 
-        // Update Status IsDNSConnected
-        string statusLocalDNS = IsDNSConnected ? "Online" : "Offline";
-        Color colorStatusLocalDNS = IsDNSConnected ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[2].Cells[1].Style.ForeColor = colorStatusLocalDNS);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[2].Cells[1].Value = statusLocalDNS);
+            // Update Status IsConnected
+            string textConnect = IsConnected ? "Yes" : "No";
+            Color colorConnect = IsConnected ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[1].Cells[1].Style.ForeColor = colorConnect);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[1].Cells[1].Value = textConnect);
 
-        // Update Status LocalDnsLatency
-        string statusLocalDnsLatency = LocalDnsLatency != -1 ? $"{LocalDnsLatency}" : "-1";
-        Color colorStatusLocalDnsLatency = LocalDnsLatency != -1 ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[3].Cells[1].Style.ForeColor = colorStatusLocalDnsLatency);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[3].Cells[1].Value = statusLocalDnsLatency);
+            // Update Status IsDNSConnected
+            string statusLocalDNS = IsDNSConnected ? "Online" : "Offline";
+            Color colorStatusLocalDNS = IsDNSConnected ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[2].Cells[1].Style.ForeColor = colorStatusLocalDNS);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[2].Cells[1].Value = statusLocalDNS);
 
-        // Update Status IsDoHConnected
-        string statusLocalDoH = IsDoHConnected ? "Online" : "Offline";
-        Color colorStatusLocalDoH = IsDoHConnected ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[4].Cells[1].Style.ForeColor = colorStatusLocalDoH);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[4].Cells[1].Value = statusLocalDoH);
+            // Update Status LocalDnsLatency
+            string statusLocalDnsLatency = LocalDnsLatency != -1 ? $"{LocalDnsLatency}" : "-1";
+            Color colorStatusLocalDnsLatency = LocalDnsLatency != -1 ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[3].Cells[1].Style.ForeColor = colorStatusLocalDnsLatency);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[3].Cells[1].Value = statusLocalDnsLatency);
 
-        // Update Status LocalDohLatency
-        string statusLocalDoHLatency = LocalDohLatency != -1 ? $"{LocalDohLatency}" : "-1";
-        Color colorStatusLocalDoHLatency = LocalDohLatency != -1 ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[5].Cells[1].Style.ForeColor = colorStatusLocalDoHLatency);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[5].Cells[1].Value = statusLocalDoHLatency);
+            // Update Status IsDoHConnected
+            string statusLocalDoH = IsDoHConnected ? "Online" : "Offline";
+            Color colorStatusLocalDoH = IsDoHConnected ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[4].Cells[1].Style.ForeColor = colorStatusLocalDoH);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[4].Cells[1].Value = statusLocalDoH);
 
-        // Update Status IsDnsSet
-        string textDNS = IsDNSSet ? "Yes" : "No";
-        Color colorDNS = IsDNSSet ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[6].Cells[1].Style.ForeColor = colorDNS);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[6].Cells[1].Value = textDNS);
+            // Update Status LocalDohLatency
+            string statusLocalDoHLatency = LocalDohLatency != -1 ? $"{LocalDohLatency}" : "-1";
+            Color colorStatusLocalDoHLatency = LocalDohLatency != -1 ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[5].Cells[1].Style.ForeColor = colorStatusLocalDoHLatency);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[5].Cells[1].Value = statusLocalDoHLatency);
 
-        // Update Status IsSharing
-        string textSharing = IsProxyRunning ? "Yes" : "No";
-        Color colorSharing = IsProxyRunning ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[7].Cells[1].Style.ForeColor = colorSharing);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[7].Cells[1].Value = textSharing);
+            // Update Status IsDnsSet
+            string textDNS = IsDNSSet ? "Yes" : "No";
+            Color colorDNS = IsDNSSet ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[6].Cells[1].Style.ForeColor = colorDNS);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[6].Cells[1].Value = textDNS);
 
-        // Update Status ProxyRequests
-        string textProxyRequests = "0 of 0";
-        Color colorProxyRequests = Color.MediumSeaGreen;
-        textProxyRequests = $"{ProxyRequests} of {ProxyMaxRequests}";
-        colorProxyRequests = ProxyRequests < ProxyMaxRequests ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[8].Cells[1].Style.ForeColor = colorProxyRequests);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[8].Cells[1].Value = textProxyRequests);
+            // Update Status IsSharing
+            string textSharing = IsProxyRunning ? "Yes" : "No";
+            Color colorSharing = IsProxyRunning ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[7].Cells[1].Style.ForeColor = colorSharing);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[7].Cells[1].Value = textSharing);
 
-        // Update Status IsProxySet
-        string textProxySet = IsProxySet ? "Yes" : "No";
-        Color colorProxySet = IsProxySet ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[9].Cells[1].Style.ForeColor = colorProxySet);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[9].Cells[1].Value = textProxySet);
+            // Update Status ProxyRequests
+            string textProxyRequests = "0";// "0 of 0"
+            Color colorProxyRequests = Color.MediumSeaGreen;
+            textProxyRequests = $"{ProxyRequests}"; // $"{ProxyRequests} of {ProxyMaxRequests}"
+            colorProxyRequests = ProxyRequests < ProxyMaxRequests ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[8].Cells[1].Style.ForeColor = colorProxyRequests);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[8].Cells[1].Value = textProxyRequests);
 
-        // Update Status IsProxyDPIActive
-        string textProxyDPI = IsProxyDpiBypassActive ? "Active" : "Inactive";
-        Color colorProxyDPI = IsProxyDpiBypassActive ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[10].Cells[1].Style.ForeColor = colorProxyDPI);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[10].Cells[1].Value = textProxyDPI);
+            // Update Status IsProxySet
+            string textProxySet = IsProxySet ? "Yes" : "No";
+            Color colorProxySet = IsProxySet ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[9].Cells[1].Style.ForeColor = colorProxySet);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[9].Cells[1].Value = textProxySet);
 
-        // Update Status IsGoodbyeDPIActive
-        string textGoodbyeDPI = (IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive) ? "Active" : "Inactive";
-        Color colorGoodbyeDPI = (IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive) ? Color.MediumSeaGreen : Color.IndianRed;
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[11].Cells[1].Style.ForeColor = colorGoodbyeDPI);
-        this.InvokeIt(() => CustomDataGridViewStatus.Rows[11].Cells[1].Value = textGoodbyeDPI);
+            // Update Status IsProxyDPIActive (Fragment Or SSL)
+            string textProxyDPI = IsProxyDpiBypassActive || IsProxySSLChangeSniToIpActive ? "Active" : "Inactive";
+            Color colorProxyDPI = IsProxyDpiBypassActive || IsProxySSLChangeSniToIpActive ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[10].Cells[1].Style.ForeColor = colorProxyDPI);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[10].Cells[1].Value = textProxyDPI);
 
+            // Update Status IsGoodbyeDPIActive
+            string textGoodbyeDPI = (IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive) ? "Active" : "Inactive";
+            Color colorGoodbyeDPI = (IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive) ? Color.MediumSeaGreen : Color.IndianRed;
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[11].Cells[1].Style.ForeColor = colorGoodbyeDPI);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[11].Cells[1].Value = textGoodbyeDPI);
+
+            // 12: CPU
+
+            // Empty Status to Keep Width Fixed
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[13].Cells[1].Value = "               ");
+        }
+        
         // Internet Status
         //if (IsConnected && !IsConnecting && !IsDNSConnected)
-            WriteNetworkStatus();
+        WriteNetworkStatus();
 
         // Play Audio Alert
         if (!CustomCheckBoxSettingDisableAudioAlert.Checked && !IsCheckingStarted && !IsExiting)
@@ -725,7 +889,6 @@ public partial class FormMain
         }
 
         // Bar Color
-        IsInActionState = IsInAction(false, true, true, true, true, true, true, true, true, true, true);
         if (!IsInActionState)
             this.InvokeIt(() => SplitContainerMain.BackColor = IsDNSConnected ? Color.MediumSeaGreen : Color.IndianRed);
         else
@@ -736,25 +899,9 @@ public partial class FormMain
             this.InvokeIt(() => CustomButtonConnect.SetToolTip(MainToolTip, string.Empty, string.Empty));
     }
 
-    private async void UpdateStatusNicAuto()
+    private void UpdateStatusNic() // Auto Update will increase CPU usage "WmiPrvSE.exe"
     {
-        await Task.Run(async () =>
-        {
-            while (true)
-            {
-                await Task.Delay(500);
-                await Task.Run(() => UpdateStatusNic());
-            }
-        });
-    }
-
-    private void UpdateStatusNic()
-    {
-        // Update Size Of GroupBoxNicStatus
-        int space = 6;
-        this.InvokeIt(() => CustomGroupBoxNicStatus.Width = TabPageSetDNS.Width - CustomGroupBoxNicStatus.Left - space);
-        this.InvokeIt(() => CustomGroupBoxNicStatus.Height = TabPageSetDNS.Height - CustomGroupBoxNicStatus.Top - space);
-
+        if (Program.Startup) return;
         // Variables
         bool isNicDisabled = false;
         string e = string.Empty;
@@ -767,7 +914,7 @@ public partial class FormMain
         this.InvokeIt(() => selectedItem = CustomComboBoxNICs.SelectedItem);
         if (selectedItem != null)
         {
-            this.InvokeIt(() => nicName = selectedItem.ToString());
+            try { this.InvokeIt(() => nicName = selectedItem.ToString()); } catch (Exception) { }
             if (!string.IsNullOrEmpty(nicName))
             {
                 NetworkInterfaces nis = new(nicName);
@@ -805,85 +952,107 @@ public partial class FormMain
         // Update CustomButtonEnableDisableNic Text
         this.InvokeIt(() => CustomButtonEnableDisableNic.Text = isNicDisabled ? "Enable NIC" : "Disable NIC");
 
-        // Update Name
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[0].Cells[1].Value = name);
+        try
+        {
+            if (CustomDataGridViewNicStatus.RowCount == 14)
+            {
+                // Update Name
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[0].Cells[1].Value = name);
 
-        // Update Description
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].Value = description);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].ToolTipText = description);
+                // Update Description
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].Value = description);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[1].Cells[1].ToolTipText = description);
 
-        // Update AdapterType
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[2].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[2].Cells[1].Value = adapterType);
+                // Update AdapterType
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[2].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[2].Cells[1].Value = adapterType);
 
-        // Update Availability
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[3].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[3].Cells[1].Value = availability);
+                // Update Availability
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[3].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[3].Cells[1].Value = availability);
 
-        // Update Status
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[4].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[4].Cells[1].Value = status);
+                // Update Status
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[4].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[4].Cells[1].Value = status);
 
-        // Update Net Status
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[5].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[5].Cells[1].Value = netStatus);
+                // Update Net Status
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[5].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[5].Cells[1].Value = netStatus);
 
-        // Update DNSAddresses
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].Value = dnsAddresses);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].ToolTipText = dnsAddresses);
+                // Update DNSAddresses
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].Value = dnsAddresses);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[6].Cells[1].ToolTipText = dnsAddresses);
 
-        // Update GUID
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[7].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[7].Cells[1].Value = guid);
+                // Update GUID
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[7].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[7].Cells[1].Value = guid);
 
-        // Update MACAddress
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[8].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[8].Cells[1].Value = macAddress);
+                // Update MACAddress
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[8].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[8].Cells[1].Value = macAddress);
 
-        // Update Manufacturer
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[9].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[9].Cells[1].Value = manufacturer);
+                // Update Manufacturer
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[9].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[9].Cells[1].Value = manufacturer);
 
-        // Update IsPhysicalAdapter
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[10].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[10].Cells[1].Value = isPhysicalAdapter);
+                // Update IsPhysicalAdapter
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[10].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[10].Cells[1].Value = isPhysicalAdapter);
 
-        // Update ServiceName
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[11].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[11].Cells[1].Value = serviceName);
+                // Update ServiceName
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[11].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[11].Cells[1].Value = serviceName);
 
-        // Update Speed
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[12].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[12].Cells[1].Value = speed);
+                // Update Speed
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[12].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[12].Cells[1].Value = speed);
 
-        // Update TimeOfLastReset
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[13].Cells[1].Style.ForeColor = Color.DodgerBlue);
-        this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[13].Cells[1].Value = timeOfLastReset);
+                // Update TimeOfLastReset
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[13].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[13].Cells[1].Value = timeOfLastReset);
+            }
+        }
+        catch (Exception)
+        {
+            // do nothing
+        }
     }
 
-    private void UpdateStatusCpuUsageAuto()
+    private async void UpdateStatusCpuUsageAuto()
     {
-        Task.Run(async () =>
+        await Task.Run(async () =>
         {
             while (true)
             {
-                int delay = 1500;
-                double cpu = await GetCpuUsage(delay);
                 await Task.Delay(3000);
-                // Update Status CPU Usage
-                Color colorCPU = cpu <= 35 ? Color.MediumSeaGreen : Color.IndianRed;
+                if (!Visible) continue;
 
-                this.InvokeIt(() => CustomDataGridViewStatus.Rows[12].Cells[1].Style.ForeColor = colorCPU);
-                this.InvokeIt(() => CustomDataGridViewStatus.Rows[12].Cells[1].Value = $"{cpu}%");
+                await UpdateStatusCpuUsage();
             }
         });
     }
 
+    private async Task UpdateStatusCpuUsage()
+    {
+        int delay = 1500;
+        double cpu = await GetCpuUsage(delay);
+        // Update Status CPU Usage
+        Color colorCPU = cpu <= 35 ? Color.MediumSeaGreen : Color.IndianRed;
+
+        if (CustomDataGridViewStatus.RowCount == 14)
+        {
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[12].Cells[1].Style.ForeColor = colorCPU);
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[12].Cells[1].Value = $"{cpu}%");
+        }
+    }
+
     private async Task<double> GetCpuUsage(int delay)
     {
+        if (Program.Startup) return 0;
+
         float sdc = -1, sdcProxyServer = -1, sdcFakeProxy = -1;
         float dnsproxy1 = -1, dnscrypt1 = -1, goodbyeDpiBasic = -1, goodbyeDpiAdvanced = -1;
         float dnsproxy2 = -1, dnscrypt2 = -1, goodbyeDpiBypass = -1;
@@ -898,7 +1067,7 @@ public partial class FormMain
         Task h = Task.Run(async () => goodbyeDpiBasic = await ProcessManager.GetCpuUsage(PIDGoodbyeDPIBasic, delay));
         Task i = Task.Run(async () => goodbyeDpiAdvanced = await ProcessManager.GetCpuUsage(PIDGoodbyeDPIAdvanced, delay));
         Task j = Task.Run(async () => goodbyeDpiBypass = await ProcessManager.GetCpuUsage(PIDGoodbyeDPIBypass, delay));
-
+        
         await Task.WhenAll(a, b, c, d, e, f, g, h, i, j);
 
         float sum = 0;
@@ -950,13 +1119,19 @@ public partial class FormMain
         await AppSettings.SaveAsync(SecureDNS.SettingsXmlPath);
     }
 
-    private void WriteNetworkStatus()
+    private async void WriteNetworkStatus()
     {
+        if (!IsAppReady) return;
+        if (IsExiting) return;
         if (InternetOffline && !IsInternetOnline)
         {
             InternetOffline = false;
             InternetOnline = true;
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{NL}There is no Internet connectivity.{NL}", Color.IndianRed));
+
+            // Help System To Connect
+            await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
+            await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
         }
 
         if (InternetOnline && IsInternetOnline)

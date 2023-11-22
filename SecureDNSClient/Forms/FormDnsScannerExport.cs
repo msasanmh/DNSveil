@@ -1,8 +1,6 @@
-﻿using System;
-using System.Data;
+﻿using System.Data;
 using System.Text;
 using CustomControls;
-using System.Diagnostics;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using MsmhToolsClass;
@@ -15,9 +13,10 @@ public partial class FormDnsScannerExport : Form
     // Settings XML path
     private static readonly string SettingsXmlPath = SecureDNS.SettingsXmlDnsScannerExport;
     private readonly Settings AppSettings;
-    private List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool>>> ExportList = new();
+    private List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>>> ExportList = new();
+    private readonly List<string> ResultList = new();
 
-    public FormDnsScannerExport(List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool>>> exportList)
+    public FormDnsScannerExport(List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>>> exportList)
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         InitializeComponent();
@@ -29,6 +28,9 @@ public partial class FormDnsScannerExport : Form
 
         // Load Theme
         Theme.LoadTheme(this, Theme.Themes.Dark);
+
+        // Text
+        Text = "Export Dns Scanner Data (Only Online Servers)";
 
         // Initialize and load Settings
         if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
@@ -51,15 +53,21 @@ public partial class FormDnsScannerExport : Form
         CustomCheckBoxSecureOnline.Left = CustomLabelFilterExport.Left;
         CustomCheckBoxSecureOnline.Top = CustomLabelFilterExport.Bottom + spaceV;
 
-        CustomCheckBoxGoogleSafeSearchActive.Left = CustomCheckBoxSecureOnline.Right + spaceH;
-        CustomCheckBoxGoogleSafeSearchActive.Top = CustomCheckBoxSecureOnline.Top;
+        CustomCheckBoxInsecureOnline.Left = CustomCheckBoxSecureOnline.Right + (spaceH * 5);
+        CustomCheckBoxInsecureOnline.Top = CustomCheckBoxSecureOnline.Top;
 
         spaceV = 6;
-        CustomCheckBoxInsecureOnline.Left = spaceRight;
-        CustomCheckBoxInsecureOnline.Top = CustomCheckBoxSecureOnline.Bottom + spaceV;
+        CustomCheckBoxGoogleSafeSearchActive.Left = spaceRight;
+        CustomCheckBoxGoogleSafeSearchActive.Top = CustomCheckBoxSecureOnline.Bottom + spaceV;
 
-        CustomCheckBoxAdultContentFilter.Left = CustomCheckBoxGoogleSafeSearchActive.Left;
-        CustomCheckBoxAdultContentFilter.Top = CustomCheckBoxGoogleSafeSearchActive.Bottom + spaceV;
+        CustomCheckBoxBingSafeSearchActive.Left = CustomCheckBoxInsecureOnline.Left;
+        CustomCheckBoxBingSafeSearchActive.Top = CustomCheckBoxGoogleSafeSearchActive.Top;
+
+        CustomCheckBoxYoutubeRestrictActive.Left = spaceRight;
+        CustomCheckBoxYoutubeRestrictActive.Top = CustomCheckBoxGoogleSafeSearchActive.Bottom + spaceV;
+
+        CustomCheckBoxAdultContentFilter.Left = CustomCheckBoxBingSafeSearchActive.Left;
+        CustomCheckBoxAdultContentFilter.Top = CustomCheckBoxYoutubeRestrictActive.Top;
 
         spaceV = 16;
         CustomRadioButtonSortBySecure.Left = spaceRight;
@@ -72,12 +80,15 @@ public partial class FormDnsScannerExport : Form
         CustomButtonExport.Left = CustomRadioButtonSortByInsecure.Left + (spaceH * 6);
         CustomButtonExport.Top = CustomRadioButtonSortByInsecure.Bottom + spaceV;
 
-        Width = CustomCheckBoxGoogleSafeSearchActive.Right + (spaceRight * 2) + (Width - ClientRectangle.Width);
+        Width = CustomCheckBoxBingSafeSearchActive.Right + (spaceRight * 2) + (Width - ClientRectangle.Width);
         Height = CustomButtonExport.Bottom + (spaceBottom * 2) + (Height - ClientRectangle.Height);
     }
 
     private async void CustomButtonExport_Click(object sender, EventArgs e)
     {
+        // Clear ResultList
+        ResultList.Clear();
+
         // Remove dups
         ExportList = ExportList.Distinct().ToList();
 
@@ -86,9 +97,6 @@ public partial class FormDnsScannerExport : Form
             ExportList = ExportList.OrderBy(x => x.Item4).ToList();
         else
             ExportList = ExportList.OrderBy(x => x.Item6).ToList();
-
-        // Result
-        string result = string.Empty;
 
         // Filter
         int count = 0;
@@ -100,27 +108,55 @@ public partial class FormDnsScannerExport : Form
             bool secureOnline = tuple.Item3;
             bool insecureOnline = tuple.Item5;
             bool isGoogleSafeSearchActive = tuple.Item7.Item1;
-            bool isAdultContentFilter = tuple.Item7.Item2;
+            bool isBingSafeSearchActive = tuple.Item7.Item2;
+            bool isYoutubeRestrictActive = tuple.Item7.Item3;
+            bool isAdultContentFilter = tuple.Item7.Item4;
 
-            if (((secureOnline && CustomCheckBoxSecureOnline.CheckState.HasFlag(CheckState.Checked)) ||
-                (!secureOnline && !CustomCheckBoxSecureOnline.CheckState.HasFlag(CheckState.Checked)) ||
-                (secureOnline || !secureOnline) && CustomCheckBoxSecureOnline.CheckState.HasFlag(CheckState.Indeterminate)) &&
-                ((insecureOnline && CustomCheckBoxInsecureOnline.CheckState.HasFlag(CheckState.Checked)) ||
-                (!insecureOnline && !CustomCheckBoxInsecureOnline.CheckState.HasFlag(CheckState.Checked)) ||
-                (insecureOnline || !insecureOnline) && CustomCheckBoxInsecureOnline.CheckState.HasFlag(CheckState.Indeterminate)) &&
-                ((isGoogleSafeSearchActive && CustomCheckBoxGoogleSafeSearchActive.CheckState.HasFlag(CheckState.Checked)) ||
-                (!isGoogleSafeSearchActive && !CustomCheckBoxGoogleSafeSearchActive.CheckState.HasFlag(CheckState.Checked)) ||
-                (isGoogleSafeSearchActive || !isGoogleSafeSearchActive) && CustomCheckBoxGoogleSafeSearchActive.CheckState.HasFlag(CheckState.Indeterminate)) &&
-                ((isAdultContentFilter && CustomCheckBoxAdultContentFilter.CheckState.HasFlag(CheckState.Checked)) ||
-                (!isAdultContentFilter && !CustomCheckBoxAdultContentFilter.CheckState.HasFlag(CheckState.Checked)) ||
-                (isAdultContentFilter || !isAdultContentFilter) && CustomCheckBoxAdultContentFilter.CheckState.HasFlag(CheckState.Indeterminate)))
+            bool mainState1 = (secureOnline && CustomCheckBoxSecureOnline.CheckState.HasFlag(CheckState.Checked)) ||
+                              (!secureOnline && !CustomCheckBoxSecureOnline.CheckState.HasFlag(CheckState.Checked)) ||
+                              (secureOnline || !secureOnline) && CustomCheckBoxSecureOnline.CheckState.HasFlag(CheckState.Indeterminate);
+
+            bool mainState2 = (insecureOnline && CustomCheckBoxInsecureOnline.CheckState.HasFlag(CheckState.Checked)) ||
+                              (!insecureOnline && !CustomCheckBoxInsecureOnline.CheckState.HasFlag(CheckState.Checked)) ||
+                              (insecureOnline || !insecureOnline) && CustomCheckBoxInsecureOnline.CheckState.HasFlag(CheckState.Indeterminate);
+
+            bool mainState3 = (isGoogleSafeSearchActive && CustomCheckBoxGoogleSafeSearchActive.CheckState.HasFlag(CheckState.Checked)) ||
+                              (!isGoogleSafeSearchActive && !CustomCheckBoxGoogleSafeSearchActive.CheckState.HasFlag(CheckState.Checked)) ||
+                              (isGoogleSafeSearchActive || !isGoogleSafeSearchActive) && CustomCheckBoxGoogleSafeSearchActive.CheckState.HasFlag(CheckState.Indeterminate);
+
+            bool mainState4 = (isBingSafeSearchActive && CustomCheckBoxBingSafeSearchActive.CheckState.HasFlag(CheckState.Checked)) ||
+                              (!isBingSafeSearchActive && !CustomCheckBoxBingSafeSearchActive.CheckState.HasFlag(CheckState.Checked)) ||
+                              (isBingSafeSearchActive || !isBingSafeSearchActive) && CustomCheckBoxBingSafeSearchActive.CheckState.HasFlag(CheckState.Indeterminate);
+
+            bool mainState5 = (isYoutubeRestrictActive && CustomCheckBoxYoutubeRestrictActive.CheckState.HasFlag(CheckState.Checked)) ||
+                              (!isYoutubeRestrictActive && !CustomCheckBoxYoutubeRestrictActive.CheckState.HasFlag(CheckState.Checked)) ||
+                              (isYoutubeRestrictActive || !isYoutubeRestrictActive) && CustomCheckBoxYoutubeRestrictActive.CheckState.HasFlag(CheckState.Indeterminate);
+
+            bool mainState6 = (isAdultContentFilter && CustomCheckBoxAdultContentFilter.CheckState.HasFlag(CheckState.Checked)) ||
+                              (!isAdultContentFilter && !CustomCheckBoxAdultContentFilter.CheckState.HasFlag(CheckState.Checked)) ||
+                              (isAdultContentFilter || !isAdultContentFilter) && CustomCheckBoxAdultContentFilter.CheckState.HasFlag(CheckState.Indeterminate);
+
+            bool mainState = mainState1 && mainState2 && mainState3 && mainState4 && mainState5 && mainState6;
+
+            bool secureStateOnline = !string.IsNullOrEmpty(secureAddress) && secureOnline;
+            bool insecureStateOnline = !string.IsNullOrEmpty(insecureAddress) && insecureOnline;
+
+            if (mainState && secureStateOnline)
             {
-                if (!string.IsNullOrEmpty(secureAddress) && CustomCheckBoxSecureOnline.CheckState.HasFlag(CheckState.Checked))
-                    result += $"{secureAddress}{Environment.NewLine}";
-                if (!string.IsNullOrEmpty(insecureAddress) && CustomCheckBoxInsecureOnline.CheckState.HasFlag(CheckState.Checked))
-                    result += $"{insecureAddress}{Environment.NewLine}";
-                Debug.WriteLine(secureAddress);
-                if (!string.IsNullOrEmpty(secureAddress) || !string.IsNullOrEmpty(insecureAddress)) count++;
+                if (!ResultList.IsContain(secureAddress))
+                {
+                    ResultList.Add(secureAddress);
+                    count++;
+                }
+            }
+
+            if (mainState && insecureStateOnline)
+            {
+                if (!ResultList.IsContain(insecureAddress))
+                {
+                    ResultList.Add(insecureAddress);
+                    count++;
+                }
             }
         }
 
@@ -132,8 +168,17 @@ public partial class FormDnsScannerExport : Form
             return;
         }
 
+        // Result
+        string result = string.Empty;
+
+        for (int i = 0; i < ResultList.Count; i++)
+        {
+            string address = ResultList[i];
+            result += $"{address}{Environment.NewLine}";
+        }
+
         // Trim
-        result = result.TrimEnd(Environment.NewLine.ToCharArray());
+        result = result.TrimEnd(Environment.NewLine);
 
         // Open Save File Dialog
         using SaveFileDialog sfd = new();

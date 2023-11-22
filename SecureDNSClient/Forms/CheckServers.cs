@@ -1,8 +1,6 @@
-﻿using System.Net;
-using CustomControls;
+﻿using CustomControls;
 using MsmhToolsClass;
 using MsmhToolsClass.DnsTool;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace SecureDNSClient;
@@ -21,7 +19,7 @@ public partial class FormMain
             IsCheckingStarted = true;
 
             // Check Internet Connectivity
-            if (!IsInternetAlive())
+            if (!IsInternetOnline)
             {
                 IsCheckingStarted = false;
                 return;
@@ -123,8 +121,9 @@ public partial class FormMain
         if (string.IsNullOrEmpty(blockedDomain)) return false;
 
         // Clear Log on new Check
-        this.InvokeIt(() => CustomRichTextBoxLog.ResetText());
-
+        if (!Program.Startup)
+            this.InvokeIt(() => CustomRichTextBoxLog.ResetText());
+        
         // Check servers comment
         string checkingServers = "Checking servers:" + NL + NL;
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(checkingServers, Color.MediumSeaGreen));
@@ -133,28 +132,29 @@ public partial class FormMain
         string bootstrap = GetBootstrapSetting(out int bootstrapPort).ToString();
 
         // Series or Parallel
-        bool checkInParallel = CustomCheckBoxCheckInParallel.Checked;
+        int parallelSize = GetParallelSizeSetting();
+        bool checkInParallel = parallelSize > 1;
 
         // Get insecure state
         bool insecure = CustomCheckBoxInsecure.Checked;
-        int localPort = 5390;
 
-        // Check open ports
-        if (!checkInParallel)
-        {
-            bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
-            if (isPortOpen)
-            {
-                localPort = NetworkTool.GetNextPort(localPort);
-                isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
-                if (isPortOpen)
-                {
-                    localPort = NetworkTool.GetNextPort(localPort);
-                    bool isPortOk = GetListeningPort(localPort, "You need to resolve the conflict.", Color.IndianRed);
-                    if (!isPortOk) return false;
-                }
-            }
-        }
+        //// Check open ports
+        //int localPort = 5390;
+        //if (!checkInParallel)
+        //{
+        //    bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
+        //    if (isPortOpen)
+        //    {
+        //        localPort = NetworkTool.GetNextPort(localPort);
+        //        isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
+        //        if (isPortOpen)
+        //        {
+        //            localPort = NetworkTool.GetNextPort(localPort);
+        //            bool isPortOk = GetListeningPort(localPort, "You need to resolve the conflict.", Color.IndianRed);
+        //            if (!isPortOk) return false;
+        //        }
+        //    }
+        //}
 
         // Built-in or Custom
         IsBuiltinMode = CustomRadioButtonBuiltIn.Checked;
@@ -226,7 +226,7 @@ public partial class FormMain
         }
 
         // init Check DNS
-        CheckDns checkDns = new(false, GetCPUPriority());
+        CheckDns checkDns = new(insecure, false, GetCPUPriority());
 
         // FlushDNS(); // Flush DNS makes first line always return failed
 
@@ -249,15 +249,10 @@ public partial class FormMain
         if (dnsList.Count > 2)
             await checkDns.CheckDnsAsync(blockedDomainNoWww, dnsList[2], 500);
 
-        if (insecure)
-            await checkSeries();
+        if (checkInParallel)
+            await checkParallel();
         else
-        {
-            if (checkInParallel)
-                await checkParallel();
-            else
-                await checkSeries();
-        }
+            await checkSeries();
 
         async Task checkSeries()
         {
@@ -295,13 +290,15 @@ public partial class FormMain
         {
             await Task.Run(async () =>
             {
-                int splitSize = 5;
+                int splitSize = parallelSize;
                 var lists = dnsList.SplitToLists(splitSize);
                 int count = 0;
 
                 this.InvokeIt(() => CustomProgressBarCheck.StopTimer = false);
                 this.InvokeIt(() => CustomProgressBarCheck.ChunksColor = Color.DodgerBlue);
-                this.InvokeIt(() => CustomProgressBarCheck.Maximum = lists.Count);
+                this.InvokeIt(() => CustomProgressBarCheck.Minimum = 0);
+                this.InvokeIt(() => CustomProgressBarCheck.Value = 0);
+                this.InvokeIt(() => CustomProgressBarCheck.Maximum = dnsCount);
                 for (int n = 0; n < lists.Count; n++)
                 {
                     if (StopChecking)
@@ -317,10 +314,11 @@ public partial class FormMain
                     count += list.Count;
                     string checkDetail = $"{count} of {dnsCount}";
                     this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
-                    this.InvokeIt(() => CustomProgressBarCheck.Value = n);
 
                     await Parallel.ForEachAsync(list, async (dns, cancellationToken) =>
                     {
+                        if (StopChecking) return;
+                        this.InvokeIt(() => CustomProgressBarCheck.Value += 1);
                         await checkOne(dns, -1);
                     });
                     
@@ -329,7 +327,7 @@ public partial class FormMain
                     {
                         checkDetail = $"{dnsCount} of {dnsCount}";
                         this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
-                        this.InvokeIt(() => CustomProgressBarCheck.Value = lists.Count);
+                        this.InvokeIt(() => CustomProgressBarCheck.Value = dnsCount);
                     }
                 }
             });
@@ -350,17 +348,17 @@ public partial class FormMain
                     // Get DNS Details
                     DnsReader dnsReader = new(dns, companyDataContent);
 
-                    // Get Unknown Companies (Debug Only)
+                    //// Get Unknown Companies (Debug Only)
                     //if (dnsReader.CompanyName.ToLower().Contains("couldn't retrieve"))
                     //{
                     //    string p = @"C:\Users\msasa\OneDrive\Desktop\getInfo.txt";
                     //    FileDirectory.CreateEmptyFile(p);
                     //    string serv = dnsReader.Host;
                     //    if (string.IsNullOrEmpty(serv) && !string.IsNullOrEmpty(dnsReader.IP)) serv = dnsReader.IP;
-                    //    FileDirectory.AppendTextLine(p, serv, new UTF8Encoding(false));
+                    //    FileDirectory.AppendTextLine(p, serv, new System.Text.UTF8Encoding(false));
                     //}
                     //if (dnsReader.CompanyName.ToLower().Contains("china"))
-                    //    Debug.WriteLine("CHINA: " + dns);
+                    //    System.Diagnostics.Debug.WriteLine("CHINA: " + dns);
 
                     // Apply Protocol Selection
                     bool matchRules = CheckDnsMatchRules(dnsReader);
@@ -374,60 +372,33 @@ public partial class FormMain
                     // Is this being called by parallel?
                     bool isParallel = lineNumber == -1;
 
-                    if (checkDns.CheckForFilters)
-                    {
-                        // Generate Google Force Safe Search IPs
-                        checkDns.GenerateGoogleSafeSearchIps(dns);
-
-                        // Generate Adult IPs
-                        checkDns.GenerateAdultDomainIps(dns);
-                    }
-
-                    if (insecure)
-                        await checkDns.CheckDnsAsync(true, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
-                    else
-                    {
-                        if (isParallel)
-                            await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
-                        else
-                            await checkDns.CheckDnsAsync(false, blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
-                    }
+                    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
+                    //if (isParallel)
+                    //    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
+                    //else
+                    //    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
 
                     // Get Status and Latency
                     bool dnsOK = checkDns.IsDnsOnline;
                     int latency = checkDns.DnsLatency;
 
-                    if (checkDns.IsSafeSearch || checkDns.IsAdultFilter)
-                    {
-                        Debug.WriteLine("==== Debug ====");
-                        Debug.WriteLine(dns);
-                        Debug.WriteLine("IsSafeSearch: " + checkDns.IsSafeSearch);
-                        Debug.WriteLine("IsAdultFilter: " + checkDns.IsAdultFilter);
-                    }
-
                     // Add working DNS to list
                     if (dnsOK)
                     {
-                        if (!checkDns.CheckForFilters ||
-                            (checkDns.CheckForFilters && !checkDns.IsSafeSearch && !checkDns.IsAdultFilter))
-                        {
-                            WorkingDnsList.Add(new Tuple<long, string>(latency, dns));
+                        WorkingDnsList.Add(new Tuple<long, string>(latency, dns));
 
-                            // Add working DNS to list to export
-                            if (!IsBuiltinMode)
-                                WorkingDnsAndLatencyListToFile.Add(new Tuple<long, string>(latency, dns));
-                        }
-                        else
-                        {
-                            // Has Filter
-                            return;
-                        }
+                        // Add working DNS to list to export
+                        if (!IsBuiltinMode)
+                            WorkingDnsAndLatencyListToFile.Add(new Tuple<long, string>(latency, dns));
                     }
 
                     // Checked servers ++
                     numberOfCheckedServers++;
 
-                    if (checkInParallel)
+                    if (isParallel) writeStatusToLogParallel();
+                    else writeStatusToLogSeries();
+
+                    void writeStatusToLogParallel()
                     {
                         // Write short status to log
                         string status = dnsOK ? "OK" : "Failed";
@@ -468,10 +439,8 @@ public partial class FormMain
                         string msgShort = $"[{status}] [{latency}]{host}{protocol}{resultCompany}{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgShort, color));
                     }
-                    else
-                        writeStatusToLog();
 
-                    void writeStatusToLog()
+                    void writeStatusToLogSeries()
                     {
                         // Write line number to log
                         if (lineNumber != -1)

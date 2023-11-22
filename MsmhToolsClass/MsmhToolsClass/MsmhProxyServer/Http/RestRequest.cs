@@ -350,9 +350,9 @@ public class RestRequest
     /// </summary>
     /// <param name="token">Cancellation token.</param>
     /// <returns>RestResponse.</returns>
-    public Task<RestResponse?> SendAsync(CancellationToken token = default)
+    public async Task<RestResponse?> SendAsync(CancellationToken token = default)
     {
-        return SendInternalAsync(0, null, token);
+        return await SendInternalAsync(0, null, token);
     }
 
     /// <summary>
@@ -362,7 +362,7 @@ public class RestRequest
     /// <param name="form">Dictionary.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>RestResponse.</returns>
-    public Task<RestResponse?> SendAsync(Dictionary<string, string> form, CancellationToken token = default)
+    public async Task<RestResponse?> SendAsync(Dictionary<string, string> form, CancellationToken token = default)
     {
         // refer to https://github.com/dotnet/runtime/issues/22811
         form ??= new Dictionary<string, string>();
@@ -371,7 +371,7 @@ public class RestRequest
         byte[] bytes = Encoding.UTF8.GetBytes(content.ReadAsStringAsync(token).Result);
         ContentLength = bytes.Length;
         if (string.IsNullOrEmpty(ContentType)) ContentType = "application/x-www-form-urlencoded";
-        return SendAsync(bytes, token);
+        return await SendAsync(bytes, token);
     }
 
     /// <summary>
@@ -380,10 +380,10 @@ public class RestRequest
     /// <param name="data">A string containing the data you wish to send to the server (does not work with GET requests).</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>RestResponse.</returns>
-    public Task<RestResponse?> SendAsync(string data, CancellationToken token = default)
+    public async Task<RestResponse?> SendAsync(string data, CancellationToken token = default)
     {
-        if (string.IsNullOrEmpty(data)) return SendAsync(token);
-        return SendAsync(Encoding.UTF8.GetBytes(data), token);
+        if (string.IsNullOrEmpty(data)) return await SendAsync(token);
+        return await SendAsync(Encoding.UTF8.GetBytes(data), token);
     }
 
     /// <summary>
@@ -392,7 +392,7 @@ public class RestRequest
     /// <param name="data">A byte array containing the data you wish to send to the server (does not work with GET requests).</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>RestResponse.</returns>
-    public Task<RestResponse?> SendAsync(byte[] data, CancellationToken token = default)
+    public async Task<RestResponse?> SendAsync(byte[] data, CancellationToken token = default)
     {
         long contentLength = 0;
         MemoryStream stream = new(Array.Empty<byte>());
@@ -404,7 +404,7 @@ public class RestRequest
             stream.Seek(0, SeekOrigin.Begin);
         }
 
-        return SendInternalAsync(contentLength, stream, token);
+        return await SendInternalAsync(contentLength, stream, token);
     }
 
     /// <summary>
@@ -414,9 +414,9 @@ public class RestRequest
     /// <param name="stream">A stream containing the data you wish to send to the server (does not work with GET requests).</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>RestResponse.</returns>
-    public Task<RestResponse?> SendAsync(long contentLength, Stream? stream, CancellationToken token = default)
+    public async Task<RestResponse?> SendAsync(long contentLength, Stream? stream, CancellationToken token = default)
     {
-        return SendInternalAsync(contentLength, stream, token);
+        return await SendInternalAsync(contentLength, stream, token);
     }
 
     private bool Validator(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
@@ -426,13 +426,12 @@ public class RestRequest
 
     private RestResponse? SendInternal(long contentLength, Stream? stream)
     {
-        RestResponse? resp = SendInternalAsync(contentLength, stream, CancellationToken.None).Result;
-        return resp;
+        return SendInternalAsync(contentLength, stream, CancellationToken.None).Result;
     }
 
     private async Task<RestResponse?> SendInternalAsync(long contentLength, Stream? stream, CancellationToken token)
     {
-        //if (string.IsNullOrEmpty(Url)) throw new ArgumentNullException(nameof(Url));
+        if (string.IsNullOrEmpty(Url)) return null;
 
         //Timestamps ts = new Timestamps();
 
@@ -600,7 +599,8 @@ public class RestRequest
             }
             catch (Exception)
             {
-                // do nothing
+                client.Dispose();
+                return null;
             }
 
             if (response != null)
@@ -637,9 +637,11 @@ public class RestRequest
                         ret.Data = await response.Content.ReadAsStreamAsync(token);
                 }
 
+                client.Dispose();
                 return ret;
             }
 
+            client.Dispose();
             return null;
         }
         catch (TaskCanceledException)

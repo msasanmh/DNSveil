@@ -94,8 +94,8 @@ public class SecureDNS
     public static readonly string OldCertificateDirPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate"));
 
     // Certificate Subject Names
-    public static readonly string CertIssuerSubjectName = "CN=SecureDNSClient Authority";
-    public static readonly string CertSubjectName = "CN=SecureDNSClient";
+    public static readonly string CertIssuerSubjectName = "SecureDNSClient Authority";
+    public static readonly string CertSubjectName = "SecureDNSClient";
 
     // Bootstrap and Fallback
     public static readonly IPAddress BootstrapDnsIPv4 = IPAddress.Parse("8.8.8.8");
@@ -146,8 +146,6 @@ public class SecureDNS
                 string productVersion = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion ?? "0.0.0";
                 string args = $"{counterUrl}?uid={uid}&sdcver={productVersion}";
 
-                if (!NetworkTool.IsInternetAlive()) return;
-
                 control.InvokeIt(() =>
                 {
                     WebBrowser webBrowser = new();
@@ -172,26 +170,27 @@ public class SecureDNS
 
     public static bool IsDomainValid(string domain)
     {
-        if (domain.StartsWith("http:", StringComparison.OrdinalIgnoreCase))
-            return false;
-        if (domain.StartsWith("https:", StringComparison.OrdinalIgnoreCase))
-            return false;
-        if (domain.Contains('/', StringComparison.OrdinalIgnoreCase))
-            return false;
+        if (string.IsNullOrEmpty(domain)) return false;
+        if (domain.StartsWith("http:", StringComparison.OrdinalIgnoreCase)) return false;
+        if (domain.StartsWith("https:", StringComparison.OrdinalIgnoreCase)) return false;
+        if (domain.Contains('/', StringComparison.OrdinalIgnoreCase)) return false;
+        if (!domain.Contains('.', StringComparison.OrdinalIgnoreCase)) return false;
         return true;
     }
 
-    public static bool IsBlockedDomainValid(CustomTextBox customTextBox, CustomRichTextBox customRichTextBox, out string blockedDomain)
+    public static bool IsBlockedDomainValid(CustomTextBox customTextBox, out string blockedDomain)
     {
         // Get DNS based blocked domain to check
         string domain = customTextBox.Text;
+        domain = domain.Trim();
+        if (domain.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) domain = domain[7..];
+        if (domain.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) domain = domain[8..];
+        if (domain.EndsWith("/", StringComparison.OrdinalIgnoreCase)) domain = domain.TrimEnd('/');
 
         // Check blocked domain is valid
         bool isBlockedDomainValid = IsDomainValid(domain);
         if (!isBlockedDomainValid)
         {
-            string blockedDomainIsNotValid = $"{domain} is not valid. Fix it in Settings section.{Environment.NewLine}";
-            customRichTextBox.InvokeIt(() => customRichTextBox.AppendText(blockedDomainIsNotValid, Color.IndianRed));
             blockedDomain = string.Empty;
             return false;
         }
@@ -340,6 +339,7 @@ public class SecureDNS
 
     public static void UpdateNICs(CustomComboBox ccb, bool upAndRunning, out List<string> availableNICs)
     {
+        ccb.Text = "Select a Network Adapter";
         object item = ccb.SelectedItem;
         ccb.Items.Clear();
         List<string> nics = NetworkInterfaces.GetAllNetworkInterfaces(upAndRunning);
@@ -372,6 +372,7 @@ public class SecureDNS
                 ccb.SelectedIndex = 0;
             ccb.DropDownHeight = nics.Count * ccb.Height;
         }
+        else ccb.SelectedIndex = -1;
     }
 
     // HostToCompany file Generator

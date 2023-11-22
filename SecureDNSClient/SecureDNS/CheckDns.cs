@@ -1,9 +1,7 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace SecureDNSClient;
 
@@ -15,23 +13,28 @@ public class CheckDns
     /// Returns -1 if DNS fail
     /// </summary>
     public int DnsLatency { get; private set; } = -1;
-    public bool IsSafeSearch { get; private set; } = false;
+    public bool IsGoogleSafeSearchEnabled { get; private set; } = false;
+    public bool IsBingSafeSearchEnabled { get; private set; } = false;
+    public bool IsYoutubeRestricted { get; private set; } = false;
     public bool IsAdultFilter { get; private set; } = false;
-    public bool CheckForFilters { get; private set; }
     public string AdultDomainToCheck { get; set; } = "pornhub.com";
-    private List<string> SafeSearchIpList { get; set; } = new();
+    private List<string> GoogleSafeSearchIpList { get; set; } = new();
+    private List<string> BingSafeSearchIpList { get; set; } = new();
+    private List<string> YoutubeRestrictIpList { get; set; } = new();
     private List<string> AdultIpList { get; set; } = new();
     private string DNS = string.Empty;
 
-    private static ProcessPriorityClass ProcessPriority;
+    public bool Insecure { get; private set; } = false;
+    public bool CheckForFilters { get; private set; } = false;
+    private ProcessPriorityClass ProcessPriority { get; set; } = ProcessPriorityClass.Normal;
+    private readonly int TimeoutMS = 10000;
 
     /// <summary>
     /// Check DNS Servers
     /// </summary>
-    /// <param name="checkForFilters">Check for Filters (Takes more time)</param>
-    /// <param name="processPriorityClass">Process Priority</param>
-    public CheckDns(bool checkForFilters, ProcessPriorityClass processPriorityClass)
+    public CheckDns(bool insecure, bool checkForFilters, ProcessPriorityClass processPriorityClass)
     {
+        Insecure = insecure;
         ProcessPriority = processPriorityClass;
         CheckForFilters = checkForFilters;
     }
@@ -41,26 +44,27 @@ public class CheckDns
     /// <summary>
     /// Check DNS and get latency (ms)
     /// </summary>
-    /// <param name="domain"></param>
-    /// <param name="dnsServer"></param>
-    /// <param name="timeoutMS"></param>
     public void CheckDNS(string domain, string dnsServer, int timeoutMS)
     {
         DNS = dnsServer;
         IsDnsOnline = false;
         Stopwatch stopwatch = new();
         stopwatch.Start();
-        IsDnsOnline = CheckDnsWork(domain, DNS, timeoutMS, ProcessPriority);
+        IsDnsOnline = CheckDnsWork(domain, DNS, timeoutMS);
         stopwatch.Stop();
 
         DnsLatency = IsDnsOnline ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
 
-        IsSafeSearch = false;
+        IsGoogleSafeSearchEnabled = false;
+        IsBingSafeSearchEnabled = false;
+        IsYoutubeRestricted = false;
         IsAdultFilter = false;
         if (CheckForFilters && IsDnsOnline)
         {
-            CheckDnsFilters(DNS, out bool isSafeSearch, out bool isAdultFilter);
-            IsSafeSearch = isSafeSearch;
+            CheckDnsFilters(DNS, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter);
+            IsGoogleSafeSearchEnabled = isGoogleSafeSearch;
+            IsBingSafeSearchEnabled = isBingSafeSearch;
+            IsYoutubeRestricted = isYoutubeRestricted;
             IsAdultFilter = isAdultFilter;
         }
     }
@@ -68,46 +72,43 @@ public class CheckDns
     /// <summary>
     /// Check DNS and get latency (ms)
     /// </summary>
-    /// <param name="domain"></param>
-    /// <param name="dnsServer"></param>
-    /// <param name="timeoutMS"></param>
-    public void CheckDNS(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
+    public void CheckDNS(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
     {
         DNS = dnsServer;
         IsDnsOnline = false;
         Stopwatch stopwatch = new();
         stopwatch.Start();
-        IsDnsOnline = CheckDnsWork(insecure, domain, DNS, timeoutMS, localPort, bootstrap, bootsratPort, ProcessPriority);
+        IsDnsOnline = CheckDnsWork(domain, DNS, timeoutMS, localPort, bootstrap, bootsratPort);
         stopwatch.Stop();
 
         DnsLatency = IsDnsOnline ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
 
-        IsSafeSearch = false;
+        IsGoogleSafeSearchEnabled = false;
+        IsBingSafeSearchEnabled = false;
+        IsYoutubeRestricted = false;
         IsAdultFilter = false;
         if (CheckForFilters && IsDnsOnline)
         {
-            CheckDnsFilters(DNS, out bool isSafeSearch, out bool isAdultFilter);
-            IsSafeSearch = isSafeSearch;
+            CheckDnsFilters(DNS, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter);
+            IsGoogleSafeSearchEnabled = isGoogleSafeSearch;
+            IsBingSafeSearchEnabled = isBingSafeSearch;
+            IsYoutubeRestricted = isYoutubeRestricted;
             IsAdultFilter = isAdultFilter;
         }
     }
 
-    private static bool CheckDnsWork(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
+    private bool CheckDnsWork(string domain, string dnsServer, int timeoutMS)
     {
         Process? process = null;
-        var task = Task.Run(() =>
+        Task<bool> task = Task.Run(async () =>
         {
-            Dictionary<string, string> evs = new();
-            evs.Add("JSON", "1");
-            string args = domain + " " + dnsServer;
-            string? result = ProcessManager.Execute(out process, SecureDNS.DnsLookup, evs, args, true, false, SecureDNS.CurrentPath, processPriorityClass, false);
+            string result = await GetDnsLookupJsonAsync(domain, dnsServer, timeoutMS, "A", true);
 
             if (string.IsNullOrEmpty(result)) return false;
             if (string.IsNullOrWhiteSpace(result)) return false;
             if (result.Contains("[fatal]")) return false;
 
             List<string> ips = GetDnsLookupAnswerRecordList(result);
-
             return ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
         });
 
@@ -123,20 +124,20 @@ public class CheckDns
         }
     }
 
-    private static bool CheckDnsWork(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
+    private bool CheckDnsWork(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
     {
         Task<bool> task = Task.Run(() =>
         {
             // Start local server
             string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
-            if (insecure) dnsProxyArgs += "--insecure ";
+            if (Insecure) dnsProxyArgs += "--insecure ";
             dnsProxyArgs += $"-u {dnsServer} -b {bootstrap}:{bootsratPort}";
-            int localServerPID = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsProxyArgs, true, false, SecureDNS.CurrentPath, processPriorityClass);
+            int localServerPID = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsProxyArgs, true, false, SecureDNS.CurrentPath, ProcessPriority);
 
             // Wait for DNSProxy
             SpinWait.SpinUntil(() => ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 500);
 
-            bool isOK = CheckDnsWork(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS, processPriorityClass);
+            bool isOK = CheckDnsWork(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
 
             ProcessManager.KillProcessByPID(localServerPID);
 
@@ -157,27 +158,27 @@ public class CheckDns
     /// <summary>
     /// Check DNS and get latency (ms)
     /// </summary>
-    /// <param name="domain"></param>
-    /// <param name="dnsServer"></param>
-    /// <param name="timeoutMS"></param>
-    /// <param name="processPriorityClass"></param>
     public async Task CheckDnsAsync(string domain, string dnsServer, int timeoutMS)
     {
         DNS = dnsServer;
         IsDnsOnline = false;
         Stopwatch stopwatch = new();
         stopwatch.Start();
-        IsDnsOnline = await CheckDnsWorkAsync(domain, DNS, timeoutMS, ProcessPriority);
+        IsDnsOnline = await CheckDnsWorkAsync(domain, DNS, timeoutMS);
         stopwatch.Stop();
 
         DnsLatency = IsDnsOnline ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
 
-        IsSafeSearch = false;
+        IsGoogleSafeSearchEnabled = false;
+        IsBingSafeSearchEnabled = false;
+        IsYoutubeRestricted = false;
         IsAdultFilter = false;
         if (CheckForFilters && IsDnsOnline)
         {
-            CheckDnsFilters(DNS, out bool isSafeSearch, out bool isAdultFilter);
-            IsSafeSearch = isSafeSearch;
+            CheckDnsFilters(DNS, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter);
+            IsGoogleSafeSearchEnabled = isGoogleSafeSearch;
+            IsBingSafeSearchEnabled = isBingSafeSearch;
+            IsYoutubeRestricted = isYoutubeRestricted;
             IsAdultFilter = isAdultFilter;
         }
     }
@@ -185,75 +186,55 @@ public class CheckDns
     /// <summary>
     /// Check DNS and get latency (ms)
     /// </summary>
-    /// <param name="domain"></param>
-    /// <param name="dnsServer"></param>
-    /// <param name="timeoutMS"></param>
-    /// <param name="processPriorityClass"></param>
-    public async Task CheckDnsAsync(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
+    public async Task CheckDnsAsync(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
     {
         DNS = dnsServer;
         IsDnsOnline = false;
         Stopwatch stopwatch = new();
         stopwatch.Start();
-        IsDnsOnline = await CheckDnsWorkAsync(insecure, domain, DNS, timeoutMS, localPort, bootstrap, bootsratPort, ProcessPriority);
+        IsDnsOnline = await CheckDnsWorkAsync(domain, DNS, timeoutMS, localPort, bootstrap, bootsratPort);
         stopwatch.Stop();
 
         DnsLatency = IsDnsOnline ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
 
-        IsSafeSearch = false;
+        IsGoogleSafeSearchEnabled = false;
+        IsBingSafeSearchEnabled = false;
+        IsYoutubeRestricted = false;
         IsAdultFilter = false;
         if (CheckForFilters && IsDnsOnline)
         {
-            CheckDnsFilters(DNS, out bool isSafeSearch, out bool isAdultFilter);
-            IsSafeSearch = isSafeSearch;
+            CheckDnsFilters(DNS, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter);
+            IsGoogleSafeSearchEnabled = isGoogleSafeSearch;
+            IsBingSafeSearchEnabled = isBingSafeSearch;
+            IsYoutubeRestricted = isYoutubeRestricted;
             IsAdultFilter = isAdultFilter;
         }
     }
 
-    private static async Task<bool> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS, ProcessPriorityClass processPriorityClass)
+    private async Task<bool> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS)
     {
-        Process? process = null;
-        try
-        {
-            Task<bool> task = Task.Run(() =>
-            {
-                Dictionary<string, string> evs = new();
-                evs.Add("JSON", "1");
-                string args = domain + " " + dnsServer;
-                string? result = ProcessManager.Execute(out process, SecureDNS.DnsLookup, evs, args, true, false, SecureDNS.CurrentPath, processPriorityClass, false);
+        string result = await GetDnsLookupJsonAsync(domain, dnsServer, timeoutMS, "A", true);
 
-                if (string.IsNullOrEmpty(result)) return false;
-                if (string.IsNullOrWhiteSpace(result)) return false;
-                if (result.Contains("[fatal]")) return false;
+        if (string.IsNullOrEmpty(result)) return false;
+        if (string.IsNullOrWhiteSpace(result)) return false;
+        if (result.Contains("[fatal]")) return false;
 
-                List<string> ips = GetDnsLookupAnswerRecordList(result);
-
-                return ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
-            });
-
-            bool result =  await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS));
-            try { process?.Kill(true); } catch (Exception) { }
-            return result;
-        }
-        catch (TimeoutException)
-        {
-            try { process?.Kill(true); } catch (Exception) { }
-            return false;
-        }
+        List<string> ips = GetDnsLookupAnswerRecordList(result);
+        return ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
     }
 
-    private static async Task<bool> CheckDnsWorkAsync(bool insecure, string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort, ProcessPriorityClass processPriorityClass)
+    private async Task<bool> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
     {
         // Start local server
         string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
-        if (insecure) dnsProxyArgs += "--insecure ";
+        if (Insecure) dnsProxyArgs += "--insecure ";
         dnsProxyArgs += $"-u {dnsServer} -b {bootstrap}:{bootsratPort}";
-        int localServerPID = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsProxyArgs, true, false, SecureDNS.CurrentPath, processPriorityClass);
+        int localServerPID = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsProxyArgs, true, false, SecureDNS.CurrentPath, ProcessPriority);
 
-        //Wait for DNSProxy
+        // Wait for DNSProxy
         SpinWait.SpinUntil(() => ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 500);
 
-        bool isOK = await CheckDnsWorkAsync(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS, processPriorityClass);
+        bool isOK = await CheckDnsWorkAsync(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
 
         ProcessManager.KillProcessByPID(localServerPID);
 
@@ -269,13 +250,8 @@ public class CheckDns
     {
         bool smart = false;
 
-        string realArg = $"{domain} {uncensoredDns}";
-        string realJson = GetDnsLookupJson(realArg).Result;
-        List<string> realDomainIPs = GetDnsLookupAnswerRecordList(realJson);
-
-        string arg = $"{domain} {DNS}";
-        string json = GetDnsLookupJson(arg).Result;
-        List<string> domainIPs = GetDnsLookupAnswerRecordList(json);
+        List<string> realDomainIPs = await GetARecordIPsAsync(domain, uncensoredDns);
+        List<string> domainIPs = await GetARecordIPsAsync(domain, DNS);
 
         // Method 1: Reverse Dns
         if (realDomainIPs.Any() && domainIPs.Any())
@@ -335,215 +311,184 @@ public class CheckDns
             }
         }
         return smart;
-
-        // Method 3: Checking Dns Responses // Not a good one
-        string jsonIpv6 = GetDnsLookupJson(arg, "AAAA").Result;
-        List<string> domainIPv6s = GetDnsLookupAnswerRecordList(jsonIpv6, "AAAA");
-
-        bool isIpMatch = false, isChecked = false;
-        for (int a = 0; a < domainIPs.Count; a++)
-        {
-            string domainIP = domainIPs[a];
-
-            if (!NetworkTool.IsLocalIP(domainIP))
-            {
-                for (int b = 0; b < realDomainIPs.Count; b++)
-                {
-                    string realDomainIP = realDomainIPs[b];
-                    if (domainIP.Equals(realDomainIP)) isIpMatch = true;
-                    if (b == realDomainIPs.Count - 1) isChecked = true;
-                }
-            }
-        }
-
-        bool realPseudo = HasExtraRecord(realJson);
-        bool pseudo = HasExtraRecord(json);
-
-        if (isChecked && !isIpMatch && !domainIPv6s.Any() && realPseudo != pseudo)
-            smart = true;
-
-        return smart;
     }
 
     //================================= Generate IPs
 
-    public void GenerateGoogleSafeSearchIps(string uncensoredDns)
+    public async Task GenerateGoogleSafeSearchIpsAsync(string uncensoredDns)
     {
-        if (!SafeSearchIpList.Any())
+        if (!GoogleSafeSearchIpList.Any())
         {
             string websiteSS = "forcesafesearch.google.com";
-            string argsSS = $"{websiteSS} {uncensoredDns}";
-            string jsonStrSS = GetDnsLookupJson(argsSS).Result;
-            SafeSearchIpList = GetDnsLookupAnswerRecordList(jsonStrSS);
-            Debug.WriteLine("Safe Search IPs Generated, Count: " + SafeSearchIpList.Count);
+            GoogleSafeSearchIpList = await GetARecordIPsAsync(websiteSS, uncensoredDns);
+            Debug.WriteLine("Google Safe Search IPs Generated, Count: " + GoogleSafeSearchIpList.Count);
         }
     }
 
-    public void GenerateAdultDomainIps(string uncensoredDns)
+    public async Task GenerateBingSafeSearchIpsAsync(string uncensoredDns)
+    {
+        if (!BingSafeSearchIpList.Any())
+        {
+            string websiteSS = "strict.bing.com";
+            BingSafeSearchIpList = await GetARecordIPsAsync(websiteSS, uncensoredDns);
+            Debug.WriteLine("Bing Safe Search IPs Generated, Count: " + BingSafeSearchIpList.Count);
+        }
+    }
+
+    public async Task GenerateYoutubeRestrictIpsAsync(string uncensoredDns)
+    {
+        if (!YoutubeRestrictIpList.Any())
+        {
+            string websiteR = "restrict.youtube.com";
+            string websiteRM = "restrictmoderate.youtube.com";
+            List<string> youtubeR = await GetARecordIPsAsync(websiteR, uncensoredDns);
+            List<string> youtubeRM = await GetARecordIPsAsync(websiteRM, uncensoredDns);
+
+            YoutubeRestrictIpList = youtubeR.Concat(youtubeRM).ToList();
+            Debug.WriteLine("Youtube Restrict IPs Generated, Count: " + YoutubeRestrictIpList.Count);
+        }
+    }
+
+    public async Task GenerateAdultDomainIpsAsync(string uncensoredDns)
     {
         if (!AdultIpList.Any())
         {
-            string argsAD = $"{AdultDomainToCheck} {uncensoredDns}";
-            string status = GetDnsLookupJson(argsAD, "TXT", false).Result; // RRTYPE: TXT, Format: Text
-            if (status.Contains("status: NOERROR") && status.Contains("verification"))
-            {
-                string jsonStrAD = GetDnsLookupJson(argsAD).Result; // RRTYPE: A, Format: Json
-                AdultIpList = GetDnsLookupAnswerRecordList(jsonStrAD);
-                if (AdultIpList.IsContain("0.0.0.0"))
-                    AdultIpList.Clear();
-                else
-                    Debug.WriteLine("Adult IPs Generated, Count: " + AdultIpList.Count);
-            }
+            string websiteAD = AdultDomainToCheck;
+            AdultIpList = await GetARecordIPsAsync(websiteAD, uncensoredDns);
+            Debug.WriteLine("Adult IPs Generated, Count: " + AdultIpList.Count);
         }
     }
 
     //================================= Check DNS Filters
 
-    private void CheckDnsFilters(string dnsServer, out bool isSafeSearch, out bool isAdultFilter)
+    private void CheckDnsFilters(string dnsServer, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter)
     {
-        bool isSafeSearchOut = false;
-        isSafeSearch = false;
-        bool isAdultFilterOut = false;
-        isAdultFilter = false;
+        bool isGoogleSafeSearchOut = false; isGoogleSafeSearch = false;
+        bool isBingSafeSearchOut = false; isBingSafeSearch = false;
+        bool isYoutubeRestrictedOut = false; isYoutubeRestricted = false;
+        bool isAdultFilterOut = false; isAdultFilter = false;
 
-        Task task = Task.Run(() =>
+        Task task = Task.Run(async () =>
         {
-            if (!SafeSearchIpList.Any())
-            {
-                string websiteSS = "forcesafesearch.google.com";
-                string argsSS = $"{websiteSS} {dnsServer}";
-                string jsonStrSS = GetDnsLookupJson(argsSS).Result;
-                SafeSearchIpList = GetDnsLookupAnswerRecordList(jsonStrSS);
-            }
+            await GenerateGoogleSafeSearchIpsAsync(dnsServer);
+            await GenerateBingSafeSearchIpsAsync(dnsServer);
+            await GenerateYoutubeRestrictIpsAsync(dnsServer);
+            await GenerateAdultDomainIpsAsync(dnsServer);
 
             // Check Google Force Safe Search
-            string args = $"google.com {dnsServer}";
-            string jsonStr = GetDnsLookupJson(args).Result;
-            string googleIp = GetDnsLookupARecord(jsonStr).Trim();
-            for (int i = 0; i < SafeSearchIpList.Count; i++)
+            if (GoogleSafeSearchIpList.Any())
             {
-                string safeIp = SafeSearchIpList[i].Trim();
-                if (googleIp.Equals(safeIp))
-                {
-                    isSafeSearchOut = true;
-                    break;
-                }
+                List<string> googleIpList = await GetARecordIPsAsync("google.com", dnsServer);
+                isGoogleSafeSearchOut = HasSameItem(googleIpList, GoogleSafeSearchIpList, true);
             }
 
+            // Check Bing Force Safe Search
+            if (BingSafeSearchIpList.Any())
+            {
+                List<string> bingIpList = await GetARecordIPsAsync("bing.com", dnsServer);
+                isBingSafeSearchOut = HasSameItem(bingIpList, BingSafeSearchIpList, true);
+            }
+
+            // Check Youtube Restriction
+            if (YoutubeRestrictIpList.Any())
+            {
+                List<string> youtubeIpList = await GetARecordIPsAsync("youtube.com", dnsServer);
+                isYoutubeRestrictedOut = HasSameItem(youtubeIpList, YoutubeRestrictIpList, true);
+            }
+            
             // Check Adult Filter
-            args = $"{AdultDomainToCheck} {dnsServer}";
             if (AdultIpList.Any())
             {
-                jsonStr = GetDnsLookupJson(args).Result; // RRTYPE: A, Format: Json
-                string adultIpNew = GetDnsLookupARecord(jsonStr).Trim();
-                int jj = 0;
-                for (int j = 0; j < AdultIpList.Count; j++)
-                {
-                    string adultIp = AdultIpList[j].Trim();
-                    if (adultIpNew.Equals(adultIp))
-                    {
-                        jj++; break;
-                    }
-                }
-                if (jj == 0) isAdultFilterOut = true;
-            }
-            else
-            {
-                string status = GetDnsLookupJson(args, "TXT", false).Result; // RRTYPE: TXT, Format: Text
-                if ((status.Contains("status:") && !status.Contains("status: NOERROR")) ||
-                    (status.Contains("status: NOERROR") && !status.Contains("verification")))
-                    isAdultFilterOut = true;
+                List<string> adultIpList = await GetARecordIPsAsync(AdultDomainToCheck, dnsServer);
+                isAdultFilterOut = HasLocalIP(adultIpList);
+                if (!isAdultFilterOut)
+                    isAdultFilterOut = !HasSameItem(adultIpList, AdultIpList, false);
             }
         });
 
         try { task.Wait(); } catch (Exception) { }
 
-        isSafeSearch = isSafeSearchOut;
+        isGoogleSafeSearch = isGoogleSafeSearchOut;
+        isBingSafeSearch = isBingSafeSearchOut;
+        isYoutubeRestricted = isYoutubeRestrictedOut;
         isAdultFilter = isAdultFilterOut;
     }
 
-    private static async Task<string> GetDnsLookupJson(string dnsLookupArgs, string rrtype = "A", bool json = true)
+    private async Task<List<string>> GetARecordIPsAsync(string domain, string dnsServer)
+    {
+        string jsonStr = await GetDnsLookupJsonAsync(domain, dnsServer, TimeoutMS);
+        return GetDnsLookupAnswerRecordList(jsonStr);
+    }
+
+    private bool HasSameItem(List<string> list, List<string> uncensoredList, bool checkForLocalIPs)
+    {
+        bool hasSameItem = false;
+        for (int i = 0; i < uncensoredList.Count; i++)
+        {
+            if (hasSameItem) break;
+            string uncensoredIp = uncensoredList[i].Trim();
+            for (int j = 0; j < list.Count; j++)
+            {
+                string ip = list[j];
+                if (ip.Equals(uncensoredIp))
+                {
+                    hasSameItem = true;
+                    break;
+                }
+                if (checkForLocalIPs && NetworkTool.IsLocalIP(ip))
+                {
+                    hasSameItem = true;
+                    break;
+                }
+            }
+        }
+        return hasSameItem;
+    }
+
+    private bool HasLocalIP(List<string> list)
+    {
+        for (int j = 0; j < list.Count; j++)
+        {
+            string ip = list[j];
+            if (NetworkTool.IsLocalIP(ip)) return true;
+        }
+        return false;
+    }
+
+    private async Task<string> GetDnsLookupJsonAsync(string domain, string dnsServer, int timeoutMS, string rrtype = "A", bool json = true)
     {
         string result = string.Empty;
-        Task task = Task.Run(async () =>
-        {
-            using Process process = new();
-            process.StartInfo.FileName = SecureDNS.DnsLookup;
-            process.StartInfo.Arguments = dnsLookupArgs;
-            process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardInput = true;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.WorkingDirectory = SecureDNS.CurrentPath;
-
-            // Set RRTYPE
-            process.StartInfo.EnvironmentVariables["RRTYPE"] = rrtype;
-
-            // Set JSON Output
-            if (json)
-                process.StartInfo.EnvironmentVariables["JSON"] = "1";
-            else
-                process.StartInfo.EnvironmentVariables["JSON"] = "";
-
-            process.Start();
-            process.PriorityClass = ProcessPriority;
-            // Faster than process.WaitForExit();
-            await Task.Run(() => result = process.StandardOutput.ReadToEnd().ReplaceLineEndings(Environment.NewLine));
-        });
 
         try
         {
-            await task.WaitAsync(TimeSpan.FromSeconds(15));
+            Task<string> task = Task.Run(async () =>
+            {
+                Dictionary<string, string> evs = new();
+                if (json) evs.Add("JSON", "1");
+                else evs.Add("JSON", "");
+                evs.Add("RRTYPE", rrtype);
+                if (Insecure) evs.Add("VERIFY", "0");
+                else evs.Add("VERIFY", "");
+
+                string args = $"{domain} {dnsServer}";
+                result = await ProcessManager.ExecuteAsync(SecureDNS.DnsLookup, evs, args, true, true, SecureDNS.CurrentPath, ProcessPriority);
+
+                if (Insecure)
+                {
+                    string verify = "TLS verification has been disabled";
+                    if (result.StartsWith(verify)) result = result.TrimStart(verify);
+                }
+
+                return result;
+            });
+
+            result = await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS));
+            return result;
         }
         catch (Exception)
         {
-            // timeout. do nothing
+            return result;
         }
-
-        return result;
-    }
-
-    private static string GetDnsLookupARecord(string jsonStr)
-    {
-        string aRecStr = string.Empty;
-        if (!string.IsNullOrEmpty(jsonStr))
-        {
-            try
-            {
-                JsonDocumentOptions jsonDocumentOptions = new();
-                jsonDocumentOptions.AllowTrailingCommas = true;
-                JsonDocument jsonDocument = JsonDocument.Parse(jsonStr, jsonDocumentOptions);
-                JsonElement json = jsonDocument.RootElement;
-
-                bool hasAnswer = json.TryGetProperty("Answer", out JsonElement answerE);
-                if (hasAnswer)
-                {
-                    if (answerE.ValueKind == JsonValueKind.Array)
-                    {
-                        JsonElement.ArrayEnumerator answerEArray = answerE.EnumerateArray();
-                        for (int n2 = 0; n2 < answerEArray.Count(); n2++)
-                        {
-                            JsonElement answerEV = answerEArray.ToArray()[n2];
-                            bool hasARec = answerEV.TryGetProperty("A", out JsonElement aRec);
-                            if (hasARec)
-                            {
-                                string? aRecStrOut = aRec.GetString();
-                                if (!string.IsNullOrEmpty(aRecStrOut))
-                                    aRecStr = aRecStrOut.Trim();
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("GetDnsLookupARecord: " + ex.Message);
-            }
-        }
-        return aRecStr;
     }
 
     private static List<string> GetDnsLookupAnswerRecordList(string jsonStr, string rrtype = "A")

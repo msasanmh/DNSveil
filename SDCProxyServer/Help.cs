@@ -12,9 +12,11 @@ public class Help
         help = $"\nMsmh Proxy Server v{Assembly.GetExecutingAssembly().GetName().Version}, Author: msasanmh@gmail.com";
         help += "\nSupports:";
         help += "\n    HTTP (Domain, IPv4, IPv6) (Get, Post, etc)";
+        help += "\n    HTTPS (Domain, IPv4, IPv6) (Post, etc)";
         help += "\n    SOCKS4 (IPv4) (Connect, Bind)";
         help += "\n    SOCKS4A (Domain, IPv4) (Connect, Bind)";
         help += "\n    SOCKS5 (Domain, IPv4, IPv6) (Connect, Bind, UDP)";
+        help += "\n    SSL Decryption";
         WriteToStdout(help);
 
         // Commands
@@ -77,9 +79,9 @@ public class Help
         help = $"      Proxy Server listener Port.";
         WriteToStdout(help);
 
-        help = $"    -{Key.Setting.MaxThreads}=";
+        help = $"    -{Key.Setting.MaxRequests}=";
         WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      Max Requests To Handle.";
+        help = $"      Max Requests To Handle Per Second.";
         WriteToStdout(help);
 
         help = $"    -{Key.Setting.RequestTimeoutSec}=";
@@ -99,7 +101,43 @@ public class Help
 
         // Example Of Setting
         help = $"\n  Example:";
-        help += $"\n    Setting -Port=8080 -MaxThreads=1000 -RequestTimeoutSec=40 -KillOnCpuUsage=35.6 -BlockPort80=True";
+        help += $"\n    Setting -Port=8080 -MaxRequests=500 -RequestTimeoutSec=40 -KillOnCpuUsage=35.6 -BlockPort80=True";
+        WriteToStdout(help);
+
+        // SSLSetting Interactive Mode
+        help = "\nSSLSetting";
+        WriteToStdout(help, ConsoleColor.Blue);
+        help = $"  Modify SSL Settings In Interactive Mode.";
+        WriteToStdout(help);
+
+        // SSLSetting Command Mode - sslsetting -Enable=m -RootCA_Path="" -RootCA_KeyPath=""
+        help = "\nSSLSetting <Option>";
+        WriteToStdout(help, ConsoleColor.Blue);
+        help = $"  Modify SSL Settings In Command Mode.";
+        WriteToStdout(help);
+
+        // Option Of SSLSettings
+        help = "\n  <Option>";
+        WriteToStdout(help, ConsoleColor.Blue);
+
+        help = $"    -{Key.SSLSetting.Enable}=";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Use Self-Signed Certificate To Decrypt SSL (True/False).";
+        WriteToStdout(help);
+
+        help = $"    -{Key.SSLSetting.RootCA_Path}=";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Path To Your Root Certificate File (e.g. C:\\RootCA.crt) - Leave Empty To Generate.";
+        WriteToStdout(help);
+
+        help = $"    -{Key.SSLSetting.RootCA_KeyPath}=";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Path To Your Private Key File. (e.g. C:\\RootCA.key) - Leave Empty To Generate.";
+        WriteToStdout(help);
+
+        help = $"    -{Key.SSLSetting.ChangeSniToIP}=";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Change SNI To IP To Bypass DPI.";
         WriteToStdout(help);
 
         // Programs Interactive Mode
@@ -362,7 +400,7 @@ public class Help
         string help;
         help = $"\nPrograms {Key.Programs.DontBypass.Name}";
         WriteToStdout(help, ConsoleColor.Blue);
-        help = $"  A List Of Domains To Be Excluded From DPI Bypassing.";
+        help = $"  A List Of Domains To Be Excluded From DPI Bypassing (Fragmentation & SSL Decryption).";
         WriteToStdout(help);
 
         // -Mode=

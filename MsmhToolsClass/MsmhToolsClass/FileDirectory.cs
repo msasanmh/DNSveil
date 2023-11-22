@@ -1,8 +1,6 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 using System.Security.Cryptography;
 using System.Diagnostics;
-using System.IO;
 
 namespace MsmhToolsClass;
 
@@ -124,18 +122,11 @@ public class FileDirectory
     {
         try
         {
-            if (!File.Exists(filePath))
-                CreateEmptyFile(filePath);
+            if (!File.Exists(filePath)) CreateEmptyFile(filePath);
 
-            string fileContent = File.ReadAllText(filePath);
-            List<string> splitByLine = fileContent.SplitToLines();
-            int count = splitByLine.Count;
             using FileStream fileStream = new(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
             using StreamWriter writer = new(fileStream, encoding);
-            if (count == 0)
-                writer.Write(textToAppend);
-            else
-                writer.WriteLine(textToAppend);
+            writer.WriteLine(textToAppend);
         }
         catch (Exception ex)
         {
@@ -145,18 +136,11 @@ public class FileDirectory
     //-----------------------------------------------------------------------------------
     public static async Task AppendTextLineAsync(string filePath, string textToAppend, Encoding encoding)
     {
-        if (!File.Exists(filePath))
-            CreateEmptyFile(filePath);
+        if (!File.Exists(filePath)) CreateEmptyFile(filePath);
 
-        string fileContent = await File.ReadAllTextAsync(filePath);
-        List<string> splitByLine = fileContent.SplitToLines();
-        int count = splitByLine.Count;
         using FileStream fileStream = new(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         using StreamWriter writer = new(fileStream, encoding);
-        if (count == 0)
-            await writer.WriteAsync(textToAppend);
-        else
-            await writer.WriteLineAsync(textToAppend);
+        await writer.WriteLineAsync(textToAppend);
     }
     //-----------------------------------------------------------------------------------
     public static void AppendText(string filePath, string textToAppend, Encoding encoding)

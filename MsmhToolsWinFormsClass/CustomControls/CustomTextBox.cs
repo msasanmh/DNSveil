@@ -41,6 +41,18 @@ namespace CustomControls
 
         private readonly TextBox textBox = new();
         private bool isFocused = false;
+        public new bool Focused
+        {
+            get { return isFocused; }
+            private set
+            {
+                if (isFocused != value)
+                {
+                    isFocused = value;
+                    Invalidate();
+                }
+            }
+        }
 
         private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
@@ -352,6 +364,8 @@ namespace CustomControls
             textBox.ReadOnlyChanged += TextBox_ReadOnlyChanged;
             textBox.TextAlignChanged += TextBox_TextAlignChanged;
             textBox.TextChanged += TextBox_TextChanged;
+            textBox.LostFocus += TextBox_LostFocus;
+            textBox.GotFocus += TextBox_GotFocus;
         }
 
         // Events
@@ -485,6 +499,22 @@ namespace CustomControls
         private void TextBox_TextChanged(object? sender, EventArgs e)
         {
             TextChanged?.Invoke(sender, e);
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Property Changed"), Description("Lost Focus")]
+        public new event EventHandler? LostFocus;
+        private void TextBox_LostFocus(object? sender, EventArgs e)
+        {
+            LostFocus?.Invoke(sender, e);
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Property Changed"), Description("Got Focus")]
+        public new event EventHandler? GotFocus;
+        private void TextBox_GotFocus(object? sender, EventArgs e)
+        {
+            GotFocus?.Invoke(sender, e);
         }
 
         private void CustomTextBox_BackColorChanged(object? sender, EventArgs e)

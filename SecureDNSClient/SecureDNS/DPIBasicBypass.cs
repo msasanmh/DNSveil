@@ -1,5 +1,4 @@
 ﻿using CustomControls;
-using static SecureDNSClient.FormMain;
 
 namespace SecureDNSClient.DPIBasic;
 
@@ -57,6 +56,7 @@ public class DPIBasicBypass
 
     public static void UpdateGoodbyeDpiBasicModes(CustomComboBox ccb)
     {
+        ccb.Text = "Select a Mode";
         object item = ccb.SelectedItem;
         ccb.Items.Clear();
         List<DPIBasicBypassMode> modeNames = GetAllModes();
@@ -83,6 +83,7 @@ public class DPIBasicBypass
                 ccb.SelectedIndex = 0;
             ccb.DropDownHeight = modeNames.Count * ccb.Height;
         }
+        else ccb.SelectedIndex = -1;
     }
 
     public string Args { get; }

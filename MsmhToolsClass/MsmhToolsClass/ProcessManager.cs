@@ -29,6 +29,7 @@ public static class ProcessManager
     /// <returns>Returns -1 if fail</returns>
     public static async Task<float> GetCpuUsage(int pid, int delay)
     {
+        //if (!FindProcessByPID(pid))
         string processName = GetProcessNameByPID(pid);
         if (!string.IsNullOrEmpty(processName))
             return await GetCpuUsage(processName, delay);
@@ -205,12 +206,14 @@ public static class ProcessManager
 
                 // Wait for process to finish
                 await process0.WaitForExitAsync();
+                process0.Dispose();
 
                 return output;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
+                process0.Dispose();
                 return string.Empty;
             }
         });
@@ -276,7 +279,11 @@ public static class ProcessManager
             string output = stdout + Environment.NewLine + errout;
 
             // Wait for process to finish
-            if (waitForExit) process0.WaitForExit();
+            if (waitForExit)
+            {
+                process0.WaitForExit();
+                process0.Dispose();
+            }
 
             return output;
         }
@@ -288,9 +295,9 @@ public static class ProcessManager
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
-    /// Execute and returns PID, if faild returns -1
+    /// Execute and returns PID, if fails return -1
     /// </summary>
-    public static int ExecuteOnly(out Process process, string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
+    public static int ExecuteOnly(string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
     {
         int pid;
         // Create process
@@ -343,14 +350,22 @@ public static class ProcessManager
             Debug.WriteLine($"ExecuteOnly: {ex.Message}");
         }
 
-        process = process0;
+        process0.Dispose();
         return pid;
     }
     //-----------------------------------------------------------------------------------
     public static bool FindProcessByName(string processName)
     {
+        int result;
         Process[] processes = Process.GetProcessesByName(processName);
-        return processes.Length > 0;
+        result = processes.Length;
+        try
+        {
+            for (int n = 0; n < processes.Length; n++)
+                processes[n].Dispose();
+        }
+        catch (Exception) { }
+        return result > 0;
     }
     //-----------------------------------------------------------------------------------
     public static bool FindProcessByPID(int pid)
@@ -364,6 +379,7 @@ public static class ProcessManager
                 result = true;
                 break;
             }
+            processes[n].Dispose();
         }
         return result;
     }
@@ -381,7 +397,7 @@ public static class ProcessManager
         {
             if (FindProcessByPID(pid))
             {
-                Process process = Process.GetProcessById(pid);
+                using Process process = Process.GetProcessById(pid);
                 process.Kill(killEntireProcessTree);
             }
         }
@@ -398,8 +414,15 @@ public static class ProcessManager
     {
         int pid = -1;
         Process[] processes = Process.GetProcessesByName(processName);
-        for (int n = processes.Length - 1; n >= 0; n--)
-            pid = processes[n].Id;
+        if (processes.Any()) pid = processes[0].Id;
+
+        try
+        {
+            for (int n = 0; n < processes.Length; n++)
+                processes[n].Dispose();
+        }
+        catch (Exception) { }
+
         return pid;
     }
     //-----------------------------------------------------------------------------------
@@ -409,7 +432,7 @@ public static class ProcessManager
     public static int GetProcessPidByListeningPort(int port)
     {
         string netstatArgs = "-a -n -o";
-        string? stdout = Execute(out Process _, "netstat", null, netstatArgs);
+        string? stdout = Execute(out Process process, "netstat", null, netstatArgs);
         if (!string.IsNullOrWhiteSpace(stdout))
         {
             List<string> lines = stdout.SplitToLines();
@@ -422,11 +445,13 @@ public static class ProcessManager
                     bool isBool = int.TryParse(split1[1], out int pid);
                     if (isBool)
                     {
+                        process?.Dispose();
                         return pid;
                     }
                 }
             }
         }
+        process?.Dispose();
         return -1;
     }
     //-----------------------------------------------------------------------------------
@@ -440,7 +465,8 @@ public static class ProcessManager
         {
             try
             {
-                return Process.GetProcessById(pid).ProcessName;
+                using Process process = Process.GetProcessById(pid);
+                return process.ProcessName;
             }
             catch (Exception ex)
             {
@@ -458,17 +484,14 @@ public static class ProcessManager
     /// <returns>Returns null if not exist.</returns>
     public static Process? GetProcessByPID(int pid)
     {
-        Process? result = null;
         Process[] processes = Process.GetProcesses();
         for (int n = 0; n < processes.Length; n++)
         {
-            if (processes[n].Id == pid)
-            {
-                result = processes[n];
-                break;
-            }
+            Process process = processes[n];
+            if (process.Id == pid) return process;
+            else process.Dispose();
         }
-        return result;
+        return null;
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
@@ -479,8 +502,18 @@ public static class ProcessManager
     public static string GetProcessNameByPID(int pid)
     {
         string result = string.Empty;
-        Process? process = GetProcessByPID(pid);
-        if (process != null) result = process.ProcessName;
+
+        Process[] processes = Process.GetProcesses();
+        for (int n = 0; n < processes.Length; n++)
+        {
+            Process process = processes[n];
+            if (process.Id == pid)
+            {
+                try { result = process.ProcessName; } catch (Exception) { }
+            }
+            process.Dispose();
+        }
+
         return result;
     }
     //-----------------------------------------------------------------------------------
@@ -541,8 +574,8 @@ public static class ProcessManager
         if (!OperatingSystem.IsWindows()) return;
         if (typeof(ManagementObjectSearcher) == null) return;
 
-        var process = Process.GetProcessById(processId);
-        var processName = process.ProcessName;
+        using Process process = Process.GetProcessById(processId);
+        string processName = process.ProcessName;
         PerformanceCounter p = new("Process", "% Processor Time", processName);
 
         Task.Run(async () =>
@@ -564,7 +597,7 @@ public static class ProcessManager
     }
     public static void SuspendProcess(int pId)
     {
-        var process = Process.GetProcessById(pId);
+        using Process process = Process.GetProcessById(pId);
         SuspendProcess(process);
     }
     public static void SuspendProcess(Process process)
@@ -581,7 +614,7 @@ public static class ProcessManager
     }
     public static void ResumeProcess(int pId)
     {
-        var process = Process.GetProcessById(pId);
+        using Process process = Process.GetProcessById(pId);
         ResumeProcess(process);
     }
     public static void ResumeProcess(Process process)

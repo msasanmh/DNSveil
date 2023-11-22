@@ -1,5 +1,5 @@
 ﻿using MsmhToolsClass.ProxyServerPrograms;
-using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -60,6 +60,7 @@ public partial class MsmhProxyServer
 
     //======================================= Start Proxy
     internal ProxySettings ProxySettings_ = new();
+    public SettingsSSL SettingsSSL_ { get; internal set; } = new(false);
 
     internal TunnelManager TunnelManager_ = new();
     private TcpListener? TcpListener_;
@@ -81,6 +82,11 @@ public partial class MsmhProxyServer
     public Stats Stats { get; private set; } = new();
     public bool IsRunning { get; private set; } = false;
 
+    private CancellationTokenSource CTS = new();
+    private readonly ConcurrentQueue<DateTime> MaxRequestsQueue = new();
+    private readonly ConcurrentQueue<DateTime> MaxRequestsQueue2 = new();
+    internal static readonly int MaxRequestsDivide = 20; // 1000 / 20 = 50 ms
+
     public MsmhProxyServer()
     {
         // Set Defult DNS to System DNS
@@ -89,12 +95,26 @@ public partial class MsmhProxyServer
         DNSProgram = defaultDns;
     }
 
-    public void Start(IPAddress ipAddress, int port, int maxThreads, int requestTimeoutSec, float killOnCpuUsage, bool blockPort80)
+    public async Task EnableSSL(bool enableSSL, string? rootCA_Path, string? rootCA_KeyPath)
+    {
+        SettingsSSL_.EnableSSL = enableSSL;
+        SettingsSSL_.RootCA_Path = rootCA_Path;
+        SettingsSSL_.RootCA_KeyPath = rootCA_KeyPath;
+        await SettingsSSL_.Build();
+    }
+
+    public async Task EnableSSL(SettingsSSL settingsSSL)
+    {
+        SettingsSSL_ = settingsSSL;
+        await SettingsSSL_.Build();
+    }
+
+    public void Start(IPAddress ipAddress, int port, int maxRequestsPerSec, int requestTimeoutSec, float killOnCpuUsage, bool blockPort80)
     {
         ProxySettings_ = new();
         ProxySettings_.ListenerIpAddress = ipAddress;
         ProxySettings_.ListenerPort = port;
-        ProxySettings_.MaxThreads = maxThreads;
+        ProxySettings_.MaxRequests = maxRequestsPerSec;
         ProxySettings_.RequestTimeoutSec = requestTimeoutSec;
         ProxySettings_.KillOnCpuUsage = killOnCpuUsage;
         ProxySettings_.BlockPort80 = blockPort80;
@@ -120,6 +140,8 @@ public partial class MsmhProxyServer
 
         Cancel = false;
 
+        MaxRequestsTimer();
+
         KillOnOverloadTimer.Elapsed += KillOnOverloadTimer_Elapsed;
         KillOnOverloadTimer.Start();
 
@@ -130,12 +152,48 @@ public partial class MsmhProxyServer
         MainThread.Start();
     }
 
+    private void Welcome()
+    {
+        // Event
+        string msgEvent = $"Proxy Server starting on {ProxySettings_.ListenerIpAddress}:{ProxySettings_.ListenerPort}";
+        OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+        OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+    }
+
+    private async void MaxRequestsTimer()
+    {
+        await Task.Run(async () =>
+        {
+            while (true)
+            {
+                if (Cancel) break;
+                await Task.Delay(5);
+
+                bool peek = MaxRequestsQueue.TryPeek(out DateTime dt);
+                if (peek)
+                {
+                    double diff = (DateTime.UtcNow - dt).TotalMilliseconds;
+                    if (diff > 1000 / MaxRequestsDivide) // Dequeue If Older Than 50 ms (1000 / 20)
+                        MaxRequestsQueue.TryDequeue(out _);
+                }
+
+                peek = MaxRequestsQueue2.TryPeek(out dt);
+                if (peek)
+                {
+                    double diff = (DateTime.UtcNow - dt).TotalMilliseconds;
+                    if (diff > 1000 / MaxRequestsDivide) // Dequeue If Older Than 50 ms (1000 / 20)
+                        MaxRequestsQueue2.TryDequeue(out _);
+                }
+            }
+        });
+    }
+
     private async void KillOnOverloadTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
     {
         if (OperatingSystem.IsWindows() && typeof(PerformanceCounter) != null)
             CpuUsage = await ProcessManager.GetCpuUsage(Environment.ProcessId, 1000);
 
-        if (ActiveTunnels >= ProxySettings_.MaxThreads || CpuUsage > ProxySettings_.KillOnCpuUsage)
+        if (CpuUsage >= ProxySettings_.KillOnCpuUsage)
         {
             KillAll();
         }
@@ -146,6 +204,7 @@ public partial class MsmhProxyServer
     /// </summary>
     public void KillAll()
     {
+        CTS.Cancel();
         if (TunnelManager_ != null)
         {
             var dic = TunnelManager_.GetTunnels();
@@ -169,11 +228,21 @@ public partial class MsmhProxyServer
 
             KillAll();
 
-            KillOnOverloadTimer.Stop();
+            MaxRequestsQueue.Clear();
+            MaxRequestsQueue2.Clear();
 
+            KillOnOverloadTimer.Stop();
             IsRunning = TcpListener_.Server.IsBound;
             Goodbye();
         }
+    }
+
+    private void Goodbye()
+    {
+        // Event
+        string msgEvent = "Proxy Server stopped.";
+        OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+        OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
     }
 
     public int ListeningPort
@@ -193,23 +262,7 @@ public partial class MsmhProxyServer
 
     public int MaxRequests
     {
-        get => ProxySettings_ != null ? ProxySettings_.MaxThreads : 0;
-    }
-
-    private void Welcome()
-    {
-        // Event
-        string msgEvent = $"Proxy Server starting on {ProxySettings_.ListenerIpAddress}:{ProxySettings_.ListenerPort}";
-        OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
-        OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
-    }
-
-    private void Goodbye()
-    {
-        // Event
-        string msgEvent = "Proxy Server stopped.";
-        OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
-        OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+        get => ProxySettings_ != null ? ProxySettings_.MaxRequests : 0;
     }
 
     private async void AcceptConnections()
@@ -229,9 +282,9 @@ public partial class MsmhProxyServer
                 while (!Cancel)
                 {
                     TcpClient tcpClient = await TcpListener_.AcceptTcpClientAsync().ConfigureAwait(false);
-                    if (tcpClient.Connected) ProcessConnectionSync(tcpClient);
-                    if (CancelToken_.IsCancellationRequested || Cancel)
-                        break;
+                    if (ProxySettings_.KillOnCpuUsage != 0 && CpuUsage < ProxySettings_.KillOnCpuUsage)
+                        if (tcpClient.Connected) ProcessConnectionSync(tcpClient);
+                    if (CancelToken_.IsCancellationRequested || Cancel) break;
                 }
             }
             else
@@ -257,6 +310,39 @@ public partial class MsmhProxyServer
 
     private async void ClientConnected(TcpClient tcpClient)
     {
+        EndPoint? lep = tcpClient.Client.LocalEndPoint;
+        EndPoint? rep = tcpClient.Client.RemoteEndPoint;
+        if (lep == null || rep == null)
+        {
+            try { tcpClient.Dispose(); } catch (Exception) { }
+            return;
+        }
+
+        // Count Max Requests
+        MaxRequestsQueue.Enqueue(DateTime.UtcNow);
+        if (ProxySettings_.MaxRequests >= MaxRequestsDivide)
+        {
+            if (MaxRequestsQueue.Count >= ProxySettings_.MaxRequests / MaxRequestsDivide) // Check for 50 ms (1000 / 20)
+            {
+                // Event
+                string blockEvent = $"Recevied {MaxRequestsQueue.Count * MaxRequestsDivide} Requests Per Second - Request Denied Due To Max Requests of {ProxySettings_.MaxRequests}.";
+                Debug.WriteLine(blockEvent);
+                OnRequestReceived?.Invoke(blockEvent, EventArgs.Empty);
+                try { tcpClient.Dispose(); } catch (Exception) { }
+                return;
+            }
+
+            if (MaxRequestsQueue2.Count >= ProxySettings_.MaxRequests / MaxRequestsDivide) // Check for 50 ms (1000 / 20)
+            {
+                // Event
+                string blockEvent = $"Recevied {MaxRequestsQueue2.Count * MaxRequestsDivide} Requests Per Second - Request Denied Due To Max Requests of {ProxySettings_.MaxRequests}.";
+                Debug.WriteLine(blockEvent);
+                OnRequestReceived?.Invoke(blockEvent, EventArgs.Empty);
+                try { tcpClient.Dispose(); } catch (Exception) { }
+                return;
+            }
+        }
+        
         // Generate unique int
         int connectionId;
         try
@@ -279,29 +365,30 @@ public partial class MsmhProxyServer
 
         if (getFirstPacket.ProxyName == null)
         {
-            proxyClient.Disconnect();
+            proxyClient.Disconnect(tcpClient);
             return;
         }
 
         // Create Request
+        CTS = new();
         ProxyRequest? req = null;
         if (getFirstPacket.ProxyName == Proxy.Name.HTTP || getFirstPacket.ProxyName == Proxy.Name.HTTPS)
-            req = await ProxyRequest.RequestHttpRemote(getFirstPacket.Packet);
-        if (getFirstPacket.ProxyName == Proxy.Name.Socks4)
-            req = await ProxyRequest.RequestSocks4Remote(proxyClient, getFirstPacket.Packet);
-        if (getFirstPacket.ProxyName == Proxy.Name.Socks5)
-            req = await ProxyRequest.RequestSocks5Remote(proxyClient, getFirstPacket.Packet);
-
+            req = await ProxyRequest.RequestHttpRemote(getFirstPacket.Packet, CTS.Token);
+        else if (getFirstPacket.ProxyName == Proxy.Name.Socks4)
+            req = await ProxyRequest.RequestSocks4Remote(proxyClient, getFirstPacket.Packet, CTS.Token);
+        else if (getFirstPacket.ProxyName == Proxy.Name.Socks5)
+            req = await ProxyRequest.RequestSocks5Remote(proxyClient, getFirstPacket.Packet, CTS.Token);
+        
         req = await ApplyPrograms(req);
-
+        
         if (req == null)
         {
-            proxyClient.Disconnect();
+            proxyClient.Disconnect(tcpClient);
             return;
         }
 
         // Create Tunnel
-        ProxyTunnel proxyTunnel = new(connectionId, proxyClient, req, ProxySettings_);
+        ProxyTunnel proxyTunnel = new(connectionId, proxyClient, req, ProxySettings_, SettingsSSL_);
         proxyTunnel.Open(UpStreamProxyProgram);
 
         proxyTunnel.OnTunnelDisconnected += ProxyTunnel_OnTunnelDisconnected;
@@ -324,6 +411,7 @@ public partial class MsmhProxyServer
 
             st.OnTunnelDisconnected -= ProxyTunnel_OnTunnelDisconnected;
             st.OnDataReceived -= ProxyTunnel_OnDataReceived;
+            st.ClientSSL?.Disconnect();
 
             TunnelManager_.Remove(st.ConnectionId);
             Debug.WriteLine($"{st.Req.Address} disconnected");
@@ -377,6 +465,7 @@ public partial class MsmhProxyServer
             t.RemoteClient.OnDataReceived += async (s, e) =>
             {
                 t.KillOnTimeout.Restart();
+
                 if (e.Buffer.Length > 0)
                     await t.Client.SendAsync(e.Buffer);
 
@@ -384,6 +473,44 @@ public partial class MsmhProxyServer
                 await t.RemoteClient.StartReceiveAsync();
                 t.KillOnTimeout.Restart();
             };
+            
+            // Handle SSL
+            if (t.ClientSSL != null)
+            {
+                t.ClientSSL.OnClientDataReceived += (s, e) =>
+                {
+                    t.KillOnTimeout.Restart();
+
+                    if (e.Buffer.Length > 0)
+                    {
+                        // Can't be implement here. Ex: "The WriteAsync method cannot be called when another write operation is pending"
+                        //await t.ClientSSL.RemoteStream.WriteAsync(e.Buffer);
+
+                        lock (Stats)
+                        {
+                            Stats.AddBytes(e.Buffer.Length, ByteType.Sent);
+                        }
+                    }
+                    t.ClientSSL.OnClientDataReceived -= null;
+                };
+
+                t.ClientSSL.OnRemoteDataReceived += (s, e) =>
+                {
+                    t.KillOnTimeout.Restart();
+
+                    if (e.Buffer.Length > 0)
+                    {
+                        // Can't be implement here. Ex: "The WriteAsync method cannot be called when another write operation is pending"
+                        //await t.ClientSSL.ClientStream.WriteAsync(e.Buffer);
+
+                        lock (Stats)
+                        {
+                            Stats.AddBytes(e.Buffer.Length, ByteType.Received);
+                        }
+                    }
+                    t.ClientSSL.OnRemoteDataReceived -= null;
+                };
+            }
         }
         catch (Exception ex)
         {

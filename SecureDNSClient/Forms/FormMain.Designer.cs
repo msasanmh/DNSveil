@@ -55,11 +55,13 @@
             TabPageSecureDNS = new TabPage();
             CustomTabControlSecureDNS = new CustomControls.CustomTabControl();
             TabPageCheck = new TabPage();
+            CustomNumericUpDownCheckInParallel = new CustomControls.CustomNumericUpDown();
+            CustomLabelCheckInParallel = new CustomControls.CustomLabel();
+            CustomButtonDisconnectAll = new CustomControls.CustomButton();
             CustomButtonQuickConnect = new CustomControls.CustomButton();
             CustomProgressBarCheck = new CustomControls.CustomProgressBar();
             LinkLabelCheckUpdate = new LinkLabel();
             CustomButtonCheckUpdate = new CustomControls.CustomButton();
-            CustomCheckBoxCheckInParallel = new CustomControls.CustomCheckBox();
             TabPageConnect = new TabPage();
             CustomButtonWriteSavedServersDelay = new CustomControls.CustomButton();
             CustomRadioButtonConnectFakeProxyDohViaProxyDPI = new CustomControls.CustomRadioButton();
@@ -78,6 +80,13 @@
             CustomLabelSetDNSInfo = new CustomControls.CustomLabel();
             CustomComboBoxNICs = new CustomControls.CustomComboBox();
             TabPageShare = new TabPage();
+            CustomCheckBoxPDpiEnableDpiBypass = new CustomControls.CustomCheckBox();
+            CustomLabelProxySSLChangeSniToIpInfo = new CustomControls.CustomLabel();
+            CustomCheckBoxProxySSLChangeSniToIP = new CustomControls.CustomCheckBox();
+            CustomCheckBoxProxyEnableSSL = new CustomControls.CustomCheckBox();
+            CustomLabelProxySSLInfo = new CustomControls.CustomLabel();
+            CustomLabelShareSeparator2 = new CustomControls.CustomLabel();
+            CustomButtonPDpiCheck = new CustomControls.CustomButton();
             CustomButtonPDpiPresetDefault = new CustomControls.CustomButton();
             CustomLabelPDpiPresets = new CustomControls.CustomLabel();
             CustomNumericUpDownPDpiBeforeSniChunks = new CustomControls.CustomNumericUpDown();
@@ -95,7 +104,6 @@
             CustomLabelPDpiSniChunks = new CustomControls.CustomLabel();
             CustomLabelShareSeparator1 = new CustomControls.CustomLabel();
             CustomCheckBoxProxyEventShowRequest = new CustomControls.CustomCheckBox();
-            CustomCheckBoxPDpiEnableDpiBypass = new CustomControls.CustomCheckBox();
             CustomButtonShare = new CustomControls.CustomButton();
             CustomLabelShareInfo = new CustomControls.CustomLabel();
             TabPageGoodbyeDPI = new TabPage();
@@ -180,6 +188,8 @@
             CustomLabelSettingCheckTimeout = new CustomControls.CustomLabel();
             CustomNumericUpDownSettingCheckTimeout = new CustomControls.CustomNumericUpDown();
             TabPageSettingsQuickConnect = new TabPage();
+            CustomCheckBoxSettingQcOnStartup = new CustomControls.CustomCheckBox();
+            CustomLabelSettingQcConnectMode = new CustomControls.CustomLabel();
             CustomCheckBoxSettingQcUseSavedServers = new CustomControls.CustomCheckBox();
             CustomButtonSettingQcStartup = new CustomControls.CustomButton();
             CustomCheckBoxSettingQcSetDnsTo = new CustomControls.CustomCheckBox();
@@ -193,7 +203,6 @@
             CustomComboBoxSettingQcNics = new CustomControls.CustomComboBox();
             CustomCheckBoxSettingQcCheckAllServers = new CustomControls.CustomCheckBox();
             CustomComboBoxSettingQcConnectMode = new CustomControls.CustomComboBox();
-            CustomLabelSettingQcConnectMode = new CustomControls.CustomLabel();
             CustomLabelSettingQcInfo = new CustomControls.CustomLabel();
             TabPageSettingsConnect = new TabPage();
             CustomCheckBoxSettingEnableCache = new CustomControls.CustomCheckBox();
@@ -302,6 +311,7 @@
             TabPageSecureDNS.SuspendLayout();
             CustomTabControlSecureDNS.SuspendLayout();
             TabPageCheck.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownCheckInParallel).BeginInit();
             TabPageConnect.SuspendLayout();
             TabPageSetDNS.SuspendLayout();
             CustomGroupBoxNicStatus.SuspendLayout();
@@ -477,7 +487,7 @@
             CustomButtonEditCustomServers.TabIndex = 5;
             CustomButtonEditCustomServers.Text = "Custom Servers";
             CustomButtonEditCustomServers.UseVisualStyleBackColor = true;
-            CustomButtonEditCustomServers.Click += CustomButtonEditCustomServers_Click;
+            CustomButtonEditCustomServers.MouseUp += CustomButtonEditCustomServers_MouseUp;
             // 
             // CustomRadioButtonCustom
             // 
@@ -682,7 +692,7 @@
             CustomTabControlMain.Size = new Size(779, 400);
             CustomTabControlMain.SizeMode = TabSizeMode.Fixed;
             CustomTabControlMain.TabIndex = 6;
-            CustomTabControlMain.Tag = 0;
+            CustomTabControlMain.Tag = 2;
             // 
             // TabPageSecureDNS
             // 
@@ -720,11 +730,13 @@
             // TabPageCheck
             // 
             TabPageCheck.BackColor = Color.Transparent;
+            TabPageCheck.Controls.Add(CustomNumericUpDownCheckInParallel);
+            TabPageCheck.Controls.Add(CustomLabelCheckInParallel);
+            TabPageCheck.Controls.Add(CustomButtonDisconnectAll);
             TabPageCheck.Controls.Add(CustomButtonQuickConnect);
             TabPageCheck.Controls.Add(CustomProgressBarCheck);
             TabPageCheck.Controls.Add(LinkLabelCheckUpdate);
             TabPageCheck.Controls.Add(CustomButtonCheckUpdate);
-            TabPageCheck.Controls.Add(CustomCheckBoxCheckInParallel);
             TabPageCheck.Controls.Add(CustomButtonCheck);
             TabPageCheck.Controls.Add(CustomButtonEditCustomServers);
             TabPageCheck.Controls.Add(CustomCheckBoxInsecure);
@@ -739,6 +751,50 @@
             TabPageCheck.Tag = 0;
             TabPageCheck.Text = "1. Check";
             // 
+            // CustomNumericUpDownCheckInParallel
+            // 
+            CustomNumericUpDownCheckInParallel.BackColor = Color.DimGray;
+            CustomNumericUpDownCheckInParallel.BorderColor = Color.Blue;
+            CustomNumericUpDownCheckInParallel.BorderStyle = BorderStyle.FixedSingle;
+            CustomNumericUpDownCheckInParallel.Location = new Point(130, 188);
+            CustomNumericUpDownCheckInParallel.Maximum = new decimal(new int[] { 50, 0, 0, 0 });
+            CustomNumericUpDownCheckInParallel.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            CustomNumericUpDownCheckInParallel.Name = "CustomNumericUpDownCheckInParallel";
+            CustomNumericUpDownCheckInParallel.RoundedCorners = 5;
+            CustomNumericUpDownCheckInParallel.Size = new Size(50, 23);
+            CustomNumericUpDownCheckInParallel.TabIndex = 20;
+            CustomNumericUpDownCheckInParallel.Value = new decimal(new int[] { 5, 0, 0, 0 });
+            // 
+            // CustomLabelCheckInParallel
+            // 
+            CustomLabelCheckInParallel.AutoSize = true;
+            CustomLabelCheckInParallel.BackColor = Color.DimGray;
+            CustomLabelCheckInParallel.Border = false;
+            CustomLabelCheckInParallel.BorderColor = Color.Blue;
+            CustomLabelCheckInParallel.FlatStyle = FlatStyle.Flat;
+            CustomLabelCheckInParallel.ForeColor = Color.White;
+            CustomLabelCheckInParallel.Location = new Point(25, 190);
+            CustomLabelCheckInParallel.Name = "CustomLabelCheckInParallel";
+            CustomLabelCheckInParallel.RoundedCorners = 0;
+            CustomLabelCheckInParallel.Size = new Size(99, 17);
+            CustomLabelCheckInParallel.TabIndex = 19;
+            CustomLabelCheckInParallel.Text = "Check in parallel:";
+            // 
+            // CustomButtonDisconnectAll
+            // 
+            CustomButtonDisconnectAll.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            CustomButtonDisconnectAll.BorderColor = Color.Blue;
+            CustomButtonDisconnectAll.FlatStyle = FlatStyle.Flat;
+            CustomButtonDisconnectAll.Location = new Point(299, 303);
+            CustomButtonDisconnectAll.Name = "CustomButtonDisconnectAll";
+            CustomButtonDisconnectAll.RoundedCorners = 5;
+            CustomButtonDisconnectAll.SelectionColor = Color.LightBlue;
+            CustomButtonDisconnectAll.Size = new Size(98, 27);
+            CustomButtonDisconnectAll.TabIndex = 18;
+            CustomButtonDisconnectAll.Text = "Disconnect All";
+            CustomButtonDisconnectAll.UseVisualStyleBackColor = true;
+            CustomButtonDisconnectAll.Click += CustomButtonDisconnectAll_Click;
+            // 
             // CustomButtonQuickConnect
             // 
             CustomButtonQuickConnect.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
@@ -752,7 +808,7 @@
             CustomButtonQuickConnect.TabIndex = 17;
             CustomButtonQuickConnect.Text = "Quick Connect";
             CustomButtonQuickConnect.UseVisualStyleBackColor = true;
-            CustomButtonQuickConnect.Click += CustomButtonQuickConnect_Click;
+            CustomButtonQuickConnect.MouseUp += CustomButtonQuickConnect_MouseUp;
             // 
             // CustomProgressBarCheck
             // 
@@ -762,19 +818,19 @@
             CustomProgressBarCheck.ChunksColor = Color.LightBlue;
             CustomProgressBarCheck.CustomText = "";
             CustomProgressBarCheck.ForeColor = Color.White;
-            CustomProgressBarCheck.Location = new Point(299, 303);
+            CustomProgressBarCheck.Location = new Point(403, 303);
             CustomProgressBarCheck.Name = "CustomProgressBarCheck";
             CustomProgressBarCheck.RoundedCorners = 5;
-            CustomProgressBarCheck.Size = new Size(353, 27);
+            CustomProgressBarCheck.Size = new Size(249, 27);
             CustomProgressBarCheck.StopTimer = false;
             CustomProgressBarCheck.TabIndex = 16;
             // 
             // LinkLabelCheckUpdate
             // 
-            LinkLabelCheckUpdate.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            LinkLabelCheckUpdate.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             LinkLabelCheckUpdate.AutoSize = true;
             LinkLabelCheckUpdate.LinkBehavior = LinkBehavior.NeverUnderline;
-            LinkLabelCheckUpdate.Location = new Point(581, 280);
+            LinkLabelCheckUpdate.Location = new Point(403, 285);
             LinkLabelCheckUpdate.Name = "LinkLabelCheckUpdate";
             LinkLabelCheckUpdate.RightToLeft = RightToLeft.Yes;
             LinkLabelCheckUpdate.Size = new Size(173, 15);
@@ -796,20 +852,6 @@
             CustomButtonCheckUpdate.Text = "Check Update";
             CustomButtonCheckUpdate.UseVisualStyleBackColor = true;
             CustomButtonCheckUpdate.Click += CustomButtonCheckUpdate_Click;
-            // 
-            // CustomCheckBoxCheckInParallel
-            // 
-            CustomCheckBoxCheckInParallel.BackColor = Color.DimGray;
-            CustomCheckBoxCheckInParallel.BorderColor = Color.Blue;
-            CustomCheckBoxCheckInParallel.CheckColor = Color.Blue;
-            CustomCheckBoxCheckInParallel.ForeColor = Color.White;
-            CustomCheckBoxCheckInParallel.Location = new Point(25, 190);
-            CustomCheckBoxCheckInParallel.Name = "CustomCheckBoxCheckInParallel";
-            CustomCheckBoxCheckInParallel.SelectionColor = Color.LightBlue;
-            CustomCheckBoxCheckInParallel.Size = new Size(113, 17);
-            CustomCheckBoxCheckInParallel.TabIndex = 12;
-            CustomCheckBoxCheckInParallel.Text = "Check in parallel";
-            CustomCheckBoxCheckInParallel.UseVisualStyleBackColor = false;
             // 
             // TabPageConnect
             // 
@@ -1086,10 +1128,19 @@
             CustomComboBoxNICs.SelectionColor = Color.DodgerBlue;
             CustomComboBoxNICs.Size = new Size(200, 23);
             CustomComboBoxNICs.TabIndex = 1;
+            CustomComboBoxNICs.Text = "Select a Network Adapter";
+            CustomComboBoxNICs.SelectedIndexChanged += CustomComboBoxNICs_SelectedIndexChanged;
             // 
             // TabPageShare
             // 
             TabPageShare.BackColor = Color.Transparent;
+            TabPageShare.Controls.Add(CustomCheckBoxPDpiEnableDpiBypass);
+            TabPageShare.Controls.Add(CustomLabelProxySSLChangeSniToIpInfo);
+            TabPageShare.Controls.Add(CustomCheckBoxProxySSLChangeSniToIP);
+            TabPageShare.Controls.Add(CustomCheckBoxProxyEnableSSL);
+            TabPageShare.Controls.Add(CustomLabelProxySSLInfo);
+            TabPageShare.Controls.Add(CustomLabelShareSeparator2);
+            TabPageShare.Controls.Add(CustomButtonPDpiCheck);
             TabPageShare.Controls.Add(CustomButtonPDpiPresetDefault);
             TabPageShare.Controls.Add(CustomLabelPDpiPresets);
             TabPageShare.Controls.Add(CustomNumericUpDownPDpiBeforeSniChunks);
@@ -1107,7 +1158,6 @@
             TabPageShare.Controls.Add(CustomLabelPDpiSniChunks);
             TabPageShare.Controls.Add(CustomLabelShareSeparator1);
             TabPageShare.Controls.Add(CustomCheckBoxProxyEventShowRequest);
-            TabPageShare.Controls.Add(CustomCheckBoxPDpiEnableDpiBypass);
             TabPageShare.Controls.Add(CustomButtonShare);
             TabPageShare.Controls.Add(CustomLabelShareInfo);
             TabPageShare.Location = new Point(4, 25);
@@ -1118,11 +1168,114 @@
             TabPageShare.Tag = 3;
             TabPageShare.Text = "4. Share + Bypass DPI";
             // 
+            // CustomCheckBoxPDpiEnableDpiBypass
+            // 
+            CustomCheckBoxPDpiEnableDpiBypass.BackColor = Color.DimGray;
+            CustomCheckBoxPDpiEnableDpiBypass.BorderColor = Color.Blue;
+            CustomCheckBoxPDpiEnableDpiBypass.CheckColor = Color.Blue;
+            CustomCheckBoxPDpiEnableDpiBypass.Checked = true;
+            CustomCheckBoxPDpiEnableDpiBypass.CheckState = CheckState.Checked;
+            CustomCheckBoxPDpiEnableDpiBypass.ForeColor = Color.White;
+            CustomCheckBoxPDpiEnableDpiBypass.Location = new Point(25, 80);
+            CustomCheckBoxPDpiEnableDpiBypass.Name = "CustomCheckBoxPDpiEnableDpiBypass";
+            CustomCheckBoxPDpiEnableDpiBypass.SelectionColor = Color.LightBlue;
+            CustomCheckBoxPDpiEnableDpiBypass.Size = new Size(123, 17);
+            CustomCheckBoxPDpiEnableDpiBypass.TabIndex = 55;
+            CustomCheckBoxPDpiEnableDpiBypass.Text = "Enable DPI bypass";
+            CustomCheckBoxPDpiEnableDpiBypass.UseVisualStyleBackColor = false;
+            // 
+            // CustomLabelProxySSLChangeSniToIpInfo
+            // 
+            CustomLabelProxySSLChangeSniToIpInfo.AutoSize = true;
+            CustomLabelProxySSLChangeSniToIpInfo.BackColor = Color.DimGray;
+            CustomLabelProxySSLChangeSniToIpInfo.Border = false;
+            CustomLabelProxySSLChangeSniToIpInfo.BorderColor = Color.Blue;
+            CustomLabelProxySSLChangeSniToIpInfo.FlatStyle = FlatStyle.Flat;
+            CustomLabelProxySSLChangeSniToIpInfo.ForeColor = Color.White;
+            CustomLabelProxySSLChangeSniToIpInfo.Location = new Point(402, 154);
+            CustomLabelProxySSLChangeSniToIpInfo.Name = "CustomLabelProxySSLChangeSniToIpInfo";
+            CustomLabelProxySSLChangeSniToIpInfo.RoundedCorners = 0;
+            CustomLabelProxySSLChangeSniToIpInfo.Size = new Size(329, 45);
+            CustomLabelProxySSLChangeSniToIpInfo.TabIndex = 52;
+            CustomLabelProxySSLChangeSniToIpInfo.Text = "Some websites may break when this option is enabled.\r\nYou can use \"Don't Bypass\" list to exclude them.\r\nYou can use \"Fake DNS\" list to set a custom SNI for a website.";
+            // 
+            // CustomCheckBoxProxySSLChangeSniToIP
+            // 
+            CustomCheckBoxProxySSLChangeSniToIP.BackColor = Color.DimGray;
+            CustomCheckBoxProxySSLChangeSniToIP.BorderColor = Color.Blue;
+            CustomCheckBoxProxySSLChangeSniToIP.CheckColor = Color.Blue;
+            CustomCheckBoxProxySSLChangeSniToIP.ForeColor = Color.White;
+            CustomCheckBoxProxySSLChangeSniToIP.Location = new Point(384, 134);
+            CustomCheckBoxProxySSLChangeSniToIP.Name = "CustomCheckBoxProxySSLChangeSniToIP";
+            CustomCheckBoxProxySSLChangeSniToIP.SelectionColor = Color.LightBlue;
+            CustomCheckBoxProxySSLChangeSniToIP.Size = new Size(194, 17);
+            CustomCheckBoxProxySSLChangeSniToIP.TabIndex = 51;
+            CustomCheckBoxProxySSLChangeSniToIP.Text = "Change SNI to IP to Bypass DPI";
+            CustomCheckBoxProxySSLChangeSniToIP.UseVisualStyleBackColor = false;
+            // 
+            // CustomCheckBoxProxyEnableSSL
+            // 
+            CustomCheckBoxProxyEnableSSL.BackColor = Color.DimGray;
+            CustomCheckBoxProxyEnableSSL.BorderColor = Color.Blue;
+            CustomCheckBoxProxyEnableSSL.CheckColor = Color.Blue;
+            CustomCheckBoxProxyEnableSSL.ForeColor = Color.White;
+            CustomCheckBoxProxyEnableSSL.Location = new Point(384, 80);
+            CustomCheckBoxProxyEnableSSL.Name = "CustomCheckBoxProxyEnableSSL";
+            CustomCheckBoxProxyEnableSSL.SelectionColor = Color.LightBlue;
+            CustomCheckBoxProxyEnableSSL.Size = new Size(146, 17);
+            CustomCheckBoxProxyEnableSSL.TabIndex = 50;
+            CustomCheckBoxProxyEnableSSL.Text = "Enable SSL Decryption";
+            CustomCheckBoxProxyEnableSSL.UseVisualStyleBackColor = false;
+            CustomCheckBoxProxyEnableSSL.CheckedChanged += CustomCheckBoxProxyEnableSSL_CheckedChanged;
+            // 
+            // CustomLabelProxySSLInfo
+            // 
+            CustomLabelProxySSLInfo.AutoSize = true;
+            CustomLabelProxySSLInfo.BackColor = Color.DimGray;
+            CustomLabelProxySSLInfo.Border = false;
+            CustomLabelProxySSLInfo.BorderColor = Color.Blue;
+            CustomLabelProxySSLInfo.FlatStyle = FlatStyle.Flat;
+            CustomLabelProxySSLInfo.ForeColor = Color.White;
+            CustomLabelProxySSLInfo.Location = new Point(402, 100);
+            CustomLabelProxySSLInfo.Name = "CustomLabelProxySSLInfo";
+            CustomLabelProxySSLInfo.RoundedCorners = 0;
+            CustomLabelProxySSLInfo.Size = new Size(212, 15);
+            CustomLabelProxySSLInfo.TabIndex = 49;
+            CustomLabelProxySSLInfo.Text = "By Installing Root Certificate Authority.";
+            // 
+            // CustomLabelShareSeparator2
+            // 
+            CustomLabelShareSeparator2.BackColor = Color.DimGray;
+            CustomLabelShareSeparator2.Border = true;
+            CustomLabelShareSeparator2.BorderColor = Color.Blue;
+            CustomLabelShareSeparator2.FlatStyle = FlatStyle.Flat;
+            CustomLabelShareSeparator2.ForeColor = Color.White;
+            CustomLabelShareSeparator2.Location = new Point(372, 87);
+            CustomLabelShareSeparator2.Name = "CustomLabelShareSeparator2";
+            CustomLabelShareSeparator2.RoundedCorners = 0;
+            CustomLabelShareSeparator2.Size = new Size(1, 200);
+            CustomLabelShareSeparator2.TabIndex = 48;
+            // 
+            // CustomButtonPDpiCheck
+            // 
+            CustomButtonPDpiCheck.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            CustomButtonPDpiCheck.BorderColor = Color.Blue;
+            CustomButtonPDpiCheck.FlatStyle = FlatStyle.Flat;
+            CustomButtonPDpiCheck.Location = new Point(413, 303);
+            CustomButtonPDpiCheck.Name = "CustomButtonPDpiCheck";
+            CustomButtonPDpiCheck.RoundedCorners = 5;
+            CustomButtonPDpiCheck.SelectionColor = Color.LightBlue;
+            CustomButtonPDpiCheck.Size = new Size(110, 27);
+            CustomButtonPDpiCheck.TabIndex = 47;
+            CustomButtonPDpiCheck.Text = "Check DPI bypass";
+            CustomButtonPDpiCheck.UseVisualStyleBackColor = true;
+            CustomButtonPDpiCheck.Click += CustomButtonPDpiCheck_Click;
+            // 
             // CustomButtonPDpiPresetDefault
             // 
             CustomButtonPDpiPresetDefault.BorderColor = Color.Blue;
             CustomButtonPDpiPresetDefault.FlatStyle = FlatStyle.Flat;
-            CustomButtonPDpiPresetDefault.Location = new Point(470, 130);
+            CustomButtonPDpiPresetDefault.Location = new Point(282, 131);
             CustomButtonPDpiPresetDefault.Name = "CustomButtonPDpiPresetDefault";
             CustomButtonPDpiPresetDefault.RoundedCorners = 5;
             CustomButtonPDpiPresetDefault.SelectionColor = Color.LightBlue;
@@ -1140,7 +1293,7 @@
             CustomLabelPDpiPresets.BorderColor = Color.Blue;
             CustomLabelPDpiPresets.FlatStyle = FlatStyle.Flat;
             CustomLabelPDpiPresets.ForeColor = Color.White;
-            CustomLabelPDpiPresets.Location = new Point(470, 110);
+            CustomLabelPDpiPresets.Location = new Point(282, 111);
             CustomLabelPDpiPresets.Name = "CustomLabelPDpiPresets";
             CustomLabelPDpiPresets.RoundedCorners = 0;
             CustomLabelPDpiPresets.Size = new Size(47, 15);
@@ -1363,22 +1516,6 @@
             CustomCheckBoxProxyEventShowRequest.Text = "Write requests to log";
             CustomCheckBoxProxyEventShowRequest.UseVisualStyleBackColor = false;
             CustomCheckBoxProxyEventShowRequest.CheckedChanged += SecureDNSClient_CheckedChanged;
-            // 
-            // CustomCheckBoxPDpiEnableDpiBypass
-            // 
-            CustomCheckBoxPDpiEnableDpiBypass.BackColor = Color.DimGray;
-            CustomCheckBoxPDpiEnableDpiBypass.BorderColor = Color.Blue;
-            CustomCheckBoxPDpiEnableDpiBypass.CheckColor = Color.Blue;
-            CustomCheckBoxPDpiEnableDpiBypass.Checked = true;
-            CustomCheckBoxPDpiEnableDpiBypass.CheckState = CheckState.Checked;
-            CustomCheckBoxPDpiEnableDpiBypass.ForeColor = Color.White;
-            CustomCheckBoxPDpiEnableDpiBypass.Location = new Point(25, 80);
-            CustomCheckBoxPDpiEnableDpiBypass.Name = "CustomCheckBoxPDpiEnableDpiBypass";
-            CustomCheckBoxPDpiEnableDpiBypass.SelectionColor = Color.LightBlue;
-            CustomCheckBoxPDpiEnableDpiBypass.Size = new Size(123, 17);
-            CustomCheckBoxPDpiEnableDpiBypass.TabIndex = 17;
-            CustomCheckBoxPDpiEnableDpiBypass.Text = "Enable DPI bypass";
-            CustomCheckBoxPDpiEnableDpiBypass.UseVisualStyleBackColor = false;
             // 
             // CustomButtonShare
             // 
@@ -2361,7 +2498,7 @@
             CustomLabelSettingWorkingModeSetDohPort.Location = new Point(65, 180);
             CustomLabelSettingWorkingModeSetDohPort.Name = "CustomLabelSettingWorkingModeSetDohPort";
             CustomLabelSettingWorkingModeSetDohPort.RoundedCorners = 0;
-            CustomLabelSettingWorkingModeSetDohPort.Size = new Size(106, 15);
+            CustomLabelSettingWorkingModeSetDohPort.Size = new Size(108, 17);
             CustomLabelSettingWorkingModeSetDohPort.TabIndex = 5;
             CustomLabelSettingWorkingModeSetDohPort.Text = "Set local DoH port:";
             // 
@@ -2391,7 +2528,7 @@
             CustomLabelSettingInfoWorkingMode2.Location = new Point(50, 334);
             CustomLabelSettingInfoWorkingMode2.Name = "CustomLabelSettingInfoWorkingMode2";
             CustomLabelSettingInfoWorkingMode2.RoundedCorners = 0;
-            CustomLabelSettingInfoWorkingMode2.Size = new Size(262, 15);
+            CustomLabelSettingInfoWorkingMode2.Size = new Size(264, 17);
             CustomLabelSettingInfoWorkingMode2.TabIndex = 3;
             CustomLabelSettingInfoWorkingMode2.Text = "* Reconnect is require for changes to take effect.";
             // 
@@ -2437,7 +2574,7 @@
             CustomLabelSettingInfoWorkingMode1.Location = new Point(50, 35);
             CustomLabelSettingInfoWorkingMode1.Name = "CustomLabelSettingInfoWorkingMode1";
             CustomLabelSettingInfoWorkingMode1.RoundedCorners = 0;
-            CustomLabelSettingInfoWorkingMode1.Size = new Size(394, 30);
+            CustomLabelSettingInfoWorkingMode1.Size = new Size(396, 32);
             CustomLabelSettingInfoWorkingMode1.TabIndex = 0;
             CustomLabelSettingInfoWorkingMode1.Text = "Legacy DNS Server: You can set and unset DNS easily.\r\nDNS Over HTTPS Server: You need to install certificate and set it manually.";
             // 
@@ -2707,6 +2844,8 @@
             // TabPageSettingsQuickConnect
             // 
             TabPageSettingsQuickConnect.BackColor = Color.Transparent;
+            TabPageSettingsQuickConnect.Controls.Add(CustomCheckBoxSettingQcOnStartup);
+            TabPageSettingsQuickConnect.Controls.Add(CustomLabelSettingQcConnectMode);
             TabPageSettingsQuickConnect.Controls.Add(CustomCheckBoxSettingQcUseSavedServers);
             TabPageSettingsQuickConnect.Controls.Add(CustomButtonSettingQcStartup);
             TabPageSettingsQuickConnect.Controls.Add(CustomCheckBoxSettingQcSetDnsTo);
@@ -2720,7 +2859,6 @@
             TabPageSettingsQuickConnect.Controls.Add(CustomComboBoxSettingQcNics);
             TabPageSettingsQuickConnect.Controls.Add(CustomCheckBoxSettingQcCheckAllServers);
             TabPageSettingsQuickConnect.Controls.Add(CustomComboBoxSettingQcConnectMode);
-            TabPageSettingsQuickConnect.Controls.Add(CustomLabelSettingQcConnectMode);
             TabPageSettingsQuickConnect.Controls.Add(CustomLabelSettingQcInfo);
             TabPageSettingsQuickConnect.Location = new Point(94, 4);
             TabPageSettingsQuickConnect.Name = "TabPageSettingsQuickConnect";
@@ -2730,11 +2868,45 @@
             TabPageSettingsQuickConnect.Tag = 2;
             TabPageSettingsQuickConnect.Text = "Quick Connect";
             // 
+            // CustomCheckBoxSettingQcOnStartup
+            // 
+            CustomCheckBoxSettingQcOnStartup.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            CustomCheckBoxSettingQcOnStartup.BackColor = Color.DimGray;
+            CustomCheckBoxSettingQcOnStartup.BorderColor = Color.Blue;
+            CustomCheckBoxSettingQcOnStartup.CheckColor = Color.Blue;
+            CustomCheckBoxSettingQcOnStartup.Checked = true;
+            CustomCheckBoxSettingQcOnStartup.CheckState = CheckState.Checked;
+            CustomCheckBoxSettingQcOnStartup.ForeColor = Color.White;
+            CustomCheckBoxSettingQcOnStartup.Location = new Point(277, 330);
+            CustomCheckBoxSettingQcOnStartup.Name = "CustomCheckBoxSettingQcOnStartup";
+            CustomCheckBoxSettingQcOnStartup.SelectionColor = Color.LightBlue;
+            CustomCheckBoxSettingQcOnStartup.Size = new Size(212, 17);
+            CustomCheckBoxSettingQcOnStartup.TabIndex = 18;
+            CustomCheckBoxSettingQcOnStartup.Text = "Execute Quick Connect On Startup";
+            CustomCheckBoxSettingQcOnStartup.UseVisualStyleBackColor = false;
+            // 
+            // CustomLabelSettingQcConnectMode
+            // 
+            CustomLabelSettingQcConnectMode.AutoSize = true;
+            CustomLabelSettingQcConnectMode.BackColor = Color.DimGray;
+            CustomLabelSettingQcConnectMode.Border = false;
+            CustomLabelSettingQcConnectMode.BorderColor = Color.Blue;
+            CustomLabelSettingQcConnectMode.FlatStyle = FlatStyle.Flat;
+            CustomLabelSettingQcConnectMode.ForeColor = Color.White;
+            CustomLabelSettingQcConnectMode.Location = new Point(20, 53);
+            CustomLabelSettingQcConnectMode.Name = "CustomLabelSettingQcConnectMode";
+            CustomLabelSettingQcConnectMode.RoundedCorners = 0;
+            CustomLabelSettingQcConnectMode.Size = new Size(71, 17);
+            CustomLabelSettingQcConnectMode.TabIndex = 17;
+            CustomLabelSettingQcConnectMode.Text = "Connect to:";
+            // 
             // CustomCheckBoxSettingQcUseSavedServers
             // 
             CustomCheckBoxSettingQcUseSavedServers.BackColor = Color.DimGray;
             CustomCheckBoxSettingQcUseSavedServers.BorderColor = Color.Blue;
             CustomCheckBoxSettingQcUseSavedServers.CheckColor = Color.Blue;
+            CustomCheckBoxSettingQcUseSavedServers.Checked = true;
+            CustomCheckBoxSettingQcUseSavedServers.CheckState = CheckState.Checked;
             CustomCheckBoxSettingQcUseSavedServers.ForeColor = Color.White;
             CustomCheckBoxSettingQcUseSavedServers.Location = new Point(117, 89);
             CustomCheckBoxSettingQcUseSavedServers.Name = "CustomCheckBoxSettingQcUseSavedServers";
@@ -2789,6 +2961,7 @@
             CustomComboBoxSettingQcGdBasic.SelectionColor = Color.DodgerBlue;
             CustomComboBoxSettingQcGdBasic.Size = new Size(121, 23);
             CustomComboBoxSettingQcGdBasic.TabIndex = 12;
+            CustomComboBoxSettingQcGdBasic.Text = "Select a Mode";
             // 
             // CustomRadioButtonSettingQcGdAdvanced
             // 
@@ -2890,6 +3063,7 @@
             CustomComboBoxSettingQcNics.SelectionColor = Color.DodgerBlue;
             CustomComboBoxSettingQcNics.Size = new Size(200, 23);
             CustomComboBoxSettingQcNics.TabIndex = 5;
+            CustomComboBoxSettingQcNics.Text = "Select a Network Adapter";
             // 
             // CustomCheckBoxSettingQcCheckAllServers
             // 
@@ -2910,6 +3084,7 @@
             CustomComboBoxSettingQcConnectMode.BackColor = Color.DimGray;
             CustomComboBoxSettingQcConnectMode.BorderColor = Color.Blue;
             CustomComboBoxSettingQcConnectMode.DrawMode = DrawMode.OwnerDrawVariable;
+            CustomComboBoxSettingQcConnectMode.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             CustomComboBoxSettingQcConnectMode.ForeColor = Color.White;
             CustomComboBoxSettingQcConnectMode.FormattingEnabled = true;
             CustomComboBoxSettingQcConnectMode.ItemHeight = 17;
@@ -2919,21 +3094,7 @@
             CustomComboBoxSettingQcConnectMode.SelectionColor = Color.DodgerBlue;
             CustomComboBoxSettingQcConnectMode.Size = new Size(250, 23);
             CustomComboBoxSettingQcConnectMode.TabIndex = 2;
-            // 
-            // CustomLabelSettingQcConnectMode
-            // 
-            CustomLabelSettingQcConnectMode.AutoSize = true;
-            CustomLabelSettingQcConnectMode.BackColor = Color.DimGray;
-            CustomLabelSettingQcConnectMode.Border = false;
-            CustomLabelSettingQcConnectMode.BorderColor = Color.Blue;
-            CustomLabelSettingQcConnectMode.FlatStyle = FlatStyle.Flat;
-            CustomLabelSettingQcConnectMode.ForeColor = Color.White;
-            CustomLabelSettingQcConnectMode.Location = new Point(20, 53);
-            CustomLabelSettingQcConnectMode.Name = "CustomLabelSettingQcConnectMode";
-            CustomLabelSettingQcConnectMode.RoundedCorners = 0;
-            CustomLabelSettingQcConnectMode.Size = new Size(69, 15);
-            CustomLabelSettingQcConnectMode.TabIndex = 1;
-            CustomLabelSettingQcConnectMode.Text = "Connect to:";
+            CustomComboBoxSettingQcConnectMode.Text = "Select a Connect Mode";
             // 
             // CustomLabelSettingQcInfo
             // 
@@ -2946,7 +3107,7 @@
             CustomLabelSettingQcInfo.Location = new Point(20, 10);
             CustomLabelSettingQcInfo.Name = "CustomLabelSettingQcInfo";
             CustomLabelSettingQcInfo.RoundedCorners = 0;
-            CustomLabelSettingQcInfo.Size = new Size(170, 15);
+            CustomLabelSettingQcInfo.Size = new Size(172, 17);
             CustomLabelSettingQcInfo.TabIndex = 0;
             CustomLabelSettingQcInfo.Text = "Choose Quick Connect actions";
             // 
@@ -3199,7 +3360,7 @@
             CustomTabControlSettingProxy.Size = new Size(661, 351);
             CustomTabControlSettingProxy.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSettingProxy.TabIndex = 49;
-            CustomTabControlSettingProxy.Tag = 1;
+            CustomTabControlSettingProxy.Tag = 0;
             // 
             // TabPageSettingProxyBasic
             // 
@@ -3396,7 +3557,7 @@
             CustomCheckBoxSettingProxyBlockPort80.Checked = true;
             CustomCheckBoxSettingProxyBlockPort80.CheckState = CheckState.Checked;
             CustomCheckBoxSettingProxyBlockPort80.ForeColor = Color.White;
-            CustomCheckBoxSettingProxyBlockPort80.Location = new Point(361, 25);
+            CustomCheckBoxSettingProxyBlockPort80.Location = new Point(403, 25);
             CustomCheckBoxSettingProxyBlockPort80.Name = "CustomCheckBoxSettingProxyBlockPort80";
             CustomCheckBoxSettingProxyBlockPort80.SelectionColor = Color.LightBlue;
             CustomCheckBoxSettingProxyBlockPort80.Size = new Size(96, 17);
@@ -3415,9 +3576,9 @@
             CustomLabelSettingProxyHandleRequests.Location = new Point(161, 25);
             CustomLabelSettingProxyHandleRequests.Name = "CustomLabelSettingProxyHandleRequests";
             CustomLabelSettingProxyHandleRequests.RoundedCorners = 0;
-            CustomLabelSettingProxyHandleRequests.Size = new Size(95, 15);
+            CustomLabelSettingProxyHandleRequests.Size = new Size(135, 15);
             CustomLabelSettingProxyHandleRequests.TabIndex = 43;
-            CustomLabelSettingProxyHandleRequests.Text = "Handle requests:";
+            CustomLabelSettingProxyHandleRequests.Text = "Handle requests per sec:";
             // 
             // CustomNumericUpDownSettingProxyPort
             // 
@@ -3438,14 +3599,14 @@
             CustomNumericUpDownSettingProxyHandleRequests.BackColor = Color.DimGray;
             CustomNumericUpDownSettingProxyHandleRequests.BorderColor = Color.Blue;
             CustomNumericUpDownSettingProxyHandleRequests.BorderStyle = BorderStyle.FixedSingle;
-            CustomNumericUpDownSettingProxyHandleRequests.Location = new Point(268, 23);
-            CustomNumericUpDownSettingProxyHandleRequests.Maximum = new decimal(new int[] { 50000, 0, 0, 0 });
-            CustomNumericUpDownSettingProxyHandleRequests.Minimum = new decimal(new int[] { 200, 0, 0, 0 });
+            CustomNumericUpDownSettingProxyHandleRequests.Location = new Point(310, 23);
+            CustomNumericUpDownSettingProxyHandleRequests.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            CustomNumericUpDownSettingProxyHandleRequests.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             CustomNumericUpDownSettingProxyHandleRequests.Name = "CustomNumericUpDownSettingProxyHandleRequests";
             CustomNumericUpDownSettingProxyHandleRequests.RoundedCorners = 5;
             CustomNumericUpDownSettingProxyHandleRequests.Size = new Size(55, 23);
             CustomNumericUpDownSettingProxyHandleRequests.TabIndex = 44;
-            CustomNumericUpDownSettingProxyHandleRequests.Value = new decimal(new int[] { 2000, 0, 0, 0 });
+            CustomNumericUpDownSettingProxyHandleRequests.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             // 
             // TabPageSettingProxyAdvanced
             // 
@@ -4518,7 +4679,7 @@
             CustomContextMenuStripIcon.RoundedCorners = 5;
             CustomContextMenuStripIcon.SameColorForSubItems = true;
             CustomContextMenuStripIcon.SelectionColor = Color.LightBlue;
-            CustomContextMenuStripIcon.Size = new Size(181, 26);
+            CustomContextMenuStripIcon.Size = new Size(61, 4);
             // 
             // CustomGroupBoxStatus
             // 
@@ -4601,7 +4762,7 @@
             Controls.Add(SplitContainerMain);
             DoubleBuffered = true;
             Icon = (Icon)resources.GetObject("$this.Icon");
-            MinimumSize = new Size(900, 620);
+            MinimumSize = new Size(950, 620);
             Name = "FormMain";
             SizeGripStyle = SizeGripStyle.Show;
             Text = "SecureDNSClient";
@@ -4613,6 +4774,7 @@
             CustomTabControlSecureDNS.ResumeLayout(false);
             TabPageCheck.ResumeLayout(false);
             TabPageCheck.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownCheckInParallel).EndInit();
             TabPageConnect.ResumeLayout(false);
             TabPageSetDNS.ResumeLayout(false);
             TabPageSetDNS.PerformLayout();
@@ -4821,7 +4983,6 @@
         private TabPage TabPageShare;
         private CustomControls.CustomLabel CustomLabelShareInfo;
         private CustomControls.CustomButton CustomButtonShare;
-        private CustomControls.CustomCheckBox CustomCheckBoxPDpiEnableDpiBypass;
         private CustomControls.CustomLabel CustomLabelSettingBootstrapDnsPort;
         private CustomControls.CustomNumericUpDown CustomNumericUpDownSettingBootstrapDnsPort;
         private CustomControls.CustomNumericUpDown CustomNumericUpDownSettingFallbackDnsPort;
@@ -4887,7 +5048,6 @@
         private CustomControls.CustomLabel CustomLabelSettingShareSeparator2;
         private CustomControls.CustomButton CustomButtonSettingProxyBlackWhiteList;
         private CustomControls.CustomButton CustomButtonWriteSavedServersDelay;
-        private CustomControls.CustomCheckBox CustomCheckBoxCheckInParallel;
         private CustomControls.CustomLabel CustomLabelPDpiAntiPatternOffset;
         private CustomControls.CustomNumericUpDown CustomNumericUpDownPDpiAntiPatternOffset;
         private CustomControls.CustomTabControl CustomTabControlSettingProxy;
@@ -4933,7 +5093,6 @@
         private TabPage TabPageSettingsQuickConnect;
         private CustomControls.CustomLabel CustomLabelSettingQcInfo;
         private CustomControls.CustomComboBox CustomComboBoxSettingQcConnectMode;
-        private CustomControls.CustomLabel CustomLabelSettingQcConnectMode;
         private CustomControls.CustomCheckBox CustomCheckBoxSettingQcCheckAllServers;
         private CustomControls.CustomButton CustomButtonSettingQcUpdateNics;
         private CustomControls.CustomComboBox CustomComboBoxSettingQcNics;
@@ -4955,5 +5114,17 @@
         private DataGridViewTextBoxColumn ColumnNicStatusName;
         private DataGridViewTextBoxColumn ColumnNicStatusText;
         private CustomControls.CustomButton CustomButtonEnableDisableNic;
+        private CustomControls.CustomButton CustomButtonPDpiCheck;
+        private CustomControls.CustomLabel CustomLabelShareSeparator2;
+        private CustomControls.CustomLabel CustomLabelProxySSLChangeSniToIpInfo;
+        private CustomControls.CustomCheckBox CustomCheckBoxProxySSLChangeSniToIP;
+        private CustomControls.CustomCheckBox CustomCheckBoxProxyEnableSSL;
+        private CustomControls.CustomLabel CustomLabelProxySSLInfo;
+        private CustomControls.CustomCheckBox CustomCheckBoxPDpiEnableDpiBypass;
+        private CustomControls.CustomButton CustomButtonDisconnectAll;
+        private CustomControls.CustomLabel CustomLabelSettingQcConnectMode;
+        private CustomControls.CustomCheckBox CustomCheckBoxSettingQcOnStartup;
+        private CustomControls.CustomLabel CustomLabelCheckInParallel;
+        private CustomControls.CustomNumericUpDown CustomNumericUpDownCheckInParallel;
     }
 }

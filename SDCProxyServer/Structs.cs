@@ -6,10 +6,19 @@ public struct Key
     {
         public static readonly string Name = "Setting";
         public static readonly string Port = "Port";
-        public static readonly string MaxThreads = "MaxThreads";
+        public static readonly string MaxRequests = "MaxRequests";
         public static readonly string RequestTimeoutSec = "RequestTimeoutSec";
         public static readonly string KillOnCpuUsage = "KillOnCpuUsage";
         public static readonly string BlockPort80 = "BlockPort80";
+    }
+
+    public readonly struct SSLSetting
+    {
+        public static readonly string Name = "SSLSetting";
+        public static readonly string Enable = "Enable";
+        public static readonly string RootCA_Path = "RootCA_Path";
+        public static readonly string RootCA_KeyPath = "RootCA_KeyPath";
+        public static readonly string ChangeSniToIP = "ChangeSniToIP";
     }
 
     public readonly struct Programs

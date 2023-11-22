@@ -5,7 +5,6 @@ using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text.Json;
-using System.Threading;
 using MsmhToolsClass.DnsTool.DnsWireformatTools;
 
 namespace MsmhToolsClass.DnsTool;

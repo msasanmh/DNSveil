@@ -134,8 +134,7 @@ public class Settings
         for (int n = 0; n < controls.Count; n++)
         {
             Control control = controls[n];
-            if (control.Name == controlName)
-                return true;
+            if (control.Name == controlName) return true;
         }
         return false;
     }

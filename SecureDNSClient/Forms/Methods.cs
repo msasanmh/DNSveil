@@ -3,7 +3,6 @@ using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
 using MsmhToolsClass;
 using MsmhToolsClass.ProxyServerPrograms;
-using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
 using System.Net;
@@ -15,8 +14,28 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
+    public async void GetAppReady()
+    {
+        await Task.Run(async () =>
+        {
+            IsAppReady = false;
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Waiting for Network...{NL}", Color.Gray));
+            while (true)
+            {
+                await Task.Delay(1000);
+                IsAppReady = IsInternetOnline = await IsInternetAlive(false, true);
+                if (IsAppReady) break;
+            }
+            string msgReady = $"Network Detected (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgReady, Color.Gray));
+        });
+    }
+
     public async void StartupTask()
     {
+        string msgStartup = $"Startup Task Executed (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStartup, Color.Orange));
+
         Hide();
         Opacity = 0;
         bool cancel = false;
@@ -34,16 +53,17 @@ public partial class FormMain
                 await Task.Delay(100);
             }
         });
-        try { await wait.WaitAsync(TimeSpan.FromSeconds(Program.StartupDelaySec)); } catch (Exception) { }
+        if (Program.StartupDelaySec > 0)
+            try { await wait.WaitAsync(TimeSpan.FromSeconds(Program.StartupDelaySec)); } catch (Exception) { }
 
         if (cancel) return;
 
-        // Wait for Network Connectivity
+        // Wait Until App Is Ready
         Task waitNet = Task.Run(async () =>
         {
             while (true)
             {
-                if (NetworkTool.IsInternetAlive()) break;
+                if (IsAppReady) break;
                 if (IsCheckingStarted || IsConnecting || IsQuickConnecting || IsExiting)
                 {
                     cancel = true;
@@ -58,7 +78,6 @@ public partial class FormMain
 
         // Update NICs
         SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
-        await Task.Delay(300);
 
         // Start Quick Connect
         await StartQuickConnect(null);
@@ -72,10 +91,7 @@ public partial class FormMain
         try
         {
             string taskName = "SecureDnsClientStartup";
-            string startCmd = "cmd";
-            string prefix = "/c start \"SDC\" /b ";
             string appPath = $"\"{Path.GetFullPath(Application.ExecutablePath)}\"";
-            string trimStart = $"{startCmd} {prefix}";
             using TaskService ts = new();
             TaskCollection tasks = ts.RootFolder.GetTasks(new System.Text.RegularExpressions.Regex(taskName));
             for (int n = 0; n < tasks.Count; n++)
@@ -93,7 +109,6 @@ public partial class FormMain
 
                         if (!string.IsNullOrEmpty(existStr))
                         {
-                            if (existStr.StartsWith(trimStart)) existStr = existStr[trimStart.Length..];
                             if (existStr.Contains("\" "))
                                 existStr = $"{existStr.Split("\" ")[0]}\"";
                             if (existStr.Equals(appPath) && td.Principal.RunLevel == TaskRunLevel.Highest) isPathOk = true;
@@ -117,18 +132,15 @@ public partial class FormMain
     {
         try
         {
-            int startupDelay = 5;
+            int startupDelay = 0;
             string taskName = "SecureDnsClientStartup";
-            string startCmd = "cmd";
-            string prefix = "/c start \"SDC\" /b ";
             string appPath = $"\"{Path.GetFullPath(Application.ExecutablePath)}\"";
-            string appArgs = $" startup {startupDelay}";
-            string args = prefix + appPath + appArgs;
+            string appArgs = $"startup {startupDelay}";
             using TaskService ts = new();
             TaskDefinition td = ts.NewTask();
             td.RegistrationInfo.Description = "Secure DNS Client Startup";
             td.Triggers.Add(new LogonTrigger()); // Trigger at Logon
-            td.Actions.Add(startCmd, args);
+            td.Actions.Add(appPath, appArgs);
             td.Principal.RunLevel = TaskRunLevel.Highest;
             td.Settings.Enabled = active;
             td.Settings.AllowDemandStart = true;
@@ -233,6 +245,7 @@ public partial class FormMain
 
     public void UpdateConnectModes(CustomComboBox ccb)
     {
+        ccb.Text = "Select a Connect Mode";
         object item = ccb.SelectedItem;
         ccb.Items.Clear();
         List<string> connectModeNames = new()
@@ -265,6 +278,7 @@ public partial class FormMain
                 ccb.SelectedIndex = 0;
             ccb.DropDownHeight = connectModeNames.Count * ccb.Height;
         }
+        else ccb.SelectedIndex = -1;
     }
 
     public ConnectMode GetConnectMode()
@@ -283,13 +297,14 @@ public partial class FormMain
         return connectMode;
     }
 
-    private static bool DoesAppClosedNormally()
+    private async Task<bool> DoesAppClosedNormallyAsync()
     {
         if (!File.Exists(SecureDNS.CloseStatusPath)) return true;
         string statusStr = string.Empty;
         try
         {
-            statusStr = File.ReadAllText(SecureDNS.CloseStatusPath).Replace(NL, string.Empty).Trim();
+            statusStr = await File.ReadAllTextAsync(SecureDNS.CloseStatusPath);
+            statusStr = statusStr.Replace(NL, string.Empty).Trim();
         }
         catch (Exception)
         {
@@ -338,7 +353,8 @@ public partial class FormMain
                            bool isConnecting, bool isDisconnecting, bool isDNSSetting, bool isDNSUnsetting,
                            bool isProxyActivating, bool isProxyDeactivating, bool isDisconnectingAll)
     {
-        bool isInAction = (isCheckingForUpdate && IsCheckingForUpdate) ||
+        bool isInAction = !IsAppReady ||
+                          (isCheckingForUpdate && IsCheckingForUpdate) ||
                           (isQuickConnectWorking && IsQuickConnectWorking) ||
                           (isCheckingStarted && IsCheckingStarted) ||
                           (isConnecting && IsConnecting) ||
@@ -351,6 +367,9 @@ public partial class FormMain
 
         if (isInAction && showMsg)
         {
+            if (!IsAppReady)
+                CustomMessageBox.Show(this, "App is not ready or there's no Internet connection.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
             if (IsCheckingForUpdate)
                 CustomMessageBox.Show(this, "App is checking for update.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
@@ -402,9 +421,24 @@ public partial class FormMain
         }
     }
 
-    private bool IsInternetAlive(bool writeToLog = true)
+    private async Task<bool> IsInternetAlive(bool writeToLog = true, bool alsoCheckByBootstrapIp = true, int timeoutMS = 3000)
     {
-        if (!NetworkTool.IsInternetAlive())
+        IPAddress bootstrapIP = GetBootstrapSetting(out _);
+        bool isAlive = NetworkTool.IsInternetAlive();
+        if (isAlive)
+        {
+            if (alsoCheckByBootstrapIp)
+            {
+                bool isAliveByUrl = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
+                isAlive = isAlive && isAliveByUrl;
+            }
+        }
+        else
+        {
+            isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
+        }
+        
+        if (!isAlive)
         {
             string msgNet = "There is no Internet connectivity." + NL;
             if (writeToLog)
@@ -415,38 +449,59 @@ public partial class FormMain
             return true;
     }
 
-    private async Task FlushDNS(bool showMsg = true)
+    private async Task FlushDNS(bool showMsgHeaderAndFooter, bool showMsg)
     {
         if (IsFlushingDns) return;
         IsFlushingDns = true;
+        string remove = "Windows IP Configuration";
         await Task.Run(async () =>
         {
             string msg = $"{NL}Flushing Dns...{NL}";
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+            if (showMsgHeaderAndFooter) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+
             msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
+            if (showMsg)
+            {
+                if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                msg = msg.Replace(Environment.NewLine, string.Empty);
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flush: ", Color.DodgerBlue));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+            }
+
+            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
+            if (showMsg)
+            {
+                if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                msg = msg.Replace(Environment.NewLine, string.Empty);
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Register: ", Color.DodgerBlue));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+            }
+
             msg = $"Dns flushed successfully.{NL}";
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+            if (showMsgHeaderAndFooter) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
         });
         IsFlushingDns = false;
     }
 
-    private async Task FlushDnsOnExit(bool showMsg = false)
+    private async Task FlushDnsOnExit(bool showMsg)
     {
         if (IsFlushingDns) return;
-        IsFlushingDns = true;
         await Task.Run(async () =>
         {
             string msg = $"{NL}Full Flushing Dns...{NL}";
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
-            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
+
+            await FlushDNS(false, showMsg);
+            IsFlushingDns = true;
+
             msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
+            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText("Release:", Color.DodgerBlue));
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
+
             msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
+            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText("Renew:", Color.DodgerBlue));
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
+
             msg = $"Dns flushed successfully.{NL}";
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
             //ProcessManager.Execute("netsh", "winsock reset"); // Needs PC Restart
@@ -668,7 +723,7 @@ public partial class FormMain
         dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
         dgv.BorderStyle = BorderStyle.None;
         List<DataGridViewRow> rList = new();
-        for (int n = 0; n < 13; n++)
+        for (int n = 0; n < 14; n++)
         {
             DataGridViewRow row = new();
             row.CreateCells(dgv, "cell0", "cell1");
@@ -689,6 +744,7 @@ public partial class FormMain
                 10 => "Proxy DPI Bypass",
                 11 => "GoodbyeDPI",
                 12 => "CPU",
+                13 => "",
                 _ => string.Empty
             };
 
@@ -767,7 +823,7 @@ public partial class FormMain
                 9 => "Manufacturer",
                 10 => "Is Physical Adapter",
                 11 => "ServiceName",
-                12 => "Speed",
+                12 => "Max Speed",
                 13 => "Time Of Last Reset",
                 _ => string.Empty
             };
@@ -820,7 +876,7 @@ public partial class FormMain
             if (string.IsNullOrWhiteSpace(host)) return;
 
             // If there is no internet conectivity return
-            if (!IsInternetAlive()) return;
+            if (!IsInternetOnline) return;
 
             // If In Action return
             if (IsInAction(false, false, false, true, true, true, true, true, true, true, true)) return;
@@ -880,7 +936,7 @@ public partial class FormMain
                 bool isProxyPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), ProxyPort, 5);
                 Debug.WriteLine($"Is Proxy Port Open: {isProxyPortOpen}, Port: {ProxyPort}");
 
-                if (IsProxyDpiBypassActive && isProxyPortOpen)
+                if (isProxyPortOpen && (IsProxyDpiBypassActive || IsProxySSLChangeSniToIpActive))
                 {
                     Debug.WriteLine("Proxy");
 
@@ -920,6 +976,7 @@ public partial class FormMain
                 else
                 {
                     Debug.WriteLine("No Proxy");
+
                     using HttpClientHandler handler = new();
                     handler.UseProxy = false;
                     // Ignore Cert Check To Make It Faster
@@ -990,7 +1047,7 @@ public partial class FormMain
                 // Write Failed to log
                 if (IsDPIActive)
                 {
-                    string msgDPI1 = $"Check DPI Bypass: {ex.Message}{NL}";
+                    string msgDPI1 = $"Check DPI Bypass:{ex.Message}{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.IndianRed));
                 }
                 else
@@ -1040,5 +1097,10 @@ public partial class FormMain
             return false;
         }
     }
+
+    //private object DetectProxyChanges()
+    //{
+
+    //}
 
 }

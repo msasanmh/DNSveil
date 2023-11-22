@@ -78,7 +78,7 @@ public static partial class Program
                 {
                     IPAddress ip = IPAddress.Any;
                     int port = DefaultPort;
-                    int maxThreads = DefaultMaxThreads;
+                    int maxRequests = DefaultMaxRequests;
                     int requestTimeoutSec = DefaultRequestTimeoutSec;
                     float killOnCpuUsage = DefaultKillOnCpuUsage;
                     bool blockPort80 = DefaultBlockPort80;
@@ -114,17 +114,17 @@ public static partial class Program
                         // Max Threads
                         while (true)
                         {
-                            object value = await ConsoleTools.ReadValue($"Enter Maximum Thread Number (Default: {DefaultMaxThreads})", maxThreads, typeof(int));
+                            object value = await ConsoleTools.ReadValue($"Enter Maximum Requests To Handle Per Second (Default: {DefaultMaxRequests})", maxRequests, typeof(int));
                             int n = Convert.ToInt32(value);
-                            if (n >= DefaultMaxThreadsMin && n <= DefaultMaxThreadsMax)
+                            if (n >= DefaultMaxRequestsMin && n <= DefaultMaxRequestsMax)
                             {
-                                maxThreads = n;
-                                WriteToStdout($"Maximum Thread Set to {maxThreads}", ConsoleColor.Green);
+                                maxRequests = n;
+                                WriteToStdout($"Maximum Requests Set to {maxRequests}", ConsoleColor.Green);
                                 break;
                             }
                             else
                             {
-                                WriteToStdout($"Maximum Thread Must Be Between {DefaultMaxThreadsMin} and {DefaultMaxThreadsMax}", ConsoleColor.Red);
+                                WriteToStdout($"Maximum Requests Must Be Between {DefaultMaxRequestsMin} and {DefaultMaxRequestsMax}", ConsoleColor.Red);
                             }
                         }
 
@@ -178,11 +178,11 @@ public static partial class Program
                     }
                     else // Command Mode
                     {
-                        // setting -Port=m -MaxThreads=m -RequestTimeoutSec=m -KillOnCpuUsage=m -BlockPort80=m
+                        // setting -Port=m -MaxRequests=m -RequestTimeoutSec=m -KillOnCpuUsage=m -BlockPort80=m
 
                         KeyValues keyValues = new();
                         keyValues.Add(Key.Setting.Port, true, false, typeof(int), DefaultPortMin, DefaultPortMax);
-                        keyValues.Add(Key.Setting.MaxThreads, true, false, typeof(int), DefaultMaxThreadsMin, DefaultMaxThreadsMax);
+                        keyValues.Add(Key.Setting.MaxRequests, true, false, typeof(int), DefaultMaxRequestsMin, DefaultMaxRequestsMax);
                         keyValues.Add(Key.Setting.RequestTimeoutSec, true, false, typeof(int), DefaultRequestTimeoutSecMin, DefaultRequestTimeoutSecMax);
                         keyValues.Add(Key.Setting.KillOnCpuUsage, true, false, typeof(float), DefaultKillOnCpuUsageMin, DefaultKillOnCpuUsageMax);
                         keyValues.Add(Key.Setting.BlockPort80, true, false, typeof(bool));
@@ -193,7 +193,7 @@ public static partial class Program
                         {
                             KeyValue kv = list[n];
                             if (kv.Key.Equals(Key.Setting.Port)) port = kv.ValueInt;
-                            if (kv.Key.Equals(Key.Setting.MaxThreads)) maxThreads = kv.ValueInt;
+                            if (kv.Key.Equals(Key.Setting.MaxRequests)) maxRequests = kv.ValueInt;
                             if (kv.Key.Equals(Key.Setting.RequestTimeoutSec)) requestTimeoutSec = kv.ValueInt;
                             if (kv.Key.Equals(Key.Setting.KillOnCpuUsage)) killOnCpuUsage = kv.ValueFloat;
                             if (kv.Key.Equals(Key.Setting.BlockPort80)) blockPort80 = kv.ValueBool;
@@ -202,12 +202,141 @@ public static partial class Program
 
                     Settings.ListenerIpAddress = IPAddress.Any;
                     Settings.ListenerPort = port;
-                    Settings.MaxThreads = maxThreads;
+                    Settings.MaxRequests = maxRequests;
                     Settings.RequestTimeoutSec = requestTimeoutSec;
                     Settings.KillOnCpuUsage = killOnCpuUsage;
                     Settings.BlockPort80 = blockPort80;
 
                     ShowSettingsMsg();
+                }
+
+                // SSLSetting
+                else if (input.ToLower().StartsWith(Key.SSLSetting.Name.ToLower()))
+                {
+                    bool enable = DefaultSSLEnable;
+                    string? rootCA_Path = null;
+                    string? rootCA_KeyPath = null;
+                    bool changeSniToIp = false;
+
+                    // Interactive Mode
+                    if (input.ToLower().Equals(Key.SSLSetting.Name.ToLower()))
+                    {
+                        // Enable
+                        string msgRV = $"Enable SSL Decryption, Enter True/False (Default: {DefaultSSLEnable})";
+                        while (true)
+                        {
+                            object value = await ConsoleTools.ReadValue(msgRV, enable, typeof(bool));
+                            enable = Convert.ToBoolean(value);
+
+                            WriteToStdout($"Enable Set to {enable}", ConsoleColor.Green);
+                            break;
+                        }
+
+                        if (enable)
+                        {
+                            // RootCA_Path
+                            bool doesUserSetPath = false;
+                            while (true)
+                            {
+                                msgRV = $"Enter The Path Of Root Certificate (Leave Empty To Generate)";
+                                object value = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
+                                string path = value.ToString() ?? string.Empty;
+                                if (string.IsNullOrEmpty(path))
+                                {
+                                    rootCA_Path = null;
+                                    break;
+                                }
+                                else
+                                {
+                                    path = Path.GetFullPath(path);
+                                    if (!File.Exists(path))
+                                    {
+                                        string msgNotExist = $"{path}\nFile Not Exist.";
+                                        WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        rootCA_Path = path;
+                                        doesUserSetPath = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // RootCA_KeyPath
+                            if (doesUserSetPath)
+                            {
+                                while (true)
+                                {
+                                    msgRV = $"Enter The Path Of Root Private Key (Leave Empty If Certificate Contains Private Key)";
+                                    object value = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
+                                    string path = value.ToString() ?? string.Empty;
+                                    if (string.IsNullOrEmpty(path))
+                                    {
+                                        rootCA_KeyPath = null;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        path = Path.GetFullPath(path);
+                                        if (!File.Exists(path))
+                                        {
+                                            string msgNotExist = $"{path}\nFile Not Exist.";
+                                            WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            rootCA_KeyPath = path;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Change SNI To IP
+                            msgRV = $"Change SNI To IP To Bypass DPI, Enter True/False (Default: {DefaultSSLChangeSniToIP})";
+                            while (true)
+                            {
+                                object value = await ConsoleTools.ReadValue(msgRV, changeSniToIp, typeof(bool));
+                                changeSniToIp = Convert.ToBoolean(value);
+
+                                WriteToStdout($"ChangeSniToIP Set to {changeSniToIp}", ConsoleColor.Green);
+                                break;
+                            }
+                        }
+                    }
+                    else // Command Mode
+                    {
+                        // sslsetting -Enable=m -RootCA_Path="" -RootCA_KeyPath="" -ChangeSniToIP=
+
+                        KeyValues keyValues = new();
+                        keyValues.Add(Key.SSLSetting.Enable, true, false, typeof(bool));
+                        keyValues.Add(Key.SSLSetting.RootCA_Path, false, true, typeof(string));
+                        keyValues.Add(Key.SSLSetting.RootCA_KeyPath, false, true, typeof(string));
+                        keyValues.Add(Key.SSLSetting.ChangeSniToIP, false, false, typeof(bool));
+
+                        bool isListOk = keyValues.GetValuesByKeys(input, out List<KeyValue> list);
+                        if (!isListOk) return;
+                        for (int n = 0; n < list.Count; n++)
+                        {
+                            KeyValue kv = list[n];
+                            if (kv.Key.Equals(Key.SSLSetting.Enable)) enable = kv.ValueBool;
+                            if (kv.Key.Equals(Key.SSLSetting.RootCA_Path)) rootCA_Path = kv.ValueString;
+                            if (kv.Key.Equals(Key.SSLSetting.RootCA_KeyPath)) rootCA_KeyPath = kv.ValueString;
+                            if (kv.Key.Equals(Key.SSLSetting.ChangeSniToIP)) changeSniToIp = kv.ValueBool;
+                        }
+                    }
+
+                    SettingsSSL_.EnableSSL = enable;
+                    SettingsSSL_.RootCA_Path = rootCA_Path;
+                    SettingsSSL_.RootCA_KeyPath = rootCA_KeyPath;
+                    SettingsSSL_.ChangeSniToIP = changeSniToIp;
+
+                    await ProxyServer.EnableSSL(SettingsSSL_);
+
+                    ShowSettingsSSLMsg();
                 }
 
                 // Programs

@@ -26,7 +26,7 @@ public partial class FormMain
     private async void GoodbyeDPIBasic(DPIBasicBypassMode? mode = null)
     {
         // Check Internet Connectivity
-        if (!IsInternetAlive()) return;
+        if (!IsInternetOnline) return;
 
         // Get blocked domain
         string blockedDomain = GetBlockedDomainSetting(out string _);
@@ -55,7 +55,7 @@ public partial class FormMain
         text = dpiBypass.Text;
 
         // Execute GoodByeDPI
-        PIDGoodbyeDPIBasic = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+        PIDGoodbyeDPIBasic = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
 
         // Wait for GoodbyeDPI
         Task wait1 = Task.Run(async () =>
@@ -81,10 +81,6 @@ public partial class FormMain
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIBasicActive = true;
             IsDPIActive = true;
-
-            // Check DPI works
-            if (IsDNSSet)
-                await CheckDPIWorks(blockedDomain);
         }
         else
         {
@@ -97,7 +93,7 @@ public partial class FormMain
     private async void GoodbyeDPIAdvanced()
     {
         // Check Internet Connectivity
-        if (!IsInternetAlive()) return;
+        if (!IsInternetOnline) return;
 
         // Get blocked domain
         string blockedDomain = GetBlockedDomainSetting(out string _);
@@ -262,7 +258,7 @@ public partial class FormMain
         string text = "Advanced";
 
         // Execute GoodByeDPI
-        PIDGoodbyeDPIAdvanced = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+        PIDGoodbyeDPIAdvanced = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
         await Task.Delay(100);
 
         if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced))
@@ -278,10 +274,6 @@ public partial class FormMain
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIAdvancedActive = true;
             IsDPIActive = true;
-
-            // Check DPI works
-            if (IsDNSSet)
-                await CheckDPIWorks(blockedDomain);
         }
         else
         {

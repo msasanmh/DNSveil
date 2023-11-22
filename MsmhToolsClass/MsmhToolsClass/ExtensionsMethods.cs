@@ -25,6 +25,61 @@ public static class Methods
 public static class ExtensionsMethods
 {
     //-----------------------------------------------------------------------------------
+    public static string GetInnerExceptions(this Exception ex)
+    {
+        string result = string.Empty;
+        result += ex.Message;
+        if (ex.InnerException != null)
+        {
+            result += Environment.NewLine + ex.InnerException.Message;
+            if (ex.InnerException.InnerException != null)
+            {
+                result += Environment.NewLine + ex.InnerException.InnerException.Message;
+                if (ex.InnerException.InnerException.InnerException != null)
+                {
+                    result += Environment.NewLine + ex.InnerException.InnerException.InnerException.Message;
+                    if (ex.InnerException.InnerException.InnerException.InnerException != null)
+                        result += Environment.NewLine + ex.InnerException.InnerException.InnerException.InnerException.Message;
+                }
+            }
+        }
+        return result;
+    }
+    //-----------------------------------------------------------------------------------
+    public static string TrimStart(this string source, string value)
+    {
+        string result = source;
+        if (result.StartsWith(value))
+        {
+            try
+            {
+                result = result[value.Length..];
+            }
+            catch (Exception)
+            {
+                // do nothing
+            }
+        }
+        return result;
+    }
+    //-----------------------------------------------------------------------------------
+    public static string TrimEnd(this string source, string value)
+    {
+        string result = source;
+        if (result.EndsWith(value))
+        {
+            try
+            {
+                result = result.Remove(source.LastIndexOf(value, StringComparison.Ordinal));
+            }
+            catch (Exception)
+            {
+                // do nothing
+            }
+        }
+        return result;
+    }
+    //-----------------------------------------------------------------------------------
     public static bool IsConnected(this Socket socket, SelectMode selectMode = SelectMode.SelectRead)
     {
         bool part1 = socket.Poll(1000, selectMode);

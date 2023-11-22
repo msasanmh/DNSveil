@@ -1,5 +1,6 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
+using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 
@@ -22,17 +23,20 @@ public class SetDnsOnNic
 
     }
 
-    private void AddOrUpdate(NetworkInterface nic)
+    private void AddOrUpdate(NetworkInterface nic, bool isSet)
     {
-        NetworkInterfaces nis = new(nic.Name);
-        bool isSet = nis.DnsAddresses.Any() && nis.DnsAddresses[0].Equals(IPAddress.Loopback.ToString());
+        //NetworkInterfaces nis = new(nic.Name);
+        //isSet = nis.DnsAddresses.Any() && nis.DnsAddresses[0].Equals(IPAddress.Loopback.ToString()); // Only works on Win 11
 
         bool exist = false;
 
         for (int n = 0; n < DnsOnNics.Count; n++)
         {
+            // Update
             if (DnsOnNics[n].NicName.Equals(nic.Name))
             {
+                DnsOnNics[n].NicName = nic.Name;
+                DnsOnNics[n].NIC = nic;
                 DnsOnNics[n].IsSet = isSet;
                 exist = true;
                 SaveToFile();
@@ -40,6 +44,7 @@ public class SetDnsOnNic
             }
         }
 
+        // Add
         if (!exist)
         {
             DnsOnNic dnsOnNic = new();
@@ -79,7 +84,7 @@ public class SetDnsOnNic
     {
         await Task.Run(async () => await NetworkTool.SetDnsIPv4(nic, dnss));
         await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nic)); // Unset IPv6
-        AddOrUpdate(nic);
+        AddOrUpdate(nic, true);
     }
 
     public async Task UnsetDnsToDHCP(NetworkInterface? nic)
@@ -91,7 +96,7 @@ public class SetDnsOnNic
             {
                 await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nic));
                 await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nic));
-                AddOrUpdate(nic);
+                AddOrUpdate(nic, false);
                 break;
             }
         }
@@ -122,7 +127,7 @@ public class SetDnsOnNic
                 dns2 = dns2.Trim();
                 await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nic, dns1, dns2));
                 await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nic));
-                AddOrUpdate(nic);
+                AddOrUpdate(nic, false);
                 break;
             }
         }
@@ -210,9 +215,37 @@ public class SetDnsOnNic
 
     public bool IsDnsSet()
     {
+        bool isDnsSet = false;
         for (int n = 0; n < DnsOnNics.Count; n++)
-            if (DnsOnNics[n].IsSet) return true;
-        return false;
+            if (DnsOnNics[n].IsSet)
+            {
+                isDnsSet = true; break;
+            }
+
+        // If User Set DNS Outside Of SDC Detect It
+        if (!isDnsSet)
+        {
+            bool isUnknownDnsSet = NetworkTool.IsDnsSetToLocal(out _, out string dnsIp);
+            if (isUnknownDnsSet)
+            {
+                // We Need To Get The New NIC With New Properties
+                List<string> nics = NetworkInterfaces.GetAllNetworkInterfaces(true);
+                for (int n = 0; n < nics.Count; n++)
+                {
+                    NetworkInterface? nic = NetworkTool.GetNICByName(nics[n]);
+                    if (nic != null)
+                    {
+                        IPAddressCollection dnss = nic.GetIPProperties().DnsAddresses;
+                        if (dnss.Count > 0 && dnss[0].ToString().Equals(dnsIp))
+                        {
+                            AddOrUpdate(nic, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        return isDnsSet;
     }
 
     public bool IsDnsSet(NetworkInterface nic)

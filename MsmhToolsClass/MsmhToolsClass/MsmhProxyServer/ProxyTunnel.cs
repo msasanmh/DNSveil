@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Buffers;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -16,17 +17,23 @@ internal class ProxyTunnel
     private readonly ProxySettings ProxySettings_;
     private TcpClient? ProxifiedTcpClient_;
 
+    // Handle SSL
+    public SettingsSSL SettingsSSL_ { get; private set; } = new(false);
+    public ProxyClientSSL? ClientSSL;
+
     public event EventHandler<EventArgs>? OnTunnelDisconnected;
     public event EventHandler<EventArgs>? OnDataReceived;
 
     public readonly Stopwatch KillOnTimeout = new();
+    public bool Disconnect { get; set; } = false;
 
-    public ProxyTunnel(int connectionId, ProxyClient sc, ProxyRequest req, ProxySettings proxySettings)
+    public ProxyTunnel(int connectionId, ProxyClient sc, ProxyRequest req, ProxySettings proxySettings, SettingsSSL settingsSSL)
     {
         ConnectionId = connectionId;
         Client = sc;
         Req = req;
         ProxySettings_ = proxySettings;
+        SettingsSSL_ = settingsSSL;
 
         try
         {
@@ -105,6 +112,14 @@ internal class ProxyTunnel
                     string msg = $"Killed Request On Timeout({Req.TimeoutSec} Sec): {Req.Address}:{Req.Port}";
                     Debug.WriteLine(msg);
 
+                    OnTunnelDisconnected?.Invoke(this, EventArgs.Empty);
+                    ProxifiedTcpClient_?.Close();
+                    break;
+                }
+
+                // Manual Disconnect
+                if (Disconnect)
+                {
                     OnTunnelDisconnected?.Invoke(this, EventArgs.Empty);
                     ProxifiedTcpClient_?.Close();
                     break;
@@ -212,12 +227,20 @@ internal class ProxyTunnel
                 await Client.SendAsync(request);
             }
 
-            OnDataReceived?.Invoke(this, EventArgs.Empty);
-
             // Receive Data from Both EndPoints
-            Task ct = Client.StartReceiveAsync();
-            Task rt = RemoteClient.StartReceiveAsync();
-            await Task.WhenAll(ct, rt); // Both Must Receive at the Same Time
+            if (SettingsSSL_.EnableSSL && !Req.AddressIsIp) // Cert Can't Be Valid When There's An IP Without A Domain. Like SOCKS4
+            {
+                ClientSSL = new(this);
+                OnDataReceived?.Invoke(this, EventArgs.Empty);
+                await ClientSSL.Execute();
+            }
+            else
+            {
+                OnDataReceived?.Invoke(this, EventArgs.Empty);
+                Task ct = Client.StartReceiveAsync();
+                Task rt = RemoteClient.StartReceiveAsync();
+                await Task.WhenAll(ct, rt); // Both Must Receive at the Same Time
+            }
         }
         catch (Exception ex)
         {
@@ -277,4 +300,5 @@ internal class ProxyTunnel
             await Client.StartReceiveAsync();
         }
     }
+
 }

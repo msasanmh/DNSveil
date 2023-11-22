@@ -221,9 +221,16 @@ public partial class FormMain
                     string? msg = e.Data;
                     if (!string.IsNullOrEmpty(msg))
                     {
+                        if (StopWatchWriteProxyOutputDelay.ElapsedMilliseconds < 50) return;
+                        StopWatchWriteProxyOutputDelay.Restart();
+
+                        if (!IsInternetOnline) return;
+
+                        Color reqColor = msg.Contains("Request Denied") ? Color.Orange : Color.Gray;
+
                         // Write to log
                         if (!IsCheckingStarted && !IsConnecting && !IsExiting && IsProxyActivated && IsProxyRunning)
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.Gray));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, reqColor));
 
                         // Write to file
                         try
@@ -295,6 +302,16 @@ public partial class FormMain
                     return;
                 }
 
+                //// Apply SSL Decryption
+                //bool isSSLDecryptionOk = await ApplyPSSLDecryption();
+                //if (!isSSLDecryptionOk)
+                //{
+                //    ProcessManager.KillProcessByPID(PIDFakeProxy);
+                //    ProcessManager.KillProcessByPID(PIDProxy);
+                //    IsProxyActivating = false;
+                //    return;
+                //}
+
                 // Get number of handle requests
                 int handleReq = 250;
                 this.InvokeIt(() => handleReq = Convert.ToInt32(CustomNumericUpDownSettingProxyHandleRequests.Value));
@@ -311,7 +328,7 @@ public partial class FormMain
                 this.InvokeIt(() => reqTimeoutSec = Convert.ToInt32(CustomNumericUpDownSettingProxyKillRequestTimeout.Value));
 
                 // Send Setting Command
-                string settingCommand = $"Setting -Port={proxyPort} -MaxThreads={handleReq} -RequestTimeoutSec={reqTimeoutSec} -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80}";
+                string settingCommand = $"Setting -Port={proxyPort} -MaxRequests={handleReq} -RequestTimeoutSec={reqTimeoutSec} -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80}";
                 Debug.WriteLine(settingCommand);
                 await ProxyConsole.SendCommandAsync(settingCommand);
 
@@ -353,7 +370,7 @@ public partial class FormMain
                 LocalIP = NetworkTool.GetLocalIPv4(); // Update Local IP
                 IPAddress localIP = LocalIP ?? IPAddress.Loopback;
 
-                string msgProxy1 = "Local Proxy Server (HTTP, SOCKS4, SOCKS4A, SOCKS5):" + NL;
+                string msgProxy1 = $"Local Proxy Server (HTTP, HTTPS, SOCKS4, SOCKS4A, SOCKS5):{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy1, Color.LightGray));
 
                 string msgProxy2 = $"{IPAddress.Loopback}:{proxyPort}";
@@ -366,6 +383,9 @@ public partial class FormMain
                 IsProxyRunning = true;
                 UpdateProxyBools = true;
                 IsProxyActivating = false;
+
+                // Start Delay Timer
+                StopWatchWriteProxyOutputDelay.Restart();
 
                 // Warm up Proxy (Sync)
                 string blockedDomain = GetBlockedDomainSetting(out string _);
@@ -411,6 +431,9 @@ public partial class FormMain
                         // Write deactivated message to log
                         string msgDiactivated = $"Proxy Server deactivated.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDiactivated, Color.MediumSeaGreen));
+
+                        // Stop Delay Timer
+                        StopWatchWriteProxyOutputDelay.Reset();
                     }
                     else
                     {
@@ -448,44 +471,49 @@ public partial class FormMain
         // Return if DNS is setting or unsetting
         if (IsDNSSetting || IsDNSUnsetting) return false;
 
-        ApplyPDpiChangesOut(out ProxyProgram.DPIBypass.Mode bypassMode, out int beforSniChunks, out ProxyProgram.DPIBypass.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay);
-
         UpdateProxyBools = false;
-        string command = $"Programs DpiBypass -Mode={bypassMode} -BeforeSniChunks={beforSniChunks} -ChunkMode={chunkMode} -SniChunks={sniChunks} -AntiPatternOffset={antiPatternOffset} -FragmentDelay={fragmentDelay}";
+        string command = GetDpiBypassProgramCommand();
         Debug.WriteLine(command);
         bool isCommandSent = await ProxyConsole.SendCommandAsync(command);
+
+        // Save LastDpiBypassProgramCommand
+        if (isCommandSent) LastDpiBypassProgramCommand = command;
+
+        // Apply SSL Decryption
+        bool isSSLDecryptionOk = await ApplyPSSLDecryption();
+
         UpdateProxyBools = true;
-        if (!isCommandSent) return false;
+        if (!isCommandSent || !isSSLDecryptionOk) return false;
 
-        // Check DPI Works
-        bool isDpiBypassEnabled = false;
-        this.InvokeIt(() => isDpiBypassEnabled = CustomCheckBoxPDpiEnableDpiBypass.Checked);
-        if (isDpiBypassEnabled && IsProxyActivated && !IsProxyActivating)
-        {
-            if (bypassMode != ProxyProgram.DPIBypass.Mode.Disable)
-            {
-                IsProxyDpiBypassActive = true;
-                IsDPIActive = true;
-            }
-
-            // Get blocked domain
-            string blockedDomain = GetBlockedDomainSetting(out string _);
-            if (!string.IsNullOrEmpty(blockedDomain))
-                await CheckDPIWorks(blockedDomain);
-        }
+        //// For the sake of DPI Bypass check
+        //bool isDpiBypassEnabled = false;
+        //this.InvokeIt(() => isDpiBypassEnabled = CustomCheckBoxPDpiEnableDpiBypass.Checked);
+        //if (isDpiBypassEnabled && IsProxyActivated && !IsProxyActivating)
+        //{
+        //    if (bypassMode != ProxyProgram.DPIBypass.Mode.Disable)
+        //    {
+        //        IsProxyDpiBypassActive = true;
+        //        IsDPIActive = true;
+        //    }
+        //}
 
         return true;
     }
 
     private async Task ApplyPDpiChangesFakeProxy()
     {
-        ApplyPDpiChangesOut(out ProxyProgram.DPIBypass.Mode bypassMode, out int beforSniChunks, out ProxyProgram.DPIBypass.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay);
-
         UpdateProxyBools = false;
-        string command = $"Programs DpiBypass -Mode={bypassMode} -BeforeSniChunks={beforSniChunks} -ChunkMode={chunkMode} -SniChunks={sniChunks} -AntiPatternOffset={antiPatternOffset} -FragmentDelay={fragmentDelay}";
+        string command = GetDpiBypassProgramCommand();
         Debug.WriteLine(command);
         await FakeProxyConsole.SendCommandAsync(command);
         UpdateProxyBools = true;
+    }
+
+    private string GetDpiBypassProgramCommand()
+    {
+        ApplyPDpiChangesOut(out ProxyProgram.DPIBypass.Mode bypassMode, out int beforSniChunks, out ProxyProgram.DPIBypass.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay);
+        string command = $"Programs DpiBypass -Mode={bypassMode} -BeforeSniChunks={beforSniChunks} -ChunkMode={chunkMode} -SniChunks={sniChunks} -AntiPatternOffset={antiPatternOffset} -FragmentDelay={fragmentDelay}";
+        return command;
     }
 
     private void ApplyPDpiChangesOut(out ProxyProgram.DPIBypass.Mode bypassMode, out int beforSniChunks, out ProxyProgram.DPIBypass.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay)
@@ -675,7 +703,7 @@ public partial class FormMain
             int killOnCpuUsage = GetKillOnCpuUsageSetting();
 
             // Send Setting Command
-            string settingCommand = $"Setting -Port={fakeProxyPort} -MaxThreads=1000 -RequestTimeoutSec=0 -KillOnCpuUsage={killOnCpuUsage} -BlockPort80=True";
+            string settingCommand = $"Setting -Port={fakeProxyPort} -MaxRequests=1000 -RequestTimeoutSec=0 -KillOnCpuUsage={killOnCpuUsage} -BlockPort80=True";
             Debug.WriteLine(settingCommand);
             bool isSettingSent = await FakeProxyConsole.SendCommandAsync(settingCommand);
             if (!isSettingSent) return false;
@@ -790,6 +818,25 @@ public partial class FormMain
         }
 
         return true;
+    }
+
+    public async Task<bool> ApplyPSSLDecryption()
+    {
+        bool changeSniToIp = false;
+        this.InvokeIt(() => changeSniToIp = CustomCheckBoxProxySSLChangeSniToIP.Checked);
+
+        if (IsSSLDecryptionEnable())
+        {
+            string command = $"SSLSetting -Enable=True -RootCA_Path=\"{SecureDNS.IssuerCertPath}\" -RootCA_KeyPath=\"{SecureDNS.IssuerKeyPath}\" -ChangeSniToIP={changeSniToIp}";
+            Debug.WriteLine(command);
+            return await ProxyConsole.SendCommandAsync(command);
+        }
+        else
+        {
+            string command = $"SSLSetting -Enable=False";
+            Debug.WriteLine(command);
+            return await ProxyConsole.SendCommandAsync(command);
+        }
     }
 
 }

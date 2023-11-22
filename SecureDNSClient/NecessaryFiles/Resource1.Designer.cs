@@ -173,12 +173,12 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized string similar to dnslookup-X64 1.10.0
         ///dnslookup-X86 1.10.0
-        ///dnsproxy-X64 0.56.3
-        ///dnsproxy-X86 0.56.3
+        ///dnsproxy-X64 0.59.0
+        ///dnsproxy-X86 0.59.0
         ///dnscrypt-proxy-X64 2.1.5
         ///dnscrypt-proxy-X86 2.1.5
-        ///sdcproxyserver-X64 2.5.1
-        ///sdcproxyserver-X86 2.5.1
+        ///sdcproxyserver-X64 2.5.5
+        ///sdcproxyserver-X86 2.5.5
         ///goodbyedpi-X64 0.2.2
         ///goodbyedpi-X86 0.2.2.
         /// </summary>

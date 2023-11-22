@@ -65,8 +65,8 @@ public partial class FormMain
         int timeoutMS = 10000;
 
         // Check Fake Proxy DoH
-        CheckDns checkDns = new(false, GetCPUPriority());
-        checkDns.CheckDNS(blockedDomainNoWww, dohUrl, timeoutMS / 2);
+        CheckDns checkDns = new(true, false, GetCPUPriority());
+        await checkDns.CheckDnsAsync(blockedDomainNoWww, dohUrl, timeoutMS / 2);
 
         if (checkDns.IsDnsOnline)
         {
@@ -85,7 +85,7 @@ public partial class FormMain
         }
     }
 
-    private bool CheckBypassWorks(int timeoutMS, int attempts, int pid)
+    private async Task<bool> CheckBypassWorks(int timeoutMS, int attempts, int pid)
     {
         if (!IsConnected || IsDisconnecting) return false;
 
@@ -102,7 +102,7 @@ public partial class FormMain
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg1, Color.MediumSeaGreen));
 
         // New Check
-        CheckDns checkDns = new(false, GetCPUPriority());
+        CheckDns checkDns = new(true, false, GetCPUPriority());
 
         for (int n = 0; n < attempts; n++)
         {
@@ -113,7 +113,7 @@ public partial class FormMain
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg2, Color.MediumSeaGreen));
 
             // Delay
-            checkDns.CheckDNS(blockedDomainNoWww, loopback, timeoutMS);
+            await checkDns.CheckDnsAsync(blockedDomainNoWww, loopback, timeoutMS);
 
             Task.Delay(500).Wait(); // Wait a moment
             if (checkDns.IsDnsOnline)

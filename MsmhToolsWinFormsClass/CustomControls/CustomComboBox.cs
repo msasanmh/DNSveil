@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Windows.Forms.Design;
 /*
@@ -76,10 +75,15 @@ namespace CustomControls
             get { return mText; }
             set
             {
+                if (value == null) return;
                 if (mText != value)
                 {
-                    mText = value;
-                    Invalidate();
+                    // "Text" will set to "SelectedItem"'s text by default and I don't want that.
+                    if (SelectedItem == null || (SelectedItem != null && !value.Equals(GetItemText(SelectedItem))))
+                    {
+                        mText = value;
+                        Invalidate();
+                    }
                 }
             }
         }
@@ -106,6 +110,7 @@ namespace CustomControls
 
             Application.Idle += Application_Idle;
             HandleCreated += CustomComboBox_HandleCreated;
+            MeasureItem += CustomComboBox_MeasureItem;
             BackColorChanged += CustomComboBox_BackColorChanged;
             ForeColorChanged += CustomComboBox_ForeColorChanged;
             MouseMove += CustomComboBox_MouseMove;
@@ -147,6 +152,15 @@ namespace CustomControls
             Invalidate();
         }
 
+        private void CustomComboBox_MeasureItem(object? sender, MeasureItemEventArgs e)
+        {
+            // Fix ItemHeight On High DPI Screen Scale
+            string? text = SelectedItem != null ? SelectedItem.ToString() : Text;
+            text ??= "MSasanMH";
+            Size textSize = TextRenderer.MeasureText(text, Font);
+            e.ItemHeight = textSize.Height != 0 ? textSize.Height + 2 : 17;
+        }
+
         private void CustomComboBox_BackColorChanged(object? sender, EventArgs e)
         {
             Invalidate();
@@ -184,50 +198,47 @@ namespace CustomControls
 
         protected override void OnTabStopChanged(EventArgs e)
         {
-            base.OnTabStopChanged(e);
-            Invalidate();
+            base.OnTabStopChanged(e); Invalidate();
         }
 
         protected override void OnTabIndexChanged(EventArgs e)
         {
-            base.OnTabIndexChanged(e);
-            Invalidate();
+            base.OnTabIndexChanged(e); Invalidate();
         }
 
         protected override void OnGotFocus(EventArgs e)
         {
-            base.OnGotFocus(e);
-            Invalidate();
+            base.OnGotFocus(e); Invalidate();
         }
 
         protected override void OnLostFocus(EventArgs e)
         {
-            base.OnLostFocus(e);
-            Invalidate();
+            base.OnLostFocus(e); Invalidate();
         }
 
         protected override void OnTextChanged(EventArgs e)
         {
-            base.OnTextChanged(e);
-            Invalidate();
+            base.OnTextChanged(e); Invalidate();
         }
 
         protected override void OnTextUpdate(EventArgs e)
         {
-            base.OnTextUpdate(e);
-            Invalidate();
+            base.OnTextUpdate(e); Invalidate();
+        }
+
+        protected override void OnSelectedIndexChanged(EventArgs e)
+        {
+            base.OnSelectedIndexChanged(e); Invalidate();
         }
 
         protected override void OnSelectedValueChanged(EventArgs e)
         {
-            base.OnSelectedValueChanged(e);
-            Invalidate();
+            base.OnSelectedValueChanged(e); Invalidate();
         }
 
         protected override void OnVisibleChanged(EventArgs e)
         {
-            base.OnVisibleChanged(e);
-            Invalidate();
+            base.OnVisibleChanged(e); Invalidate();
         }
 
         protected override void OnInvalidated(InvalidateEventArgs e)
@@ -237,8 +248,7 @@ namespace CustomControls
 
         protected override void OnResize(EventArgs e)
         {
-            base.OnResize(e);
-            Invalidate();
+            base.OnResize(e); Invalidate();
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -341,11 +351,9 @@ namespace CustomControls
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
 
             // ComboBox Height
+            text ??= "MSasanMH";
             Size textSize = TextRenderer.MeasureText(text, Font);
-            if (textSize.Height == 0)
-                ItemHeight = 17;
-            else
-                ItemHeight = textSize.Height + 2;
+            ItemHeight = textSize.Height != 0 ? textSize.Height + 2 : 17;
 
             base.OnPaint(e);
         }

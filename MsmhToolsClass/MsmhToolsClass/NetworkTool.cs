@@ -196,8 +196,7 @@ public static class NetworkTool
             string outPath = slash;
             for (int n = 0; n < split.Length; n++)
             {
-                if (n != 0)
-                    outPath += split[n] + "/";
+                if (n != 0) outPath += split[n] + "/";
             }
             if (outPath.Length > 1 && outPath.EndsWith("/")) outPath = outPath.TrimEnd(slash.ToCharArray());
             if (!outPath.Equals("/")) path = outPath;
@@ -495,16 +494,28 @@ public static class NetworkTool
         return nicList;
     }
 
+    public static async Task EnableNICAsync(string nicName)
+    {
+        string args = $"interface set interface \"{nicName}\" enable";
+        await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+    }
+
     public static void EnableNIC(string nicName)
     {
         string args = $"interface set interface \"{nicName}\" enable";
-        ProcessManager.ExecuteOnly(out _, "netsh", args, true, true);
+        ProcessManager.ExecuteOnly("netsh", args, true, true);
+    }
+
+    public static async Task DisableNICAsync(string nicName)
+    {
+        string args = $"interface set interface \"{nicName}\" disable";
+        await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
     }
 
     public static void DisableNIC(string nicName)
     {
         string args = $"interface set interface \"{nicName}\" disable";
-        ProcessManager.ExecuteOnly(out _, "netsh", args, true, true);
+        ProcessManager.ExecuteOnly("netsh", args, true, true);
     }
 
     public static NetworkInterface? GetNICByName(string name)
@@ -554,9 +565,9 @@ public static class NetworkTool
             }
 
             string processName = "netsh";
-            string processArgs1 = $"interface ipv4 delete dnsservers {nic.Name} all";
-            string processArgs2 = $"interface ipv4 set dnsservers {nic.Name} static {dnsServer1} primary";
-            string processArgs3 = $"interface ipv4 add dnsservers {nic.Name} {dnsServer2} index=2";
+            string processArgs1 = $"interface ipv4 delete dnsservers \"{nic.Name}\" all";
+            string processArgs2 = $"interface ipv4 set dnsservers \"{nic.Name}\" static {dnsServer1} primary";
+            string processArgs3 = $"interface ipv4 add dnsservers \"{nic.Name}\" {dnsServer2} index=2";
             await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
             await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
             if (!string.IsNullOrEmpty(dnsServer2))
@@ -567,29 +578,29 @@ public static class NetworkTool
             Debug.WriteLine(e.Message);
         }
 
-        Task.Delay(200).Wait();
-
-        try
-        {
-            using ManagementClass managementClass = new("Win32_NetworkAdapterConfiguration");
-            using ManagementObjectCollection moc = managementClass.GetInstances();
-            foreach (ManagementObject mo in moc.Cast<ManagementObject>())
-            {
-                if ((bool)mo["IPEnabled"] && mo["Description"].Equals(nic.Description))
-                {
-                    using ManagementBaseObject newDNS = mo.GetMethodParameters("SetDNSServerSearchOrder");
-                    if (newDNS != null)
-                    {
-                        newDNS["DNSServerSearchOrder"] = dnsServers.Split(',');
-                        mo.InvokeMethod("SetDNSServerSearchOrder", newDNS, new InvokeMethodOptions());
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-        }
+        //// Using ManagementClass
+        //Task.Delay(200).Wait();
+        //try
+        //{
+        //    using ManagementClass managementClass = new("Win32_NetworkAdapterConfiguration");
+        //    using ManagementObjectCollection moc = managementClass.GetInstances();
+        //    foreach (ManagementObject mo in moc.Cast<ManagementObject>())
+        //    {
+        //        if ((bool)mo["IPEnabled"] && mo["Description"].Equals(nic.Description))
+        //        {
+        //            using ManagementBaseObject newDNS = mo.GetMethodParameters("SetDNSServerSearchOrder");
+        //            if (newDNS != null)
+        //            {
+        //                newDNS["DNSServerSearchOrder"] = dnsServers.Split(',');
+        //                mo.InvokeMethod("SetDNSServerSearchOrder", newDNS, new InvokeMethodOptions());
+        //            }
+        //        }
+        //    }
+        //}
+        //catch (Exception ex)
+        //{
+        //    Debug.WriteLine(ex.Message);
+        //}
     }
 
     /// <summary>
@@ -606,8 +617,8 @@ public static class NetworkTool
         try
         {
             string processName = "netsh";
-            string processArgs1 = $"interface ipv4 delete dnsservers {nic.Name} all";
-            string processArgs2 = $"interface ipv4 set dnsservers {nic.Name} source=dhcp";
+            string processArgs1 = $"interface ipv4 delete dnsservers \"{nic.Name}\" all";
+            string processArgs2 = $"interface ipv4 set dnsservers \"{nic.Name}\" source=dhcp";
             await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
             await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
         }
@@ -616,27 +627,28 @@ public static class NetworkTool
             Debug.WriteLine(ex.Message);
         }
 
-        try
-        {
-            using ManagementClass managementClass = new("Win32_NetworkAdapterConfiguration");
-            using ManagementObjectCollection moc = managementClass.GetInstances();
-            foreach (ManagementObject mo in moc.Cast<ManagementObject>())
-            {
-                if (mo["Description"].Equals(nic.Description))
-                {
-                    using ManagementBaseObject newDNS = mo.GetMethodParameters("SetDNSServerSearchOrder");
-                    if (newDNS != null)
-                    {
-                        newDNS["DNSServerSearchOrder"] = null;
-                        mo.InvokeMethod("SetDNSServerSearchOrder", newDNS, new InvokeMethodOptions());
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-        }
+        //// Using ManagementClass
+        //try
+        //{
+        //    using ManagementClass managementClass = new("Win32_NetworkAdapterConfiguration");
+        //    using ManagementObjectCollection moc = managementClass.GetInstances();
+        //    foreach (ManagementObject mo in moc.Cast<ManagementObject>())
+        //    {
+        //        if (mo["Description"].Equals(nic.Description))
+        //        {
+        //            using ManagementBaseObject newDNS = mo.GetMethodParameters("SetDNSServerSearchOrder");
+        //            if (newDNS != null)
+        //            {
+        //                newDNS["DNSServerSearchOrder"] = null;
+        //                mo.InvokeMethod("SetDNSServerSearchOrder", newDNS, new InvokeMethodOptions());
+        //            }
+        //        }
+        //    }
+        //}
+        //catch (Exception ex)
+        //{
+        //    Debug.WriteLine(ex.Message);
+        //}
     }
 
     /// <summary>
@@ -665,8 +677,8 @@ public static class NetworkTool
         try
         {
             string processName = "netsh";
-            string processArgs1 = $"interface ipv6 delete dnsservers {nic.Name} all";
-            string processArgs2 = $"interface ipv6 set dnsservers {nic.Name} source=dhcp";
+            string processArgs1 = $"interface ipv6 delete dnsservers \"{nic.Name}\" all";
+            string processArgs2 = $"interface ipv6 set dnsservers \"{nic.Name}\" source=dhcp";
             await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
             await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
         }
@@ -695,19 +707,21 @@ public static class NetworkTool
             {
                 line = line.Replace("server:", string.Empty).Trim();
                 host = line;
-                if (line.Equals("localhost")) result = true;
+                if (host.Equals("localhost")) result = true;
             }
             else if (line.Contains("address:"))
             {
                 line = line.Replace("address:", string.Empty).Trim();
                 ip = line;
+                if (ip.Equals("127.0.0.1")) result = true;
+                if (ip.Equals(IPAddress.Loopback.ToString())) result = true;
             }
         }
         return result;
     }
 
     /// <summary>
-    /// Check if DNS is set to Static or DHCP (Windows Only)
+    /// Check if DNS is set to Static or DHCP using netsh (Windows Only)
     /// </summary>
     /// <param name="nic">Network Interface</param>
     /// <param name="dnsServer1">Primary DNS Server</param>
@@ -721,7 +735,7 @@ public static class NetworkTool
 
         string processName = "netsh";
         string processArgs = $"interface ipv4 show dnsservers {nic.Name}";
-        string stdout = ProcessManager.Execute(out Process _, processName, null, processArgs, true, false);
+        string stdout = ProcessManager.Execute(out _, processName, null, processArgs, true, true);
 
         List<string> lines = stdout.SplitToLines();
         for (int n = 0; n < lines.Count; n++)
@@ -749,9 +763,11 @@ public static class NetworkTool
         return !stdout.Contains("DHCP");
     }
 
-    public static bool IsInternetAlive(string? url = null, int timeoutMs = 5000)
+    /// <summary>
+    /// Check Internet Access Based On NIC Send And Receive
+    /// </summary>
+    public static bool IsInternetAlive()
     {
-        // Attempt 1
         // only recognizes changes related to Internet adapters
         if (NetworkInterface.GetIsNetworkAvailable())
         {
@@ -762,61 +778,99 @@ public static class NetworkTool
                              where (face.NetworkInterfaceType != NetworkInterfaceType.Tunnel) && (face.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                              select face.GetIPv4Statistics()).Any(statistics => (statistics.BytesReceived > 0) && (statistics.BytesSent > 0));
 
-            return attempt1 || attempt2(url, timeoutMs);
+            return attempt1;
         }
         else
         {
-            return attempt2(url, timeoutMs);
-        }
-
-        // Attempt 2
-        static bool attempt2(string? url = null, int timeoutMs = 5000)
-        {
-            try
-            {
-                url ??= CultureInfo.InstalledUICulture switch
-                {
-                    { Name: string n } when n.StartsWith("fa") => // Iran
-                        "http://www.google.com",
-                    { Name: string n } when n.StartsWith("zh") => // China
-                        "http://www.baidu.com",
-                    _ =>
-                        "http://www.gstatic.com/generate_204",
-                };
-
-                using HttpClient httpClient = new();
-                httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
-                var req = httpClient.GetAsync(url);
-                return req.Result.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("IsInternetAlive: " + ex.Message);
-                return false;
-            }
+            return false;
         }
     }
 
-    public static bool IsInternetAlive2(string? url = null, int timeoutMs = 5000)
+    /// <summary>
+    /// Check Internet Access Based On Pinging A DNS IP
+    /// </summary>
+    public static async Task<bool> IsInternetAliveAsync(IPAddress? ip, int timeoutMS = 3000)
     {
         try
         {
-            url ??= CultureInfo.InstalledUICulture switch
+            ip ??= CultureInfo.InstalledUICulture switch
             {
-                { Name: string n } when n.StartsWith("fa") => // Iran
-                    "http://www.google.com",
-                { Name: string n } when n.StartsWith("zh") => // China
-                    "http://www.baidu.com",
-                _ =>
-                    "http://www.gstatic.com/generate_204",
+                { Name: string n } when n.ToLower().StartsWith("fa") => IPAddress.Parse("8.8.8.8"), // Iran
+                { Name: string n } when n.ToLower().StartsWith("ru") => IPAddress.Parse("77.88.8.7"), // Russia
+                { Name: string n } when n.ToLower().StartsWith("zh") => IPAddress.Parse("223.6.6.6"), // China
+                _ => IPAddress.Parse("1.1.1.1") // Others
             };
 
-            using HttpClient httpClient = new();
-            httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
-            var req = httpClient.GetAsync(url);
-            return req.Result.IsSuccessStatusCode;
+            Ping ping = new();
+            PingReply reply = await ping.SendPingAsync(ip, timeoutMS);
+            ping.Dispose();
+            return reply.Status == IPStatus.Success;
         }
-        catch
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Check Internet Access Based On Pinging A DNS IP
+    /// </summary>
+    public static async Task<bool> IsInternetAliveAsync(string? ipStr = null, int timeoutMS = 1000)
+    {
+        try
+        {
+            ipStr ??= CultureInfo.InstalledUICulture switch
+            {
+                { Name: string n } when n.ToLower().StartsWith("fa") => "8.8.8.8", // Iran
+                { Name: string n } when n.ToLower().StartsWith("zh") => "77.88.8.7", // Russia
+                { Name: string n } when n.ToLower().StartsWith("zh") => "223.6.6.6", // China
+                _ => "1.1.1.1" // Others
+            };
+
+            Ping ping = new();
+            PingReply? reply;
+            bool isIp = IsIp(ipStr, out IPAddress? ip);
+
+            if (isIp && ip != null)
+                reply = await ping.SendPingAsync(ip, timeoutMS);
+            else
+                reply = await ping.SendPingAsync(ipStr, timeoutMS);
+
+            if (reply == null) return false;
+
+            ping.Dispose();
+            return reply.Status == IPStatus.Success;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public static async Task<bool> IsWebsiteOnlineAsync(string url, int timeoutMs)
+    {
+        try
+        {
+            url = url.Trim();
+            Uri uri = new(url, UriKind.Absolute);
+
+            using HttpClientHandler handler = new();
+            handler.UseProxy = false;
+            // Ignore Cert Check To Make It Faster
+            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
+
+            using HttpClient httpClient = new(handler);
+            httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
+
+            // Get Only Header
+            using HttpRequestMessage message = new(HttpMethod.Head, uri);
+            message.Headers.TryAddWithoutValidation("User-Agent", "Other");
+
+            await httpClient.SendAsync(message, CancellationToken.None);
+            return true;
+        }
+        catch (Exception)
         {
             return false;
         }
@@ -990,20 +1044,10 @@ public static class NetworkTool
 
     public static async Task<bool> IsHostBlocked(string host, int port, int timeoutMS)
     {
-        try
-        {
-            using HttpClient client = new();
-            client.Timeout = TimeSpan.FromMilliseconds(timeoutMS);
-            if (port == 80)
-                await client.GetAsync(new Uri($"http://{host}:{port}"));
-            else
-                await client.GetAsync(new Uri($"https://{host}:{port}"));
-            return false;
-        }
-        catch (Exception)
-        {
-            return true;
-        }
+        string url;
+        if (port == 80) url = $"http://{host}:{port}";
+        else url = $"https://{host}:{port}";
+        return !await IsWebsiteOnlineAsync(url, timeoutMS);
     }
 
     public static async Task<bool> CanPing(string host, int timeoutMS)

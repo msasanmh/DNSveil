@@ -198,7 +198,7 @@ namespace CustomControls
             // Draw Border
             using Pen penB = new(borderColor);
             g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-
+            
             // Min
             if (Value == Minimum)
             {

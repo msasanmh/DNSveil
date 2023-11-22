@@ -5,6 +5,9 @@ namespace SecureDNSClientPortable
 {
     public partial class FormMain : Form
     {
+        public static readonly Architecture ArchOs = RuntimeInformation.OSArchitecture;
+        public static readonly Architecture ArchProcess = RuntimeInformation.ProcessArchitecture;
+
         public FormMain()
         {
             InitializeComponent();
@@ -13,14 +16,15 @@ namespace SecureDNSClientPortable
 
             try
             {
-                Architecture arch = RuntimeInformation.OSArchitecture;
-                string architecture = arch.ToString();
                 string? appPath = null;
 
-                if (arch == Architecture.X64)
+                bool x64 = ArchProcess == Architecture.X64 && ArchOs == Architecture.X64;
+                bool x86 = ArchProcess == Architecture.X86 &&
+                           (ArchOs == Architecture.X86 || ArchOs == Architecture.X64 ||
+                           ArchOs == Architecture.Arm || ArchOs == Architecture.Arm64);
+
+                if (x64 || x86)
                     appPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "SecureDNSClient", "SecureDNSClient.exe"));
-                else if (arch == Architecture.X86 || arch == Architecture.Arm || arch == Architecture.Arm64)
-                    appPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "SecureDNSClient_X86", "SecureDNSClient.exe"));
 
                 if (!string.IsNullOrEmpty(appPath))
                 {
@@ -32,7 +36,7 @@ namespace SecureDNSClientPortable
                 }
                 else
                 {
-                    string msgNotSupported = $"Your CPU Architecture ({architecture}) is Not Supported.";
+                    string msgNotSupported = $"Can't Run {ArchProcess} Application On {ArchOs} OS.";
                     MessageBox.Show(msgNotSupported, "Not Supported", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }

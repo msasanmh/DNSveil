@@ -1,6 +1,5 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsClass.DnsTool;
-using System.Net;
 using System.Reflection;
 
 namespace SecureDNSClient;
@@ -12,7 +11,7 @@ public partial class FormMain
         List<string> savedDnsList = SavedDnsList.ToList();
         if (savedDnsList.Any() && !IsCheckingStarted && !IsConnecting && !IsDisconnecting)
         {
-            if (!IsInternetAlive(false)) return;
+            if (!IsInternetOnline) return;
 
             if (savedDnsList.Count > 1)
             {
@@ -26,71 +25,48 @@ public partial class FormMain
                 int timeoutMS = decimal.ToInt32(timeoutSec * 1000);
                 if (timeoutMS < 500) timeoutMS = 1000;
 
-                // Get Bootstrap IP and Port
-                string bootstrap = GetBootstrapSetting(out int bootstrapPort).ToString();
-
                 // Add start msg
                 string msgStart = $"{NL}Contains {savedDnsList.Count} servers:{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStart, Color.LightGray));
 
                 // Get insecure state
                 bool insecure = CustomCheckBoxInsecure.Checked;
-                int localPortInsecure = 5390;
-                if (insecure)
-                {
-                    // Check open ports
-                    bool isPortOk = GetListeningPort(localPortInsecure, "You need to resolve the conflict.", Color.IndianRed);
-                    if (!isPortOk) return;
 
+                await Task.Run(async () =>
+                {
+                    var lists = savedDnsList.SplitToLists(3);
                     int nt = 1;
 
-                    for (int n = 0; n < savedDnsList.Count; n++)
+                    for (int n = 0; n < lists.Count; n++)
                     {
                         if (IsCheckingStarted || IsConnecting || IsDisconnecting) break;
-                        await getDelay(n, nt++);
-                    }
-                }
-                else
-                {
-                    await Task.Run(async () =>
-                    {
-                        var lists = savedDnsList.SplitToLists(3);
-                        int nt = 1;
 
-                        for (int n = 0; n < lists.Count; n++)
+                        List<string> list = lists[n];
+                        var parallelLoopResult = Parallel.For(0, list.Count, async i =>
                         {
-                            if (IsCheckingStarted || IsConnecting || IsDisconnecting) break;
+                            await getDelay(i, nt++);
+                        });
 
-                            List<string> list = lists[n];
-                            var parallelLoopResult = Parallel.For(0, list.Count, async i =>
+                        await Task.Run(async () =>
+                        {
+                            while (!parallelLoopResult.IsCompleted)
                             {
-                                await getDelay(i, nt++);
-                            });
-
-                            await Task.Run(async () =>
-                            {
-                                while (!parallelLoopResult.IsCompleted)
-                                {
-                                    if (parallelLoopResult.IsCompleted)
-                                        return Task.CompletedTask;
-                                    await Task.Delay(500);
-                                }
-                                return Task.CompletedTask;
-                            });
-                        }
-                    });
-                }
+                                if (parallelLoopResult.IsCompleted)
+                                    return Task.CompletedTask;
+                                await Task.Delay(500);
+                            }
+                            return Task.CompletedTask;
+                        });
+                    }
+                });
 
                 async Task getDelay(int n, int nt)
                 {
                     string dns = savedDnsList[n];
 
                     // Get Status and Latency
-                    CheckDns checkDns = new(false, GetCPUPriority());
-                    if (insecure)
-                        checkDns.CheckDNS(true, blockedDomainNoWww, dns, timeoutMS, localPortInsecure, bootstrap, bootstrapPort);
-                    else
-                        checkDns.CheckDNS(blockedDomainNoWww, dns, timeoutMS);
+                    CheckDns checkDns = new(insecure, false, GetCPUPriority());
+                    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
 
                     string msg = $"DNS {nt}: {checkDns.DnsLatency} ms.{NL}";
                     Color color = (checkDns.DnsLatency == -1) ? Color.IndianRed : Color.MediumSeaGreen;
@@ -180,6 +156,19 @@ public partial class FormMain
 
     private async Task SavedDnsUpdate()
     {
+        if (Program.Startup) return;
+
+        // Wait Until App Is Ready
+        Task waitNet = Task.Run(async () =>
+        {
+            while (true)
+            {
+                if (IsAppReady) break;
+                await Task.Delay(1000);
+            }
+        });
+        try { await waitNet.WaitAsync(TimeSpan.FromMinutes(1)); } catch (Exception) { }
+
         // Update Working Servers?
         bool updateWorkingServers = true;
 
@@ -192,18 +181,14 @@ public partial class FormMain
         this.InvokeIt(() => timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value);
         int timeoutMS = decimal.ToInt32(timeoutSec * 1000);
 
-        // Get Bootstrap IP and Port
-        string bootstrap = GetBootstrapSetting(out int bootstrapPort).ToString();
-
         // Get insecure state
         bool insecure = CustomCheckBoxInsecure.Checked;
-        int localPortInsecure = 5390;
 
         // Get number of max servers
         int maxServers = decimal.ToInt32(CustomNumericUpDownSettingMaxServers.Value);
 
         // New Check
-        CheckDns checkDns = new(false, GetCPUPriority());
+        CheckDns checkDns = new(insecure, false, GetCPUPriority());
 
         List<string> newSavedDnsList = new();
         List<string> newSavedEncodedDnsList = new();
@@ -212,82 +197,33 @@ public partial class FormMain
         // Check saved dns servers can work
         if (SavedDnsList.Any())
         {
-            if (!IsInternetAlive(false)) return;
+            if (!IsInternetOnline) return;
             List<string> savedDnsList = SavedDnsList.ToList();
 
-            if (insecure)
+            await Task.Run(async () =>
             {
-                int origPort = localPortInsecure;
-                bool isPortOpen1 = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
-                if (isPortOpen1)
-                {
-                    localPortInsecure = NetworkTool.GetNextPort(localPortInsecure);
-                    bool isPortOpen2 = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
-                    if (isPortOpen2)
-                    {
-                        localPortInsecure = NetworkTool.GetNextPort(localPortInsecure);
-                        bool isPortOpen3 = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
-                        if (isPortOpen3)
-                        {
-                            localPortInsecure = NetworkTool.GetNextPort(localPortInsecure);
-                            bool isPortOpen4 = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPortInsecure, 3);
-                            if (isPortOpen4)
-                            {
-                                string existingProcessName = ProcessManager.GetProcessNameByListeningPort(origPort);
-                                existingProcessName = existingProcessName == string.Empty ? "Unknown" : existingProcessName;
-                                string msg = $"{NL}Cannot auto update Saved DNS List, port {origPort} is occupied by \"{existingProcessName}\".{NL}";
-                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                                return;
-                            }
-                        }
-                    }
-                }
+                var lists = savedDnsList.SplitToLists(3);
 
-                for (int n = 0; n < savedDnsList.Count; n++)
+                for (int n = 0; n < lists.Count; n++)
                 {
-                    if (!IsInternetAlive(false)) break;
+                    if (!IsInternetOnline) break;
                     if (IsCheckingStarted) break;
 
-                    string dns = savedDnsList[n];
-                    await checkDns.CheckDnsAsync(true, blockedDomainNoWww, dns, timeoutMS + 500, localPortInsecure, bootstrap, bootstrapPort);
-                    if (checkDns.DnsLatency != -1)
+                    List<string> list = lists[n];
+
+                    await Parallel.ForEachAsync(list, async (dns, cancellationToken) =>
                     {
-                        newSavedDnsList.Add(dns);
-                        newSavedEncodedDnsList.Add(EncodingTool.GetSHA512(dns));
-
-                        if (updateWorkingServers)
-                            newWorkingDnsList.Add(new Tuple<long, string>(checkDns.DnsLatency, dns));
-                    }
-                }
-            }
-            else
-            {
-                // If Secure
-                await Task.Run(async () =>
-                {
-                    var lists = savedDnsList.SplitToLists(3);
-
-                    for (int n = 0; n < lists.Count; n++)
-                    {
-                        if (!IsInternetAlive(false)) break;
-                        if (IsCheckingStarted) break;
-
-                        List<string> list = lists[n];
-
-                        await Parallel.ForEachAsync(list, async (dns, cancellationToken) =>
+                        await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS + 500);
+                        if (checkDns.DnsLatency != -1)
                         {
-                            await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS + 500);
-                            if (checkDns.DnsLatency != -1)
-                            {
-                                newSavedDnsList.Add(dns);
-                                newSavedEncodedDnsList.Add(EncodingTool.GetSHA512(dns));
-                                if (updateWorkingServers)
-                                    newWorkingDnsList.Add(new Tuple<long, string>(checkDns.DnsLatency, dns));
-                            }
-                        });
-                    }
-                });
-            }
+                            newSavedDnsList.Add(dns);
+                            newSavedEncodedDnsList.Add(EncodingTool.GetSHA512(dns));
+                            if (updateWorkingServers)
+                                newWorkingDnsList.Add(new Tuple<long, string>(checkDns.DnsLatency, dns));
+                        }
+                    });
+                }
+            });
         }
 
         if (newSavedDnsList.Any())
@@ -331,7 +267,7 @@ public partial class FormMain
         int currentServers = newSavedDnsList.Count;
         for (int n = 0; n < dnsList.Count; n++)
         {
-            if (!IsInternetAlive(false)) break;
+            if (!IsInternetOnline) break;
             if (IsCheckingStarted) break;
 
             string dns = dnsList[n].Trim();
@@ -347,11 +283,8 @@ public partial class FormMain
                     if (!matchRules) continue;
 
                     // Get Status and Latency
-                    if (insecure)
-                        await checkDns.CheckDnsAsync(true, blockedDomainNoWww, dns, timeoutMS, localPortInsecure, bootstrap, bootstrapPort);
-                    else
-                        await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
-
+                    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
+                    
                     if (checkDns.IsDnsOnline)
                     {
                         if (!newSavedDnsList.Contains(dns))

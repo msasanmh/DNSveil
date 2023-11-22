@@ -51,8 +51,8 @@ public partial class FormMain
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCfServer2, Color.DodgerBlue));
 
             // Check if Camouflage DNS Server works
-            CheckDns checkDns = new(false, GetCPUPriority());
-            checkDns.CheckDNS("google.com", $"{IPAddress.Loopback}:{camouflageDnsPort}", 5000);
+            CheckDns checkDns = new(true, false, GetCPUPriority());
+            await checkDns.CheckDnsAsync("google.com", $"{IPAddress.Loopback}:{camouflageDnsPort}", 5000);
 
             if (!checkDns.IsDnsOnline)
             {
@@ -103,7 +103,7 @@ public partial class FormMain
             if (IsDisconnecting) return false;
 
             // Execute DNSProxy
-            PIDDNSProxyBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
+            PIDDNSProxyBypass = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
 
             // Wait for DNSProxyBypass
             Task wait2 = Task.Run(async () =>
@@ -191,7 +191,7 @@ public partial class FormMain
                     // Start GoodbyeDPI
                     DPIBasicBypass dpiBypass = new(bypassMode, CustomNumericUpDownSSLFragmentSize.Value, bootstrap, bootstrapPort);
                     string args = $"{dpiBypass.Args} --blacklist \"{SecureDNS.DPIBlacklistFPPath}\"";
-                    PIDGoodbyeDPIBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+                    PIDGoodbyeDPIBypass = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
 
                     // Wait for DNSProxyBypass
                     Task wait3 = Task.Run(async () =>
@@ -207,7 +207,7 @@ public partial class FormMain
 
                     if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
                     {
-                        return CheckBypassWorks(timeoutMS, 10, PIDGoodbyeDPIBypass);
+                        return await CheckBypassWorks(timeoutMS, 10, PIDGoodbyeDPIBypass);
                     }
                     else
                     {

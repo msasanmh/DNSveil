@@ -14,9 +14,9 @@ public static partial class Program
     private const int DefaultPort = 8080;
     private const int DefaultPortMin = 1024;
     private const int DefaultPortMax = 65535;
-    private const int DefaultMaxThreads = 1000;
-    private const int DefaultMaxThreadsMin = 5;
-    private const int DefaultMaxThreadsMax = 1000000;
+    private const int DefaultMaxRequests = 600;
+    private const int DefaultMaxRequestsMin = 20;
+    private const int DefaultMaxRequestsMax = 1000000;
     private const int DefaultRequestTimeoutSec = 40;
     private const int DefaultRequestTimeoutSecMin = 0;
     private const int DefaultRequestTimeoutSecMax = 600;
@@ -24,6 +24,9 @@ public static partial class Program
     private const int DefaultKillOnCpuUsageMin = 10;
     private const int DefaultKillOnCpuUsageMax = 100;
     private const bool DefaultBlockPort80 = true;
+    // Defaults SSL Settings
+    private const bool DefaultSSLEnable = false;
+    private const bool DefaultSSLChangeSniToIP = false;
     // Defaults Dns
     private const int DefaultDnsTimeoutSec = 3;
     private const int DefaultDnsTimeoutSecMin = 2;
@@ -50,6 +53,7 @@ public static partial class Program
 
     private static readonly List<string> LoadCommands = new();
     private static readonly ProxySettings Settings = new();
+    private static readonly SettingsSSL SettingsSSL_ = new(false);
     private static MsmhProxyServer ProxyServer { get; set; } = new();
     private static ProxyProgram.DPIBypass DpiBypassStaticProgram { get; set; } = new();
     private static ProxyProgram.UpStreamProxy UpStreamProxyProgram { get; set; } = new();
@@ -147,7 +151,9 @@ public static partial class Program
         mainDetails += $"{ProxyServer.DNSProgram.DNSMode}|"; // 9
         mainDetails += $"{ProxyServer.FakeDNSProgram.FakeDnsMode}|"; // 10
         mainDetails += $"{ProxyServer.BWListProgram.ListMode}|"; // 11
-        mainDetails += $"{ProxyServer.DontBypassProgram.DontBypassMode}"; // 12
+        mainDetails += $"{ProxyServer.DontBypassProgram.DontBypassMode}|"; // 12
+        mainDetails += $"{ProxyServer.SettingsSSL_.EnableSSL}|"; // 13
+        mainDetails += $"{ProxyServer.SettingsSSL_.ChangeSniToIP}"; // 14
 
         WriteToStdout(mainDetails);
     }
@@ -166,7 +172,7 @@ public static partial class Program
         }
         else
             msg += $"\nPort: {Settings.ListenerPort}";
-        msg += $"\nMax Threads: {Settings.MaxThreads}";
+        msg += $"\nMax Threads: {Settings.MaxRequests}";
         msg += $"\nRequest Timeout: {Settings.RequestTimeoutSec} Seconds";
         msg += $"\nKill On Cpu Usage: {Settings.KillOnCpuUsage}%";
         msg += $"\nBlock Port 80: {Settings.BlockPort80}";
@@ -175,10 +181,36 @@ public static partial class Program
         // Save Command To List
         string baseCmd = Key.Setting.Name;
         string cmd = $"{baseCmd} -{Key.Setting.Port}={Settings.ListenerPort}";
-        cmd += $" -{Key.Setting.MaxThreads}={Settings.MaxThreads}";
+        cmd += $" -{Key.Setting.MaxRequests}={Settings.MaxRequests}";
         cmd += $" -{Key.Setting.RequestTimeoutSec}={Settings.RequestTimeoutSec}";
         cmd += $" -{Key.Setting.KillOnCpuUsage}={Settings.KillOnCpuUsage}";
         cmd += $" -{Key.Setting.BlockPort80}={Settings.BlockPort80}";
+        LoadCommands.AddCommand(baseCmd, cmd);
+    }
+
+    private static void ShowSettingsSSLMsg()
+    {
+        string msg = "\nSSL Settings:";
+        msg += $"\nEnabled: {ProxyServer.SettingsSSL_.EnableSSL}";
+        if (!string.IsNullOrEmpty(ProxyServer.SettingsSSL_.RootCA_Path))
+        {
+            msg += $"\nRootCA_Path:";
+            msg += $"\n{ProxyServer.SettingsSSL_.RootCA_Path}";
+        }
+        if (!string.IsNullOrEmpty(ProxyServer.SettingsSSL_.RootCA_KeyPath))
+        {
+            msg += $"\nRootCA_KeyPath:";
+            msg += $"\n{ProxyServer.SettingsSSL_.RootCA_KeyPath}";
+        }
+        msg += $"\nChange SNI To IP: {ProxyServer.SettingsSSL_.ChangeSniToIP}";
+        WriteToStdout(msg, ConsoleColor.Blue);
+
+        // Save Command To List
+        string baseCmd = Key.SSLSetting.Name;
+        string cmd = $"{baseCmd} -{Key.SSLSetting.Enable}={ProxyServer.SettingsSSL_.EnableSSL}";
+        cmd += $" -{Key.SSLSetting.RootCA_Path}=\"{ProxyServer.SettingsSSL_.RootCA_Path}\"";
+        cmd += $" -{Key.SSLSetting.RootCA_KeyPath}=\"{ProxyServer.SettingsSSL_.RootCA_KeyPath}\"";
+        cmd += $" -{Key.SSLSetting.ChangeSniToIP}={ProxyServer.SettingsSSL_.ChangeSniToIP}";
         LoadCommands.AddCommand(baseCmd, cmd);
     }
 
@@ -316,6 +348,7 @@ public static partial class Program
         string result = $"\nProxy Server Running: {ProxyServer.IsRunning}";
         WriteToStdout(result, ConsoleColor.Blue);
         ShowSettingsMsg();
+        ShowSettingsSSLMsg();
         ShowBwListMsg();
         ShowDnsMsg();
         ShowDontBypassMsg();

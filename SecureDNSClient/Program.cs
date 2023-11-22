@@ -6,7 +6,7 @@ namespace SecureDNSClient;
 internal static class Program
 {
     internal static bool Startup = false;
-    internal static int StartupDelaySec = 10;
+    internal static int StartupDelaySec = 0; // Default
 
     /// <summary>
     ///  The main entry point for the application.

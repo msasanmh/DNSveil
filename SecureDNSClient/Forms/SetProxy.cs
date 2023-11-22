@@ -33,16 +33,13 @@ public partial class FormMain
             int port = ProxyPort != -1 ? ProxyPort : GetProxyPortSetting();
 
             // Start Set Proxy
-            NetworkTool.SetProxy(null, null, null, $"{ip}:{port}", false);
+            await SetProxyInternalAsync();
 
-            Task.Delay(300).Wait(); // Wait a moment
+            await Task.Delay(300); // Wait a moment
 
-            bool isProxySet = NetworkTool.IsProxySet(out string _, out string _, out string _, out string _);
-            if (isProxySet)
+            IsProxySet = UpdateBoolIsProxySet();
+            if (IsProxySet)
             {
-                // Update bool
-                IsProxySet = true;
-
                 // Write Set Proxy message to log
                 string msg1 = "Proxy Server ";
                 string msg2 = $"{ip}:{port}";
@@ -50,15 +47,6 @@ public partial class FormMain
                 CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
                 CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
                 CustomRichTextBoxLog.AppendText(msg3 + NL, Color.LightGray);
-
-                // Check DPI Works
-                if (CustomCheckBoxPDpiEnableDpiBypass.Checked)
-                {
-                    // Get blocked domain
-                    string blockedDomain = GetBlockedDomainSetting(out string _);
-                    if (!string.IsNullOrEmpty(blockedDomain))
-                        await CheckDPIWorks(blockedDomain);
-                }
             }
             else
             {
@@ -91,5 +79,21 @@ public partial class FormMain
                 CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
             }
         }
+    }
+
+    private async Task SetProxyInternalAsync()
+    {
+        // Update Proxy Bools
+        await UpdateBoolProxy();
+
+        // Get IP:Port
+        string ip = IPAddress.Loopback.ToString();
+        int port = ProxyPort != -1 ? ProxyPort : GetProxyPortSetting();
+
+        // Start Set Proxy
+        if (IsProxySSLDecryptionActive)
+            NetworkTool.SetProxy($"{ip}:{port}", null, null, null, true);
+        else
+            NetworkTool.SetProxy(null, null, null, $"{ip}:{port}", false);
     }
 }

@@ -23,7 +23,7 @@ public partial class FormMain
             {
                 // Connect
                 // Check Internet Connectivity
-                if (!IsInternetAlive()) return false;
+                if (!IsInternetOnline) return false;
 
                 if (IsConnecting) return false;
                 IsConnecting = true;
@@ -155,7 +155,7 @@ public partial class FormMain
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnecting, Color.MediumSeaGreen));
 
         // Solve: "bind: An attempt was made to access a socket in a way forbidden by its access permissions"
-        await NetworkTool.RestartNATDriver();
+        if (!Program.Startup) await NetworkTool.RestartNATDriver();
 
         // Check Plain DNS port
         bool portDns = GetListeningPort(53, "You need to resolve the conflict.", Color.IndianRed);
@@ -176,12 +176,12 @@ public partial class FormMain
             }
         }
 
-        // Flush DNS
-        await FlushDNS(false);
-
-        // Generate Certificate for DoH
+        // Generate and Install Certificate for DoH
         if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
-            GenerateCertificate();
+        {
+            await GenerateCertificate();
+            await InstallCertificateForDoH();
+        }
 
         // Connect modes
         if (connectMode == ConnectMode.Unknown) return false;

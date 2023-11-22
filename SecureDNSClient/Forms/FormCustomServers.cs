@@ -17,30 +17,31 @@ public partial class FormCustomServers : Form
     private static readonly string CustomServersXmlPath = SecureDNS.CustomServersXmlPath;
 
     // Context Menu Group
-    private static CustomContextMenuStrip MG = new();
-    private static ToolStripMenuItem MenuGroupNew = new();
-    private static ToolStripMenuItem MenuGroupRename = new();
-    private static ToolStripMenuItem MenuGroupRemove = new();
-    private static ToolStripMenuItem MenuGroupMoveUp = new();
-    private static ToolStripMenuItem MenuGroupMoveDown = new();
-    private static ToolStripMenuItem MenuGroupMoveToTop = new();
-    private static ToolStripMenuItem MenuGroupMoveToBottom = new();
-    private static ToolStripMenuItem MenuGroupImport = new();
-    private static ToolStripMenuItem MenuGroupExport = new();
+    private static readonly CustomContextMenuStrip MG = new();
+    private static readonly ToolStripMenuItem MenuGroupNew = new();
+    private static readonly ToolStripMenuItem MenuGroupRename = new();
+    private static readonly ToolStripMenuItem MenuGroupRemove = new();
+    private static readonly ToolStripMenuItem MenuGroupMoveUp = new();
+    private static readonly ToolStripMenuItem MenuGroupMoveDown = new();
+    private static readonly ToolStripMenuItem MenuGroupMoveToTop = new();
+    private static readonly ToolStripMenuItem MenuGroupMoveToBottom = new();
+    private static readonly ToolStripMenuItem MenuGroupImport = new();
+    private static readonly ToolStripMenuItem MenuGroupExport = new();
 
     // Context Menu DNSs
-    private static CustomContextMenuStrip MD = new();
-    private static ToolStripMenuItem MenuDnsRemove = new();
-    private static ToolStripMenuItem MenuDnsRemoveAll = new();
-    private static ToolStripMenuItem MenuDnsMoveSelectedToGroup = new();
-    private static ToolStripMenuItem MenuDnsMoveUp = new();
-    private static ToolStripMenuItem MenuDnsMoveDown = new();
-    private static ToolStripMenuItem MenuDnsMoveToTop = new();
-    private static ToolStripMenuItem MenuDnsMoveToBottom = new();
-    private static ToolStripMenuItem MenuDnsImport = new();
-    private static ToolStripMenuItem MenuDnsExport = new();
-    private static ToolStripMenuItem MenuDnsSelectAll = new();
-    private static ToolStripMenuItem MenuDnsInvertSelection = new();
+    private static readonly CustomContextMenuStrip MD = new();
+    private static readonly ToolStripMenuItem MenuDnsRemove = new();
+    private static readonly ToolStripMenuItem MenuDnsRemoveAll = new();
+    private static readonly ToolStripMenuItem MenuDnsMoveSelectedToGroup = new();
+    private static readonly ToolStripMenuItem MenuDnsMoveUp = new();
+    private static readonly ToolStripMenuItem MenuDnsMoveDown = new();
+    private static readonly ToolStripMenuItem MenuDnsMoveToTop = new();
+    private static readonly ToolStripMenuItem MenuDnsMoveToBottom = new();
+    private static readonly ToolStripMenuItem MenuDnsImport = new();
+    private static readonly ToolStripMenuItem MenuDnsExport = new();
+    private static readonly ToolStripMenuItem MenuDnsExportAsText = new();
+    private static readonly ToolStripMenuItem MenuDnsSelectAll = new();
+    private static readonly ToolStripMenuItem MenuDnsInvertSelection = new();
 
     public FormCustomServers()
     {
@@ -791,10 +792,9 @@ public partial class FormCustomServers : Form
     private void CreateMenuGroup()
     {
         // Context Menu
-        MG = new();
+        MG.Items.Clear();
         MG.Font = Font;
 
-        MenuGroupNew = new();
         MenuGroupNew.Font = Font;
         MenuGroupNew.Text = "New group...";
         MenuGroupNew.ShortcutKeys = Keys.Control | Keys.Shift | Keys.N;
@@ -802,7 +802,6 @@ public partial class FormCustomServers : Form
         MenuGroupNew.Click += MenuGroupNew_Click;
         MG.Items.Add(MenuGroupNew);
 
-        MenuGroupRename = new();
         MenuGroupRename.Font = Font;
         MenuGroupRename.Text = "Rename group...";
         MenuGroupRename.ShortcutKeys = Keys.F2;
@@ -810,7 +809,6 @@ public partial class FormCustomServers : Form
         MenuGroupRename.Click += MenuGroupRename_Click;
         MG.Items.Add(MenuGroupRename);
 
-        MenuGroupRemove = new();
         MenuGroupRemove.Font = Font;
         MenuGroupRemove.Text = "Remove";
         MenuGroupRemove.ShortcutKeys = Keys.Delete;
@@ -820,7 +818,6 @@ public partial class FormCustomServers : Form
 
         MG.Items.Add("-");
 
-        MenuGroupMoveUp = new();
         MenuGroupMoveUp.Font = Font;
         MenuGroupMoveUp.Text = "Move up";
         MenuGroupMoveUp.ShortcutKeys = Keys.Control | Keys.Up;
@@ -828,7 +825,6 @@ public partial class FormCustomServers : Form
         MenuGroupMoveUp.Click += MenuGroupMoveUp_Click;
         MG.Items.Add(MenuGroupMoveUp);
 
-        MenuGroupMoveDown = new();
         MenuGroupMoveDown.Font = Font;
         MenuGroupMoveDown.Text = "Move down";
         MenuGroupMoveDown.ShortcutKeys = Keys.Control | Keys.Down;
@@ -836,7 +832,6 @@ public partial class FormCustomServers : Form
         MenuGroupMoveDown.Click += MenuGroupMoveDown_Click;
         MG.Items.Add(MenuGroupMoveDown);
 
-        MenuGroupMoveToTop = new();
         MenuGroupMoveToTop.Font = Font;
         MenuGroupMoveToTop.Text = "Move to top";
         MenuGroupMoveToTop.ShortcutKeys = Keys.Control | Keys.Home;
@@ -844,7 +839,6 @@ public partial class FormCustomServers : Form
         MenuGroupMoveToTop.Click += MenuGroupMoveToTop_Click;
         MG.Items.Add(MenuGroupMoveToTop);
 
-        MenuGroupMoveToBottom = new();
         MenuGroupMoveToBottom.Font = Font;
         MenuGroupMoveToBottom.Text = "Move to bottom";
         MenuGroupMoveToBottom.ShortcutKeys = Keys.Control | Keys.End;
@@ -854,7 +848,6 @@ public partial class FormCustomServers : Form
 
         MG.Items.Add("-");
 
-        MenuGroupImport = new();
         MenuGroupImport.Font = Font;
         MenuGroupImport.Text = "Import";
         MenuGroupImport.ShortcutKeys = Keys.Control | Keys.I;
@@ -862,7 +855,6 @@ public partial class FormCustomServers : Form
         MenuGroupImport.Click += MenuGroupImport_Click;
         MG.Items.Add(MenuGroupImport);
 
-        MenuGroupExport = new();
         MenuGroupExport.Font = Font;
         MenuGroupExport.Text = "Export";
         MenuGroupExport.ShortcutKeys = Keys.Control | Keys.E;
@@ -1665,7 +1657,15 @@ public partial class FormCustomServers : Form
             sfd.FileName = "sdc_custom_servers";
             if (sfd.ShowDialog() == DialogResult.OK)
             {
-                doc.Save(sfd.FileName, SaveOptions.None);
+                try
+                {
+                    doc.Save(sfd.FileName, SaveOptions.None);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Export: " + ex.Message);
+                    CustomMessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -1799,8 +1799,10 @@ public partial class FormCustomServers : Form
                     MenuDnsMoveToBottom_Click(null, null);
                 else if (item.Text.Contains("Import"))
                     MenuDnsImport_Click(null, null);
-                else if (item.Text.Contains("Export"))
+                else if (item.Text.Equals("Export"))
                     MenuDnsExport_Click(null, null);
+                else if (item.Text.Equals("Export as text"))
+                    MenuDnsExportAsText_Click(null, null);
                 else
                     item.PerformClick();
                 return;
@@ -1884,6 +1886,9 @@ public partial class FormCustomServers : Form
         var dgvS = CustomDataGridViewDNSs;
         dgvS.Select(); // Set Focus on Control
 
+        // If it's header return
+        if (e.RowIndex < 0) return;
+
         // If it's not DNS column return
         if (e.ColumnIndex != 1) return;
 
@@ -1957,6 +1962,7 @@ public partial class FormCustomServers : Form
                     MD.Items.Remove(MenuDnsMoveToTop);
                     MD.Items.Remove(MenuDnsMoveToBottom);
                     MD.Items.Remove(MenuDnsExport);
+                    MD.Items.Remove(MenuDnsExportAsText);
                     MD.Items.Remove(MenuDnsSelectAll);
                     MD.Items.Remove(MenuDnsInvertSelection);
                     MD.Items.RemoveAt(0);
@@ -2074,10 +2080,9 @@ public partial class FormCustomServers : Form
         string? groupName = dgvG.Rows[groupIndex].Cells[1].Value.ToString();
 
         // Context Menu
-        MD = new();
+        MD.Items.Clear();
         MD.Font = Font;
 
-        MenuDnsRemove = new();
         MenuDnsRemove.Font = Font;
         MenuDnsRemove.Text = "Remove";
         MenuDnsRemove.ShortcutKeys = Keys.Delete;
@@ -2085,7 +2090,6 @@ public partial class FormCustomServers : Form
         MenuDnsRemove.Click += MenuDnsRemove_Click;
         MD.Items.Add(MenuDnsRemove);
 
-        MenuDnsRemoveAll = new();
         MenuDnsRemoveAll.Font = Font;
         MenuDnsRemoveAll.Text = "Remove all";
         MenuDnsRemoveAll.Click -= MenuDnsRemoveAll_Click;
@@ -2094,7 +2098,7 @@ public partial class FormCustomServers : Form
 
         MD.Items.Add("-");
 
-        MenuDnsMoveSelectedToGroup = new();
+        MenuDnsMoveSelectedToGroup.DropDownItems.Clear();
         MenuDnsMoveSelectedToGroup.Font = Font;
         MenuDnsMoveSelectedToGroup.Text = "Move selected DNSs to group";
         MD.Items.Add(MenuDnsMoveSelectedToGroup);
@@ -2116,7 +2120,6 @@ public partial class FormCustomServers : Form
 
         MD.Items.Add("-");
 
-        MenuDnsMoveUp = new();
         MenuDnsMoveUp.Font = Font;
         MenuDnsMoveUp.Text = "Move up";
         MenuDnsMoveUp.ShortcutKeys = Keys.Control | Keys.Up;
@@ -2124,7 +2127,6 @@ public partial class FormCustomServers : Form
         MenuDnsMoveUp.Click += MenuDnsMoveUp_Click;
         MD.Items.Add(MenuDnsMoveUp);
 
-        MenuDnsMoveDown = new();
         MenuDnsMoveDown.Font = Font;
         MenuDnsMoveDown.Text = "Move down";
         MenuDnsMoveDown.ShortcutKeys = Keys.Control | Keys.Down;
@@ -2132,7 +2134,6 @@ public partial class FormCustomServers : Form
         MenuDnsMoveDown.Click += MenuDnsMoveDown_Click;
         MD.Items.Add(MenuDnsMoveDown);
 
-        MenuDnsMoveToTop = new();
         MenuDnsMoveToTop.Font = Font;
         MenuDnsMoveToTop.Text = "Move to top";
         MenuDnsMoveToTop.ShortcutKeys = Keys.Control | Keys.Home;
@@ -2140,7 +2141,6 @@ public partial class FormCustomServers : Form
         MenuDnsMoveToTop.Click += MenuDnsMoveToTop_Click;
         MD.Items.Add(MenuDnsMoveToTop);
 
-        MenuDnsMoveToBottom = new();
         MenuDnsMoveToBottom.Font = Font;
         MenuDnsMoveToBottom.Text = "Move to bottom";
         MenuDnsMoveToBottom.ShortcutKeys = Keys.Control | Keys.End;
@@ -2150,7 +2150,6 @@ public partial class FormCustomServers : Form
 
         MD.Items.Add("-");
 
-        MenuDnsImport = new();
         MenuDnsImport.Font = Font;
         MenuDnsImport.Text = "Import";
         MenuDnsImport.ShortcutKeys = Keys.Control | Keys.I;
@@ -2158,7 +2157,6 @@ public partial class FormCustomServers : Form
         MenuDnsImport.Click += MenuDnsImport_Click;
         MD.Items.Add(MenuDnsImport);
 
-        MenuDnsExport = new();
         MenuDnsExport.Font = Font;
         MenuDnsExport.Text = "Export";
         MenuDnsExport.ShortcutKeys = Keys.Control | Keys.E;
@@ -2166,16 +2164,20 @@ public partial class FormCustomServers : Form
         MenuDnsExport.Click += MenuDnsExport_Click;
         MD.Items.Add(MenuDnsExport);
 
+        MenuDnsExportAsText.Font = Font;
+        MenuDnsExportAsText.Text = "Export as text";
+        MenuDnsExportAsText.Click -= MenuDnsExportAsText_Click;
+        MenuDnsExportAsText.Click += MenuDnsExportAsText_Click;
+        MD.Items.Add(MenuDnsExportAsText);
+
         MD.Items.Add("-");
 
-        MenuDnsSelectAll = new();
         MenuDnsSelectAll.Font = Font;
         MenuDnsSelectAll.Text = "Select all";
         MenuDnsSelectAll.Click -= MenuDnsSelectAll_Click;
         MenuDnsSelectAll.Click += MenuDnsSelectAll_Click;
         MD.Items.Add(MenuDnsSelectAll);
 
-        MenuDnsInvertSelection = new();
         MenuDnsInvertSelection.Font = Font;
         MenuDnsInvertSelection.Text = "Invert selection";
         MenuDnsInvertSelection.Click -= MenuDnsInvertSelection_Click;
@@ -2743,7 +2745,76 @@ public partial class FormCustomServers : Form
         sfd.FileName = $"custom_servers_{groupToExport}";
         if (sfd.ShowDialog() == DialogResult.OK)
         {
+            try
+            {
+                doc.Save(sfd.FileName, SaveOptions.None);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Export: " + ex.Message);
+                CustomMessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+    }
+
+    private void MenuDnsExportAsText_Click(object? sender, EventArgs? e)
+    {
+        var dgvG = CustomDataGridViewGroups;
+        var dgvS = CustomDataGridViewDNSs;
+        if (dgvG.SelectedRows.Count == 0) return;
+        if (dgvS.RowCount == 0) return;
+
+        string? groupToExport = dgvG.SelectedRows[0].Cells[1].Value.ToString();
+        if (string.IsNullOrEmpty(groupToExport)) return;
+
+        XDocument doc = CreateXmlCS();
+        if (doc.Root == null) return;
+        XElement? insert = doc.Root.Element("CustomDnsList");
+        if (insert == null) return;
+
+        insert.Add(GetXmlGroupByName(XDoc, groupToExport));
+
+        string result = string.Empty;
+        var nodes = doc.Root.Elements().Elements();
+
+        for (int a = 0; a < nodes.Count(); a++)
+        {
+            XElement nodeG = nodes.ToList()[a];
+            XElement? nodeGName = nodeG.Element("Name");
+            if (nodeGName == null) return;
+            if (groupToExport == nodeGName.Value)
+            {
+                int count = nodeG.Elements("DnsItem").Count();
+                for (int b = 0; b < count; b++)
+                {
+                    XElement node = nodeG.Elements("DnsItem").ToList()[b];
+                    XElement? nodeDns = node.Element("Dns");
+
+                    if (nodeDns != null)
+                        result += $"{nodeDns.Value}{Environment.NewLine}";
+                }
+                if (result.EndsWith(Environment.NewLine)) result = result.TrimEnd(Environment.NewLine);
+            }
+        }
+
+        using SaveFileDialog sfd = new();
+        sfd.Filter = "Custom DNS Servers (*.txt)|*.txt";
+        sfd.DefaultExt = ".txt";
+        sfd.AddExtension = true;
+        sfd.RestoreDirectory = true;
+        sfd.FileName = $"custom_servers_{groupToExport}";
+        if (sfd.ShowDialog() == DialogResult.OK)
+        {
             doc.Save(sfd.FileName, SaveOptions.None);
+            try
+            {
+                File.WriteAllText(sfd.FileName, result, new UTF8Encoding(false));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("ExportAsText: " + ex.Message);
+                CustomMessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 

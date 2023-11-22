@@ -1,6 +1,5 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
-using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 
@@ -50,15 +49,7 @@ public partial class FormMain
             }
 
             // Check Internet Connectivity
-            if (!IsInternetAlive())
-            {
-                IsDNSSetting = false;
-                return;
-            }
-
-            // Get blocked domain
-            string blockedDomain = GetBlockedDomainSetting(out _);
-            if (string.IsNullOrEmpty(blockedDomain))
+            if (!IsInternetOnline)
             {
                 IsDNSSetting = false;
                 return;
@@ -86,7 +77,8 @@ public partial class FormMain
             DoesDNSSetOnce = true;
 
             // Flush DNS
-            if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNS();
+            if (!Program.Startup)
+                if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNS(true, true);
 
             // Update Groupbox Status
             UpdateStatusLong();
@@ -105,10 +97,6 @@ public partial class FormMain
             }
             
             IsDNSSetting = false;
-
-            // Check DPI works if DPI is Active
-            if (IsDPIActive && !IsDisconnecting && !IsDisconnectingAll)
-                await CheckDPIWorks(blockedDomain);
         }
         else
         {
@@ -140,7 +128,7 @@ public partial class FormMain
             IsDNSSet = false;
 
             // Flush DNS
-            await FlushDNS();
+            await FlushDNS(true, true);
 
             // Update Groupbox Status
             UpdateStatusLong();

@@ -81,6 +81,7 @@ public partial class FormMain
 
     public void ScreenFixControlsLocations()
     {
+        // Don't use ComboBox Top, Bottom and Height Property.
         // Spacers
         int spaceBottom = 6, spaceRight = 6, spaceV = 0, spaceH = 8, spaceHH = spaceH * 7;
 
@@ -107,11 +108,14 @@ public partial class FormMain
         CustomLabelCustomServersInfo.Left = CustomRadioButtonCustom.Left + (spaceH * 2);
         CustomLabelCustomServersInfo.Top = CustomRadioButtonCustom.Bottom + spaceV;
 
-        CustomCheckBoxCheckInParallel.Left = CustomRadioButtonCustom.Left;
-        CustomCheckBoxCheckInParallel.Top = CustomLabelCustomServersInfo.Bottom + spaceV;
+        CustomLabelCheckInParallel.Left = CustomRadioButtonCustom.Left;
+        CustomLabelCheckInParallel.Top = CustomLabelCustomServersInfo.Bottom + spaceV;
 
-        CustomCheckBoxInsecure.Left = CustomCheckBoxCheckInParallel.Left;
-        CustomCheckBoxInsecure.Top = CustomCheckBoxCheckInParallel.Bottom + spaceV;
+        CustomNumericUpDownCheckInParallel.Left = CustomLabelCheckInParallel.Right + spaceH;
+        CustomNumericUpDownCheckInParallel.Top = CustomLabelCheckInParallel.Top - 2;
+
+        CustomCheckBoxInsecure.Left = CustomLabelCheckInParallel.Left;
+        CustomCheckBoxInsecure.Top = CustomNumericUpDownCheckInParallel.Bottom + spaceV;
 
         CustomButtonEditCustomServers.Left = spaceRight;
         CustomButtonEditCustomServers.Top = TabPageCheck.Height - CustomButtonEditCustomServers.Height - spaceBottom;
@@ -122,7 +126,10 @@ public partial class FormMain
         CustomButtonQuickConnect.Left = CustomButtonCheck.Right + spaceH;
         CustomButtonQuickConnect.Top = CustomButtonEditCustomServers.Top;
 
-        CustomProgressBarCheck.Left = CustomButtonQuickConnect.Right + spaceH;
+        CustomButtonDisconnectAll.Left = CustomButtonQuickConnect.Right + spaceH;
+        CustomButtonDisconnectAll.Top = CustomButtonQuickConnect.Top;
+
+        CustomProgressBarCheck.Left = CustomButtonDisconnectAll.Right + spaceH;
         CustomProgressBarCheck.Top = CustomButtonEditCustomServers.Top;
 
         CustomButtonCheckUpdate.Left = TabPageCheck.Width - CustomButtonCheckUpdate.Width - spaceRight;
@@ -162,8 +169,9 @@ public partial class FormMain
         CustomComboBoxNICs.Left = CustomLabelSelectNIC.Left;
         CustomComboBoxNICs.Top = CustomLabelSelectNIC.Bottom + spaceV;
 
+        spaceV = 10;
         CustomButtonUpdateNICs.Left = CustomComboBoxNICs.Left;
-        CustomButtonUpdateNICs.Top = CustomComboBoxNICs.Bottom + (spaceV / 2);
+        CustomButtonUpdateNICs.Top = CustomLabelSelectNIC.Bottom + (CustomLabelSelectNIC.Height * 3) + spaceV;
 
         CustomButtonEnableDisableNic.Left = CustomButtonUpdateNICs.Right + spaceH;
         CustomButtonEnableDisableNic.Top = CustomButtonUpdateNICs.Top;
@@ -235,13 +243,38 @@ public partial class FormMain
         CustomButtonPDpiApplyChanges.Left = CustomButtonSetProxy.Right + spaceHH;
         CustomButtonPDpiApplyChanges.Top = CustomButtonShare.Top;
 
-        CustomLabelPDpiPresets.Left = CustomButtonPDpiApplyChanges.Right + spaceH;
+        CustomButtonPDpiCheck.Left = CustomButtonPDpiApplyChanges.Right + spaceH;
+        CustomButtonPDpiCheck.Top = CustomButtonShare.Top;
+
+        CustomLabelPDpiPresets.Left = CustomComboBoxPDpiSniChunkMode.Right + spaceH;
         CustomLabelPDpiPresets.Top = CustomLabelPDpiBeforeSniChunks.Top;
 
         CustomButtonPDpiPresetDefault.Left = CustomLabelPDpiPresets.Left;
         CustomButtonPDpiPresetDefault.Top = CustomLabelPDpiPresets.Bottom + spaceV;
 
+        CustomLabelShareSeparator2.Left = CustomButtonPDpiPresetDefault.Right + spaceH;
+        CustomLabelShareSeparator2.Top = CustomCheckBoxPDpiEnableDpiBypass.Top;
+        CustomLabelShareSeparator2.Width = 1;
+        CustomLabelShareSeparator2.Height = CustomButtonShare.Top - CustomLabelShareSeparator2.Top - spaceBottom;
+
+        CustomCheckBoxProxyEnableSSL.Left = CustomLabelShareSeparator2.Right + spaceH;
+        CustomCheckBoxProxyEnableSSL.Top = CustomCheckBoxPDpiEnableDpiBypass.Top;
+
+        spaceV = 5;
+        CustomLabelProxySSLInfo.Left = CustomCheckBoxProxyEnableSSL.Left + (spaceH * 2);
+        CustomLabelProxySSLInfo.Top = CustomCheckBoxProxyEnableSSL.Bottom + spaceV;
+
+        spaceV = 12;
+        CustomCheckBoxProxySSLChangeSniToIP.Left = CustomCheckBoxProxyEnableSSL.Left;
+        CustomCheckBoxProxySSLChangeSniToIP.Top = CustomLabelProxySSLInfo.Bottom + spaceV;
+
+        spaceV = 5;
+        CustomLabelProxySSLChangeSniToIpInfo.Left = CustomCheckBoxProxySSLChangeSniToIP.Left + (spaceH * 2);
+        CustomLabelProxySSLChangeSniToIpInfo.Top = CustomCheckBoxProxySSLChangeSniToIP.Bottom + spaceV;
+
+
         // GoodbyeDPI Basic
+        spaceV = 12;
         CustomLabelInfoDPIModes.Location = new Point(25, 15);
 
         CustomLabelDPIModes.Left = CustomLabelInfoDPIModes.Left;
@@ -494,12 +527,11 @@ public partial class FormMain
         CustomLabelSettingQcConnectMode.Left = CustomLabelSettingQcInfo.Left;
         CustomLabelSettingQcConnectMode.Top = CustomLabelSettingQcInfo.Bottom + spaceV;
 
-        CustomComboBoxSettingQcConnectMode.Left = CustomLabelSettingQcConnectMode.Right + (spaceH * 2);
+        CustomComboBoxSettingQcConnectMode.Left = CustomLabelSettingQcConnectMode.Right + (spaceH * 3);
         CustomComboBoxSettingQcConnectMode.Top = CustomLabelSettingQcConnectMode.Top - 2;
 
-        spaceV = 10;
         CustomCheckBoxSettingQcUseSavedServers.Left = CustomComboBoxSettingQcConnectMode.Left;
-        CustomCheckBoxSettingQcUseSavedServers.Top = CustomComboBoxSettingQcConnectMode.Bottom + spaceV;
+        CustomCheckBoxSettingQcUseSavedServers.Top = CustomLabelSelectNIC.Bottom + (CustomLabelSelectNIC.Height * 3);
 
         CustomCheckBoxSettingQcCheckAllServers.Left = CustomCheckBoxSettingQcUseSavedServers.Right + spaceH;
         CustomCheckBoxSettingQcCheckAllServers.Top = CustomCheckBoxSettingQcUseSavedServers.Top;
@@ -535,6 +567,9 @@ public partial class FormMain
 
         CustomButtonSettingQcStartup.Left = TabPageSettingsQuickConnect.Width - CustomButtonSettingQcStartup.Width - spaceRight;
         CustomButtonSettingQcStartup.Top = TabPageSettingsQuickConnect.Height - CustomButtonSettingQcStartup.Height - spaceBottom;
+
+        CustomCheckBoxSettingQcOnStartup.Left = CustomButtonSettingQcStartup.Left - CustomCheckBoxSettingQcOnStartup.Width - spaceH;
+        CustomCheckBoxSettingQcOnStartup.Top = CustomButtonSettingQcStartup.Top + (CustomButtonSettingQcStartup.Height / 2 - CustomCheckBoxSettingQcOnStartup.Height / 2);
 
         // Settings Connect
         spaceV = 50;
@@ -628,6 +663,7 @@ public partial class FormMain
         CustomLabelSettingShareSeparator1.Left = spaceRight;
         CustomLabelSettingShareSeparator1.Top = CustomCheckBoxSettingProxyCfCleanIP.Bottom + spaceV;
         CustomLabelSettingShareSeparator1.Width = TabPageSettingProxyAdvanced.Width - (spaceRight * 2);
+        CustomLabelSettingShareSeparator1.Height = 1;
 
         CustomCheckBoxSettingProxyEnableFakeDNS.Left = CustomCheckBoxSettingProxyCfCleanIP.Left;
         CustomCheckBoxSettingProxyEnableFakeDNS.Top = CustomLabelSettingShareSeparator1.Bottom + spaceV;
@@ -641,6 +677,7 @@ public partial class FormMain
         CustomLabelSettingShareSeparator2.Left = CustomLabelSettingShareSeparator1.Left;
         CustomLabelSettingShareSeparator2.Top = CustomLabelSettingProxyFakeDNS.Bottom + spaceV;
         CustomLabelSettingShareSeparator2.Width = CustomLabelSettingShareSeparator1.Width;
+        CustomLabelSettingShareSeparator2.Height = 1;
 
         CustomCheckBoxSettingProxyEnableBlackWhiteList.Left = CustomCheckBoxSettingProxyEnableFakeDNS.Left;
         CustomCheckBoxSettingProxyEnableBlackWhiteList.Top = CustomLabelSettingShareSeparator2.Bottom + spaceV;
@@ -654,6 +691,7 @@ public partial class FormMain
         CustomLabelSettingShareSeparator3.Left = CustomLabelSettingShareSeparator2.Left;
         CustomLabelSettingShareSeparator3.Top = CustomLabelSettingProxyBlackWhiteList.Bottom + spaceV;
         CustomLabelSettingShareSeparator3.Width = CustomLabelSettingShareSeparator2.Width;
+        CustomLabelSettingShareSeparator3.Height = 1;
 
         CustomCheckBoxSettingProxyEnableDontBypass.Left = CustomCheckBoxSettingProxyEnableBlackWhiteList.Left;
         CustomCheckBoxSettingProxyEnableDontBypass.Top = CustomLabelSettingShareSeparator3.Bottom + spaceV;

@@ -125,7 +125,7 @@ public partial class FormMain
         if (IsDisconnecting) return -1;
 
         // Execute DnsProxy
-        PIDDNSProxy = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
+        PIDDNSProxy = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
 
         // Write DNS Requests to Log (the output is heavy filtering queries causes high cpu usage)
         //process.OutputDataReceived -= process_DataReceived;

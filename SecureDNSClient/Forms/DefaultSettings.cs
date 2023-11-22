@@ -9,7 +9,7 @@ public partial class FormMain : Form
         // Check
         CustomRadioButtonBuiltIn.Checked = true;
         CustomRadioButtonCustom.Checked = false;
-        CustomCheckBoxCheckInParallel.Checked = false;
+        CustomNumericUpDownCheckInParallel.Value = (decimal)5;
         CustomCheckBoxInsecure.Checked = false;
         LinkLabelCheckUpdate.Text = string.Empty;
 
@@ -29,6 +29,8 @@ public partial class FormMain : Form
         CustomNumericUpDownPDpiSniChunks.Value = (decimal)5;
         CustomNumericUpDownPDpiAntiPatternOffset.Value = (decimal)2;
         CustomNumericUpDownPDpiFragDelay.Value = (decimal)1;
+        CustomCheckBoxProxyEnableSSL.Checked = false;
+        CustomCheckBoxProxySSLChangeSniToIP.Checked = false;
 
         // DPI Basic
         CustomRadioButtonDPIMode1.Checked = false;
@@ -95,7 +97,7 @@ public partial class FormMain : Form
 
         // Settings Quick Connect
         CustomComboBoxSettingQcConnectMode.SelectedIndex = 0; // Working Servers Mode
-        CustomCheckBoxSettingQcUseSavedServers.Checked = false;
+        CustomCheckBoxSettingQcUseSavedServers.Checked = true;
         CustomCheckBoxSettingQcCheckAllServers.Checked = false;
         CustomCheckBoxSettingQcSetDnsTo.Checked = true;
         // Update NICs (Quick Connect Settings)
@@ -107,6 +109,7 @@ public partial class FormMain : Form
         CustomRadioButtonSettingQcGdBasic.Checked = true;
         CustomComboBoxSettingQcGdBasic.SelectedIndex = 0; // Light Mode
         CustomRadioButtonSettingQcGdAdvanced.Checked = false;
+        CustomCheckBoxSettingQcOnStartup.Checked = true;
 
         // Settings Connect
         CustomCheckBoxSettingEnableCache.Checked = true;
@@ -121,7 +124,7 @@ public partial class FormMain : Form
 
         // Settings Share Basic
         CustomNumericUpDownSettingProxyPort.Value = (decimal)8080;
-        CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)2000;
+        CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)500;
         CustomCheckBoxSettingProxyBlockPort80.Checked = true;
         CustomNumericUpDownSettingProxyKillRequestTimeout.Value = (decimal)20;
         CustomCheckBoxSettingProxyUpstream.Checked = false;

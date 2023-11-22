@@ -6,6 +6,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>AnyCPU;x64;x86</Platforms>
+    <Version>$(VersionPrefix)1.5.0</Version>
+    <Copyright>MSasanMH</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

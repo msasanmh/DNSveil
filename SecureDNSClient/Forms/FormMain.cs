@@ -1,4 +1,3 @@
-using System.Net;
 using System.Diagnostics;
 using CustomControls;
 using System.Reflection;
@@ -7,7 +6,6 @@ using System.IO.Compression;
 using System.Globalization;
 using Microsoft.Win32;
 using MsmhToolsClass;
-using MsmhToolsClass.ProxyServerPrograms;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using SecureDNSClient.DPIBasic;
@@ -18,115 +16,22 @@ namespace SecureDNSClient;
 
 public partial class FormMain : Form
 {
-    public static ToolTip MainToolTip { get; set; } = new();
-    private FormWindowState LastWindowState;
-    public static readonly CustomLabel LabelScreen = new();
-    private Stopwatch LabelMovingStopWatch = new();
-    private static readonly CustomLabel LabelMoving = new();
-    public List<Tuple<long, string>> WorkingDnsList = new();
-    public List<string> SavedDnsList = new();
-    public List<string> SavedEncodedDnsList = new();
-    public List<string> CurrentUsingCustomServersList = new();
-    private List<string> WorkingDnsListToFile = new();
-    private List<Tuple<long, string>> WorkingDnsAndLatencyListToFile = new();
-    public static ProcessMonitor MonitorProcess { get; set; } = new();
-    private bool InternetOnline = false;
-    private bool InternetOffline = true;
-    public static bool IsInternetOnline { get; set; } = false;
-    private bool Once { get; set; } = true;
-    public static bool IsInActionState { get; set; } = false;
-    private bool IsOnStartup { get; set; } = false;
-    private bool IsStartupPathOk { get; set; } = false;
-    private bool IsCheckingForUpdate { get; set; } = false;
-    private int NumberOfWorkingServers { get; set; } = 0;
-    public static bool IsCheckingStarted { get; set; } = false;
-    public static bool IsBuiltinMode { get; set; } = true;
-    private static bool StopChecking { get; set; } = false;
-    private bool IsConnecting { get; set; } = false;
-    private bool IsDisconnecting { get; set; } = false;
-    private bool IsDisconnectingAll { get; set; } = false;
-    private bool IsConnected { get; set; } = false;
-    private ConnectMode LastConnectMode { get; set; } = ConnectMode.ConnectToWorkingServers;
-    public static bool IsDNSConnected { get; set; } = false;
-    private int LocalDnsLatency { get; set; } = -1;
-    public static bool IsDoHConnected { get; set; } = false;
-    private int LocalDohLatency { get; set; } = -1;
-    public static int ConnectedDohPort { get; set; } = 443; // as default
-    private bool IsDNSSetting { get; set; } = false;
-    private bool IsDNSUnsetting { get; set; } = false;
-    private bool IsDNSSet { get; set; } = false;
-    private string LastNicName { get; set; } = string.Empty;
-    private SetDnsOnNic SetDnsOnNic_ { get; set; } = new();
-    private bool DoesDNSSetOnce { get; set; } = false;
-    private bool IsFlushingDns { get; set; } = false;
-    private bool IsDPIActive { get; set; } = false;
-    private bool IsGoodbyeDPIBasicActive { get; set; } = false;
-    private bool IsGoodbyeDPIAdvancedActive { get; set; } = false;
-    private bool ConnectAllClicked { get; set; } = false;
-    public static IPAddress? LocalIP { get; set; } = IPAddress.Loopback; // as default
-    public Settings? AppSettings { get; set; }
-    private readonly ToolStripMenuItem ToolStripMenuItemIcon = new();
-    private bool AudioAlertOnline = true;
-    private bool AudioAlertOffline = false;
-    private bool AudioAlertRequestsExceeded = false;
-    private readonly Stopwatch StopWatchCheckDPIWorks = new();
-    private readonly Stopwatch StopWatchAudioAlertDelay = new();
-    private string TheDll = string.Empty;
-    private static readonly string NL = Environment.NewLine;
-    private bool IsExiting = false;
-
-    // PIDs
-    public static int PIDDNSProxy { get; set; } = -1;
-    public static int PIDDNSCrypt { get; set; } = -1;
-    private static int PIDGoodbyeDPIBasic { get; set; } = -1;
-    private static int PIDGoodbyeDPIAdvanced { get; set; } = -1;
-
-    // Camouflage Proxy
-    private ProcessConsole CamouflageProxyConsole { get; set; } = new();
-    private static int PIDCamouflageProxy { get; set; } = -1;
-    private static int PIDDNSCryptBypass { get; set; } = -1;
-    private bool IsBypassProxyActive { get; set; } = false;
-
-    // Camouflage GoodbyeDPI
-    private CamouflageDNSServer? CamouflageDNSServer { get; set; }
-    private static int PIDGoodbyeDPIBypass { get; set; } = -1;
-    private static int PIDDNSProxyBypass { get; set; } = -1;
-    private bool IsBypassDNSActive { get; set; } = false;
-    private bool IsBypassGoodbyeDpiActive { get; set; } = false;
-
-    // Msmh Proxy
-    private ProcessConsole ProxyConsole { get; set; } = new();
-    private static int PIDProxy { get; set; } = -1;
-    private bool IsProxyActivated { get; set; } = false;
-    private bool IsProxyActivating { get; set; } = false;
-    private bool IsProxyDeactivating { get; set; } = false;
-    public static bool IsProxyRunning { get; set; } = false;
-    public static int ProxyPort { get; set; } = -1;
-    private int ProxyRequests { get; set; } = 0;
-    private int ProxyMaxRequests { get; set; } = 250;
-    private bool IsProxyDpiBypassActive { get; set; } = false;
-    private ProxyProgram.DPIBypass.Mode ProxyStaticDPIBypassMode { get; set; } = ProxyProgram.DPIBypass.Mode.Disable;
-    private ProxyProgram.DPIBypass.Mode ProxyDPIBypassMode { get; set; } = ProxyProgram.DPIBypass.Mode.Disable;
-    private ProxyProgram.UpStreamProxy.Mode ProxyUpStreamMode { get; set; } = ProxyProgram.UpStreamProxy.Mode.Disable;
-    private ProxyProgram.Dns.Mode ProxyDNSMode { get; set; } = ProxyProgram.Dns.Mode.Disable;
-    private ProxyProgram.FakeDns.Mode ProxyFakeDnsMode { get; set; } = ProxyProgram.FakeDns.Mode.Disable;
-    private ProxyProgram.BlackWhiteList.Mode ProxyBWListMode { get; set; } = ProxyProgram.BlackWhiteList.Mode.Disable;
-    private ProxyProgram.DontBypass.Mode DontBypassMode { get; set; } = ProxyProgram.DontBypass.Mode.Disable;
-    private bool IsProxySet { get; set; } = false;
-    private static bool UpdateProxyBools { get; set; } = true;
-
-    // Fake Proxy
-    private ProcessConsole FakeProxyConsole { get; set; } = new();
-    private static int PIDFakeProxy { get; set; } = -1;
-
-    // Check DPI Bypass Cancel Token
-    private Task? CheckDpiBypass;
-    private CancellationTokenSource CheckDpiBypassCTS = new();
-
     public FormMain()
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         InitializeComponent();
+
+        if (Program.Startup)
+        {
+            Hide();
+            Opacity = 0;
+        }
+
+        // Start App Up Time Timer
+        AppUpTime.Start();
+
+        // Save Log to File
+        CustomRichTextBoxLog.TextAppended += CustomRichTextBoxLog_TextAppended;
 
         Start();
 
@@ -139,15 +44,33 @@ public partial class FormMain : Form
 
     private async void Start()
     {
+        // Load Theme
+        Theme.LoadTheme(this, Theme.Themes.Dark);
+        Theme.SetColors(LabelMain);
+        CustomMessageBox.FormIcon = Properties.Resources.SecureDNSClient_Icon_Multi;
+
+        string msgStartup = $"Initializing...{NL}";
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStartup, Color.Gray));
+
         // Invariant Culture
         Info.SetCulture(CultureInfo.InvariantCulture);
 
         // Add SDC Binaries to Windows Firewall if Firewall is Enabled
         AddOrUpdateFirewallRulesNoLog();
 
-        // Load Theme
-        Theme.LoadTheme(this, Theme.Themes.Dark);
-        CustomMessageBox.FormIcon = Properties.Resources.SecureDNSClient_Icon_Multi;
+        // Label Moving
+        Controls.Add(LabelMain);
+        LabelMain.Text = "Getting Ready...";
+        LabelMain.Dock = DockStyle.Fill;
+        LabelMain.TextAlign = ContentAlignment.MiddleCenter;
+        LabelMain.Font = new Font(Font.FontFamily, Font.Size * 1.5f);
+        SplitContainerMain.Visible = false;
+        LabelMain.Visible = true;
+        LabelMain.BringToFront();
+
+        // Label Screen to Fix Screen DPI
+        LabelScreen.Text = "MSasanMH";
+        LabelScreen.Font = Font;
 
         // Update NICs
         SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
@@ -161,16 +84,10 @@ public partial class FormMain : Form
         // Update GoodbyeDPI Basic Modes (Quick Connect Settings)
         DPIBasicBypass.UpdateGoodbyeDpiBasicModes(CustomComboBoxSettingQcGdBasic);
 
-        // Label Screen
-        LabelScreen.Text = "MSasanMH";
-        LabelScreen.Font = Font;
-
-        // Startup Defaults
-        Architecture archOs = RuntimeInformation.OSArchitecture;
-        Architecture archProcess = RuntimeInformation.ProcessArchitecture;
+        // App Startup Defaults
         string productName = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName ?? "SDC - Secure DNS Client";
         string productVersion = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion ?? "0.0.0";
-        string archText = getArchText(archOs, archProcess);
+        string archText = getArchText(ArchOs, ArchProcess);
 
         static string getArchText(Architecture archOs, Architecture archProcess)
         {
@@ -187,7 +104,7 @@ public partial class FormMain : Form
         CustomButtonSetDNS.Enabled = false;
         CustomButtonSetProxy.Enabled = false;
         CustomTextBoxHTTPProxy.Enabled = false;
-        DefaultSettings();
+        LinkLabelCheckUpdate.Text = string.Empty;
 
         // Set NotifyIcon Text
         NotifyIconMain.Text = Text;
@@ -198,69 +115,14 @@ public partial class FormMain : Form
         // Move User Data and Certificate to the new location
         await MoveToNewLocation();
 
-        // Add Tooltips
-        string msgCheckInParallel = "a) Don't use parallel on slow network.";
-        msgCheckInParallel += $"{NL}b) Parallel doesn't support bootstrap.";
-        msgCheckInParallel += $"{NL}c) Parallel doesn't support insecure mode.";
-        CustomCheckBoxCheckInParallel.SetToolTip(MainToolTip, "Info", msgCheckInParallel);
-
-        // Add Tooltips to advanced DPI
-        string msgP = "Block passive DPI.";
-        CustomCheckBoxDPIAdvP.SetToolTip(MainToolTip, "Info", msgP);
-        string msgR = "Replace Host with hoSt.";
-        CustomCheckBoxDPIAdvR.SetToolTip(MainToolTip, "Info", msgR);
-        string msgS = "Remove space between host header and its value.";
-        CustomCheckBoxDPIAdvS.SetToolTip(MainToolTip, "Info", msgS);
-        string msgM = "Mix Host header case (test.com -> tEsT.cOm).";
-        CustomCheckBoxDPIAdvM.SetToolTip(MainToolTip, "Info", msgM);
-        string msgF = "Set HTTP fragmentation to value";
-        CustomCheckBoxDPIAdvF.SetToolTip(MainToolTip, "Info", msgF);
-        string msgK = "Enable HTTP persistent (keep-alive) fragmentation and set it to value.";
-        CustomCheckBoxDPIAdvK.SetToolTip(MainToolTip, "Info", msgK);
-        string msgN = "Do not wait for first segment ACK when -k is enabled.";
-        CustomCheckBoxDPIAdvN.SetToolTip(MainToolTip, "Info", msgN);
-        string msgE = "Set HTTPS fragmentation to value.";
-        CustomCheckBoxDPIAdvE.SetToolTip(MainToolTip, "Info", msgE);
-        string msgA = "Additional space between Method and Request-URI (enables -s, may break sites).";
-        CustomCheckBoxDPIAdvA.SetToolTip(MainToolTip, "Info", msgA);
-        string msgW = "Try to find and parse HTTP traffic on all processed ports (not only on port 80).";
-        CustomCheckBoxDPIAdvW.SetToolTip(MainToolTip, "Info", msgW);
-        string msgPort = "Additional TCP port to perform fragmentation on (and HTTP tricks with -w).";
-        CustomCheckBoxDPIAdvPort.SetToolTip(MainToolTip, "Info", msgPort);
-        string msgIpId = "Handle additional IP ID (decimal, drop redirects and TCP RSTs with this ID).";
-        CustomCheckBoxDPIAdvIpId.SetToolTip(MainToolTip, "Info", msgIpId);
-        string msgAllowNoSni = "Perform circumvention if TLS SNI can't be detected with --blacklist enabled.";
-        CustomCheckBoxDPIAdvAllowNoSNI.SetToolTip(MainToolTip, "Info", msgAllowNoSni);
-        string msgSetTtl = "Activate Fake Request Mode and send it with supplied TTL value.\nDANGEROUS! May break websites in unexpected ways. Use with care(or--blacklist).";
-        CustomCheckBoxDPIAdvSetTTL.SetToolTip(MainToolTip, "Info", msgSetTtl);
-        string msgAutoTtl = "Activate Fake Request Mode, automatically detect TTL and decrease\nit based on a distance. If the distance is shorter than a2, TTL is decreased\nby a2. If it's longer, (a1; a2) scale is used with the distance as a weight.\nIf the resulting TTL is more than m(ax), set it to m.\nDefault (if set): --auto-ttl 1-4-10. Also sets --min-ttl 3.\nDANGEROUS! May break websites in unexpected ways. Use with care (or --blacklist).";
-        CustomCheckBoxDPIAdvAutoTTL.SetToolTip(MainToolTip, "[a1-a2-m]", msgAutoTtl);
-        string msgMinTtl = "Minimum TTL distance (128/64 - TTL) for which to send Fake Request\nin --set - ttl and--auto - ttl modes.";
-        CustomCheckBoxDPIAdvMinTTL.SetToolTip(MainToolTip, "Info", msgMinTtl);
-        string msgWrongChksum = "Activate Fake Request Mode and send it with incorrect TCP checksum.\nMay not work in a VM or with some routers, but is safer than set - ttl.";
-        CustomCheckBoxDPIAdvWrongChksum.SetToolTip(MainToolTip, "Info", msgWrongChksum);
-        string msgWrongSeq = "Activate Fake Request Mode and send it with TCP SEQ/ACK in the past.";
-        CustomCheckBoxDPIAdvWrongSeq.SetToolTip(MainToolTip, "Info", msgWrongSeq);
-        string msgNativeFrag = "Fragment (split) the packets by sending them in smaller packets, without\nshrinking the Window Size. Works faster(does not slow down the connection)\nand better.";
-        CustomCheckBoxDPIAdvNativeFrag.SetToolTip(MainToolTip, "Info", msgNativeFrag);
-        string msgReverseFrag = "Fragment (split) the packets just as --native-frag, but send them in the\nreversed order. Works with the websites which could not handle segmented\nHTTPS TLS ClientHello(because they receive the TCP flow \"combined\").";
-        CustomCheckBoxDPIAdvReverseFrag.SetToolTip(MainToolTip, "Info", msgReverseFrag);
-        string msgMaxPayload = "Packets with TCP payload data more than [value] won't be processed.\nUse this option to reduce CPU usage by skipping huge amount of data\n(like file transfers) in already established sessions.\nMay skip some huge HTTP requests from being processed.\nDefault(if set): --max-payload 1200.";
-        CustomCheckBoxDPIAdvMaxPayload.SetToolTip(MainToolTip, "Info", msgMaxPayload);
-        string msgBlacklist = "Perform circumvention tricks only to host names and subdomains from\nsupplied text file(HTTP Host / TLS SNI).";
-        CustomCheckBoxDPIAdvBlacklist.SetToolTip(MainToolTip, "Info", msgBlacklist);
-
-        // Add colors and texts to About page
-        CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
-        string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({archProcess.ToString().ToLower()})";
-        CustomLabelAboutVersion.Text = aboutVer;
-        CustomLabelAboutThis2.ForeColor = Color.IndianRed;
-
         // Initialize and load Settings
         if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidXMLFile(SecureDNS.SettingsXmlPath))
             AppSettings = new(this, SecureDNS.SettingsXmlPath);
         else
+        {
+            DefaultSettings();
             AppSettings = new(this);
+        }
 
         // Initialize Status
         InitializeStatus(CustomDataGridViewStatus);
@@ -268,67 +130,67 @@ public partial class FormMain : Form
         // Initialize NIC Status
         InitializeNicStatus(CustomDataGridViewNicStatus);
 
-        IsInternetOnline = IsInternetAlive(false);
+        // Write binaries if not exist or needs update
+        await WriteNecessaryFilesToDisk();
+
+        //IsInternetOnline = await IsInternetAlive(false, false);
+        UpdateAllAuto(); // CPU Friendly
+        //UpdateBoolInternetAccessAuto(); // 3 Included In UpdateAllAuto
         UpdateNotifyIconIconAuto();
         CheckUpdateAuto();
         LogClearAuto();
-        UpdateBoolsAuto();
+        //UpdateBoolsAuto(); // 2 Included In UpdateAllAuto
         UpdateBoolDnsDohAuto();
-        UpdateBoolProxyAuto();
-        UpdateStatusShortAuto();
-        UpdateStatusLongAuto();
-        UpdateStatusNicAuto();
-        UpdateStatusCpuUsageAuto();
-
-        // Auto Save Settings (Timer)
+        //UpdateBoolProxyAuto(); // 1 Included In UpdateAllAuto
+        UpdateStatusShortAuto(); // 2
+        //UpdateStatusLongAuto(); Included In UpdateAllAuto
+        //UpdateStatusCpuUsageAuto(); // 2 Included In UpdateAllAuto
         SaveSettingsAuto();
-
-        // Set Window State
-        LastWindowState = WindowState;
-
-        // Label Moving
-        Controls.Add(LabelMoving);
-        LabelMoving.Text = "Now Moving...";
-        LabelMoving.Size = new(300, 150);
-        LabelMoving.Location = new((ClientSize.Width / 2) - (LabelMoving.Width / 2), (ClientSize.Height / 2) - (LabelMoving.Height / 2));
-        LabelMoving.TextAlign = ContentAlignment.MiddleCenter;
-        LabelMoving.Font = new(FontFamily.GenericSansSerif, 12);
-        Theme.SetColors(LabelMoving);
-        LabelMoving.Visible = false;
-        LabelMoving.SendToBack();
-
-        // Save Log to File
-        CustomRichTextBoxLog.TextAppended += CustomRichTextBoxLog_TextAppended;
-
-        // Write binaries if not exist or needs update
-        await WriteNecessaryFilesToDisk();
 
         // Load Saved Servers
         SavedDnsLoad();
 
         // In case application closed unexpectedly Kill processes and set DNS to dynamic
-        if (!DoesAppClosedNormally())
+        bool closedNormally = await DoesAppClosedNormallyAsync();
+        if (!closedNormally)
         {
-            await KillAll(true);
-            await UnsetSavedDNS();
+            if (!Program.Startup) await KillAll(true);
+            if (NetworkTool.IsDnsSetToLocal(out _, out _))
+            {
+                string msgUnsetDnsOnStart = $"Last time App didn't close normally!{NL}";
+                msgUnsetDnsOnStart += $"Unsetting Saved DNS...{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgUnsetDnsOnStart, Color.Gray));
+                await UnsetSavedDNS();
+                UpdateStatusNic();
+            }
         }
         AppClosedNormally(false);
-
-        // Delete Log File on > 500KB
-        DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
 
         // Load Proxy Port
         ProxyPort = GetProxyPortSetting();
 
-        // Start Trace Event Session
-        MonitorProcess.SetPID(); // Measure Whole System
-        MonitorProcess.Start(true);
-
         // Drag bar color
         SplitContainerMain.BackColor = Color.IndianRed;
 
+        // Get Ready
+        GetAppReady();
+
+        //================================================================
+
         // Startup
-        if (Program.Startup) StartupTask();
+        bool exeOnStartup = false;
+        this.InvokeIt(() => exeOnStartup = CustomCheckBoxSettingQcOnStartup.Checked);
+        if (Program.Startup && exeOnStartup) StartupTask();
+
+        // Set Window State
+        LastWindowState = WindowState;
+
+        // Set Tooltips
+        SetToolTips();
+
+        // Start Trace Event Session
+        MonitorProcess.SetPID(); // Measure Whole System
+        MonitorProcess.Start(true);
     }
 
     private void CustomRichTextBoxLog_TextAppended(object? sender, EventArgs e)
@@ -350,17 +212,17 @@ public partial class FormMain : Form
 
     private void HideLabelMoving()
     {
-        LabelMoving.Visible = false;
-        LabelMoving.SendToBack();
+        LabelMain.Visible = false;
+        LabelMain.SendToBack();
         SplitContainerMain.Visible = true;
     }
 
     private void LabelMovingHide()
     {
-        if (LabelMovingStopWatch.ElapsedMilliseconds > 300)
+        if (LabelMainStopWatch.ElapsedMilliseconds > 300)
         {
             HideLabelMoving();
-            LabelMovingStopWatch.Reset();
+            LabelMainStopWatch.Reset();
         }
     }
 
@@ -368,11 +230,24 @@ public partial class FormMain : Form
     {
         if (Once)
         {
-            // Startup
-            if (Program.Startup) Hide();
-
             Once = false;
+
+            // Startup
+            if (Program.Startup)
+            {
+                Hide();
+                return;
+            }
         }
+
+        // Add colors and texts to About page
+        CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
+        string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({ArchProcess.ToString().ToLower()})";
+        CustomLabelAboutVersion.Text = aboutVer;
+        CustomLabelAboutThis2.ForeColor = Color.IndianRed;
+
+        // Delete Log File on > 500KB
+        DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
 
         // Fix Microsoft bugs. Like always!
         await ScreenHighDpiScaleStartup(this);
@@ -381,11 +256,10 @@ public partial class FormMain : Form
     private void FormMain_Move(object? sender, EventArgs e)
     {
         SplitContainerMain.Visible = false;
-        LabelMoving.Text = "Now Moving...";
-        LabelMoving.Location = new((ClientSize.Width / 2) - (LabelMoving.Width / 2), (ClientSize.Height / 2) - (LabelMoving.Height / 2));
-        LabelMoving.Visible = true;
-        LabelMoving.BringToFront();
-        LabelMovingStopWatch.Restart();
+        LabelMain.Text = "Now Moving...";
+        LabelMain.Visible = true;
+        LabelMain.BringToFront();
+        LabelMainStopWatch.Restart();
     }
 
     private void FormMain_Resize(object? sender, EventArgs e)
@@ -397,17 +271,16 @@ public partial class FormMain : Form
         else
         {
             SplitContainerMain.Visible = false;
-            LabelMoving.Text = "Now Resizing...";
-            LabelMoving.Location = new((ClientSize.Width / 2) - (LabelMoving.Width / 2), (ClientSize.Height / 2) - (LabelMoving.Height / 2));
-            LabelMoving.Visible = true;
-            LabelMoving.BringToFront();
-            LabelMovingStopWatch.Restart();
+            LabelMain.Text = "Now Resizing...";
+            LabelMain.Visible = true;
+            LabelMain.BringToFront();
+            LabelMainStopWatch.Restart();
         }
     }
 
     private void FormMain_LocationChanged(object? sender, EventArgs e)
     {
-        LabelMovingStopWatch.Restart();
+        LabelMainStopWatch.Restart();
     }
 
     private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
@@ -444,73 +317,67 @@ public partial class FormMain : Form
         formProcessMonitor.Show();
     }
 
-    private void CustomButtonEditCustomServers_Click(object sender, EventArgs e)
+    private void CustomButtonEditCustomServers_MouseUp(object sender, MouseEventArgs e)
     {
-        ToolStripItem tsiEdit = new ToolStripMenuItem("Manage custom servers");
-        tsiEdit.Font = Font;
-        tsiEdit.Click -= tsiEdit_Click;
-        tsiEdit.Click += tsiEdit_Click;
-        void tsiEdit_Click(object? sender, EventArgs e)
+        if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right)
         {
-            edit();
-        }
+            TsiEdit.Font = Font;
+            TsiEdit.Click -= tsiEdit_Click;
+            TsiEdit.Click += tsiEdit_Click;
+            void tsiEdit_Click(object? sender, EventArgs e) => edit();
 
-        ToolStripItem tsiViewWorkingServers = new ToolStripMenuItem("View working servers");
-        tsiViewWorkingServers.Font = Font;
-        tsiViewWorkingServers.Click -= tsiViewWorkingServers_Click;
-        tsiViewWorkingServers.Click += tsiViewWorkingServers_Click;
-        void tsiViewWorkingServers_Click(object? sender, EventArgs e)
-        {
-            viewWorkingServers();
-        }
+            TsiViewWorkingServers.Font = Font;
+            TsiViewWorkingServers.Click -= TsiViewWorkingServers_Click;
+            TsiViewWorkingServers.Click += TsiViewWorkingServers_Click;
+            void TsiViewWorkingServers_Click(object? sender, EventArgs e) => viewWorkingServers();
 
-        ToolStripItem tsiClearWorkingServers = new ToolStripMenuItem("Clear working servers");
-        tsiClearWorkingServers.Font = Font;
-        tsiClearWorkingServers.Click -= tsiClearWorkingServers_Click;
-        tsiClearWorkingServers.Click += tsiClearWorkingServers_Click;
-        void tsiClearWorkingServers_Click(object? sender, EventArgs e)
-        {
-            try
+            TsiClearWorkingServers.Font = Font;
+            TsiClearWorkingServers.Click -= TsiClearWorkingServers_Click;
+            TsiClearWorkingServers.Click += TsiClearWorkingServers_Click;
+            void TsiClearWorkingServers_Click(object? sender, EventArgs e) => clearWorkingServers();
+
+            CMS.Font = Font;
+            CMS.Items.Clear();
+            CMS.Items.Add(TsiEdit);
+            CMS.Items.Add(TsiViewWorkingServers);
+            CMS.Items.Add(TsiClearWorkingServers);
+            Theme.SetColors(CMS);
+            CMS.RoundedCorners = 5;
+            CMS.Show(CustomButtonEditCustomServers, 0, 0);
+
+            void edit()
             {
-                File.Delete(SecureDNS.WorkingServersPath);
-                string msg = $"{NL}Working Servers Cleared.{NL}{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                if (IsInAction(true, true, true, true, true, true, true, true, false, false, true)) return;
+
+                FormCustomServers formCustomServers = new();
+                formCustomServers.StartPosition = FormStartPosition.CenterParent;
+                formCustomServers.FormClosing += (s, e) => { formCustomServers.Dispose(); };
+                formCustomServers.ShowDialog(this);
             }
-            catch (Exception ex)
+
+            void viewWorkingServers()
             {
-                CustomMessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                FileDirectory.CreateEmptyFile(SecureDNS.WorkingServersPath);
+                int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.WorkingServersPath, false, false, SecureDNS.CurrentPath);
+                if (notepad == -1)
+                {
+                    string msg = "Notepad is not installed on your system.";
+                    CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+                }
             }
-        }
 
-        CustomContextMenuStrip cms = new();
-        cms.Font = Font;
-        cms.Items.Clear();
-        cms.Items.Add(tsiEdit);
-        cms.Items.Add(tsiViewWorkingServers);
-        cms.Items.Add(tsiClearWorkingServers);
-        Theme.SetColors(cms);
-        Control b = CustomButtonEditCustomServers;
-        cms.RoundedCorners = 5;
-        cms.Show(b, 0, 0);
-
-        void edit()
-        {
-            if (IsInAction(true, true, true, true, true, true, true, true, false, false, true)) return;
-
-            FormCustomServers formCustomServers = new();
-            formCustomServers.StartPosition = FormStartPosition.CenterParent;
-            formCustomServers.FormClosing += (s, e) => { formCustomServers.Dispose(); };
-            formCustomServers.ShowDialog(this);
-        }
-
-        void viewWorkingServers()
-        {
-            FileDirectory.CreateEmptyFile(SecureDNS.WorkingServersPath);
-            int notepad = ProcessManager.ExecuteOnly(out Process _, "notepad", SecureDNS.WorkingServersPath, false, false, SecureDNS.CurrentPath);
-            if (notepad == -1)
+            void clearWorkingServers()
             {
-                string msg = "Notepad is not installed on your system.";
-                CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+                try
+                {
+                    File.Delete(SecureDNS.WorkingServersPath);
+                    string msg = $"{NL}Working Servers Cleared.{NL}{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                }
+                catch (Exception ex)
+                {
+                    CustomMessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
     }
@@ -521,9 +388,46 @@ public partial class FormMain : Form
         StartCheck(null);
     }
 
-    private async void CustomButtonQuickConnect_Click(object sender, EventArgs e)
+    private async void CustomButtonQuickConnect_MouseUp(object sender, MouseEventArgs e)
     {
-        await StartQuickConnect(null);
+        if (e.Button == MouseButtons.Left)
+        {
+            await StartQuickConnect(null);
+        }
+        else if (e.Button == MouseButtons.Right)
+        {
+            List<string> groupList = await ReadCustomServersXmlGroups(SecureDNS.CustomServersXmlPath);
+            ToolStripItem[] subMenuItems = new ToolStripItem[groupList.Count];
+
+            // Add Built-In to DropDown Items
+            TsiQcToBuiltIn.Font = Font;
+            TsiQcToBuiltIn.Click -= QcToBuiltIn_Click;
+            TsiQcToBuiltIn.Click += QcToBuiltIn_Click;
+
+            // Add Custom Groups to DropDown Items
+            for (int n = 0; n < groupList.Count; n++)
+            {
+                string groupName = groupList[n];
+                subMenuItems[n] = new ToolStripMenuItem(groupName);
+                subMenuItems[n].Font = Font;
+                subMenuItems[n].Name = groupName;
+                subMenuItems[n].Click -= QcToCustomGroups_Click;
+                subMenuItems[n].Click += QcToCustomGroups_Click;
+            }
+
+            CMS.Font = Font;
+            CMS.Items.Clear();
+            CMS.Items.Add(TsiQcToBuiltIn);
+            CMS.Items.AddRange(subMenuItems);
+            Theme.SetColors(CMS);
+            CMS.RoundedCorners = 5;
+            CMS.Show(CustomButtonQuickConnect, 0, 0);
+        }
+    }
+
+    private async void CustomButtonDisconnectAll_Click(object sender, EventArgs e)
+    {
+        await DisconnectAll();
     }
 
     private async void CustomButtonCheckUpdate_Click(object sender, EventArgs e)
@@ -550,21 +454,40 @@ public partial class FormMain : Form
         SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
     }
 
-    private void CustomButtonEnableDisableNic_Click(object sender, EventArgs e)
+    private async void CustomButtonEnableDisableNic_Click(object sender, EventArgs e)
     {
         if (CustomComboBoxNICs.SelectedItem == null) return;
         string? nicName = CustomComboBoxNICs.SelectedItem.ToString();
         if (string.IsNullOrEmpty(nicName)) return;
+
+        // Disable Button
+        CustomButtonEnableDisableNic.Enabled = false;
+
         if (CustomButtonEnableDisableNic.Text.Contains("Enable"))
-            NetworkTool.EnableNIC(nicName);
+        {
+            CustomButtonEnableDisableNic.Text = "Enabling...";
+            await NetworkTool.EnableNICAsync(nicName);
+        }
         else
-            NetworkTool.DisableNIC(nicName);
+        {
+            CustomButtonEnableDisableNic.Text = "Disabling...";
+            await NetworkTool.DisableNICAsync(nicName);
+        }
+
+        // Update NIC Status
+        await Task.Run(() => UpdateStatusNic());
+
+        // Enable Button
+        CustomButtonEnableDisableNic.Enabled = true;
     }
 
     private async void CustomButtonSetDNS_Click(object sender, EventArgs e)
     {
         if (IsInAction(true, true, true, true, true, true, true, true, true, false, true)) return;
         await SetDNS();
+
+        // Update NIC Status
+        await Task.Run(() => UpdateStatusNic());
     }
 
     private async void CustomButtonShare_Click(object sender, EventArgs e)
@@ -586,6 +509,18 @@ public partial class FormMain : Form
             await ApplyPDpiChangesFakeProxy();
         await ApplyPDpiChanges();
         UpdateProxyBools = true;
+
+        IsProxySet = UpdateBoolIsProxySet();
+        if (IsProxySet)
+            await SetProxyInternalAsync(); // Change Proxy HTTP <==> SOCKS
+    }
+
+    private async void CustomButtonPDpiCheck_Click(object sender, EventArgs e)
+    {
+        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true)) return;
+        // Get blocked domain
+        string blockedDomain = GetBlockedDomainSetting(out _);
+        await CheckDPIWorks(blockedDomain);
     }
 
     private void CustomButtonPDpiPresetDefault_Click(object sender, EventArgs e)
@@ -620,7 +555,7 @@ public partial class FormMain : Form
     {
         // Edit GoodbyeDPI Advanced Blacklist
         FileDirectory.CreateEmptyFile(SecureDNS.DPIBlacklistPath);
-        int notepad = ProcessManager.ExecuteOnly(out Process _, "notepad", SecureDNS.DPIBlacklistPath, false, false, SecureDNS.CurrentPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.DPIBlacklistPath, false, false, SecureDNS.CurrentPath);
         if (notepad == -1)
         {
             string msg = "Notepad is not installed on your system.";
@@ -721,7 +656,11 @@ public partial class FormMain : Form
     {
         // Flush Dns
         if (IsInAction(true, false, true, true, true, true, true, true, true, false, true)) return;
+        CustomButtonToolsFlushDns.Enabled = false;
+        CustomButtonToolsFlushDns.Text = "Flushing...";
         await FlushDnsOnExit(true);
+        CustomButtonToolsFlushDns.Text = "Flush DNS";
+        CustomButtonToolsFlushDns.Enabled = true;
     }
 
     private void CustomButtonSettingUninstallCertificate_Click(object sender, EventArgs e)
@@ -778,7 +717,7 @@ public partial class FormMain : Form
     private void CustomButtonSettingProxyFakeDNS_Click(object sender, EventArgs e)
     {
         FileDirectory.CreateEmptyFile(SecureDNS.FakeDnsRulesPath);
-        int notepad = ProcessManager.ExecuteOnly(out Process _, "notepad", SecureDNS.FakeDnsRulesPath, false, false, SecureDNS.CurrentPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.FakeDnsRulesPath, false, false, SecureDNS.CurrentPath);
         if (notepad == -1)
         {
             string msg = "Notepad is not installed on your system.";
@@ -789,7 +728,7 @@ public partial class FormMain : Form
     private void CustomButtonSettingProxyBlackWhiteList_Click(object sender, EventArgs e)
     {
         FileDirectory.CreateEmptyFile(SecureDNS.BlackWhiteListPath);
-        int notepad = ProcessManager.ExecuteOnly(out Process _, "notepad", SecureDNS.BlackWhiteListPath, false, false, SecureDNS.CurrentPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.BlackWhiteListPath, false, false, SecureDNS.CurrentPath);
         if (notepad == -1)
         {
             string msg = "Notepad is not installed on your system.";
@@ -800,7 +739,7 @@ public partial class FormMain : Form
     private void CustomButtonSettingProxyDontBypass_Click(object sender, EventArgs e)
     {
         FileDirectory.CreateEmptyFile(SecureDNS.DontBypassListPath);
-        int notepad = ProcessManager.ExecuteOnly(out Process _, "notepad", SecureDNS.DontBypassListPath, false, false, SecureDNS.CurrentPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.DontBypassListPath, false, false, SecureDNS.CurrentPath);
         if (notepad == -1)
         {
             string msg = "Notepad is not installed on your system.";
@@ -970,26 +909,48 @@ public partial class FormMain : Form
         }
     }
 
+    private async void CustomComboBoxNICs_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        await Task.Run(() => UpdateStatusNic());
+    }
+
+    private async void CustomCheckBoxProxyEnableSSL_CheckedChanged(object sender, EventArgs e)
+    {
+        if (Program.Startup) return;
+        if (!Visible) return;
+        if (AppUpTime.ElapsedMilliseconds < 6000) return; // Don't Do This On App Startup
+        if (sender is not CustomCheckBox cb) return;
+        if (!cb.Checked) return;
+        if (IsInAction(true, true, true, true, true, false, true, true, true, false, true)) return;
+        this.InvokeIt(() => cb.Enabled = false);
+        this.InvokeIt(() => cb.Text = "Enabling...");
+        await ApplySSLDecryption();
+        this.InvokeIt(() => cb.Text = "Enable SSL Decryption");
+        this.InvokeIt(() => cb.Enabled = true);
+    }
+
     //============================== Closing
     private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
     {
-        if (e.CloseReason == CloseReason.UserClosing)
+        if (e.CloseReason == CloseReason.WindowsShutDown || e.CloseReason == CloseReason.TaskManagerClosing)
+        {
+            e.Cancel = true; // We Have Zero Time To Unset DNS On Shutdown
+            string processName = "netsh";
+            string processArgs1 = $"interface ipv4 delete dnsservers \"{LastNicName}\" all";
+            ProcessManager.ExecuteOnly(processName, processArgs1, true, true);
+        }
+        else if (e.CloseReason == CloseReason.UserClosing)
         {
             e.Cancel = true;
             Hide();
             //ShowInTaskbar = false; // Makes Titlebar white (I use Show and Hide instead)
             NotifyIconMain.BalloonTipText = "Minimized to tray.";
             NotifyIconMain.BalloonTipIcon = ToolTipIcon.Info;
-            NotifyIconMain.ShowBalloonTip(500);
-        }
-        else if (e.CloseReason == CloseReason.WindowsShutDown)
-        {
-            e.Cancel = true;
-            Exit_Click(null, null);
+            NotifyIconMain.ShowBalloonTip(300);
         }
     }
 
-    private void NotifyIconMain_MouseClick(object sender, MouseEventArgs e)
+    private async void NotifyIconMain_MouseClick(object sender, MouseEventArgs e)
     {
         if (e.Button == MouseButtons.Left)
         {
@@ -1001,6 +962,13 @@ public partial class FormMain : Form
         else if (e.Button == MouseButtons.Right)
         {
             ShowMainContextMenu();
+        }
+
+        if (Program.Startup)
+        {
+            Program.Startup = false;
+            await Task.Run(() => UpdateStatusNic());
+            _ = Task.Run(async () => await CheckUpdate());
         }
     }
 

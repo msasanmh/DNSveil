@@ -16,9 +16,8 @@ public partial class FormMain
         CustomContextMenuStripIcon.Items.Clear();
 
         // GoodbyeDPI Basic DropDown Menu
-        ToolStripMenuItem goodbyeDpiBasic = new();
-        goodbyeDpiBasic.Font = Font;
-        goodbyeDpiBasic.Text = "Activate GoodbyeDPI Basic";
+        TsiGoodbyeDpiBasic.DropDownItems.Clear();
+        TsiGoodbyeDpiBasic.Font = Font;
 
         // Add All Modes to DropDown Items
         List<DPIBasicBypassMode> bModes = DPIBasicBypass.GetAllModes();
@@ -32,28 +31,25 @@ public partial class FormMain
             gdbSubMenuItems[n].Click -= GdbModes_Click;
             gdbSubMenuItems[n].Click += GdbModes_Click;
         }
-        goodbyeDpiBasic.DropDownItems.AddRange(gdbSubMenuItems);
-        CustomContextMenuStripIcon.Items.Add(goodbyeDpiBasic);
+        TsiGoodbyeDpiBasic.DropDownItems.AddRange(gdbSubMenuItems);
+        CustomContextMenuStripIcon.Items.Add(TsiGoodbyeDpiBasic);
 
         // Update bool IsGoodbyeDPIAdvancedActive
         IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
 
         // GoodbyeDPI Advanced Menu
-        ToolStripMenuItem goodbyeDpiAdvanced = new();
-        goodbyeDpiAdvanced.Font = Font;
-        goodbyeDpiAdvanced.Text = IsGoodbyeDPIAdvancedActive ? "Reactivate GoodbyeDPI Advanced" : "Activate GoodbyeDPI Advanced";
-        goodbyeDpiAdvanced.Click -= GoodbyeDpiAdvanced_Click;
-        goodbyeDpiAdvanced.Click += GoodbyeDpiAdvanced_Click;
-        CustomContextMenuStripIcon.Items.Add(goodbyeDpiAdvanced);
+        TsiGoodbyeDpiAdvanced.Font = Font;
+        TsiGoodbyeDpiAdvanced.Text = IsGoodbyeDPIAdvancedActive ? "Reactivate GoodbyeDPI Advanced" : "Activate GoodbyeDPI Advanced";
+        TsiGoodbyeDpiAdvanced.Click -= GoodbyeDpiAdvanced_Click;
+        TsiGoodbyeDpiAdvanced.Click += GoodbyeDpiAdvanced_Click;
+        CustomContextMenuStripIcon.Items.Add(TsiGoodbyeDpiAdvanced);
 
         // GoodbyeDPI Deactive Menu
-        ToolStripMenuItem goodbyeDpiDeactive = new();
-        goodbyeDpiDeactive.Font = Font;
-        goodbyeDpiDeactive.Text = "Deactive GoodbyeDPI";
-        goodbyeDpiDeactive.Enabled = IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive;
-        goodbyeDpiDeactive.Click -= GoodbyeDpiDeactive_Click;
-        goodbyeDpiDeactive.Click += GoodbyeDpiDeactive_Click;
-        CustomContextMenuStripIcon.Items.Add(goodbyeDpiDeactive);
+        TsiGoodbyeDpiDeactive.Font = Font;
+        TsiGoodbyeDpiDeactive.Enabled = IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive;
+        TsiGoodbyeDpiDeactive.Click -= GoodbyeDpiDeactive_Click;
+        TsiGoodbyeDpiDeactive.Click += GoodbyeDpiDeactive_Click;
+        CustomContextMenuStripIcon.Items.Add(TsiGoodbyeDpiDeactive);
 
         // Spacer
         CustomContextMenuStripIcon.Items.Add("-");
@@ -62,46 +58,39 @@ public partial class FormMain
         IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
 
         // Proxy Server Menu
-        ToolStripMenuItem proxy = new();
-        proxy.Font = Font;
-        proxy.Text = IsProxyActivating ? "Starting Proxy Server" : IsProxyDeactivating ? "Stopping Proxy Server" : IsProxyActivated ? "Stop Proxy Server" : "Start Proxy Server";
-        proxy.Enabled = !IsProxyActivating && !IsProxyDeactivating && !IsDNSSetting && !IsDNSUnsetting;
-        proxy.Click -= Proxy_Click;
-        proxy.Click += Proxy_Click;
-        CustomContextMenuStripIcon.Items.Add(proxy);
+        TsiProxy.Font = Font;
+        TsiProxy.Text = IsProxyActivating ? "Starting Proxy Server" : IsProxyDeactivating ? "Stopping Proxy Server" : IsProxyActivated ? "Stop Proxy Server" : "Start Proxy Server";
+        TsiProxy.Enabled = !IsProxyActivating && !IsProxyDeactivating && !IsDNSSetting && !IsDNSUnsetting;
+        TsiProxy.Click -= Proxy_Click;
+        TsiProxy.Click += Proxy_Click;
+        CustomContextMenuStripIcon.Items.Add(TsiProxy);
 
         // Set Proxy to System
-        ToolStripMenuItem proxySet = new();
-        proxySet.Font = Font;
-        proxySet.Text = IsProxySet ? "Unset Proxy from System" : "Set Proxy to System";
-        proxySet.Enabled = IsProxyActivated && !IsProxyActivating && !IsProxyDeactivating;
-        proxySet.Click -= ProxySet_Click;
-        proxySet.Click += ProxySet_Click;
-        CustomContextMenuStripIcon.Items.Add(proxySet);
+        TsiProxySet.Font = Font;
+        TsiProxySet.Text = IsProxySet ? "Unset Proxy from System" : "Set Proxy to System";
+        TsiProxySet.Enabled = IsProxyActivated && !IsProxyActivating && !IsProxyDeactivating;
+        TsiProxySet.Click -= ProxySet_Click;
+        TsiProxySet.Click += ProxySet_Click;
+        CustomContextMenuStripIcon.Items.Add(TsiProxySet);
 
         // Spacer
         CustomContextMenuStripIcon.Items.Add("-");
 
         // Quick Connect DropDown Menu
-        ToolStripMenuItem quickConnectTo = new();
-        quickConnectTo.Font = Font;
-        quickConnectTo.Text = "Quick Connect To";
+        TsiQuickConnectTo.DropDownItems.Clear();
+        TsiQuickConnectTo.Font = Font;
 
         // Add to User Settings
-        ToolStripMenuItem qcToUserSetting = new();
-        qcToUserSetting.Font = Font;
-        qcToUserSetting.Text = "User Settings";
-        qcToUserSetting.Click -= QcToUserSetting_Click;
-        qcToUserSetting.Click += QcToUserSetting_Click;
-        quickConnectTo.DropDownItems.Add(qcToUserSetting);
+        TsiQcToUserSetting.Font = Font;
+        TsiQcToUserSetting.Click -= QcToUserSetting_Click;
+        TsiQcToUserSetting.Click += QcToUserSetting_Click;
+        TsiQuickConnectTo.DropDownItems.Add(TsiQcToUserSetting);
 
         // Add Built-In to DropDown Items
-        ToolStripMenuItem qcToBuiltIn = new();
-        qcToBuiltIn.Font = Font;
-        qcToBuiltIn.Text = "Built-In Servers";
-        qcToBuiltIn.Click -= QcToBuiltIn_Click;
-        qcToBuiltIn.Click += QcToBuiltIn_Click;
-        quickConnectTo.DropDownItems.Add(qcToBuiltIn);
+        TsiQcToBuiltIn.Font = Font;
+        TsiQcToBuiltIn.Click -= QcToBuiltIn_Click;
+        TsiQcToBuiltIn.Click += QcToBuiltIn_Click;
+        TsiQuickConnectTo.DropDownItems.Add(TsiQcToBuiltIn);
 
         // Add Custom Groups to DropDown Items
         List<string> groupList = await ReadCustomServersXmlGroups(SecureDNS.CustomServersXmlPath);
@@ -115,8 +104,8 @@ public partial class FormMain
             subMenuItems[n].Click -= QcToCustomGroups_Click;
             subMenuItems[n].Click += QcToCustomGroups_Click;
         }
-        quickConnectTo.DropDownItems.AddRange(subMenuItems);
-        CustomContextMenuStripIcon.Items.Add(quickConnectTo);
+        TsiQuickConnectTo.DropDownItems.AddRange(subMenuItems);
+        CustomContextMenuStripIcon.Items.Add(TsiQuickConnectTo);
 
         // Disconnect Menu
         ToolStripMenuItem disconnectAll = new();
@@ -227,163 +216,176 @@ public partial class FormMain
             this.InvokeIt(() => CustomProgressBarCheck.StopTimer = true);
         }
 
-        // Stop Quick Connect
-        if (IsQuickConnecting)
+        async Task dc()
         {
-            StopQuickConnect = true;
-            IsDisconnecting = true;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Stopping Quick Connect...{NL}", Color.LightGray));
-
-            // Wait
-            Task wait = Task.Run(async () =>
+            // Stop Quick Connect
+            if (IsQuickConnecting)
             {
-                while (true)
+                StopQuickConnect = true;
+                IsDisconnecting = true;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Stopping Quick Connect...{NL}", Color.LightGray));
+
+                // Wait
+                Task wait = Task.Run(async () =>
                 {
-                    if (!IsQuickConnecting) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(20)); } catch (Exception) { }
+                    while (true)
+                    {
+                        if (!IsQuickConnecting) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(20)); } catch (Exception) { }
 
-            StopQuickConnect = false;
-            IsDisconnecting = false;
-        }
+                StopQuickConnect = false;
+                IsDisconnecting = false;
+            }
 
-        // Deactivate GoodbyeDPI
-        if (IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive)
-        {
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating GoodbyeDPI...{NL}", Color.LightGray));
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
-
-            // Wait
-            Task wait = Task.Run(async () =>
+            // Deactivate GoodbyeDPI
+            if (IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive)
             {
-                while (true)
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating GoodbyeDPI...{NL}", Color.LightGray));
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
+
+                // Wait
+                Task wait = Task.Run(async () =>
                 {
-                    if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic) &&
-                        !ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced)) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
-        }
+                    while (true)
+                    {
+                        if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic) &&
+                            !ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced)) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+            }
 
-        // Deactivate GoodbyeDPIBypass (Connect Method 3)
-        if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
-        {
-            IsDisconnecting = true;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating GoodbyeDPI Bypass...{NL}", Color.LightGray));
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
-            BypassFakeProxyDohStop(true, true, true, false);
-
-            // Wait
-            Task wait = Task.Run(async () =>
+            // Deactivate GoodbyeDPIBypass (Connect Method 3)
+            if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
             {
-                while (true)
+                IsDisconnecting = true;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating GoodbyeDPI Bypass...{NL}", Color.LightGray));
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+                BypassFakeProxyDohStop(true, true, true, false);
+
+                // Wait
+                Task wait = Task.Run(async () =>
                 {
-                    if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass)) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+                    while (true)
+                    {
+                        if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass)) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
-            IsDisconnecting = false;
-        }
+                IsDisconnecting = false;
+            }
 
-        // Unset Proxy
-        if (IsProxySet)
-        {
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Unsetting Proxy...{NL}", Color.LightGray));
-            NetworkTool.UnsetProxy(false, true);
-
-            // Wait
-            Task wait = Task.Run(async () =>
+            // Unset Proxy
+            if (IsProxySet)
             {
-                while (true)
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Unsetting Proxy...{NL}", Color.LightGray));
+                NetworkTool.UnsetProxy(false, true);
+
+                // Wait
+                Task wait = Task.Run(async () =>
                 {
-                    if (!IsProxySet) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
-        }
+                    while (true)
+                    {
+                        if (!IsProxySet) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+            }
 
-        // Deactivate Proxy
-        if (IsProxyActivated || IsProxyActivating)
-        {
-            IsProxyDeactivating = true;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating Proxy...{NL}", Color.LightGray));
-            ProcessManager.KillProcessByPID(PIDProxy);
-
-            // Wait
-            Task wait = Task.Run(async () =>
+            // Deactivate Proxy
+            if (IsProxyActivated || IsProxyActivating)
             {
-                while (true)
+                IsProxyDeactivating = true;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating Proxy...{NL}", Color.LightGray));
+                ProcessManager.KillProcessByPID(PIDProxy);
+
+                // Wait
+                Task wait = Task.Run(async () =>
                 {
-                    if (!ProcessManager.FindProcessByPID(PIDProxy)) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+                    while (true)
+                    {
+                        if (!ProcessManager.FindProcessByPID(PIDProxy)) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
-            IsProxyDeactivating = false;
-        }
+                IsProxyDeactivating = false;
+            }
 
-        // Deactivate Fake Proxy
-        if (ProcessManager.FindProcessByPID(PIDFakeProxy))
-        {
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating Fake Proxy...{NL}", Color.LightGray));
-            ProcessManager.KillProcessByPID(PIDFakeProxy);
-
-            // Wait
-            Task wait = Task.Run(async () =>
+            // Deactivate Fake Proxy
+            if (ProcessManager.FindProcessByPID(PIDFakeProxy))
             {
-                while (true)
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating Fake Proxy...{NL}", Color.LightGray));
+                ProcessManager.KillProcessByPID(PIDFakeProxy);
+
+                // Wait
+                Task wait = Task.Run(async () =>
                 {
-                    if (!ProcessManager.FindProcessByPID(PIDFakeProxy)) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
-        }
+                    while (true)
+                    {
+                        if (!ProcessManager.FindProcessByPID(PIDFakeProxy)) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+            }
 
-        // Unset DNS
-        if (IsDNSSet || IsDNSSetting)
-        {
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Unsetting DNS...{NL}", Color.LightGray));
-            await Task.Run(async () => await UnsetAllDNSs());
-        }
-
-        // Disconnect -  Kill all processes
-        if (IsConnected || IsConnecting)
-        {
-            IsDisconnecting = true;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Disconnecting...{NL}", Color.LightGray));
-            await Task.Run(async () => await KillAll());
-
-            // Wait
-            Task wait = Task.Run(async () =>
+            // Disconnect -  Kill all processes
+            if (IsConnected || IsConnecting)
             {
-                while (true)
-                {
-                    if (!IsConnected && !IsConnecting) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+                IsDisconnecting = true;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Disconnecting...{NL}", Color.LightGray));
+                await Task.Run(async () => await KillAll());
 
-            IsDisconnecting = false;
+                // Wait
+                Task wait = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        if (!IsConnected && !IsConnecting) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+
+                IsDisconnecting = false;
+            }
         }
+
+        async Task dcDns()
+        {
+            // Unset DNS
+            if (IsDNSSet || IsDNSSetting)
+            {
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Unsetting DNS...{NL}", Color.LightGray));
+                await Task.Run(async () => await UnsetAllDNSs());
+            }
+        }
+
+        await Task.WhenAll(dc(), dcDns());
 
         // Flush DNS On Exit
         if (DoesDNSSetOnce)
         {
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flushing DNS...{NL}", Color.LightGray));
             if (IsExiting)
-                await Task.Run(async () => await FlushDnsOnExit());
+            {
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Full Flushing DNS...{NL}", Color.LightGray));
+                await Task.Run(async () => await FlushDnsOnExit(false));
+            }
             else
-                await FlushDNS();
+            {
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flushing DNS...{NL}", Color.LightGray));
+                await FlushDNS(false, false);
+            }
         }
 
         if (!IsExiting)
@@ -410,20 +412,23 @@ public partial class FormMain
         AppClosedNormally(true);
 
         // Select Control type and properties to save
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Saving Settings...{NL}", Color.LightGray));
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomNumericUpDown), "Value");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomComboBox), "SelectedIndex");
+        if (AppSettings != null)
+        {
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Saving Settings...{NL}", Color.LightGray));
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomNumericUpDown), "Value");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomComboBox), "SelectedIndex");
 
-        // Add Settings to save
-        AppSettings.AddSelectedSettings(this);
+            // Add Settings to save
+            AppSettings.AddSelectedSettings(this);
 
-        // Save Application Settings
-        await AppSettings.SaveAsync(SecureDNS.SettingsXmlPath);
-
+            // Save Application Settings
+            await AppSettings.SaveAsync(SecureDNS.SettingsXmlPath);
+        }
+        
         // Hide NotifyIcon
         NotifyIconMain.Visible = false;
 

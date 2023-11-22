@@ -1,8 +1,6 @@
 ﻿using MsmhToolsClass.ProxyServerPrograms;
-using System;
 using System.Diagnostics;
 using System.Net;
-using System.Net.NetworkInformation;
 
 namespace MsmhToolsClass.MsmhProxyServer;
 
@@ -10,17 +8,32 @@ public partial class MsmhProxyServer
 {
     public async Task<ProxyRequest?> ApplyPrograms(ProxyRequest? req)
     {
+        if (Cancel) return null;
         if (req == null) return null;
         if (string.IsNullOrEmpty(req.Address)) return null;
-        if (NetworkTool.IsLocalIP(req.Address)) return null;
+        if (req.Address.Equals("0.0.0.0")) return null;
+        if (req.Address.StartsWith("10.")) return null;
 
+        // Count Max Requests
+        MaxRequestsQueue2.Enqueue(DateTime.UtcNow);
+        if (ProxySettings_.MaxRequests >= MaxRequestsDivide)
+            if (MaxRequestsQueue2.Count >= ProxySettings_.MaxRequests / MaxRequestsDivide) // Check for 50 ms (1000 / 20)
+            {
+                // Event
+                string blockEvent = $"Recevied {MaxRequestsQueue2.Count * MaxRequestsDivide} Requests Per Second - Request Denied ({req.AddressOrig}:{req.Port}) Due To Max Requests of {ProxySettings_.MaxRequests}.";
+                Debug.WriteLine(blockEvent);
+                OnRequestReceived?.Invoke(blockEvent, EventArgs.Empty);
+                return null;
+            }
+
+        // Apply Programs
         req.TimeoutSec = ProxySettings_.RequestTimeoutSec;
         
         // Block Port 80
         if (ProxySettings_.BlockPort80 && req.Port == 80)
         {
             // Event
-            string msgEvent = $"Block Port 80: {req.Address}:{req.Port}, request denied.";
+            string msgEvent = $"Block Port 80: {req.Address}:{req.Port}, Request Denied.";
             OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
             return null;
         }
@@ -32,7 +45,7 @@ public partial class MsmhProxyServer
             if (isMatch)
             {
                 // Event
-                string msgEvent = $"Black White list: {req.Address}:{req.Port}, request denied.";
+                string msgEvent = $"Black White list: {req.Address}:{req.Port}, Request Denied.";
                 OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
                 return null;
             }
@@ -46,18 +59,27 @@ public partial class MsmhProxyServer
             if (isMatch) req.ApplyDpiBypass = false;
         }
 
-        // Save Orig Hostname
-        string origHostname = req.Address;
-
         //// FakeDNS Program
         if (FakeDNSProgram.FakeDnsMode != ProxyProgram.FakeDns.Mode.Disable)
-            req.Address = FakeDNSProgram.Get(req.Address);
+        {
+            string ipOrSni = FakeDNSProgram.Get(req.Address);
+            if (!ipOrSni.Equals(req.Address))
+            {
+                bool isIP = IPAddress.TryParse(ipOrSni, out _);
+                if (isIP) req.Address = ipOrSni;
+                else
+                {
+                    // It's SNI
+                    if (SettingsSSL_.EnableSSL) req.Address = ipOrSni;
+                }
+            }
+        }
 
         // Check If Address Is An IP
         bool isIp = IPAddress.TryParse(req.Address, out IPAddress? _);
 
         //// DNS Program
-        if (origHostname.Equals(req.Address))
+        if (req.AddressOrig.Equals(req.Address))
         {
             if (DNSProgram.DNSMode != ProxyProgram.Dns.Mode.Disable && !isIp)
             {
@@ -76,10 +98,10 @@ public partial class MsmhProxyServer
         if (req.ProxyName == Proxy.Name.Socks4 || req.ProxyName == Proxy.Name.Socks4A || req.ProxyName == Proxy.Name.Socks5)
             msgReqEvent += $"[{req.Command}] ";
 
-        if (origHostname.Equals(req.Address))
-            msgReqEvent += $"{origHostname}:{req.Port}";
+        if (req.AddressOrig.Equals(req.Address))
+            msgReqEvent += $"{req.AddressOrig}:{req.Port}";
         else
-            msgReqEvent += $"{origHostname}:{req.Port} => {req.Address}:{req.Port}";
+            msgReqEvent += $"{req.AddressOrig}:{req.Port} => {req.Address}:{req.Port}";
 
         // Is Upstream Active
         bool isUpStreamProgramActive = UpStreamProxyProgram.UpStreamMode != ProxyProgram.UpStreamProxy.Mode.Disable;
@@ -124,8 +146,15 @@ public partial class MsmhProxyServer
         if (req.ApplyUpStreamProxy)
             msgReqEvent += " (Bypassing through Upstream Proxy)";
 
+        // Block Blocked Hosts Without DNS IP
+        bool blockReq = req.IsDestBlocked && !req.AddressIsIp && req.AddressOrig.Equals(req.Address) && !req.ApplyUpStreamProxy;
+        if (blockReq)
+            msgReqEvent += " Request Denied (It's Blocked and has no DNS IP)";
+
         Debug.WriteLine(msgReqEvent);
         OnRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
+
+        if (blockReq) return null;
 
         // Change AddressType Based On DNS
         if (req.ProxyName == Proxy.Name.HTTP ||

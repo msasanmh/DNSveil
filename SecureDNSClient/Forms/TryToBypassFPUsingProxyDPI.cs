@@ -72,7 +72,7 @@ public partial class FormMain
         if (!isOk) return false;
 
         // Send Setting Command
-        command = $"Setting -Port={fakeProxyPort} -MaxThreads=20000 -RequestTimeoutSec=0 -KillOnCpuUsage={killOnCpuUsage} -BlockPort80=True";
+        command = $"Setting -Port={fakeProxyPort} -MaxRequests=1000 -RequestTimeoutSec=0 -KillOnCpuUsage={killOnCpuUsage} -BlockPort80=True";
         isCmdSent = await CamouflageProxyConsole.SendCommandAsync(command);
         if (!isCmdSent) return false;
 
@@ -221,7 +221,7 @@ public partial class FormMain
             if (IsDisconnecting) return false;
 
             // Execute DNSCrypt
-            PIDDNSCryptBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DNSCrypt, args, true, true);
+            PIDDNSCryptBypass = ProcessManager.ExecuteOnly(SecureDNS.DNSCrypt, args, true, true);
 
             // Wait for DNSCrypt
             Task wait2 = Task.Run(async () =>
@@ -239,7 +239,7 @@ public partial class FormMain
             {
                 IsConnected = true;
 
-                bool success = CheckBypassWorks(timeoutMS, 15, PIDDNSCryptBypass);
+                bool success = await CheckBypassWorks(timeoutMS, 15, PIDDNSCryptBypass);
                 if (success)
                 {
                     // Success message

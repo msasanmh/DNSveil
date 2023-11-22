@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 
 #nullable enable
 namespace MsmhToolsClass.MsmhProxyServer;
@@ -38,18 +37,17 @@ public class ProxySettings
         }
     }
 
-    private int MaxThreads_ { get; set; } = 256;
+    private int MaxRequests_ { get; set; } = 600;
 
     /// <summary>
-    /// Maximum number of threads to support.
+    /// Maximum number of threads per second. (Min: 20)
     /// </summary>
-    public int MaxThreads
+    public int MaxRequests
     {
-        get => MaxThreads_;
+        get => MaxRequests_;
         set
         {
-            if (value < 1) throw new ArgumentOutOfRangeException(nameof(MaxThreads));
-            MaxThreads_ = value;
+            MaxRequests_ = value >= MsmhProxyServer.MaxRequestsDivide ? value : 600;
         }
     }
 

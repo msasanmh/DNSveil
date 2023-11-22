@@ -3,7 +3,6 @@ using MsmhToolsClass;
 using MsmhToolsClass.DnsTool;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -21,9 +20,11 @@ public partial class FormDnsScanner : Form
     private string ScanContent = string.Empty;
     private readonly List<string> SelectedFilesList = new();
     private static List<string> DomainsToCheckForSmartDNS = new();
-    private readonly CheckDns DnsScanner = new(true, ProcessPriorityClass.Normal);
+    private readonly CheckDns DnsScanner = new(false, true, ProcessPriorityClass.Normal);
+    private readonly CheckDns DnsScannerInsecureWithFilters = new(true, true, ProcessPriorityClass.Normal);
+    private readonly CheckDns DnsScannerInsecureNoFilters = new(true, false, ProcessPriorityClass.Normal);
     private readonly string DNS = string.Empty;
-    private readonly List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool>>> ExportList = new();
+    private readonly List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>>> ExportList = new();
     private readonly List<string> ExportListPrivate = new();
     private bool IsRunning = false;
     private bool Exit = false;
@@ -52,6 +53,13 @@ public partial class FormDnsScanner : Form
         CustomButtonExport.Enabled = false;
 
         if (!string.IsNullOrEmpty(dns)) DNS = dns;
+
+        CustomLabelBootstrapIp.Visible = false;
+        CustomTextBoxBootstrapIpPort.Enabled = false;
+        CustomTextBoxBootstrapIpPort.Visible = false;
+        CustomLabelBootstrapPort.Visible = false;
+        CustomNumericUpDownBootstrapPort.Enabled = false;
+        CustomNumericUpDownBootstrapPort.Visible = false;
 
         Shown += FormDnsScanner_Shown;
     }
@@ -179,7 +187,6 @@ public partial class FormDnsScanner : Form
         ScanContent = allContent;
         string s = selectedFiles.Count > 1 ? "s" : string.Empty;
         CustomLabelDnsBrowse.Text = $"{selectedFiles.Count} file{s} selected.";
-
     }
 
     private void CustomButtonSmartDnsSelect_Click(object sender, EventArgs e)
@@ -281,21 +288,21 @@ public partial class FormDnsScanner : Form
             ExportListPrivate.Clear();
         }
 
-        // Get Bootstrap IP
-        string bootstrapIp = "8.8.8.8";
-        this.InvokeIt(() => bootstrapIp = CustomTextBoxBootstrapIpPort.Text);
-        bootstrapIp = bootstrapIp.Trim();
+        //// Get Bootstrap IP
+        //string bootstrapIp = "8.8.8.8";
+        //this.InvokeIt(() => bootstrapIp = CustomTextBoxBootstrapIpPort.Text);
+        //bootstrapIp = bootstrapIp.Trim();
 
-        if (!NetworkTool.IsIPv4Valid(bootstrapIp, out _))
-        {
-            string msg = $"Bootstrap IP is not valid.{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            return false;
-        }
+        //if (!NetworkTool.IsIPv4Valid(bootstrapIp, out _))
+        //{
+        //    string msg = $"Bootstrap IP is not valid.{NL}";
+        //    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+        //    return false;
+        //}
 
-        // Get Bootstrap Port
-        int bootstrapPort = 53;
-        this.InvokeIt(() => bootstrapPort = decimal.ToInt32(CustomNumericUpDownBootstrapPort.Value));
+        //// Get Bootstrap Port
+        //int bootstrapPort = 53;
+        //this.InvokeIt(() => bootstrapPort = decimal.ToInt32(CustomNumericUpDownBootstrapPort.Value));
 
         if (CustomRadioButtonDnsUrl.Checked)
             ScanContent = CustomTextBoxDnsUrl.Text;
@@ -303,7 +310,6 @@ public partial class FormDnsScanner : Form
             ReadSelectedFiles(SelectedFilesList);
         else if (CustomRadioButtonCustomServers.Checked)
         {
-
             string msg = $"Reading Custom Servers...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
 
@@ -314,19 +320,29 @@ public partial class FormDnsScanner : Form
 
         string msg1 = $"Generating Google Safe Search IPs...{NL}";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg1, Color.DodgerBlue));
+        await DnsScanner.GenerateGoogleSafeSearchIpsAsync(localDns);
+        await DnsScannerInsecureWithFilters.GenerateGoogleSafeSearchIpsAsync(localDns);
 
-        DnsScanner.GenerateGoogleSafeSearchIps(localDns);
-
-        string msg2 = $"Generating Adult IPs...{NL}";
+        string msg2 = $"Generating Bing Safe Search IPs...{NL}";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue));
+        await DnsScanner.GenerateBingSafeSearchIpsAsync(localDns);
+        await DnsScannerInsecureWithFilters.GenerateBingSafeSearchIpsAsync(localDns);
 
-        DnsScanner.GenerateAdultDomainIps(localDns);
+        string msg3 = $"Generating Youtube Restrict IPs...{NL}";
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg3, Color.DodgerBlue));
+        await DnsScanner.GenerateYoutubeRestrictIpsAsync(localDns);
+        await DnsScannerInsecureWithFilters.GenerateYoutubeRestrictIpsAsync(localDns);
+
+        string msg4 = $"Generating Adult IPs...{NL}";
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg4, Color.DodgerBlue));
+        await DnsScanner.GenerateAdultDomainIpsAsync(localDns);
+        await DnsScannerInsecureWithFilters.GenerateAdultDomainIpsAsync(localDns);
 
         // Get Company Data Content
         string? companyDataContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load from Embedded Resource
 
-        string msg3 = $"Scanning...{NL}";
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg3, Color.DodgerBlue));
+        string msg5 = $"Scanning...{NL}";
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg5, Color.DodgerBlue));
 
         if (ScanContent.Length > 0)
         {
@@ -339,7 +355,7 @@ public partial class FormDnsScanner : Form
 
                 if (FormMain.IsDnsProtocolSupported(dns))
                 {
-                    await ScanDns(dns, bootstrapIp, bootstrapPort, companyDataContent);
+                    await ScanDns(dns, companyDataContent);
                 }
 
                 // Percent
@@ -349,13 +365,13 @@ public partial class FormDnsScanner : Form
             }
         }
 
-        string msg4 = $"===== End of Scan ====={NL}";
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg4, Color.DodgerBlue));
+        string msg6 = $"===== End of Scan ====={NL}";
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg6, Color.DodgerBlue));
 
         return true;
     }
 
-    private async Task ScanDns(string dns, string bootstrapIp, int bootstrapPort, string? companyDataContent)
+    private async Task ScanDns(string dns, string? companyDataContent)
     {
         await Task.Run(async () =>
         {
@@ -367,11 +383,14 @@ public partial class FormDnsScanner : Form
             bool insecureSuccess = false;
             int insecureLatency = -1;
             bool isGoogleSafeSearchActive = false;
+            bool isBingSafeSearchActive = false;
+            bool isYoutubeRestrictActive = false;
             bool isAdultContentFilter = false;
 
-            int timeoutMS = 5000;
-            string domain = "youtube.com";
-            this.InvokeIt(() => timeoutMS = decimal.ToInt32(CustomNumericUpDownDnsTimeout.Value * 1000));
+            int timeoutSec = 5;
+            string domain = "google.com";
+            this.InvokeIt(() => timeoutSec = decimal.ToInt32(CustomNumericUpDownDnsTimeout.Value));
+            int timeoutMS = timeoutSec * 1000;
 
             int localPort = 5390;
 
@@ -425,12 +444,11 @@ public partial class FormDnsScanner : Form
 
             // IP
             r1 = $"IP: ";
-            string? ip = dnsReader.IP;
+            string? ip = null;
+            if (!string.IsNullOrEmpty(dnsReader.Host))
+                ip = await GetIP.GetIpFromPlainDNS(dnsReader.Host, IPAddress.Loopback.ToString(), 53, timeoutSec);
             if (string.IsNullOrEmpty(ip) || NetworkTool.IsLocalIP(ip))
-            {
-                if (!string.IsNullOrEmpty(dnsReader.Host))
-                    ip = await GetIP.GetIpFromPlainDNS(dnsReader.Host, IPAddress.Loopback.ToString(), 53, timeoutMS * 2);
-            }
+                ip = dnsReader.IP;
             r2 = $"{ip}{NL}";
 
             if (!string.IsNullOrEmpty(ip))
@@ -484,7 +502,7 @@ public partial class FormDnsScanner : Form
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.Orange));
 
             // Check Online Secure
-            await DnsScanner.CheckDnsAsync(false, domain, dns, timeoutMS, localPort, bootstrapIp, bootstrapPort);
+            await DnsScanner.CheckDnsAsync(domain, dns, timeoutMS);
 
             secureSuccess = DnsScanner.IsDnsOnline;
             secureLatency = DnsScanner.DnsLatency;
@@ -515,11 +533,9 @@ public partial class FormDnsScanner : Form
             // Start Check Insecure
             CheckDns insecureCheck;
             if (DnsScanner.IsDnsOnline)
-                insecureCheck = new(false, ProcessPriorityClass.Normal);
+                insecureCheck = DnsScannerInsecureNoFilters;
             else
-                insecureCheck = new(true, ProcessPriorityClass.Normal);
-            insecureCheck.GenerateGoogleSafeSearchIps(IPAddress.Loopback.ToString());
-            insecureCheck.GenerateAdultDomainIps(IPAddress.Loopback.ToString());
+                insecureCheck = DnsScannerInsecureWithFilters;
 
             // Generate Insecure Address
             insecureAddress = dns;
@@ -535,7 +551,7 @@ public partial class FormDnsScanner : Form
             }
 
             if (CustomCheckBoxCheckInsecure.Checked && !DnsScanner.IsDnsOnline)
-                await insecureCheck.CheckDnsAsync(true, domain, dns, timeoutMS, localPort, bootstrapIp, bootstrapPort);
+                await insecureCheck.CheckDnsAsync(domain, dns, timeoutMS);
 
             insecureSuccess = insecureCheck.IsDnsOnline;
             insecureLatency = insecureCheck.DnsLatency;
@@ -583,21 +599,33 @@ public partial class FormDnsScanner : Form
 
             if (checkFilters != null)
             {
-                isGoogleSafeSearchActive = checkFilters.IsSafeSearch;
+                isGoogleSafeSearchActive = checkFilters.IsGoogleSafeSearchEnabled;
+                isBingSafeSearchActive = checkFilters.IsBingSafeSearchEnabled;
+                isYoutubeRestrictActive = checkFilters.IsYoutubeRestricted;
                 isAdultContentFilter = checkFilters.IsAdultFilter;
 
                 // Google Safe Search
                 r1 = $"Is Google Safe Search Active: ";
-                r2 = $"{checkFilters.IsSafeSearch}{NL}";
+                r2 = $"{checkFilters.IsGoogleSafeSearchEnabled}{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r1, Color.DodgerBlue));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.Orange));
 
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r1, Color.LightGray));
+                // Bing Safe Search
+                r1 = $"Is Bing Safe Search Active: ";
+                r2 = $"{checkFilters.IsBingSafeSearchEnabled}{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r1, Color.DodgerBlue));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.Orange));
+
+                // Youtube Restrict
+                r1 = $"Is Youtube Restriction Active: ";
+                r2 = $"{checkFilters.IsYoutubeRestricted}{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r1, Color.DodgerBlue));
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.Orange));
 
                 // Adult Content
                 r1 = $"Is Adult Content Filter: ";
                 r2 = $"{checkFilters.IsAdultFilter}{NL}";
-
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r1, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r1, Color.DodgerBlue));
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.Orange));
 
                 // Smart DNS
@@ -629,11 +657,12 @@ public partial class FormDnsScanner : Form
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(end, Color.LightGray));
 
             // Store Export Data
-            if (!ExportListPrivate.IsContain(secureAddress))
+            string dedup = $"{secureAddress}{secureSuccess}{insecureAddress}{insecureSuccess}";
+            if (!ExportListPrivate.IsContain(dedup))
             {
-                ExportListPrivate.Add(secureAddress);
-                Tuple<bool, bool> filters = new(isGoogleSafeSearchActive, isAdultContentFilter);
-                Tuple<string, string, bool, int, bool, int, Tuple<bool, bool>> tuple = new(secureAddress, insecureAddress, secureSuccess, secureLatency, insecureSuccess, insecureLatency, filters);
+                ExportListPrivate.Add(dedup);
+                Tuple<bool, bool, bool, bool> filters = new(isGoogleSafeSearchActive, isBingSafeSearchActive, isYoutubeRestrictActive, isAdultContentFilter);
+                Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>> tuple = new(secureAddress, insecureAddress, secureSuccess, secureLatency, insecureSuccess, insecureLatency, filters);
                 ExportList.Add(tuple);
             }
         });

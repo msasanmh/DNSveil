@@ -54,7 +54,7 @@ public partial class FormMain
         if (IsDisconnecting) return false;
 
         // Execute DNSProxy
-        PIDDNSProxyBypass = ProcessManager.ExecuteOnly(out Process _, SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
+        PIDDNSProxyBypass = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsproxyArgs, true, true, SecureDNS.CurrentPath, GetCPUPriority());
 
         // Wait for DNSProxy
         Task wait1 = Task.Run(async () =>
@@ -74,7 +74,7 @@ public partial class FormMain
             string domainToCheck = "google.com";
 
             // Check DNS
-            checkDns.CheckDNS(domainToCheck, dohUrl, timeoutMS * 10);
+            await checkDns.CheckDnsAsync(domainToCheck, dohUrl, timeoutMS);
 
             if (checkDns.IsDnsOnline)
             {

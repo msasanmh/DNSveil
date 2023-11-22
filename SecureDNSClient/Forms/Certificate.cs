@@ -1,6 +1,5 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
-using System;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 
@@ -8,54 +7,75 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    private void GenerateCertificate()
+    private async Task GenerateCertificate()
     {
-        // Create certificate directory
-        FileDirectory.CreateEmptyDirectory(SecureDNS.CertificateDirPath);
-        string issuerSubjectName = SecureDNS.CertIssuerSubjectName;
-        string subjectName = SecureDNS.CertSubjectName;
-
-        // Generate certificate
-        if (!File.Exists(SecureDNS.IssuerCertPath) || !File.Exists(SecureDNS.CertPath) || !File.Exists(SecureDNS.KeyPath))
+        await Task.Run(async () =>
         {
-            IPAddress? gateway = NetworkTool.GetDefaultGateway();
-            if (gateway != null)
+            // Create certificate directory
+            FileDirectory.CreateEmptyDirectory(SecureDNS.CertificateDirPath);
+            string issuerSubjectName = SecureDNS.CertIssuerSubjectName;
+            string subjectName = SecureDNS.CertSubjectName;
+
+            // Generate certificate
+            if (!File.Exists(SecureDNS.IssuerCertPath) || !File.Exists(SecureDNS.IssuerKeyPath) || !File.Exists(SecureDNS.CertPath) || !File.Exists(SecureDNS.KeyPath))
             {
-                CertificateTool.GenerateCertificate(SecureDNS.CertificateDirPath, gateway, issuerSubjectName, subjectName);
+                // It is overwritten, no need to delete.
+                IPAddress? gateway = NetworkTool.GetDefaultGateway() ?? IPAddress.Loopback;
+                await CertificateTool.GenerateCertificateAsync(SecureDNS.CertificateDirPath, gateway, issuerSubjectName, subjectName);
                 CertificateTool.CreateP12(SecureDNS.IssuerCertPath, SecureDNS.IssuerKeyPath);
                 CertificateTool.CreateP12(SecureDNS.CertPath, SecureDNS.KeyPath);
             }
-        }
+        });
+    }
 
-        // Install certificate
-        if (File.Exists(SecureDNS.IssuerCertPath) && !CustomCheckBoxSettingDontAskCertificate.Checked)
+    private async Task InstallCertificateForDoH()
+    {
+        await Task.Run(() =>
         {
-            bool certInstalled = CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
-            if (!certInstalled)
+            if (File.Exists(SecureDNS.IssuerCertPath) && !CustomCheckBoxSettingDontAskCertificate.Checked)
             {
-                string msg = "Local DoH Server doesn't work without certificate.\nYou can remove certificate anytime from Windows.\nTry again?";
-                DialogResult dr = CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-                if (dr == DialogResult.Yes)
-                    CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
+                bool isCertInstalledBySubject = CertificateTool.IsCertificateInstalled(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+                X509Certificate2 rootCA = new(X509Certificate2.CreateFromCertFile(SecureDNS.IssuerCertPath));
+                bool isCertInstalled = CertificateTool.IsCertificateInstalled(rootCA, StoreName.Root, StoreLocation.CurrentUser);
+                rootCA.Dispose();
+
+                if (!isCertInstalled)
+                {
+                    // If Cert Serial Number Changed Uninstall It
+                    if (isCertInstalledBySubject)
+                    {
+                        while (true)
+                        {
+                            bool uninstalled = CertificateTool.UninstallCertificate(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+                            if (uninstalled) break;
+                            if (!uninstalled)
+                            {
+                                string msgCertChanged = "Certificate Regenerated, You Must Uninstall The Previous One.";
+                                CustomMessageBox.Show(this, msgCertChanged, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                        }
+                    }
+
+                    bool certInstalled = CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
+                    if (!certInstalled)
+                    {
+                        string msg = "Local DoH Server doesn't work without certificate.\nYou can remove certificate anytime from Windows.\nTry again?";
+                        DialogResult dr = CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                        if (dr == DialogResult.Yes)
+                            CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
+                    }
+                }
             }
-        }
+        });
     }
 
     private void UninstallCertificate()
     {
-        string issuerSubjectName = SecureDNS.CertIssuerSubjectName.Replace("CN=", string.Empty);
-        bool isCertInstalled = CertificateTool.IsCertificateInstalled(issuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+        bool isCertInstalled = CertificateTool.IsCertificateInstalled(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
         if (isCertInstalled)
         {
-            if (IsDoHConnected)
-            {
-                string msg = "Disconnect local DoH first.";
-                CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
             // Uninstall Certs
-            CertificateTool.UninstallCertificate(issuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+            CertificateTool.UninstallCertificate(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
 
             // Delete Cert Files
             try

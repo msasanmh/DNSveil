@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net.Sockets;
 
 namespace MsmhToolsClass.MsmhProxyServer;
@@ -101,7 +100,7 @@ public class ProxyClient
         }
     }
 
-    public void Disconnect()
+    public void Disconnect(TcpClient? tcpClient = null)
     {
         try
         {
@@ -112,6 +111,7 @@ public class ProxyClient
                     Disposed_ = true;
                     Socket_.Shutdown(SocketShutdown.Both);
                     Socket_.Close();
+                    tcpClient?.Dispose();
                     return;
                 }
             }
