@@ -132,12 +132,7 @@ public partial class FormMain : Form
 
         // Write binaries if not exist or needs update
         bool successWrite = await WriteNecessaryFilesToDisk();
-        if (successWrite)
-        {
-            string msgWB = $"{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName} is ready.{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWB, Color.LightGray));
-        }
-        else
+        if (!successWrite)
         {
             string msgWB = $"Couldn't write binaries to disk.{NL}";
             msgWB += $"Restart Application.{NL}";

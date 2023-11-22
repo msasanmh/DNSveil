@@ -6,6 +6,7 @@ using MsmhToolsClass.ProxyServerPrograms;
 using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
 using System.Net;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Task = System.Threading.Tasks.Task;
 
@@ -688,6 +689,9 @@ public partial class FormMain
 
                 // Update old version numbers
                 await File.WriteAllTextAsync(SecureDNS.BinariesVersionPath, NecessaryFiles.Resource1.versions);
+
+                string msgWB = $"{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName} is ready.{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWB, Color.LightGray));
 
                 return true;
             }
