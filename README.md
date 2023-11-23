@@ -17,7 +17,7 @@
 [Download Runtime x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.21-windows-x64-installer)<br>
 [Download Runtime x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.21-windows-x86-installer)<br>
 
-**Download**<br>
+**Download:**<br>
 [Download latest version of Secure DNS Client](https://github.com/msasanmh/SecureDNSClient/releases/latest)<br>
 
 **Note:**
