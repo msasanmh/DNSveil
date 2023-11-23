@@ -26,6 +26,7 @@
 
 **Help (How to Use):**<br>
 [Find Docs and Videos in Help Directory](https://github.com/msasanmh/SecureDNSClient/tree/main/Help)<br>
+[Guide](https://rentry.co/SecureDNSClient)<br>
 I'll add more documentations and videos soon.
 
 ---
