@@ -174,9 +174,19 @@ namespace CustomControls
             else
                 e.Graphics.Clear(backColor);
 
-            
             if (AutoSize)
-                Size = e.Graphics.MeasureString(Text, Font).ToSize();
+            {
+                try
+                {
+                    SizeF sizeF = e.Graphics.MeasureString(Text, Font);
+                    Width = Convert.ToInt32(Math.Round(sizeF.Width));
+                    Height = Convert.ToInt32(Math.Round(sizeF.Height));
+                }
+                catch (Exception)
+                {
+                    // do nothing
+                }
+            }
 
             Rectangle rect = new(0, 0, ClientRectangle.Width - 1, ClientRectangle.Height - 1);
 

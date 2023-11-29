@@ -26,7 +26,7 @@ public partial class FormMain
         // Start Camouflage DNS Server
         CamouflageDNSServer = new(camouflageDnsPort, dohUrl, cleanIP);
         CamouflageDNSServer.Start();
-        Task.Delay(500).Wait();
+        await Task.Delay(500);
         IsBypassDNSActive = CamouflageDNSServer.IsRunning;
 
         // Wait for CamouflageDNSServer
@@ -112,7 +112,7 @@ public partial class FormMain
                 {
                     if (IsDisconnecting) break;
                     if (ProcessManager.FindProcessByPID(PIDDNSProxyBypass)) break;
-                    await Task.Delay(100);
+                    await Task.Delay(50);
                 }
             });
             try { await wait2.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
@@ -200,7 +200,7 @@ public partial class FormMain
                         {
                             if (IsDisconnecting) break;
                             if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass)) break;
-                            await Task.Delay(100);
+                            await Task.Delay(50);
                         }
                     });
                     try { await wait3.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }

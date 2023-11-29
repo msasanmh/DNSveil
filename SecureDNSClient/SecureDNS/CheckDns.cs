@@ -48,12 +48,10 @@ public class CheckDns
     {
         DNS = dnsServer;
         IsDnsOnline = false;
-        Stopwatch stopwatch = new();
-        stopwatch.Start();
-        IsDnsOnline = CheckDnsWork(domain, DNS, timeoutMS);
-        stopwatch.Stop();
+        DnsLookupResult dlr = CheckDnsWork(domain, DNS, timeoutMS);
+        IsDnsOnline = dlr.IsDnsOnline;
 
-        DnsLatency = IsDnsOnline ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
+        DnsLatency = IsDnsOnline ? dlr.Latency : -1;
 
         IsGoogleSafeSearchEnabled = false;
         IsBingSafeSearchEnabled = false;
@@ -76,12 +74,10 @@ public class CheckDns
     {
         DNS = dnsServer;
         IsDnsOnline = false;
-        Stopwatch stopwatch = new();
-        stopwatch.Start();
-        IsDnsOnline = CheckDnsWork(domain, DNS, timeoutMS, localPort, bootstrap, bootsratPort);
-        stopwatch.Stop();
+        DnsLookupResult dlr = CheckDnsWork(domain, DNS, timeoutMS, localPort, bootstrap, bootsratPort);
+        IsDnsOnline = dlr.IsDnsOnline;
 
-        DnsLatency = IsDnsOnline ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
+        DnsLatency = IsDnsOnline ? dlr.Latency : -1;
 
         IsGoogleSafeSearchEnabled = false;
         IsBingSafeSearchEnabled = false;
@@ -97,19 +93,21 @@ public class CheckDns
         }
     }
 
-    private bool CheckDnsWork(string domain, string dnsServer, int timeoutMS)
+    private DnsLookupResult CheckDnsWork(string domain, string dnsServer, int timeoutMS)
     {
         Process? process = null;
-        Task<bool> task = Task.Run(async () =>
+        Task<DnsLookupResult> task = Task.Run(async () =>
         {
-            string result = await GetDnsLookupJsonAsync(domain, dnsServer, timeoutMS, "A", true);
+            DnsLookupResult dlr = await GetDnsLookupJsonAsync(domain, dnsServer, timeoutMS, "A", true);
+            string result = dlr.Result;
 
-            if (string.IsNullOrEmpty(result)) return false;
-            if (string.IsNullOrWhiteSpace(result)) return false;
-            if (result.Contains("[fatal]")) return false;
+            if (!string.IsNullOrEmpty(result) && !string.IsNullOrWhiteSpace(result) && !result.Contains("[fatal]"))
+            {
+                List<string> ips = GetDnsLookupAnswerRecordList(result);
+                dlr.IsDnsOnline = ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
+            }
 
-            List<string> ips = GetDnsLookupAnswerRecordList(result);
-            return ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
+            return dlr;
         });
 
         if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
@@ -120,13 +118,13 @@ public class CheckDns
         else
         {
             try { process?.Kill(true); } catch (Exception) { }
-            return false;
+            return task.Result;
         }
     }
 
-    private bool CheckDnsWork(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
+    private DnsLookupResult CheckDnsWork(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
     {
-        Task<bool> task = Task.Run(() =>
+        Task<DnsLookupResult> task = Task.Run(() =>
         {
             // Start local server
             string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
@@ -137,20 +135,20 @@ public class CheckDns
             // Wait for DNSProxy
             SpinWait.SpinUntil(() => ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 500);
 
-            bool isOK = CheckDnsWork(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
+            DnsLookupResult dlr = CheckDnsWork(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
 
             ProcessManager.KillProcessByPID(localServerPID);
 
             // Wait for DNSProxy to exit
             SpinWait.SpinUntil(() => !ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 1000);
 
-            return isOK;
+            return dlr;
         });
 
         if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
             return task.Result;
         else
-            return false;
+            return task.Result;
     }
 
     //================================= Check DNS Async
@@ -162,12 +160,10 @@ public class CheckDns
     {
         DNS = dnsServer;
         IsDnsOnline = false;
-        Stopwatch stopwatch = new();
-        stopwatch.Start();
-        IsDnsOnline = await CheckDnsWorkAsync(domain, DNS, timeoutMS);
-        stopwatch.Stop();
+        DnsLookupResult dlr = await CheckDnsWorkAsync(domain, DNS, timeoutMS);
+        IsDnsOnline = dlr.IsDnsOnline;
 
-        DnsLatency = IsDnsOnline ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
+        DnsLatency = IsDnsOnline ? dlr.Latency : -1;
 
         IsGoogleSafeSearchEnabled = false;
         IsBingSafeSearchEnabled = false;
@@ -190,12 +186,10 @@ public class CheckDns
     {
         DNS = dnsServer;
         IsDnsOnline = false;
-        Stopwatch stopwatch = new();
-        stopwatch.Start();
-        IsDnsOnline = await CheckDnsWorkAsync(domain, DNS, timeoutMS, localPort, bootstrap, bootsratPort);
-        stopwatch.Stop();
+        DnsLookupResult dlr = await CheckDnsWorkAsync(domain, DNS, timeoutMS, localPort, bootstrap, bootsratPort);
+        IsDnsOnline = dlr.IsDnsOnline;
 
-        DnsLatency = IsDnsOnline ? Convert.ToInt32(stopwatch.ElapsedMilliseconds) : -1;
+        DnsLatency = IsDnsOnline ? dlr.Latency : -1;
 
         IsGoogleSafeSearchEnabled = false;
         IsBingSafeSearchEnabled = false;
@@ -211,19 +205,21 @@ public class CheckDns
         }
     }
 
-    private async Task<bool> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS)
+    private async Task<DnsLookupResult> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS)
     {
-        string result = await GetDnsLookupJsonAsync(domain, dnsServer, timeoutMS, "A", true);
+        DnsLookupResult dlr = await GetDnsLookupJsonAsync(domain, dnsServer, timeoutMS, "A", true);
+        string result = dlr.Result;
 
-        if (string.IsNullOrEmpty(result)) return false;
-        if (string.IsNullOrWhiteSpace(result)) return false;
-        if (result.Contains("[fatal]")) return false;
+        if (!string.IsNullOrEmpty(result) && !string.IsNullOrWhiteSpace(result) && !result.Contains("[fatal]"))
+        {
+            List<string> ips = GetDnsLookupAnswerRecordList(result);
+            dlr.IsDnsOnline = ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
+        }
 
-        List<string> ips = GetDnsLookupAnswerRecordList(result);
-        return ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
+        return dlr;
     }
 
-    private async Task<bool> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
+    private async Task<DnsLookupResult> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
     {
         // Start local server
         string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
@@ -234,14 +230,14 @@ public class CheckDns
         // Wait for DNSProxy
         SpinWait.SpinUntil(() => ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 500);
 
-        bool isOK = await CheckDnsWorkAsync(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
+        DnsLookupResult dlr = await CheckDnsWorkAsync(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
 
         ProcessManager.KillProcessByPID(localServerPID);
 
         // Wait for DNSProxy to exit
         SpinWait.SpinUntil(() => !ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 1000);
 
-        return isOK;
+        return dlr;
     }
 
     //================================= Check Dns as SmartDns
@@ -416,7 +412,8 @@ public class CheckDns
 
     private async Task<List<string>> GetARecordIPsAsync(string domain, string dnsServer)
     {
-        string jsonStr = await GetDnsLookupJsonAsync(domain, dnsServer, TimeoutMS);
+        DnsLookupResult dlr = await GetDnsLookupJsonAsync(domain, dnsServer, TimeoutMS);
+        string jsonStr = dlr.Result;
         return GetDnsLookupAnswerRecordList(jsonStr);
     }
 
@@ -455,9 +452,18 @@ public class CheckDns
         return false;
     }
 
-    private async Task<string> GetDnsLookupJsonAsync(string domain, string dnsServer, int timeoutMS, string rrtype = "A", bool json = true)
+    private class DnsLookupResult
     {
+        public string Result { get; set; } = string.Empty;
+        public int Latency { get; set; } = -1;
+        public bool IsDnsOnline { get; set; }
+    }
+
+    private async Task<DnsLookupResult> GetDnsLookupJsonAsync(string domain, string dnsServer, int timeoutMS, string rrtype = "A", bool json = true)
+    {
+        DnsLookupResult dlr = new();
         string result = string.Empty;
+        int latency = -1;
 
         try
         {
@@ -471,7 +477,9 @@ public class CheckDns
                 else evs.Add("VERIFY", "");
 
                 string args = $"{domain} {dnsServer}";
-                result = await ProcessManager.ExecuteAsync(SecureDNS.DnsLookup, evs, args, true, true, SecureDNS.CurrentPath, ProcessPriority);
+                ExecuteResult er = await ExecuteAsync(SecureDNS.DnsLookup, evs, args, true, true, SecureDNS.CurrentPath, ProcessPriority);
+                result = er.Result;
+                latency = er.Latency;
 
                 if (Insecure)
                 {
@@ -483,11 +491,13 @@ public class CheckDns
             });
 
             result = await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS));
-            return result;
+            dlr.Result = result;
+            dlr.Latency = latency;
+            return dlr;
         }
         catch (Exception)
         {
-            return result;
+            return dlr;
         }
     }
 
@@ -559,6 +569,91 @@ public class CheckDns
             }
         }
         return false;
+    }
+
+    private class ExecuteResult
+    {
+        public string Result { get; set; } = string.Empty;
+        public int Latency { get; set; } = -1;
+    }
+
+    private static async Task<ExecuteResult> ExecuteAsync(string processName, Dictionary<string, string>? environmentVariables = null, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
+    {
+        return await Task.Run(async () =>
+        {
+            ExecuteResult er = new();
+
+            // Create process
+            Process process0 = new();
+            process0.StartInfo.FileName = processName;
+
+            if (environmentVariables != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in environmentVariables)
+                    process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+            }
+
+            if (args != null)
+                process0.StartInfo.Arguments = args;
+
+            if (hideWindow)
+            {
+                process0.StartInfo.CreateNoWindow = true;
+                process0.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            }
+            else
+            {
+                process0.StartInfo.CreateNoWindow = false;
+                process0.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+            }
+
+            if (runAsAdmin)
+            {
+                process0.StartInfo.Verb = "runas";
+            }
+            else
+            {
+                process0.StartInfo.Verb = "";
+            }
+
+            // Redirect input output to get ability of reading process output
+            process0.StartInfo.UseShellExecute = false;
+            process0.StartInfo.RedirectStandardInput = false; // We're not sending
+            process0.StartInfo.RedirectStandardOutput = true;
+            process0.StartInfo.RedirectStandardError = true;
+
+            if (workingDirectory != null)
+                process0.StartInfo.WorkingDirectory = workingDirectory;
+
+            try
+            {
+                process0.Start();
+
+                // Set process priority
+                process0.PriorityClass = processPriorityClass;
+
+                Stopwatch stopwatch = new();
+                stopwatch.Start();
+                string stdout = process0.StandardOutput.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
+                string errout = process0.StandardError.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
+                string output = stdout + Environment.NewLine + errout;
+
+                // Wait for process to finish
+                await process0.WaitForExitAsync();
+                stopwatch.Stop();
+                process0.Dispose();
+
+                er.Result = output;
+                er.Latency = Convert.ToInt32(stopwatch.ElapsedMilliseconds);
+                return er;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                process0.Dispose();
+                return er;
+            }
+        });
     }
 
 }

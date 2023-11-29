@@ -47,8 +47,8 @@ namespace SdcMaui
                             gridStatus.BackgroundColor = Colors.IndianRed;
                         }
 
-                        // Update HTTP Proxy Status
-                        if (IsHttpProxyActive)
+                        // Update Proxy Status
+                        if (IsProxyActive)
                         {
                             labelStatusHttpProxy.TextColor = Colors.MediumSeaGreen;
                             labelStatusHttpProxy.Text = "Active";
@@ -60,10 +60,10 @@ namespace SdcMaui
                         }
 
                         labelStatusHttpProxyRequests.TextColor = Colors.DodgerBlue;
-                        labelStatusHttpProxyRequests.Text = $"{HttpProxyRequests} of {HttpProxyMaxRequests}";
+                        labelStatusHttpProxyRequests.Text = $"{ProxyRequests} of {ProxyMaxRequests}";
 
-                        labelStatusHttpProxyDpiBypass.TextColor = IsHttpProxyDpiBypassActive ? Colors.MediumSeaGreen : Colors.IndianRed;
-                        labelStatusHttpProxyDpiBypass.Text = IsHttpProxyDpiBypassActive ? "Active" : "Inactive";
+                        labelStatusHttpProxyDpiBypass.TextColor = IsProxyDpiBypassActive ? Colors.MediumSeaGreen : Colors.IndianRed;
+                        labelStatusHttpProxyDpiBypass.Text = IsProxyDpiBypassActive ? "Active" : "Inactive";
 
                         // Check Button Text
                         if (StopChecking)
@@ -112,10 +112,10 @@ namespace SdcMaui
                 while (true)
                 {
                     await Task.Delay(1000);
-                    IsHttpProxyActive = HttpProxy.IsRunning;
-                    HttpProxyRequests = HttpProxy.AllRequests;
-                    HttpProxyMaxRequests = HttpProxy.MaxRequests;
-                    IsHttpProxyDpiBypassActive = HttpProxy.IsDpiActive;
+                    IsProxyActive = ProxyServer.IsRunning;
+                    ProxyRequests = ProxyServer.ActiveTunnels;
+                    ProxyMaxRequests = ProxyServer.MaxRequests;
+                    IsProxyDpiBypassActive = ProxyServer.IsDpiBypassActive;
                 }
             });
         }

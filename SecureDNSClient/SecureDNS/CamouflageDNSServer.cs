@@ -43,11 +43,19 @@ public class CamouflageDNSServer
             }
             catch (Exception)
             {
-                DNSServer = new(udpServerTransport);
-                DNSServer.QueryReceived -= DnsServer_QueryReceived;
-                DNSServer.QueryReceived += DnsServer_QueryReceived;
-                DNSServer.Start();
-                IsRunning = true;
+                try
+                {
+                    DNSServer = new(udpServerTransport);
+                    DNSServer.QueryReceived -= DnsServer_QueryReceived;
+                    DNSServer.QueryReceived += DnsServer_QueryReceived;
+                    DNSServer.Start();
+                    IsRunning = true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    IsRunning = false;
+                }
             }
         }
     }

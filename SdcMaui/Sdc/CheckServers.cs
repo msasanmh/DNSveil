@@ -2,7 +2,7 @@
 using Ae.Dns.Protocol;
 using MsmhToolsClass;
 using MsmhToolsClass.DnsTool;
-using MsmhToolsClass.HTTPProxyServer;
+using MsmhToolsClass.MsmhProxyServer;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -107,30 +107,6 @@ namespace SdcMaui
                 if (da != null) await da;
 #endif
             }
-
-            //for (int n = 0; n < serversList.Count; n++)
-            //{
-            //    if (StopChecking) break;
-            //    string dns = serversList[n].Trim();
-            //    if (string.IsNullOrEmpty(dns)) continue;
-
-            //    CheckDnsResult cdr = await CheckDns(dns, CheckTimeoutMS, companyData);
-
-            //    // Debug
-            //    Debug.WriteLine(cdr.Dns);
-            //    Debug.WriteLine(cdr.IsOnline);
-
-            //    if (cdr.IsOnline)
-            //        WorkingDnsList.Add(new Tuple<int, string>(cdr.Latency, cdr.Dns));
-
-            //    string msg = $"Checking Servers...{NL}";
-            //    msg += $"Address: {cdr.Dns}{NL}";
-            //    string status = cdr.IsOnline ? "Online" : "Offline";
-            //    msg += $"Status: {status}{NL}";
-            //    msg += cdr.IsOnline ? $"Latency: {cdr.Latency} ms." : cdr.Reason;
-
-            //    Log(msg);
-            //}
         }
 
         public class CheckDnsResult

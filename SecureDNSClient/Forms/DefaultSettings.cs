@@ -152,6 +152,7 @@ public partial class FormMain : Form
         CustomRadioButtonSettingCPUNormal.Checked = true;
         CustomRadioButtonSettingCPUBelowNormal.Checked = false;
         CustomRadioButtonSettingCPULow.Checked = false;
+        CustomNumericUpDownUpdateAutoDelayMS.Value = (decimal)1000;
         CustomNumericUpDownSettingCpuKillProxyRequests.Value = (decimal)40;
 
         // Settings Others

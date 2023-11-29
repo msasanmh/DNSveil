@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 
@@ -225,19 +226,26 @@ public class DNSCryptConfigEditor
 
     public async Task WriteAsync()
     {
-        if (!FileDirectory.IsFileLocked(ConfigPath))
+        try
         {
-            File.WriteAllText(ConfigPath, string.Empty);
-            for (int n = 0; n < ConfigList.Count; n++)
+            if (!FileDirectory.IsFileLocked(ConfigPath))
             {
-                string line = ConfigList[n];
+                File.WriteAllText(ConfigPath, string.Empty);
+                for (int n = 0; n < ConfigList.Count; n++)
+                {
+                    string line = ConfigList[n];
 
-                if (n == ConfigList.Count - 1)
-                    await FileDirectory.AppendTextAsync(ConfigPath, line, new UTF8Encoding(false));
-                else
-                    await FileDirectory.AppendTextLineAsync(ConfigPath, line, new UTF8Encoding(false));
+                    if (n == ConfigList.Count - 1)
+                        await FileDirectory.AppendTextAsync(ConfigPath, line, new UTF8Encoding(false));
+                    else
+                        await FileDirectory.AppendTextLineAsync(ConfigPath, line, new UTF8Encoding(false));
+                }
+                //File.WriteAllLines(ConfigPath, ConfigList);
             }
-            //File.WriteAllLines(ConfigPath, ConfigList);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DNSCryptConfigEditor WriteAsync: " + ex.Message);
         }
     }
 }

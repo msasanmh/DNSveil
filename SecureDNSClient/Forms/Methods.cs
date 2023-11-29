@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace SecureDNSClient;
@@ -23,7 +24,8 @@ public partial class FormMain
             while (true)
             {
                 await Task.Delay(1000);
-                IsAppReady = IsInternetOnline = await IsInternetAlive(false, true);
+                IPAddress bootstrapIP = GetBootstrapSetting(out _);
+                IsAppReady = IsInternetOnline = await NetworkTool.IsInternetAliveAsync(bootstrapIP, 3000);
                 if (IsAppReady) break;
             }
             string msgReady = $"Network Detected (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
@@ -363,7 +365,8 @@ public partial class FormMain
                           (isDNSUnsetting && IsDNSUnsetting) ||
                           (isProxyActivating && IsProxyActivating) ||
                           (isProxyDeactivating && IsProxyDeactivating) ||
-                          (isDisconnectingAll && IsDisconnectingAll);
+                          (isDisconnectingAll && IsDisconnectingAll) ||
+                          IsExiting;
 
         if (isInAction && showMsg)
         {
@@ -421,21 +424,26 @@ public partial class FormMain
         }
     }
 
-    private async Task<bool> IsInternetAlive(bool writeToLog = true, bool alsoCheckByBootstrapIp = true, int timeoutMS = 3000)
+    private async Task<bool> IsInternetAlive(bool writeToLog = true, int timeoutMS = 3000)
     {
-        IPAddress bootstrapIP = GetBootstrapSetting(out _);
-        bool isAlive = NetworkTool.IsInternetAlive();
-        if (isAlive)
+        bool isAlive = false;
+
+        bool bootstrapCondition = AppUpTime.Elapsed < TimeSpan.FromSeconds(30) && !IsConnected && !IsDNSConnected;
+
+        if (bootstrapCondition)
         {
-            if (alsoCheckByBootstrapIp)
-            {
-                bool isAliveByUrl = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
-                isAlive = isAlive && isAliveByUrl;
-            }
+            IPAddress bootstrapIP = GetBootstrapSetting(out _);
+            isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
         }
         else
         {
-            isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
+            isAlive = NetworkTool.IsInternetAlive();
+            if (!isAlive)
+            {
+                // Read Bootstrap If Internet Is Not Based On Adapter
+                IPAddress bootstrapIP = GetBootstrapSetting(out _);
+                isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
+            }
         }
         
         if (!isAlive)

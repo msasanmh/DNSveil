@@ -36,7 +36,8 @@ public partial class FormStampGenerator : Form
     private void FormStampGenerator_Shown(object? sender, EventArgs e)
     {
         // Fix Controls Location
-        int spaceBottom = 10, spaceRight = 10, spaceV = 10, spaceH = 6, spaceHH = (spaceH * 3);
+        int shw = TextRenderer.MeasureText("I", Font).Width;
+        int spaceBottom = 10, spaceRight = 10, spaceV = 10, spaceH = shw, spaceHH = (spaceH * 3);
         CustomLabelProtocol.Location = new Point(spaceRight, spaceBottom);
 
         CustomComboBoxProtocol.Left = CustomLabelProtocol.Right + spaceH;

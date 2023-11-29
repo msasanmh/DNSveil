@@ -351,8 +351,12 @@ namespace CustomControls
             BackColorChanged += CustomTextBox_BackColorChanged;
             ForeColorChanged += CustomTextBox_ForeColorChanged;
             textBox.Click += TextBox_Click;
+            textBox.MouseDown += TextBox_MouseDown;
             textBox.MouseEnter += TextBox_MouseEnter;
+            textBox.MouseHover += TextBox_MouseHover;
             textBox.MouseLeave += TextBox_MouseLeave;
+            textBox.MouseMove += TextBox_MouseMove;
+            textBox.MouseUp += TextBox_MouseUp;
             textBox.KeyPress += TextBox_KeyPress;
             textBox.Enter += TextBox_Enter;
             textBox.Leave += TextBox_Leave;
@@ -498,6 +502,7 @@ namespace CustomControls
         public new event EventHandler? TextChanged;
         private void TextBox_TextChanged(object? sender, EventArgs e)
         {
+            //OnTextChanged(e);
             TextChanged?.Invoke(sender, e);
         }
 
@@ -506,6 +511,7 @@ namespace CustomControls
         public new event EventHandler? LostFocus;
         private void TextBox_LostFocus(object? sender, EventArgs e)
         {
+            //OnLostFocus(e);
             LostFocus?.Invoke(sender, e);
         }
 
@@ -514,6 +520,7 @@ namespace CustomControls
         public new event EventHandler? GotFocus;
         private void TextBox_GotFocus(object? sender, EventArgs e)
         {
+            //OnGotFocus(e);
             GotFocus?.Invoke(sender, e);
         }
 
@@ -534,14 +541,34 @@ namespace CustomControls
             OnClick(e);
         }
 
+        private void TextBox_MouseDown(object? sender, MouseEventArgs e)
+        {
+            OnMouseDown(e);
+        }
+
         private void TextBox_MouseEnter(object? sender, EventArgs e)
         {
             OnMouseEnter(e);
         }
 
+        private void TextBox_MouseHover(object? sender, EventArgs e)
+        {
+            OnMouseHover(e);
+        }
+
         private void TextBox_MouseLeave(object? sender, EventArgs e)
         {
             OnMouseLeave(e);
+        }
+
+        private void TextBox_MouseMove(object? sender, MouseEventArgs e)
+        {
+            OnMouseMove(e);
+        }
+
+        private void TextBox_MouseUp(object? sender, MouseEventArgs e)
+        {
+            OnMouseUp(e);
         }
 
         private void TextBox_KeyPress(object? sender, KeyPressEventArgs e)
@@ -552,17 +579,20 @@ namespace CustomControls
         private void TextBox_Enter(object? sender, EventArgs e)
         {
             isFocused = true;
+            OnEnter(e);
             Invalidate();
         }
 
         private void TextBox_Leave(object? sender, EventArgs e)
         {
             isFocused = false;
+            OnLeave(e);
             Invalidate();
         }
 
         private void TextBox_Invalidated(object? sender, InvalidateEventArgs e)
         {
+            OnInvalidated(e);
             if (BackColor.DarkOrLight() == "Dark")
                 Methods.SetDarkControl(textBox);
             textBox.Enabled = Enabled;

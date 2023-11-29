@@ -10,13 +10,18 @@ namespace SecureDNSClient;
 
 public partial class FormMain : Form
 {
+    public static bool IsScreenHighDpiScaleApplied { get; set; } = false;
     public static bool IsAppReady { get; set; } = false;
     public static readonly Stopwatch AppUpTime = new();
     public static readonly Architecture ArchOs = RuntimeInformation.OSArchitecture;
     public static readonly Architecture ArchProcess = RuntimeInformation.ProcessArchitecture;
+    public static int UpdateAutoDelayMS { get; set; } = 500; // Default
+    public static int UpdateDnsDohDelayMS { get; set; } = 500; // Default
+
     public static ToolTip MainToolTip { get; set; } = new();
     private FormWindowState LastWindowState;
     public static readonly CustomLabel LabelScreen = new();
+    private static float BaseScreenDpi = 96f; // 100%
     private Stopwatch LabelMainStopWatch = new();
     private static readonly CustomLabel LabelMain = new();
     public List<Tuple<long, string>> WorkingDnsList = new();
@@ -70,7 +75,7 @@ public partial class FormMain : Form
     private readonly Stopwatch StopWatchWriteProxyOutputDelay = new();
     private string TheDll = string.Empty;
     private static readonly string NL = Environment.NewLine;
-    private bool IsExiting = false;
+    private static bool IsExiting { get; set; } = false;
 
     // PIDs
     public static int PIDDNSProxy { get; set; } = -1;

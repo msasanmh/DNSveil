@@ -116,15 +116,18 @@ public partial class FormMain
                     if (IsDNSSet && !reconnect)
                         await UnsetAllDNSs();
 
-                    // Update Groupbox Status
-                    UpdateStatusLong();
-
-                    // To see offline status immediately
-                    Parallel.Invoke(
-                        () => UpdateBoolDnsOnce(1000),
-                        () => UpdateBoolDohOnce(1000)
-                    );
+                    // Update Bools
+                    await UpdateBools();
                 }
+
+                // To See Status Immediately
+                LocalDnsLatency = -1;
+                IsDNSConnected = LocalDnsLatency != -1;
+                LocalDohLatency = -1;
+                IsDoHConnected = LocalDohLatency != -1;
+
+                // Update Groupbox Status
+                await UpdateStatusLong();
 
                 // Write Disconnected message to log
                 string msgDisconnected = "Disconnected." + NL;
@@ -199,7 +202,8 @@ public partial class FormMain
                     if (IsDNSConnected) break;
                     if (!ProcessManager.FindProcessByPID(PIDDNSProxy)) break;
                     if (!IsInternetOnline) break;
-                    await Task.Delay(100);
+                    await UpdateBoolDnsOnce(GetCheckTimeoutSetting() * 2, GetBlockedDomainSetting(out string _));
+                    await Task.Delay(50);
                 }
             });
             try { await wait2.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
@@ -243,6 +247,9 @@ public partial class FormMain
             bool connected = await BypassFakeProxyDohStart(connectMode, camouflagePort);
             if (connected)
             {
+                // Connected with DNSProxy
+                internalConnect();
+
                 // Write Connected message to log
                 connectMessage();
 
@@ -299,13 +306,11 @@ public partial class FormMain
         void internalConnect()
         {
             // To see online status immediately
-            Parallel.Invoke(
-                () => UpdateBoolDnsOnce(10000),
-                () => UpdateBoolDohOnce(10000)
-            );
+            Task.Run(async () => await UpdateBoolDnsOnce(GetCheckTimeoutSetting() * 2, GetBlockedDomainSetting(out string _)));
+            Task.Run(async () => await UpdateBoolDohOnce(GetCheckTimeoutSetting() * 2, GetBlockedDomainSetting(out string _)));
 
             // Update Groupbox Status
-            UpdateStatusLong();
+            Task.Run(() => UpdateStatusLong());
         }
 
         void connectMessage()

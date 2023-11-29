@@ -212,17 +212,17 @@ namespace CustomControls
                 int x;
                 float textX;
 
-                if (rb.RightToLeft == RightToLeft.No)
+                if (rb.RightToLeft != RightToLeft.Yes)
                 {
                     rb.TextAlign = ContentAlignment.MiddleLeft;
-                    x = 1;
-                    textX = (float)(rectSize * 1.3);
+                    x = 0;
+                    textX = rectSize;
                 }
                 else
                 {
                     rb.TextAlign = ContentAlignment.MiddleRight;
-                    x = rb.Width - rectSize - 2;
-                    textX = rb.Width - sizeF.Width - (float)(rectSize * 1.2);
+                    x = rb.Width - rectSize;
+                    textX = 0;
                 }
 
                 int y = (rb.ClientRectangle.Y + (rb.ClientRectangle.Height - rectSize)) / 2;

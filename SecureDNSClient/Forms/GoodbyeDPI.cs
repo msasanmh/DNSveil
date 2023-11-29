@@ -1,7 +1,5 @@
 ﻿using MsmhToolsClass;
 using SecureDNSClient.DPIBasic;
-using System;
-using System.Diagnostics;
 using System.Net;
 
 namespace SecureDNSClient;
@@ -25,6 +23,8 @@ public partial class FormMain
 
     private async void GoodbyeDPIBasic(DPIBasicBypassMode? mode = null)
     {
+        if (IsExiting) return;
+
         // Check Internet Connectivity
         if (!IsInternetOnline) return;
 
@@ -75,12 +75,12 @@ public partial class FormMain
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(text + NL, Color.DodgerBlue));
 
-            // Update Groupbox Status
-            UpdateStatusLong();
-
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIBasicActive = true;
-            IsDPIActive = true;
+
+            // To See Status Immediately
+            IsDPIActive = UpdateBoolIsDpiActive();
+            await UpdateStatusLong();
         }
         else
         {
@@ -92,6 +92,8 @@ public partial class FormMain
 
     private async void GoodbyeDPIAdvanced()
     {
+        if (IsExiting) return;
+
         // Check Internet Connectivity
         if (!IsInternetOnline) return;
 
@@ -268,12 +270,12 @@ public partial class FormMain
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(text + NL, Color.DodgerBlue));
 
-            // Update Groupbox Status
-            UpdateStatusLong();
-
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIAdvancedActive = true;
-            IsDPIActive = true;
+
+            // To See Status Immediately
+            IsDPIActive = UpdateBoolIsDpiActive();
+            await UpdateStatusLong();
         }
         else
         {
@@ -317,9 +319,6 @@ public partial class FormMain
         });
         try { await wait1.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
 
-        // Update Groupbox Status
-        UpdateStatusLong();
-
         // Write to log Basic
         if (deactiveBasic)
         {
@@ -335,6 +334,10 @@ public partial class FormMain
 
                 string msgDC = "GoodbyeDPI (Basic) deactivated." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
+
+                // To See Status Immediately
+                IsDPIActive = UpdateBoolIsDpiActive();
+                await UpdateStatusLong();
             }
         }
 
@@ -353,6 +356,10 @@ public partial class FormMain
 
                 string msgDC = "GoodbyeDPI (Advanced) deactivated." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
+
+                // To See Status Immediately
+                IsDPIActive = UpdateBoolIsDpiActive();
+                await UpdateStatusLong();
             }
         }
 

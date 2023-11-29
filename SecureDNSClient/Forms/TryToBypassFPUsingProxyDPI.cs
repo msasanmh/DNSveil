@@ -55,7 +55,7 @@ public partial class FormMain
             while (true)
             {
                 if (ProcessManager.FindProcessByPID(PIDCamouflageProxy)) break;
-                await Task.Delay(100);
+                await Task.Delay(50);
             }
         });
         try { await camouflageWait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
@@ -70,6 +70,11 @@ public partial class FormMain
         // Apply Fake DNS and White List Program
         bool isOk = await ApplyFakeProxy(CamouflageProxyConsole);
         if (!isOk) return false;
+
+        // Send Parent Process Command
+        string parentCommand = $"ParentProcess -PID={Environment.ProcessId}";
+        Debug.WriteLine(parentCommand);
+        await CamouflageProxyConsole.SendCommandAsync(parentCommand);
 
         // Send Setting Command
         command = $"Setting -Port={fakeProxyPort} -MaxRequests=1000 -RequestTimeoutSec=0 -KillOnCpuUsage={killOnCpuUsage} -BlockPort80=True";
@@ -94,7 +99,7 @@ public partial class FormMain
             {
                 if (!isCmdSent) break;
                 if (CamouflageProxyConsole.GetStdout.ToLower().StartsWith(confirmMsg)) break;
-                await Task.Delay(500);
+                await Task.Delay(100);
             }
         });
         try { await result.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
@@ -213,7 +218,7 @@ public partial class FormMain
 
             // Save DNSCrypt Config File
             await dnsCryptConfig.WriteAsync();
-            await Task.Delay(500);
+            await Task.Delay(200);
 
             // Args
             string args = $"-config \"{SecureDNS.DNSCryptConfigFakeProxyPath}\"";

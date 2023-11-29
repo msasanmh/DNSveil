@@ -60,7 +60,7 @@ public partial class FormMain
             // Unset Proxy
             NetworkTool.UnsetProxy(false, true);
 
-            Task.Delay(300).Wait(); // Wait a moment
+            await Task.Delay(300); // Wait a moment
 
             bool isProxySet = NetworkTool.IsProxySet(out string _, out string _, out string _, out string _);
             if (!isProxySet)
@@ -79,6 +79,9 @@ public partial class FormMain
                 CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
             }
         }
+
+        // To See Status Immediately
+        await UpdateStatusLong();
     }
 
     private async Task SetProxyInternalAsync()

@@ -156,8 +156,8 @@ public partial class FormMain
 
     private async Task SavedDnsUpdate()
     {
-        if (Program.Startup) return;
-
+        if (Program.Startup && CustomCheckBoxSettingQcOnStartup.Checked) return;
+        
         // Wait Until App Is Ready
         Task waitNet = Task.Run(async () =>
         {
@@ -244,16 +244,19 @@ public partial class FormMain
                 WorkingDnsList = new(WorkingDnsList.DistinctBy(x => x.Item2));
             }
         }
-
+        
         if (newSavedDnsList.Count >= maxServers) return;
-
+        
         // There is not enough working server lets find some
         // Built-in or Custom
         bool builtInMode = CustomRadioButtonBuiltIn.Checked;
 
         string? fileContent = string.Empty;
         if (builtInMode)
-            fileContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.txt", Assembly.GetExecutingAssembly());
+        {
+            string? xmlContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
+            fileContent = await ReadCustomServersXml(xmlContent, null, false); // Built-In based on custom
+        }
         else
         {
             FileDirectory.CreateEmptyFile(SecureDNS.CustomServersPath);

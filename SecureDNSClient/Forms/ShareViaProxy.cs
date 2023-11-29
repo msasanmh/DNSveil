@@ -302,16 +302,6 @@ public partial class FormMain
                     return;
                 }
 
-                //// Apply SSL Decryption
-                //bool isSSLDecryptionOk = await ApplyPSSLDecryption();
-                //if (!isSSLDecryptionOk)
-                //{
-                //    ProcessManager.KillProcessByPID(PIDFakeProxy);
-                //    ProcessManager.KillProcessByPID(PIDProxy);
-                //    IsProxyActivating = false;
-                //    return;
-                //}
-
                 // Get number of handle requests
                 int handleReq = 250;
                 this.InvokeIt(() => handleReq = Convert.ToInt32(CustomNumericUpDownSettingProxyHandleRequests.Value));
@@ -326,6 +316,11 @@ public partial class FormMain
                 // Kill Request on Timeout (Sec)
                 int reqTimeoutSec = 0;
                 this.InvokeIt(() => reqTimeoutSec = Convert.ToInt32(CustomNumericUpDownSettingProxyKillRequestTimeout.Value));
+
+                // Send Parent Process Command
+                string parentCommand = $"ParentProcess -PID={Environment.ProcessId}";
+                Debug.WriteLine(parentCommand);
+                await ProxyConsole.SendCommandAsync(parentCommand);
 
                 // Send Setting Command
                 string settingCommand = $"Setting -Port={proxyPort} -MaxRequests={handleReq} -RequestTimeoutSec={reqTimeoutSec} -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80}";
@@ -387,6 +382,11 @@ public partial class FormMain
                 // Start Delay Timer
                 StopWatchWriteProxyOutputDelay.Restart();
 
+                // To See Status Immediately
+                await UpdateBoolProxy();
+                IsDPIActive = UpdateBoolIsDpiActive();
+                await UpdateStatusLong();
+
                 // Warm up Proxy (Sync)
                 string blockedDomain = GetBlockedDomainSetting(out string _);
                 string proxyScheme = $"socks5://{IPAddress.Loopback}:{ProxyPort}";
@@ -406,7 +406,7 @@ public partial class FormMain
                 if (ProcessManager.FindProcessByPID(PIDProxy))
                 {
                     // Unset Proxy First
-                    if (IsProxySet) SetProxy();
+                    if (IsProxySet) SetProxy(true);
                     await Task.Delay(100);
                     if (IsProxySet) NetworkTool.UnsetProxy(false, true);
 
@@ -441,6 +441,11 @@ public partial class FormMain
                         string msg = $"Couldn't stop Proxy Server.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
                     }
+
+                    // To See Status Immediately
+                    await UpdateBoolProxy();
+                    IsDPIActive = UpdateBoolIsDpiActive();
+                    await UpdateStatusLong();
                 }
                 else
                 {
@@ -484,18 +489,6 @@ public partial class FormMain
 
         UpdateProxyBools = true;
         if (!isCommandSent || !isSSLDecryptionOk) return false;
-
-        //// For the sake of DPI Bypass check
-        //bool isDpiBypassEnabled = false;
-        //this.InvokeIt(() => isDpiBypassEnabled = CustomCheckBoxPDpiEnableDpiBypass.Checked);
-        //if (isDpiBypassEnabled && IsProxyActivated && !IsProxyActivating)
-        //{
-        //    if (bypassMode != ProxyProgram.DPIBypass.Mode.Disable)
-        //    {
-        //        IsProxyDpiBypassActive = true;
-        //        IsDPIActive = true;
-        //    }
-        //}
 
         return true;
     }
@@ -701,6 +694,11 @@ public partial class FormMain
 
             // Get killOnCpuUsage Setting
             int killOnCpuUsage = GetKillOnCpuUsageSetting();
+
+            // Send Parent Process Command
+            string parentCommand = $"ParentProcess -PID={Environment.ProcessId}";
+            Debug.WriteLine(parentCommand);
+            await FakeProxyConsole.SendCommandAsync(parentCommand);
 
             // Send Setting Command
             string settingCommand = $"Setting -Port={fakeProxyPort} -MaxRequests=1000 -RequestTimeoutSec=0 -KillOnCpuUsage={killOnCpuUsage} -BlockPort80=True";

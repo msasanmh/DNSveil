@@ -28,11 +28,13 @@ public partial class MainPage : ContentPage
     private async void OnBtnConnectClicked(object sender, EventArgs e)
 	{
         bool per = await IsPermitionsGranted();
-        if (!per) return;
+        if (!per)
+        {
+            Log("Grant Permitions.");
+            return;
+        }
 
-
-
-        //StartConnect();
+        StartConnect();
         SemanticScreenReader.Announce(BtnConnect.Text);
 	}
 }

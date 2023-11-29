@@ -136,6 +136,7 @@ public partial class FormMain
 
     private void GdbModes_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         if (sender is ToolStripMenuItem tsmi)
         {
             // Activate/Reactivate GoodbyeDPI Basic
@@ -146,44 +147,50 @@ public partial class FormMain
 
     private void GoodbyeDpiAdvanced_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         GoodbyeDPIAdvanced();
     }
 
     private void GoodbyeDpiDeactive_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         GoodbyeDPIDeactive(true, true);
     }
 
     private async void Proxy_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         await StartProxy();
     }
 
     private void ProxySet_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         SetProxy();
     }
 
     private async void QcToUserSetting_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         await StartQuickConnect(null, true);
     }
 
     private async void QcToBuiltIn_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         await StartQuickConnect("builtin", true);
     }
 
     private async void QcToCustomGroups_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         if (sender is ToolStripMenuItem tsmi)
-        {
             await StartQuickConnect(tsmi.Name, true);
-        }
     }
 
     private async void DisconnectAll_Click(object? sender, EventArgs e)
     {
+        if (IsExiting) return;
         await DisconnectAll();
     }
 
@@ -389,7 +396,14 @@ public partial class FormMain
         }
 
         if (!IsExiting)
+        {
+            LocalDnsLatency = -1;
+            IsDNSConnected = LocalDnsLatency != -1;
+            LocalDohLatency = -1;
+            IsDoHConnected = LocalDohLatency != -1;
+            await UpdateStatusLong();
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Everything Disconnected.{NL}", Color.MediumSeaGreen));
+        }
 
         IsDisconnectingAll = false;
     }
@@ -401,12 +415,26 @@ public partial class FormMain
 
         // Write Closing message to log
         string msg = "Exiting...";
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray));
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(NL + msg + NL, Color.LightGray));
         NotifyIconMain.BalloonTipText = msg;
-        NotifyIconMain.ShowBalloonTip(500);
+        NotifyIconMain.ShowBalloonTip(100);
 
         // Disconnect All
-        await DisconnectAll();
+        if (!IsDisconnectingAll)
+            await DisconnectAll();
+        else
+        {
+            // IsDisconnectingAll Wait For It
+            Task wait = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    if (!IsDisconnectingAll) break;
+                    await Task.Delay(100);
+                }
+            });
+            await wait.WaitAsync(CancellationToken.None);
+        }
 
         // Set Close Stat
         AppClosedNormally(true);

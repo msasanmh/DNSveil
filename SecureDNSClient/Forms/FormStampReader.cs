@@ -31,7 +31,8 @@ public partial class FormStampReader : Form
     private void FormStampReader_Shown(object? sender, EventArgs e)
     {
         // Fix Controls Location
-        int spaceBottom = 10, spaceRight = 10, spaceV = 10, spaceH = 6, spaceHH = (spaceH * 3);
+        int shw = TextRenderer.MeasureText("I", Font).Width;
+        int spaceBottom = 10, spaceRight = 10, spaceV = 10, spaceH = shw, spaceHH = (spaceH * 3);
         CustomLabelStampUrl.Location = new Point(spaceRight, spaceBottom);
 
         CustomButtonDecode.Left = ClientRectangle.Width - CustomButtonDecode.Width - spaceRight;

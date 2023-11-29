@@ -58,14 +58,29 @@ public class Help
         help = $"  Stop Proxy Server.";
         WriteToStdout(help);
 
+        // Parent Process ID
+        help = $"\n{Key.ParentProcess.Name} <Option>";
+        WriteToStdout(help, ConsoleColor.Blue);
+        help = $"  Exit When Parent Terminated.";
+        WriteToStdout(help);
+
+        // Option Of ParentProcess
+        help = "\n  <Option>";
+        WriteToStdout(help, ConsoleColor.Blue);
+
+        help = $"    -{Key.ParentProcess.PID}=";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      The ID Of The Parent Process. (Set To 0 To Disable)";
+        WriteToStdout(help);
+
         // Setting Interactive Mode
-        help = "\nSetting";
+        help = $"\n{Key.Setting.Name}";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"  Modify Proxy Settings In Interactive Mode.";
         WriteToStdout(help);
 
         // Setting Command Mode - setting -Port=m -MaxThreads=m -RequestTimeoutSec=m -KillOnCpuUsage=m -BlockPort80=m
-        help = "\nSetting <Option>";
+        help = $"\n{Key.Setting.Name} <Option>";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"  Modify Proxy Settings In Command Mode.";
         WriteToStdout(help);
@@ -105,13 +120,13 @@ public class Help
         WriteToStdout(help);
 
         // SSLSetting Interactive Mode
-        help = "\nSSLSetting";
+        help = $"\n{Key.SSLSetting.Name}";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"  Modify SSL Settings In Interactive Mode.";
         WriteToStdout(help);
 
         // SSLSetting Command Mode - sslsetting -Enable=m -RootCA_Path="" -RootCA_KeyPath=""
-        help = "\nSSLSetting <Option>";
+        help = $"\n{Key.SSLSetting.Name} <Option>";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"  Modify SSL Settings In Command Mode.";
         WriteToStdout(help);
@@ -141,13 +156,13 @@ public class Help
         WriteToStdout(help);
 
         // Programs Interactive Mode
-        help = "\nPrograms";
+        help = $"\n{Key.Programs.Name}";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"  Modify Programs (Plug-Ins) In Interactive Mode.";
         WriteToStdout(help);
 
         // Programs Command Mode
-        help = "\nPrograms <Program>";
+        help = $"\n{Key.Programs.Name} <Program>";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"  Modify Programs (Plug-Ins) In Command Mode.";
         WriteToStdout(help);

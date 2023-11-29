@@ -152,7 +152,7 @@ public partial class FormMain
             {
                 if (IsDisconnecting) break;
                 if (ProcessManager.FindProcessByPID(PIDDNSProxy)) break;
-                await Task.Delay(100);
+                await Task.Delay(50);
             }
         });
         try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }

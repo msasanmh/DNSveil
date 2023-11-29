@@ -2,6 +2,11 @@
 
 public struct Key
 {
+    public readonly struct ParentProcess
+    {
+        public static readonly string Name = "ParentProcess";
+        public static readonly string PID = "PID";
+    }
     public readonly struct Setting
     {
         public static readonly string Name = "Setting";

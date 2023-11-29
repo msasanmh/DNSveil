@@ -259,6 +259,8 @@
             CustomNumericUpDownSettingFakeProxyPort = new CustomControls.CustomNumericUpDown();
             CustomLabelSettingFakeProxyPort = new CustomControls.CustomLabel();
             TabPageSettingsCPU = new TabPage();
+            CustomNumericUpDownUpdateAutoDelayMS = new CustomControls.CustomNumericUpDown();
+            CustomLabelUpdateAutoDelayMS = new CustomControls.CustomLabel();
             CustomNumericUpDownSettingCpuKillProxyRequests = new CustomControls.CustomNumericUpDown();
             CustomLabelSettingCpuKillProxyRequests = new CustomControls.CustomLabel();
             CustomRadioButtonSettingCPULow = new CustomControls.CustomRadioButton();
@@ -357,6 +359,7 @@
             TabPageSettingsFakeProxy.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingFakeProxyPort).BeginInit();
             TabPageSettingsCPU.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownUpdateAutoDelayMS).BeginInit();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingCpuKillProxyRequests).BeginInit();
             TabPageSettingsOthers.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingFallbackDnsPort).BeginInit();
@@ -453,7 +456,7 @@
             CustomCheckBoxInsecure.Location = new Point(25, 220);
             CustomCheckBoxInsecure.Name = "CustomCheckBoxInsecure";
             CustomCheckBoxInsecure.SelectionColor = Color.LightBlue;
-            CustomCheckBoxInsecure.Size = new Size(215, 17);
+            CustomCheckBoxInsecure.Size = new Size(210, 17);
             CustomCheckBoxInsecure.TabIndex = 7;
             CustomCheckBoxInsecure.Text = "Allow insecure (not recommended)";
             CustomCheckBoxInsecure.UseVisualStyleBackColor = false;
@@ -2453,7 +2456,7 @@
             CustomTabControlSettings.Size = new Size(765, 365);
             CustomTabControlSettings.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSettings.TabIndex = 10;
-            CustomTabControlSettings.Tag = 2;
+            CustomTabControlSettings.Tag = 7;
             // 
             // TabPageSettingsWorkingMode
             // 
@@ -2622,7 +2625,7 @@
             CustomCheckBoxSettingProtocolPlainDNS.Location = new Point(420, 55);
             CustomCheckBoxSettingProtocolPlainDNS.Name = "CustomCheckBoxSettingProtocolPlainDNS";
             CustomCheckBoxSettingProtocolPlainDNS.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolPlainDNS.Size = new Size(78, 17);
+            CustomCheckBoxSettingProtocolPlainDNS.Size = new Size(73, 17);
             CustomCheckBoxSettingProtocolPlainDNS.TabIndex = 5;
             CustomCheckBoxSettingProtocolPlainDNS.Text = "Plain DNS";
             CustomCheckBoxSettingProtocolPlainDNS.UseVisualStyleBackColor = false;
@@ -2638,7 +2641,7 @@
             CustomCheckBoxSettingProtocolDoQ.Location = new Point(230, 55);
             CustomCheckBoxSettingProtocolDoQ.Name = "CustomCheckBoxSettingProtocolDoQ";
             CustomCheckBoxSettingProtocolDoQ.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDoQ.Size = new Size(109, 17);
+            CustomCheckBoxSettingProtocolDoQ.Size = new Size(104, 17);
             CustomCheckBoxSettingProtocolDoQ.TabIndex = 4;
             CustomCheckBoxSettingProtocolDoQ.Text = "DNS-Over-Quic";
             CustomCheckBoxSettingProtocolDoQ.UseVisualStyleBackColor = false;
@@ -2654,7 +2657,7 @@
             CustomCheckBoxSettingProtocolDNSCryptRelay.Location = new Point(15, 55);
             CustomCheckBoxSettingProtocolDNSCryptRelay.Name = "CustomCheckBoxSettingProtocolDNSCryptRelay";
             CustomCheckBoxSettingProtocolDNSCryptRelay.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Size = new Size(110, 17);
+            CustomCheckBoxSettingProtocolDNSCryptRelay.Size = new Size(105, 17);
             CustomCheckBoxSettingProtocolDNSCryptRelay.TabIndex = 3;
             CustomCheckBoxSettingProtocolDNSCryptRelay.Text = "DNSCrypt Relay";
             CustomCheckBoxSettingProtocolDNSCryptRelay.UseVisualStyleBackColor = false;
@@ -2670,7 +2673,7 @@
             CustomCheckBoxSettingProtocolDNSCrypt.Location = new Point(420, 25);
             CustomCheckBoxSettingProtocolDNSCrypt.Name = "CustomCheckBoxSettingProtocolDNSCrypt";
             CustomCheckBoxSettingProtocolDNSCrypt.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDNSCrypt.Size = new Size(78, 17);
+            CustomCheckBoxSettingProtocolDNSCrypt.Size = new Size(73, 17);
             CustomCheckBoxSettingProtocolDNSCrypt.TabIndex = 2;
             CustomCheckBoxSettingProtocolDNSCrypt.Text = "DNSCrypt";
             CustomCheckBoxSettingProtocolDNSCrypt.UseVisualStyleBackColor = false;
@@ -2686,7 +2689,7 @@
             CustomCheckBoxSettingProtocolTLS.Location = new Point(230, 25);
             CustomCheckBoxSettingProtocolTLS.Name = "CustomCheckBoxSettingProtocolTLS";
             CustomCheckBoxSettingProtocolTLS.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolTLS.Size = new Size(103, 17);
+            CustomCheckBoxSettingProtocolTLS.Size = new Size(98, 17);
             CustomCheckBoxSettingProtocolTLS.TabIndex = 1;
             CustomCheckBoxSettingProtocolTLS.Text = "DNS-Over-TLS";
             CustomCheckBoxSettingProtocolTLS.UseVisualStyleBackColor = false;
@@ -2702,7 +2705,7 @@
             CustomCheckBoxSettingProtocolDoH.Location = new Point(15, 25);
             CustomCheckBoxSettingProtocolDoH.Name = "CustomCheckBoxSettingProtocolDoH";
             CustomCheckBoxSettingProtocolDoH.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDoH.Size = new Size(120, 17);
+            CustomCheckBoxSettingProtocolDoH.Size = new Size(115, 17);
             CustomCheckBoxSettingProtocolDoH.TabIndex = 0;
             CustomCheckBoxSettingProtocolDoH.Text = "DNS-Over-HTTPS";
             CustomCheckBoxSettingProtocolDoH.UseVisualStyleBackColor = false;
@@ -2734,7 +2737,7 @@
             CustomCheckBoxSettingSdnsNoFilter.Location = new Point(420, 28);
             CustomCheckBoxSettingSdnsNoFilter.Name = "CustomCheckBoxSettingSdnsNoFilter";
             CustomCheckBoxSettingSdnsNoFilter.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingSdnsNoFilter.Size = new Size(71, 17);
+            CustomCheckBoxSettingSdnsNoFilter.Size = new Size(66, 17);
             CustomCheckBoxSettingSdnsNoFilter.TabIndex = 2;
             CustomCheckBoxSettingSdnsNoFilter.Text = "No Filter";
             CustomCheckBoxSettingSdnsNoFilter.UseVisualStyleBackColor = false;
@@ -2748,7 +2751,7 @@
             CustomCheckBoxSettingSdnsNoLog.Location = new Point(230, 28);
             CustomCheckBoxSettingSdnsNoLog.Name = "CustomCheckBoxSettingSdnsNoLog";
             CustomCheckBoxSettingSdnsNoLog.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingSdnsNoLog.Size = new Size(64, 17);
+            CustomCheckBoxSettingSdnsNoLog.Size = new Size(59, 17);
             CustomCheckBoxSettingSdnsNoLog.TabIndex = 1;
             CustomCheckBoxSettingSdnsNoLog.Text = "No Log";
             CustomCheckBoxSettingSdnsNoLog.UseVisualStyleBackColor = false;
@@ -2762,7 +2765,7 @@
             CustomCheckBoxSettingSdnsDNSSec.Location = new Point(15, 28);
             CustomCheckBoxSettingSdnsDNSSec.Name = "CustomCheckBoxSettingSdnsDNSSec";
             CustomCheckBoxSettingSdnsDNSSec.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingSdnsDNSSec.Size = new Size(114, 17);
+            CustomCheckBoxSettingSdnsDNSSec.Size = new Size(109, 17);
             CustomCheckBoxSettingSdnsDNSSec.TabIndex = 0;
             CustomCheckBoxSettingSdnsDNSSec.Text = "DNSSec Enabled";
             CustomCheckBoxSettingSdnsDNSSec.UseVisualStyleBackColor = false;
@@ -2794,6 +2797,7 @@
             CustomTextBoxSettingCheckDPIHost.UnderlinedStyle = true;
             CustomTextBoxSettingCheckDPIHost.UsePasswordChar = false;
             CustomTextBoxSettingCheckDPIHost.WordWrap = true;
+            CustomTextBoxSettingCheckDPIHost.Leave += CustomTextBoxSettingCheckDPIHost_Leave;
             // 
             // CustomLabelSettingCheckDPIInfo
             // 
@@ -2896,7 +2900,7 @@
             CustomLabelSettingQcConnectMode.Location = new Point(20, 53);
             CustomLabelSettingQcConnectMode.Name = "CustomLabelSettingQcConnectMode";
             CustomLabelSettingQcConnectMode.RoundedCorners = 0;
-            CustomLabelSettingQcConnectMode.Size = new Size(71, 17);
+            CustomLabelSettingQcConnectMode.Size = new Size(69, 15);
             CustomLabelSettingQcConnectMode.TabIndex = 17;
             CustomLabelSettingQcConnectMode.Text = "Connect to:";
             // 
@@ -3107,7 +3111,7 @@
             CustomLabelSettingQcInfo.Location = new Point(20, 10);
             CustomLabelSettingQcInfo.Name = "CustomLabelSettingQcInfo";
             CustomLabelSettingQcInfo.RoundedCorners = 0;
-            CustomLabelSettingQcInfo.Size = new Size(172, 17);
+            CustomLabelSettingQcInfo.Size = new Size(170, 15);
             CustomLabelSettingQcInfo.TabIndex = 0;
             CustomLabelSettingQcInfo.Text = "Choose Quick Connect actions";
             // 
@@ -4010,6 +4014,8 @@
             // TabPageSettingsCPU
             // 
             TabPageSettingsCPU.BackColor = Color.Transparent;
+            TabPageSettingsCPU.Controls.Add(CustomNumericUpDownUpdateAutoDelayMS);
+            TabPageSettingsCPU.Controls.Add(CustomLabelUpdateAutoDelayMS);
             TabPageSettingsCPU.Controls.Add(CustomNumericUpDownSettingCpuKillProxyRequests);
             TabPageSettingsCPU.Controls.Add(CustomLabelSettingCpuKillProxyRequests);
             TabPageSettingsCPU.Controls.Add(CustomRadioButtonSettingCPULow);
@@ -4026,12 +4032,42 @@
             TabPageSettingsCPU.Tag = 7;
             TabPageSettingsCPU.Text = "CPU";
             // 
+            // CustomNumericUpDownUpdateAutoDelayMS
+            // 
+            CustomNumericUpDownUpdateAutoDelayMS.BackColor = Color.DimGray;
+            CustomNumericUpDownUpdateAutoDelayMS.BorderColor = Color.Blue;
+            CustomNumericUpDownUpdateAutoDelayMS.BorderStyle = BorderStyle.FixedSingle;
+            CustomNumericUpDownUpdateAutoDelayMS.Location = new Point(212, 218);
+            CustomNumericUpDownUpdateAutoDelayMS.Maximum = new decimal(new int[] { 2200, 0, 0, 0 });
+            CustomNumericUpDownUpdateAutoDelayMS.Minimum = new decimal(new int[] { 200, 0, 0, 0 });
+            CustomNumericUpDownUpdateAutoDelayMS.Name = "CustomNumericUpDownUpdateAutoDelayMS";
+            CustomNumericUpDownUpdateAutoDelayMS.RoundedCorners = 5;
+            CustomNumericUpDownUpdateAutoDelayMS.Size = new Size(60, 23);
+            CustomNumericUpDownUpdateAutoDelayMS.TabIndex = 9;
+            CustomNumericUpDownUpdateAutoDelayMS.Value = new decimal(new int[] { 1000, 0, 0, 0 });
+            CustomNumericUpDownUpdateAutoDelayMS.ValueChanged += CustomNumericUpDownUpdateAutoDelayMS_ValueChanged;
+            // 
+            // CustomLabelUpdateAutoDelayMS
+            // 
+            CustomLabelUpdateAutoDelayMS.AutoSize = true;
+            CustomLabelUpdateAutoDelayMS.BackColor = Color.DimGray;
+            CustomLabelUpdateAutoDelayMS.Border = false;
+            CustomLabelUpdateAutoDelayMS.BorderColor = Color.Blue;
+            CustomLabelUpdateAutoDelayMS.FlatStyle = FlatStyle.Flat;
+            CustomLabelUpdateAutoDelayMS.ForeColor = Color.White;
+            CustomLabelUpdateAutoDelayMS.Location = new Point(50, 220);
+            CustomLabelUpdateAutoDelayMS.Name = "CustomLabelUpdateAutoDelayMS";
+            CustomLabelUpdateAutoDelayMS.RoundedCorners = 0;
+            CustomLabelUpdateAutoDelayMS.Size = new Size(156, 17);
+            CustomLabelUpdateAutoDelayMS.TabIndex = 8;
+            CustomLabelUpdateAutoDelayMS.Text = "Variables update delay (ms):";
+            // 
             // CustomNumericUpDownSettingCpuKillProxyRequests
             // 
             CustomNumericUpDownSettingCpuKillProxyRequests.BackColor = Color.DimGray;
             CustomNumericUpDownSettingCpuKillProxyRequests.BorderColor = Color.Blue;
             CustomNumericUpDownSettingCpuKillProxyRequests.BorderStyle = BorderStyle.FixedSingle;
-            CustomNumericUpDownSettingCpuKillProxyRequests.Location = new Point(289, 228);
+            CustomNumericUpDownSettingCpuKillProxyRequests.Location = new Point(289, 258);
             CustomNumericUpDownSettingCpuKillProxyRequests.Maximum = new decimal(new int[] { 90, 0, 0, 0 });
             CustomNumericUpDownSettingCpuKillProxyRequests.Minimum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownSettingCpuKillProxyRequests.Name = "CustomNumericUpDownSettingCpuKillProxyRequests";
@@ -4048,10 +4084,10 @@
             CustomLabelSettingCpuKillProxyRequests.BorderColor = Color.Blue;
             CustomLabelSettingCpuKillProxyRequests.FlatStyle = FlatStyle.Flat;
             CustomLabelSettingCpuKillProxyRequests.ForeColor = Color.White;
-            CustomLabelSettingCpuKillProxyRequests.Location = new Point(50, 230);
+            CustomLabelSettingCpuKillProxyRequests.Location = new Point(50, 260);
             CustomLabelSettingCpuKillProxyRequests.Name = "CustomLabelSettingCpuKillProxyRequests";
             CustomLabelSettingCpuKillProxyRequests.RoundedCorners = 0;
-            CustomLabelSettingCpuKillProxyRequests.Size = new Size(231, 15);
+            CustomLabelSettingCpuKillProxyRequests.Size = new Size(233, 17);
             CustomLabelSettingCpuKillProxyRequests.TabIndex = 6;
             CustomLabelSettingCpuKillProxyRequests.Text = "Kill Proxy requests when CPU is above (%):";
             // 
@@ -4138,7 +4174,7 @@
             CustomLabelSettingInfoCPU.Location = new Point(50, 35);
             CustomLabelSettingInfoCPU.Name = "CustomLabelSettingInfoCPU";
             CustomLabelSettingInfoCPU.RoundedCorners = 0;
-            CustomLabelSettingInfoCPU.Size = new Size(132, 15);
+            CustomLabelSettingInfoCPU.Size = new Size(134, 17);
             CustomLabelSettingInfoCPU.TabIndex = 0;
             CustomLabelSettingInfoCPU.Text = "Set processing priorities";
             // 
@@ -4206,7 +4242,7 @@
             CustomCheckBoxSettingWriteLogWindowToFile.Location = new Point(15, 170);
             CustomCheckBoxSettingWriteLogWindowToFile.Name = "CustomCheckBoxSettingWriteLogWindowToFile";
             CustomCheckBoxSettingWriteLogWindowToFile.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingWriteLogWindowToFile.Size = new Size(157, 17);
+            CustomCheckBoxSettingWriteLogWindowToFile.Size = new Size(152, 17);
             CustomCheckBoxSettingWriteLogWindowToFile.TabIndex = 16;
             CustomCheckBoxSettingWriteLogWindowToFile.Text = "Write log window to file.";
             CustomCheckBoxSettingWriteLogWindowToFile.UseVisualStyleBackColor = false;
@@ -4338,7 +4374,7 @@
             CustomCheckBoxSettingDisableAudioAlert.Location = new Point(15, 140);
             CustomCheckBoxSettingDisableAudioAlert.Name = "CustomCheckBoxSettingDisableAudioAlert";
             CustomCheckBoxSettingDisableAudioAlert.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingDisableAudioAlert.Size = new Size(128, 17);
+            CustomCheckBoxSettingDisableAudioAlert.Size = new Size(123, 17);
             CustomCheckBoxSettingDisableAudioAlert.TabIndex = 6;
             CustomCheckBoxSettingDisableAudioAlert.Text = "Disable audio alert.";
             CustomCheckBoxSettingDisableAudioAlert.UseVisualStyleBackColor = false;
@@ -4367,7 +4403,7 @@
             CustomCheckBoxSettingDontAskCertificate.Location = new Point(15, 110);
             CustomCheckBoxSettingDontAskCertificate.Name = "CustomCheckBoxSettingDontAskCertificate";
             CustomCheckBoxSettingDontAskCertificate.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingDontAskCertificate.Size = new Size(213, 17);
+            CustomCheckBoxSettingDontAskCertificate.Size = new Size(208, 17);
             CustomCheckBoxSettingDontAskCertificate.TabIndex = 4;
             CustomCheckBoxSettingDontAskCertificate.Text = "Don't ask for certificate every time.";
             CustomCheckBoxSettingDontAskCertificate.UseVisualStyleBackColor = false;
@@ -4399,6 +4435,7 @@
             CustomTextBoxSettingBootstrapDnsIP.UnderlinedStyle = true;
             CustomTextBoxSettingBootstrapDnsIP.UsePasswordChar = false;
             CustomTextBoxSettingBootstrapDnsIP.WordWrap = true;
+            CustomTextBoxSettingBootstrapDnsIP.Leave += CustomTextBoxSettingBootstrapDnsIP_Leave;
             // 
             // TabPageAbout
             // 
@@ -4762,7 +4799,7 @@
             Controls.Add(SplitContainerMain);
             DoubleBuffered = true;
             Icon = (Icon)resources.GetObject("$this.Icon");
-            MinimumSize = new Size(950, 620);
+            MinimumSize = new Size(1000, 620);
             Name = "FormMain";
             SizeGripStyle = SizeGripStyle.Show;
             Text = "SecureDNSClient";
@@ -4832,6 +4869,7 @@
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingFakeProxyPort).EndInit();
             TabPageSettingsCPU.ResumeLayout(false);
             TabPageSettingsCPU.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownUpdateAutoDelayMS).EndInit();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingCpuKillProxyRequests).EndInit();
             TabPageSettingsOthers.ResumeLayout(false);
             TabPageSettingsOthers.PerformLayout();
@@ -5126,5 +5164,7 @@
         private CustomControls.CustomCheckBox CustomCheckBoxSettingQcOnStartup;
         private CustomControls.CustomLabel CustomLabelCheckInParallel;
         private CustomControls.CustomNumericUpDown CustomNumericUpDownCheckInParallel;
+        private CustomControls.CustomLabel CustomLabelUpdateAutoDelayMS;
+        private CustomControls.CustomNumericUpDown CustomNumericUpDownUpdateAutoDelayMS;
     }
 }

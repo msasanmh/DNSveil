@@ -35,7 +35,7 @@ public partial class FormMain : Form
 
         Start();
 
-        Shown += FormMain_Shown;
+        VisibleChanged += FormMain_VisibleChanged;
         Move += FormMain_Move;
         Resize += FormMain_Resize;
         LocationChanged += FormMain_LocationChanged;
@@ -139,6 +139,9 @@ public partial class FormMain : Form
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWB, Color.IndianRed));
         }
 
+        // Load UpdateAutoDelay
+        UpdateAutoDelayMS = GetUpdateAutoDelaySetting();
+
         UpdateAllAuto(); // CPU Friendly
         //UpdateBoolInternetAccessAuto(); // 3 Included In UpdateAllAuto
         UpdateNotifyIconIconAuto();
@@ -147,6 +150,7 @@ public partial class FormMain : Form
         //UpdateBoolsAuto(); // 2 Included In UpdateAllAuto
         UpdateBoolDnsDohAuto();
         //UpdateBoolProxyAuto(); // 1 Included In UpdateAllAuto
+        UpdateStatusVShortAuto();
         UpdateStatusShortAuto(); // 2
         //UpdateStatusLongAuto(); Included In UpdateAllAuto
         //UpdateStatusCpuUsageAuto(); // 2 Included In UpdateAllAuto
@@ -155,24 +159,41 @@ public partial class FormMain : Form
         // Load Saved Servers
         SavedDnsLoad();
 
-        // In case application closed unexpectedly Kill processes and set DNS to dynamic
-        bool closedNormally = await DoesAppClosedNormallyAsync();
-        if (!closedNormally)
-        {
-            if (!Program.Startup) await KillAll(true);
-            if (NetworkTool.IsDnsSetToLocal(out _, out _))
-            {
-                string msgUnsetDnsOnStart = $"Last time App didn't close normally!{NL}";
-                msgUnsetDnsOnStart += $"Unsetting Saved DNS...{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgUnsetDnsOnStart, Color.Gray));
-                await UnsetSavedDNS();
-                UpdateStatusNic();
-            }
-        }
-        AppClosedNormally(false);
+        // Set Dpi Bypass Text
+        UpdateApplyDpiBypassChangesButton();
 
         // Load Proxy Port
         ProxyPort = GetProxyPortSetting();
+
+        // In case application closed unexpectedly Kill processes and Unset DNS and Proxy
+        bool closedNormally = await DoesAppClosedNormallyAsync();
+        if (!closedNormally)
+        {
+            await KillAll(true);
+            bool isDnsSet = NetworkTool.IsDnsSetToLocal(out _, out _);
+            bool isProxySet = UpdateBoolIsProxySet();
+            if (isDnsSet || isProxySet)
+            {
+                string msgUnsetOnStart = $"Last time App didn't close normally!{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgUnsetOnStart, Color.Gray));
+
+                if (isDnsSet)
+                {
+                    msgUnsetOnStart = $"Unsetting Saved DNS...{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgUnsetOnStart, Color.Gray));
+                    await UnsetSavedDNS();
+                    UpdateStatusNic();
+                }
+
+                if (isProxySet)
+                {
+                    msgUnsetOnStart = $"Unsetting Proxy...{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgUnsetOnStart, Color.Gray));
+                    NetworkTool.UnsetProxy(false, true);
+                }
+            }
+        }
+        AppClosedNormally(false);
 
         // Drag bar color
         SplitContainerMain.BackColor = Color.IndianRed;
@@ -215,56 +236,70 @@ public partial class FormMain : Form
         }
     }
 
-    private void HideLabelMoving()
+    private void ShowLabelMain(string text)
     {
-        LabelMain.Visible = false;
-        LabelMain.SendToBack();
-        SplitContainerMain.Visible = true;
+        this.InvokeIt(() =>
+        {
+            SplitContainerMain.Visible = false;
+            LabelMain.Text = text;
+            LabelMain.Visible = true;
+            LabelMain.BringToFront();
+            LabelMainStopWatch.Restart();
+        });
     }
 
-    private void LabelMovingHide()
+    private void HideLabelMain()
+    {
+        if (!LabelMain.Visible) return;
+        this.InvokeIt(() =>
+        {
+            LabelMain.Visible = false;
+            LabelMain.SendToBack();
+            SplitContainerMain.Visible = true;
+        });
+    }
+
+    private void LabelMainHide()
     {
         if (LabelMainStopWatch.ElapsedMilliseconds > 300)
         {
-            HideLabelMoving();
-            LabelMainStopWatch.Reset();
+            HideLabelMain();
+            LabelMainStopWatch.Restart();
         }
     }
 
-    private async void FormMain_Shown(object? sender, EventArgs e)
+    private async void FormMain_VisibleChanged(object? sender, EventArgs e)
     {
-        if (Once)
+        if (Visible)
         {
-            Once = false;
-
             // Startup
             if (Program.Startup)
             {
                 Hide();
                 return;
             }
+
+            // Add colors and texts to About page
+            CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
+            string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({ArchProcess.ToString().ToLower()})";
+            CustomLabelAboutVersion.Text = aboutVer;
+            CustomLabelAboutThis2.ForeColor = Color.IndianRed;
+
+            // Delete Log File on > 500KB
+            DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
+
+            // Fix Microsoft bugs. Like always!
+            if (!IsScreenHighDpiScaleApplied)
+                await ScreenHighDpiScaleStartup(this);
         }
-
-        // Add colors and texts to About page
-        CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
-        string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({ArchProcess.ToString().ToLower()})";
-        CustomLabelAboutVersion.Text = aboutVer;
-        CustomLabelAboutThis2.ForeColor = Color.IndianRed;
-
-        // Delete Log File on > 500KB
-        DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
-
-        // Fix Microsoft bugs. Like always!
-        await ScreenHighDpiScaleStartup(this);
     }
 
     private void FormMain_Move(object? sender, EventArgs e)
     {
-        SplitContainerMain.Visible = false;
-        LabelMain.Text = "Now Moving...";
-        LabelMain.Visible = true;
-        LabelMain.BringToFront();
-        LabelMainStopWatch.Restart();
+        if (LabelMainStopWatch.IsRunning)
+        {
+            ShowLabelMain("Now Moving...");
+        }
     }
 
     private void FormMain_Resize(object? sender, EventArgs e)
@@ -275,17 +310,17 @@ public partial class FormMain : Form
         }
         else
         {
-            SplitContainerMain.Visible = false;
-            LabelMain.Text = "Now Resizing...";
-            LabelMain.Visible = true;
-            LabelMain.BringToFront();
-            LabelMainStopWatch.Restart();
+            if (LabelMainStopWatch.IsRunning)
+            {
+                ShowLabelMain("Now Resizing...");
+            }
         }
     }
 
     private void FormMain_LocationChanged(object? sender, EventArgs e)
     {
-        LabelMainStopWatch.Restart();
+        if (LabelMainStopWatch.IsRunning)
+            LabelMainStopWatch.Restart();
     }
 
     private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
@@ -300,7 +335,7 @@ public partial class FormMain : Form
             CustomMessageBox.Show(this, msg);
         }
 
-        HideLabelMoving();
+        if (LabelMainStopWatch.IsRunning) HideLabelMain();
     }
 
     //============================== Buttons
@@ -509,15 +544,21 @@ public partial class FormMain : Form
 
     private async void CustomButtonPDpiApplyChanges_Click(object sender, EventArgs e)
     {
+        this.InvokeIt(() => CustomButtonPDpiApplyChanges.Text = "Applying");
         UpdateProxyBools = false;
         if (ProcessManager.FindProcessByPID(PIDFakeProxy))
             await ApplyPDpiChangesFakeProxy();
         await ApplyPDpiChanges();
         UpdateProxyBools = true;
 
+        await UpdateBoolProxy();
+        UpdateApplyDpiBypassChangesButton();
+
+        await UpdateBoolProxy();
         IsProxySet = UpdateBoolIsProxySet();
         if (IsProxySet)
             await SetProxyInternalAsync(); // Change Proxy HTTP <==> SOCKS
+        this.InvokeIt(() => CustomButtonPDpiApplyChanges.Text = "Apply DPI bypass changes");
     }
 
     private async void CustomButtonPDpiCheck_Click(object sender, EventArgs e)
@@ -925,6 +966,7 @@ public partial class FormMain : Form
         if (!Visible) return;
         if (AppUpTime.ElapsedMilliseconds < 6000) return; // Don't Do This On App Startup
         if (sender is not CustomCheckBox cb) return;
+        UpdateApplyDpiBypassChangesButton();
         if (!cb.Checked) return;
         if (IsInAction(true, true, true, true, true, false, true, true, true, false, true)) return;
         this.InvokeIt(() => cb.Enabled = false);
@@ -932,6 +974,22 @@ public partial class FormMain : Form
         await ApplySSLDecryption();
         this.InvokeIt(() => cb.Text = "Enable SSL Decryption");
         this.InvokeIt(() => cb.Enabled = true);
+        UpdateApplyDpiBypassChangesButton();
+    }
+
+    private void CustomTextBoxSettingCheckDPIHost_Leave(object sender, EventArgs e)
+    {
+        GetBlockedDomainSetting(out string _); // To Correct BlockedDomain Input
+    }
+
+    private void CustomNumericUpDownUpdateAutoDelayMS_ValueChanged(object sender, EventArgs e)
+    {
+        UpdateAutoDelayMS = GetUpdateAutoDelaySetting();
+    }
+
+    private void CustomTextBoxSettingBootstrapDnsIP_Leave(object sender, EventArgs e)
+    {
+        GetBootstrapSetting(out _); // To Correct Bootstrap Input
     }
 
     //============================== Closing
@@ -951,14 +1009,22 @@ public partial class FormMain : Form
             //ShowInTaskbar = false; // Makes Titlebar white (I use Show and Hide instead)
             NotifyIconMain.BalloonTipText = "Minimized to tray.";
             NotifyIconMain.BalloonTipIcon = ToolTipIcon.Info;
-            NotifyIconMain.ShowBalloonTip(300);
+            NotifyIconMain.ShowBalloonTip(100);
         }
     }
 
-    private async void NotifyIconMain_MouseClick(object sender, MouseEventArgs e)
+    private void NotifyIconMain_MouseClick(object sender, MouseEventArgs e)
     {
         if (e.Button == MouseButtons.Left)
         {
+            if (Program.Startup)
+            {
+                Program.Startup = false;
+                Task.Run(async () => await UpdateStatusLong());
+                Task.Run(() => UpdateStatusNic());
+                Task.Run(async () => await CheckUpdate());
+            }
+
             this.SetDarkTitleBar(true); // Just in case
             Show();
             Opacity = 1;
@@ -966,14 +1032,12 @@ public partial class FormMain : Form
         }
         else if (e.Button == MouseButtons.Right)
         {
+            if (IsExiting)
+            {
+                CustomContextMenuStripIcon.Hide();
+                return; // Return doesn't work on Exit!!
+            }
             ShowMainContextMenu();
-        }
-
-        if (Program.Startup)
-        {
-            Program.Startup = false;
-            await Task.Run(() => UpdateStatusNic());
-            _ = Task.Run(async () => await CheckUpdate());
         }
     }
 

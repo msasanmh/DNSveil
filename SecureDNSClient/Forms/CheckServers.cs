@@ -138,24 +138,6 @@ public partial class FormMain
         // Get insecure state
         bool insecure = CustomCheckBoxInsecure.Checked;
 
-        //// Check open ports
-        //int localPort = 5390;
-        //if (!checkInParallel)
-        //{
-        //    bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
-        //    if (isPortOpen)
-        //    {
-        //        localPort = NetworkTool.GetNextPort(localPort);
-        //        isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
-        //        if (isPortOpen)
-        //        {
-        //            localPort = NetworkTool.GetNextPort(localPort);
-        //            bool isPortOk = GetListeningPort(localPort, "You need to resolve the conflict.", Color.IndianRed);
-        //            if (!isPortOk) return false;
-        //        }
-        //    }
-        //}
-
         // Built-in or Custom
         IsBuiltinMode = CustomRadioButtonBuiltIn.Checked;
 
@@ -169,7 +151,7 @@ public partial class FormMain
         if (IsBuiltinMode)
         {
             string? xmlContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
-            fileContent = await ReadCustomServersXml(xmlContent, groupName, false); // Built-In based on custom
+            fileContent = await ReadCustomServersXml(xmlContent, null, false); // Built-In based on custom
         }
         else
         {
@@ -364,19 +346,13 @@ public partial class FormMain
                     bool matchRules = CheckDnsMatchRules(dnsReader);
                     if (!matchRules) return;
 
-                    // Get Check timeout value
-                    decimal timeoutSec = 1;
-                    this.InvokeIt(() => timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value);
-                    int timeoutMS = decimal.ToInt32(timeoutSec * 1000);
+                    // Get Check timeout Setting
+                    int timeoutMS = GetCheckTimeoutSetting();
 
                     // Is this being called by parallel?
                     bool isParallel = lineNumber == -1;
 
                     await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
-                    //if (isParallel)
-                    //    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
-                    //else
-                    //    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS, localPort, bootstrap, bootstrapPort);
 
                     // Get Status and Latency
                     bool dnsOK = checkDns.IsDnsOnline;

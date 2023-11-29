@@ -57,9 +57,13 @@ public static class ProcessManager
                 if (OperatingSystem.IsWindows())
                 {
                     using PerformanceCounter performanceCounter = new("Process", "% Processor Time", processName, true);
-                    performanceCounter.NextValue(); // Returns 0
-                    await Task.Delay(delay); // Needs time to calculate
-                    result = performanceCounter.NextValue() / Environment.ProcessorCount;
+                    performanceCounter.NextSample(); // Returns 0
+                    await Task.Delay(delay / 2); // Needs time to calculate
+                    CounterSample first = performanceCounter.NextSample();
+                    await Task.Delay(delay / 2); // Needs time to calculate
+                    CounterSample second = performanceCounter.NextSample();
+                    float final = CounterSample.Calculate(first, second);
+                    result = final / Environment.ProcessorCount;
                 }
             }
             catch (Exception ex)
@@ -356,30 +360,44 @@ public static class ProcessManager
     //-----------------------------------------------------------------------------------
     public static bool FindProcessByName(string processName)
     {
-        int result;
-        Process[] processes = Process.GetProcessesByName(processName);
-        result = processes.Length;
+        int result = 0;
         try
         {
-            for (int n = 0; n < processes.Length; n++)
-                processes[n].Dispose();
+            Process[] processes = Process.GetProcessesByName(processName);
+            result = processes.Length;
+            try
+            {
+                for (int n = 0; n < processes.Length; n++)
+                    processes[n].Dispose();
+            }
+            catch (Exception) { }
         }
-        catch (Exception) { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("FindProcessByName: " + ex.Message);
+        }
         return result > 0;
     }
     //-----------------------------------------------------------------------------------
     public static bool FindProcessByPID(int pid)
     {
         bool result = false;
-        Process[] processes = Process.GetProcesses();
-        for (int n = 0; n < processes.Length; n++)
+        try
         {
-            if (processes[n].Id == pid)
+            Process[] processes = Process.GetProcesses();
+            for (int n = 0; n < processes.Length; n++)
             {
-                result = true;
-                break;
+                if (processes[n].Id == pid)
+                {
+                    result = true;
+                    break;
+                }
+                processes[n].Dispose();
             }
-            processes[n].Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("FindProcessByPID: " + ex.Message);
         }
         return result;
     }

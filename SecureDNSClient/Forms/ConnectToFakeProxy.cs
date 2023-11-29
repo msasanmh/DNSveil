@@ -62,7 +62,7 @@ public partial class FormMain
         if (string.IsNullOrEmpty(blockedDomain)) return false;
 
         // Set timeout (ms)
-        int timeoutMS = 10000;
+        int timeoutMS = 5000;
 
         // Check Fake Proxy DoH
         CheckDns checkDns = new(true, false, GetCPUPriority());
@@ -106,7 +106,7 @@ public partial class FormMain
 
         for (int n = 0; n < attempts; n++)
         {
-            if (!IsConnected || IsDisconnecting) return false;
+            if (!IsConnected || IsDisconnecting || !IsInternetOnline) return false;
             if (!ProcessManager.FindProcessByPID(pid)) return false;
 
             // Message before
@@ -115,12 +115,12 @@ public partial class FormMain
             // Delay
             await checkDns.CheckDnsAsync(blockedDomainNoWww, loopback, timeoutMS);
 
-            Task.Delay(500).Wait(); // Wait a moment
             if (checkDns.IsDnsOnline)
             {
                 // Update bool
                 IsConnected = true;
                 IsDNSConnected = true;
+                LocalDnsLatency = checkDns.DnsLatency;
 
                 // Message add NL on success
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg2 + NL, Color.MediumSeaGreen));
@@ -133,8 +133,6 @@ public partial class FormMain
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDelay2, Color.Orange));
                 return true;
             }
-
-            Task.Delay(500).Wait();
         }
 
         // Message add NL on failure

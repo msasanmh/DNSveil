@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
@@ -205,27 +204,37 @@ namespace CustomControls
                 checkBox.FlatAppearance.BorderSize = 0;
                 checkBox.AutoSize = false;
                 checkBox.UseVisualStyleBackColor = false;
+
                 SizeF sizeF = checkBox.CreateGraphics().MeasureString(checkBox.Text, checkBox.Font);
                 SizeF rectSizeF = sizeF;
-                if (checkBox.Text.Contains(Environment.NewLine))
-                    rectSizeF = checkBox.CreateGraphics().MeasureString(checkBox.Text.Split(Environment.NewLine)[0], checkBox.Font);
-                int rectSize = Convert.ToInt32(rectSizeF.Height - 2);
-                checkBox.Height = Convert.ToInt32(sizeF.Height);
-                checkBox.Width = Convert.ToInt32(sizeF.Width + rectSize + 5);
+                int rectSize = 10;
+                try
+                {
+                    if (checkBox.Text.Contains(Environment.NewLine))
+                        rectSizeF = checkBox.CreateGraphics().MeasureString(checkBox.Text.Split(Environment.NewLine)[0], checkBox.Font);
+                    rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - 2);
+                    checkBox.Height = Convert.ToInt32(Math.Round(sizeF.Height));
+                    checkBox.Width = Convert.ToInt32(Math.Round(sizeF.Width) + rectSize);
+                }
+                catch (Exception)
+                {
+                    // do nothing
+                }
+
                 int x;
                 float textX;
-
-                if (checkBox.RightToLeft == RightToLeft.No)
+                
+                if (checkBox.RightToLeft != RightToLeft.Yes)
                 {
                     checkBox.TextAlign = ContentAlignment.MiddleLeft;
-                    x = 1;
-                    textX = (float)(rectSize * 1.3);
+                    x = 0;
+                    textX = rectSize;
                 }
                 else
                 {
                     checkBox.TextAlign = ContentAlignment.MiddleRight;
-                    x = checkBox.Width - rectSize - 2;
-                    textX = checkBox.Width - sizeF.Width - (float)(rectSize * 1.2);
+                    x = checkBox.Width - rectSize;
+                    textX = 0;
                 }
 
                 int y = (checkBox.ClientRectangle.Y + 1 + (checkBox.ClientRectangle.Height - rectSize)) / 2;

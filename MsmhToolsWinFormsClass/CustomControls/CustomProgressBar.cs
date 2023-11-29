@@ -171,142 +171,153 @@ namespace CustomControls
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            if (!ApplicationIdle) return;
-            
-            Color backColor = GetBackColor();
-            Color foreColor = GetForeColor();
-            Color borderColor = GetBorderColor();
-            Color chunksColor = GetChunksColor();
-            Color chunksColorGradient;
-
-            if (chunksColor.DarkOrLight() == "Dark")
-                chunksColorGradient = chunksColor.ChangeBrightness(0.5f);
-            else
-                chunksColorGradient = chunksColor.ChangeBrightness(-0.5f);
-
-            //Rectangle rect = ClientRectangle;
-            Rectangle rect = new(0, 0, ClientRectangle.Width - 1, ClientRectangle.Height - 1);
-            Graphics g = e.Graphics;
-            // Draw horizontal bar (Background and Border) With Default System Color:
-            //ProgressBarRenderer.DrawHorizontalBar(g, rect);
-
-            // Draw horizontal bar (Background and Border) With Custom Color:
-            // Fill Background
-            using SolidBrush bgBrush = new(backColor);
-            g.FillRoundedRectangle(bgBrush, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-
-            // Draw Border
-            using Pen penB = new(borderColor);
-            g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-            
-            // Min
-            if (Value == Minimum)
+            try
             {
-                if (!StopWatch.IsRunning) StopWatch.Start();
-                StopWatch.Restart();
-                return; // Performance
-            }
+                if (!ApplicationIdle) return;
 
-            // Padding
-            if (Value > 0)
-            {
-                // Draw Chunks By Default Color (Green):
-                //Rectangle clip = new(rect.X, rect.Y, (int)Math.Round((float)Value / Maximum * rect.Width), rect.Height);
-                //ProgressBarRenderer.DrawHorizontalChunks(g, clip);
+                Color backColor = GetBackColor();
+                Color foreColor = GetForeColor();
+                Color borderColor = GetBorderColor();
+                Color chunksColor = GetChunksColor();
+                Color chunksColorGradient;
 
-                // Draw Chunks By Custom Color:
-                // The Following Is The Width Of The Bar. This Will Vary With Each Value.
-                int fillWidth = rect.Width * Value / (Maximum - Minimum);
+                if (chunksColor.DarkOrLight() == "Dark")
+                    chunksColorGradient = chunksColor.ChangeBrightness(0.5f);
+                else
+                    chunksColorGradient = chunksColor.ChangeBrightness(-0.5f);
 
-                // GDI+ Doesn't Like Rectangles 0px Wide or Height
-                if (fillWidth == 0)
-                {
-                    // Draw Only Border And Exit
-                    g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-                    return;
-                }
-                // Rectangles For Upper And Lower Half Of Bar
-                int y = Value < 2 ? 1 : 0;
-                Rectangle topRect = new(0, y, fillWidth, (rect.Height / 2) + 1 - y); // +1 to avoid "having a dark line in the middle of the bar"
-                Rectangle buttomRect = new(0, (rect.Height / 2) - y, fillWidth, (rect.Height / 2) - y);
+                //Rectangle rect = ClientRectangle;
+                Rectangle rect = new(0, 0, ClientRectangle.Width - 1, ClientRectangle.Height - 1);
+                Graphics g = e.Graphics;
+                // Draw horizontal bar (Background and Border) With Default System Color:
+                //ProgressBarRenderer.DrawHorizontalBar(g, rect);
 
-                // Paint Upper Half
-                int right = Value < RoundedCorners ? Value : RoundedCorners;
-                using LinearGradientBrush gbUH = new(new Point(topRect.X, topRect.Y), new Point(topRect.X, topRect.Height), chunksColorGradient, chunksColor);
-                g.FillRoundedRectangle(gbUH, topRect, RoundedCorners, right, 0, 0);
+                // Draw horizontal bar (Background and Border) With Custom Color:
+                // Fill Background
+                using SolidBrush bgBrush = new(backColor);
+                g.FillRoundedRectangle(bgBrush, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
 
-                // Paint Lower Half
-                // -1 to avoid "out of memory exception"
-                using LinearGradientBrush gbLH = new(new Point(buttomRect.X, buttomRect.Y - 1), new Point(buttomRect.X, buttomRect.Height), chunksColor, chunksColorGradient);
-                g.FillRoundedRectangle(gbLH, buttomRect, 0, 0, right, RoundedCorners);
-
-                // Paint Border
+                // Draw Border
+                using Pen penB = new(borderColor);
                 g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-            }
 
-            // Compute Percent
-            int percent = (int)(Value / (double)Maximum * 100);
-            string textPercent;
-            if (Value > 0)
-                textPercent = percent.ToString() + '%';
-            else
-            {
-                // If Value Is Zero Don't Write Anything
-                textPercent = string.Empty;
-                if (!DesignMode)
-                    CustomText = string.Empty;
-            }
+                // Min
+                if (Value == Minimum)
+                {
+                    if (!StopWatch.IsRunning) StopWatch.Start();
+                    StopWatch.Restart();
+                    return; // Performance
+                }
 
-            // Brush For Writing CustomText And Persentage On Progressbar
-            using SolidBrush brush = new(foreColor);
+                // Compute Percent
+                int percent = (int)(Value / (double)Maximum * 100);
 
-            // Percent
-            SizeF lenPercent = g.MeasureString(textPercent, Font);
-            Point locationPercentCenter = new(Convert.ToInt32((Width / 2) - lenPercent.Width / 2), Convert.ToInt32((Height / 2) - lenPercent.Height / 2));
-            g.DrawString(textPercent, Font, brush, locationPercentCenter);
+                // Padding
+                if (Value > 0)
+                {
+                    // Draw Chunks By Default Color (Green):
+                    //Rectangle clip = new(rect.X, rect.Y, (int)Math.Round((float)Value / Maximum * rect.Width), rect.Height);
+                    //ProgressBarRenderer.DrawHorizontalChunks(g, clip);
 
-            // Custom Text
-            if (!string.IsNullOrEmpty(CustomText))
-            {
-                SizeF lenCustomText = g.MeasureString(CustomText, Font);
+                    // Draw Chunks By Custom Color:
+                    // The Following Is The Width Of The Bar. This Will Vary With Each Value.
+                    int fillWidth = rect.Width * Value / (Maximum - Minimum);
+
+                    // GDI+ Doesn't Like Rectangles 0px Wide or Height
+                    if (fillWidth == 0)
+                    {
+                        // Draw Only Border And Exit
+                        g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
+                        return;
+                    }
+
+                    // Rectangles For Upper And Lower Half Of Bar
+                    int y = percent < 2 ? 1 : 0;
+                    Rectangle topRect = new(0, y, fillWidth, (rect.Height / 2) + 1 - y); // +1 to avoid "having a dark line in the middle of the bar"
+                    Rectangle buttomRect = new(0, (rect.Height / 2) - y, fillWidth, (rect.Height / 2) - y);
+
+                    // Paint Upper Half
+                    int right = Value < RoundedCorners ? Value : RoundedCorners;
+                    using LinearGradientBrush gbUH = new(new Point(topRect.X, topRect.Y), new Point(topRect.X, topRect.Height), chunksColorGradient, chunksColor);
+                    g.FillRoundedRectangle(gbUH, topRect, RoundedCorners, right, 0, 0);
+
+                    // Paint Lower Half
+                    // -1 to avoid "out of memory exception"
+                    using LinearGradientBrush gbLH = new(new Point(buttomRect.X, buttomRect.Y - 1), new Point(buttomRect.X, buttomRect.Height), chunksColor, chunksColorGradient);
+                    g.FillRoundedRectangle(gbLH, buttomRect, 0, 0, right, RoundedCorners);
+
+                    // Paint Border
+                    g.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
+                }
+
+                // Percentage
+                string textPercent;
+                if (Value > Minimum)
+                    textPercent = percent.ToString() + '%';
+                else if (Value == Maximum)
+                    textPercent = "100%";
+                else
+                {
+                    // If Value Is Zero Don't Write Anything
+                    textPercent = string.Empty;
+                    if (!DesignMode) CustomText = string.Empty;
+                }
+
+                // Brush For Writing CustomText And Persentage On Progressbar
+                using SolidBrush brush = new(foreColor);
+
+                // Percent
+                SizeF lenPercent = g.MeasureString(textPercent, Font);
+                Point locationPercentCenter = new(Convert.ToInt32((Width / 2) - lenPercent.Width / 2), Convert.ToInt32((Height / 2) - lenPercent.Height / 2));
+                g.DrawString(textPercent, Font, brush, locationPercentCenter);
+
+                // Custom Text
+                if (!string.IsNullOrEmpty(CustomText))
+                {
+                    SizeF lenCustomText = g.MeasureString(CustomText, Font);
+                    if (RightToLeft == RightToLeft.No)
+                    {
+                        Point locationCustomTextLeft = new(5, Convert.ToInt32((Height / 2) - lenCustomText.Height / 2));
+                        g.DrawString(CustomText, Font, brush, locationCustomTextLeft);
+                    }
+                    else
+                    {
+                        Point locationCustomTextRight = new(Convert.ToInt32(Width - lenCustomText.Width - 5), Convert.ToInt32((Height / 2) - lenCustomText.Height / 2));
+                        g.DrawString(CustomText, Font, brush, locationCustomTextRight);
+                    }
+                }
+
+                // Compute Elapsed Time
+                ElapsedTimeString = timer(out TimeSpan _);
+
+                // Max
+                if (StopTimer || Value == Maximum)
+                {
+                    if (StopWatch.IsRunning) StopWatch.Stop();
+                }
+
+                string timer(out TimeSpan timeSpan)
+                {
+                    TimeSpan eTime = StopWatch.Elapsed;
+                    eTime = timeSpan = TimeSpan.FromMilliseconds(Math.Round(eTime.TotalMilliseconds, 1));
+                    return $"{eTime:hh\\:mm\\:ss\\.f}";
+                }
+
+                SizeF lenElapsedTime = g.MeasureString(ElapsedTimeString, Font);
                 if (RightToLeft == RightToLeft.No)
                 {
-                    Point locationCustomTextLeft = new(5, Convert.ToInt32((Height / 2) - lenCustomText.Height / 2));
-                    g.DrawString(CustomText, Font, brush, locationCustomTextLeft);
+                    Point locationElapsedTimeRight = new(Convert.ToInt32(Width - lenElapsedTime.Width - 5), Convert.ToInt32((Height / 2) - lenElapsedTime.Height / 2));
+                    g.DrawString(ElapsedTimeString, Font, brush, locationElapsedTimeRight);
                 }
                 else
                 {
-                    Point locationCustomTextRight = new(Convert.ToInt32(Width - lenCustomText.Width - 5), Convert.ToInt32((Height / 2) - lenCustomText.Height / 2));
-                    g.DrawString(CustomText, Font, brush, locationCustomTextRight);
+                    Point locationElapsedTimeLeft = new(5, Convert.ToInt32((Height / 2) - lenElapsedTime.Height / 2));
+                    g.DrawString(ElapsedTimeString, Font, brush, locationElapsedTimeLeft);
                 }
             }
-
-            // Compute Elapsed Time
-            ElapsedTimeString = timer(out TimeSpan _);
-
-            // Max
-            if (StopTimer || Value == Maximum)
+            catch (Exception ex)
             {
-                if (StopWatch.IsRunning) StopWatch.Stop();
-            }
-
-            string timer(out TimeSpan timeSpan)
-            {
-                TimeSpan eTime = StopWatch.Elapsed;
-                eTime = timeSpan = TimeSpan.FromMilliseconds(Math.Round(eTime.TotalMilliseconds, 1));
-                return $"{eTime:hh\\:mm\\:ss\\.f}";
-            }
-            
-            SizeF lenElapsedTime = g.MeasureString(ElapsedTimeString, Font);
-            if (RightToLeft == RightToLeft.No)
-            {
-                Point locationElapsedTimeRight = new(Convert.ToInt32(Width - lenElapsedTime.Width - 5), Convert.ToInt32((Height / 2) - lenElapsedTime.Height / 2));
-                g.DrawString(ElapsedTimeString, Font, brush, locationElapsedTimeRight);
-            }
-            else
-            {
-                Point locationElapsedTimeLeft = new(5, Convert.ToInt32((Height / 2) - lenElapsedTime.Height / 2));
-                g.DrawString(ElapsedTimeString, Font, brush, locationElapsedTimeLeft);
+                Debug.WriteLine("CustomProgressBar OnPaint: " + ex.Message);
             }
         }
 

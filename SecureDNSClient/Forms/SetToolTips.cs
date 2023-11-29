@@ -19,6 +19,10 @@ public partial class FormMain : Form
         string msgCheckUpdate = "Check for new application version.";
         CustomButtonCheckUpdate.SetToolTip(MainToolTip, "Info", msgCheckUpdate);
 
+        string msgUpdateAutoDelay = "More = Less CPU Usage but app's Reaction Speed will Decrease.";
+        msgUpdateAutoDelay += "\nLess = More CPU Usage but app's Reaction Speed will Increase.";
+        CustomNumericUpDownUpdateAutoDelayMS.SetToolTip(MainToolTip, "Info", msgUpdateAutoDelay);
+
         // Add Tooltips to advanced DPI
         string msgP = "Block passive DPI.";
         CustomCheckBoxDPIAdvP.SetToolTip(MainToolTip, "Info", msgP);

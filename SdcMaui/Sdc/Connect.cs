@@ -3,7 +3,8 @@ using Ae.Dns.Protocol;
 using Ae.Dns.Server;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using MsmhToolsClass.DnsTool;
-using MsmhToolsClass.HTTPProxyServer;
+using MsmhToolsClass.MsmhProxyServer;
+using MsmhToolsClass.ProxyServerPrograms;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -72,28 +73,28 @@ namespace SdcMaui
                     {
                         Log("Local DNS Server Started.", Colors.MediumSeaGreen);
 
-                        // Start HTTP Proxy
-                        StartHttpProxy();
+                        // Start Proxy
+                        StartProxy();
 
-                        // Wait for HTTP Proxy
-                        Task waitHttpProxy = Task.Run(async () =>
+                        // Wait for Proxy
+                        Task waitProxy = Task.Run(async () =>
                         {
                             while (true)
                             {
-                                if (HttpProxy.IsRunning) break;
+                                if (ProxyServer.IsRunning) break;
                                 await Task.Delay(500);
                             }
                         });
-                        try { await waitHttpProxy.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
+                        try { await waitProxy.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
 
-                        // Check HTTP Proxy Server Started
-                        if (!HttpProxy.IsRunning)
+                        // Check Proxy Server Started
+                        if (!ProxyServer.IsRunning)
                         {
                             disconnect();
                             Log("Couldn't Start HTTP Proxy Server.", Colors.IndianRed);
                         }
                         else
-                            Log("Local DNS Server and HTTP Proxy are Running.", Colors.MediumSeaGreen);
+                            Log("DNS and Proxy Servers are Running.", Colors.MediumSeaGreen);
                     }
 
                     IsConnecting = false;
@@ -133,13 +134,20 @@ namespace SdcMaui
                 {
                     try
                     {
-                        // Stop HTTP Proxy
-                        if (HttpProxy.IsRunning) HttpProxy.Stop();
-                        if (HttpProxy.IsDpiActive)
+                        // Stop Proxy
+                        if (ProxyServer.IsRunning) ProxyServer.Stop();
+                        if (ProxyServer.IsDpiBypassActive)
                         {
-                            HTTPProxyServer.Program.DPIBypass bypass = new();
-                            bypass.Set(HTTPProxyServer.Program.DPIBypass.Mode.Disable, 1, DpiChunkMode, 1, 0, 0);
-                            HttpProxy.EnableStaticDPIBypass(bypass);
+                            ProxyProgram.DPIBypass bypass = new();
+                            bypass.Set(ProxyProgram.DPIBypass.Mode.Disable, 1, DpiChunkMode, 1, 0, 0);
+                            ProxyServer.EnableStaticDPIBypass(bypass);
+                        }
+
+                        // Dispose DnsClients
+                        if (DnsClients.Any())
+                        {
+                            foreach (IDnsClient dnsClient in DnsClients)
+                                dnsClient?.Dispose();
                         }
 
                         // Stop DNS Server
@@ -174,7 +182,7 @@ namespace SdcMaui
                 // Sort by Latency
                 WorkingDnsList = WorkingDnsList.OrderBy(x => x.Item1).ToList();
 
-                IDnsClient[] dnsClients = new IDnsClient[WorkingDnsList.Count];
+                Array.Resize(ref DnsClients, WorkingDnsList.Count);
                 int count = 0;
 
                 for (int n = 0; n < WorkingDnsList.Count; n++)
@@ -187,7 +195,7 @@ namespace SdcMaui
                     {
                         if (!string.IsNullOrEmpty(dnsReader.IP) && dnsReader.Protocol == DnsReader.DnsProtocol.PlainDNS)
                         {
-                            dnsClients[n] = new DnsUdpClient(new IPEndPoint(IPAddress.Parse(dnsReader.IP), dnsReader.Port));
+                            DnsClients[n] = new DnsUdpClient(new IPEndPoint(IPAddress.Parse(dnsReader.IP), dnsReader.Port));
                             count++;
                         }
 
@@ -198,7 +206,7 @@ namespace SdcMaui
                                 doh = $"https://{dnsReader.Host}:{dnsReader.Port}{dnsReader.Path}";
                             HttpClient httpClient = new();
                             httpClient.BaseAddress = new Uri(doh);
-                            dnsClients[n] = new DnsHttpClient(httpClient);
+                            DnsClients[n] = new DnsHttpClient(httpClient);
                             count++;
                         }
                     }
@@ -211,9 +219,9 @@ namespace SdcMaui
                 }
 
                 // Remove blank values from array
-                dnsClients = dnsClients.Where(x => x != null).ToArray();
+                DnsClients = DnsClients.Where(x => x != null).ToArray();
 
-                await ConnectToDnsClients(dnsClients);
+                await ConnectToDnsClients();
             }
             catch (Exception ex)
             {
@@ -225,7 +233,7 @@ namespace SdcMaui
             }
         }
 
-        public async Task ConnectToDnsClients(IDnsClient[] dnsClients)
+        public async Task ConnectToDnsClients()
         {
             try
             {
@@ -233,22 +241,22 @@ namespace SdcMaui
                 DnsUdpServerOptions udpServerOptions = new();
                 udpServerOptions.Endpoint = new IPEndPoint(IPAddress.Any, DnsPort);
 
-                DnsTcpServerOptions tcpServerOptions = new();
-                tcpServerOptions.Endpoint = new IPEndPoint(IPAddress.Any, DnsPort);
+                //DnsTcpServerOptions tcpServerOptions = new();
+                //tcpServerOptions.Endpoint = new IPEndPoint(IPAddress.Any, DnsPort);
 
                 IDnsRawClient dnsRawClient;
-                if (dnsClients.Length > 1)
+                if (DnsClients.Length > 1)
                 {
-                    IDnsClient dnsRacerClient = new DnsRacerClient(dnsClients);
+                    IDnsClient dnsRacerClient = new DnsRacerClient(DnsClients);
                     dnsRawClient = new DnsRawClient(dnsRacerClient);
                 }
                 else
                 {
-                    dnsRawClient = new DnsRawClient(dnsClients[0]);
+                    dnsRawClient = new DnsRawClient(DnsClients[0]);
                 }
 
                 DnsUdpServer = new DnsUdpServer(dnsRawClient, udpServerOptions);
-                DnsTcpServer = new DnsTcpServer(dnsRawClient, tcpServerOptions);
+                //DnsTcpServer = new DnsTcpServer(dnsRawClient, tcpServerOptions);
 
                 ConnectedDnsPort = DnsPort;
 

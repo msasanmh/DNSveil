@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using MsmhToolsClass;
 
@@ -7,11 +8,31 @@ namespace SecureDNSClient;
 public partial class FormMain
 {
     //============================== Get Settings Vars
+    public int GetCheckTimeoutSetting()
+    {
+        int timeoutMS = 5000;
+        try
+        {
+            decimal timeoutSec = 1;
+            this.InvokeIt(() => timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value);
+            timeoutMS = decimal.ToInt32(timeoutSec * 1000);
+        }
+        catch (Exception) { }
+        return timeoutMS;
+    }
+
     public int GetParallelSizeSetting()
     {
         int parallelSize = 5;
         this.InvokeIt(() => parallelSize = Convert.ToInt32(CustomNumericUpDownCheckInParallel.Value));
         return parallelSize;
+    }
+
+    public int GetUpdateAutoDelaySetting()
+    {
+        int updateAutoDelayMS = 500;
+        this.InvokeIt(() => updateAutoDelayMS = Convert.ToInt32(CustomNumericUpDownUpdateAutoDelayMS.Value));
+        return updateAutoDelayMS;
     }
 
     public int GetKillOnCpuUsageSetting()

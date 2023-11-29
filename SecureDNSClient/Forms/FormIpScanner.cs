@@ -53,7 +53,8 @@ public partial class FormIpScanner : Form
     private void FormIpScanner_Shown(object? sender, EventArgs e)
     {
         // Fix Controls Location
-        int spaceBottom = 10, spaceRight = 12, spaceV = 10, spaceH = 6, spaceHH = (spaceH * 3);
+        int shw = TextRenderer.MeasureText("I", Font).Width;
+        int spaceBottom = 10, spaceRight = 12, spaceV = 10, spaceH = shw, spaceHH = (spaceH * 3);
         CustomRadioButtonSourceCloudflare.Location = new Point(spaceRight, spaceBottom);
 
         CustomLabelDelay.Left = CustomRadioButtonSourceCloudflare.Right + spaceHH;

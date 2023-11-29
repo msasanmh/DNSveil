@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
     <Title>Msmh Multi Proxy Server</Title>
-    <Version>$(VersionPrefix)2.5.5</Version>
+    <Version>$(VersionPrefix)2.5.6</Version>
     <Copyright>MSasanMH</Copyright>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <Description>A Multi Proxy Server.

@@ -76,7 +76,8 @@ public partial class FormDnsScanner : Form
         }
 
         // Fix Controls Location
-        int spaceBottom = 10, spaceRight = 12, spaceV = 6, spaceH = 6;
+        int shw = TextRenderer.MeasureText("I", Font).Width;
+        int spaceBottom = 10, spaceRight = 12, spaceV = 6, spaceH = shw;
 
         // Left Side
         CustomRadioButtonDnsUrl.Location = new Point(spaceRight, spaceBottom);

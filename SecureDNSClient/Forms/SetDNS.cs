@@ -80,8 +80,8 @@ public partial class FormMain
             if (!Program.Startup)
                 if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNS(true, true);
 
-            // Update Groupbox Status
-            UpdateStatusLong();
+            // To See Status Immediately
+            await UpdateStatusLong();
 
             // Write Set DNS message to log
             string msg1 = "Local DNS ";
@@ -130,8 +130,8 @@ public partial class FormMain
             // Flush DNS
             await FlushDNS(true, true);
 
-            // Update Groupbox Status
-            UpdateStatusLong();
+            // To See Status Immediately
+            await UpdateStatusLong();
 
             // Write Unset DNS message to log
             string msg1 = "Local DNS ";

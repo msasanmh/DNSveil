@@ -43,6 +43,11 @@ public partial class FormCustomServers : Form
     private static readonly ToolStripMenuItem MenuDnsSelectAll = new();
     private static readonly ToolStripMenuItem MenuDnsInvertSelection = new();
 
+    // Export & Import Form Context Menu
+    private static readonly CustomContextMenuStrip MGE = new();
+    private static readonly ToolStripMenuItem MenuSA = new();
+    private static readonly ToolStripMenuItem MenuIS = new();
+
     public FormCustomServers()
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
@@ -1474,17 +1479,15 @@ public partial class FormCustomServers : Form
 
             void ImportMenu(int eX, int eY)
             {
-                CustomContextMenuStrip MGE = new();
+                MGE.Items.Clear();
                 MGE.Font = Font;
 
-                ToolStripMenuItem MenuSA = new();
                 MenuSA.Font = Font;
                 MenuSA.Text = "Select All";
                 MenuSA.Click -= MenuSA_Click;
                 MenuSA.Click += MenuSA_Click;
                 MGE.Items.Add(MenuSA);
 
-                ToolStripMenuItem MenuIS = new();
                 MenuIS.Font = Font;
                 MenuIS.Text = "Invert selection";
                 MenuIS.Click -= MenuIS_Click;
@@ -1492,6 +1495,7 @@ public partial class FormCustomServers : Form
                 MGE.Items.Add(MenuIS);
 
                 Theme.SetColors(MGE);
+                MGE.RoundedCorners = 5;
                 MGE.Show(panel, new Point(eX, eY));
             }
 
@@ -1682,17 +1686,15 @@ public partial class FormCustomServers : Form
 
         void ExportMenu(int eX, int eY)
         {
-            CustomContextMenuStrip MGE = new();
+            MGE.Items.Clear();
             MGE.Font = Font;
-
-            ToolStripMenuItem MenuSA = new();
+            
             MenuSA.Font = Font;
             MenuSA.Text = "Select All";
             MenuSA.Click -= MenuSA_Click;
             MenuSA.Click += MenuSA_Click;
             MGE.Items.Add(MenuSA);
 
-            ToolStripMenuItem MenuIS = new();
             MenuIS.Font = Font;
             MenuIS.Text = "Invert selection";
             MenuIS.Click -= MenuIS_Click;
@@ -1700,6 +1702,7 @@ public partial class FormCustomServers : Form
             MGE.Items.Add(MenuIS);
 
             Theme.SetColors(MGE);
+            MGE.RoundedCorners = 5;
             MGE.Show(panel, new Point(eX, eY));
         }
 

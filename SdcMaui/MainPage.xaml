@@ -80,7 +80,7 @@
                             <Grid RowDefinitions="*" ColumnDefinitions="*">
                                 <ScrollView>
                                     <VerticalStackLayout>
-                                        <Editor x:Name="log" IsReadOnly="True" HeightRequest="30" Placeholder="Log Details"
+                                        <Editor x:Name="log" IsReadOnly="True" HeightRequest="100" Placeholder="Log Details"
             Text="aaaaaa aaaaaaaaaa aaaaaaaaaaaaaa aaaaaaaaaaaa aaaaaaaaaaaaaaa aaaaaaaaaaaaaaa aaaaaaaaaaaaa"/>
                                     </VerticalStackLayout>
                                 </ScrollView>

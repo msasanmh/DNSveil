@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Reflection;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SDCProxyServer;
 
@@ -67,6 +68,7 @@ public static partial class Program
 
     private static bool WriteRequestsToLog { get; set; } = false;
     private static bool WriteChunkDetailsToLog { get; set; } = false;
+    private static int ParentPID { get; set; } = -1;
 
 
     /// <summary>
@@ -77,8 +79,7 @@ public static partial class Program
     {
         // Title
         string title = $"Msmh Proxy Server v{Assembly.GetExecutingAssembly().GetName().Version}";
-        if (OperatingSystem.IsWindows())
-            Console.Title = title;
+        if (OperatingSystem.IsWindows()) Console.Title = title;
 
         // Invariant Culture
         Info.SetCulture(CultureInfo.InvariantCulture);
@@ -129,12 +130,40 @@ public static partial class Program
                 }
         }
 
+        // Exit When Parent Terminated
+        ExitAuto();
+
         // Read Commands
-        while (true)
+        await ReadCommands();
+    }
+
+    private static async void ExitAuto()
+    {
+        await Task.Run(async () =>
         {
-            string? input = Console.ReadLine();
-            await ExecuteCommands(input);
-        }
+            while (true)
+            {
+                await Task.Delay(1000);
+                if (ParentPID == -1 || ParentPID == 0) continue;
+                bool isParentExist = ProcessManager.FindProcessByPID(ParentPID);
+                if (!isParentExist)
+                {
+                    Environment.Exit(0);
+                }
+            }
+        });
+    }
+
+    private static async Task ReadCommands()
+    {
+        await Task.Run(async () =>
+        {
+            while (true)
+            {
+                string? input = Console.ReadLine();
+                await ExecuteCommands(input);
+            }
+        });
     }
 
     private static void MainDetails()
@@ -156,6 +185,13 @@ public static partial class Program
         mainDetails += $"{ProxyServer.SettingsSSL_.ChangeSniToIP}"; // 14
 
         WriteToStdout(mainDetails);
+    }
+
+    private static void ShowParentProcessMsg()
+    {
+        string pid = ParentPID != -1 && ParentPID != 0 ? $"{ParentPID}" : "No Parent";
+        string msg = $"\nParent Process ID: {pid}";
+        WriteToStdout(msg, ConsoleColor.Green);
     }
 
     private static void ShowSettingsMsg()
@@ -347,6 +383,7 @@ public static partial class Program
     {
         string result = $"\nProxy Server Running: {ProxyServer.IsRunning}";
         WriteToStdout(result, ConsoleColor.Blue);
+        ShowParentProcessMsg();
         ShowSettingsMsg();
         ShowSettingsSSLMsg();
         ShowBwListMsg();

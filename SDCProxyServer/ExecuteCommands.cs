@@ -73,6 +73,21 @@ public static partial class Program
                         Help.GetHelpPrograms();
                 }
 
+                // Parent Process
+                else if (input.ToLower().StartsWith(Key.ParentProcess.Name.ToLower()))
+                {
+                    // ParentProcess -PID=m
+
+                    string key = Key.ParentProcess.PID;
+                    bool isValueOk = ConsoleTools.GetValueByKey(input, key, true, false, out string value);
+                    if (!isValueOk) return;
+                    isValueOk = ConsoleTools.GetInt(key, value, true, 0, int.MaxValue, out int pid);
+                    if (!isValueOk) return;
+
+                    ParentPID = pid;
+                    ShowParentProcessMsg();
+                }
+
                 // Settings
                 else if (input.ToLower().StartsWith(Key.Setting.Name.ToLower()))
                 {
