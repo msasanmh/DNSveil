@@ -15,7 +15,7 @@ public partial class FormMain
 
         // Get Fake Proxy DoH Address
         string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
-        NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string dohHost, out _, out int _, out string _, out bool _);
+        NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string dohHost, out _, out _, out int _, out string _, out bool _);
 
         // It's blocked message
         string msgBlocked = $"It's blocked.{NL}";
@@ -162,7 +162,7 @@ public partial class FormMain
 
             // Generate SDNS
             bool isSdnsGenerateSuccess = false;
-            NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string host, out _, out int port, out string path, out bool _);
+            NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string host, out _, out _, out int port, out string path, out bool _);
             DNSCryptStampGenerator stampGenerator = new();
             string host1 = "dns.cloudflare.com";
             string host2 = "cloudflare-dns.com";

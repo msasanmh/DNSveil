@@ -28,11 +28,8 @@ namespace SecureDNSClientPortable
 
                 if (!string.IsNullOrEmpty(appPath))
                 {
-                    string startupArgs = $"startup {Program.StartupDelaySec}";
-                    if (Program.Startup)
-                        Process.Start(appPath, startupArgs);
-                    else
-                        Process.Start(appPath);
+                    string args = $"-IsPortable=True";
+                    Process.Start(appPath, args);
                 }
                 else
                 {

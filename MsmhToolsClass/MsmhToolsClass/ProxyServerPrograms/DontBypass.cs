@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MsmhToolsClass.ProxyServerPrograms;
+﻿namespace MsmhToolsClass.ProxyServerPrograms;
 
 public partial class ProxyProgram
 {
@@ -38,10 +36,7 @@ public partial class ProxyProgram
                 {
                     TextContent = File.ReadAllText(Path.GetFullPath(filePathOrText));
                 }
-                catch (Exception)
-                {
-                    // do nothing
-                }
+                catch (Exception) { }
             }
             else if (DontBypassMode == Mode.Text)
                 TextContent = filePathOrText;
@@ -58,7 +53,7 @@ public partial class ProxyProgram
         {
             string destHostnameNoWWW = destHostname;
             if (destHostnameNoWWW.StartsWith("www."))
-                destHostnameNoWWW = destHostnameNoWWW.Replace("www.", string.Empty);
+                destHostnameNoWWW = destHostnameNoWWW.TrimStart("www.");
 
             if (DontBypassList.Any())
             {
@@ -67,11 +62,20 @@ public partial class ProxyProgram
                     string host = DontBypassList[n].Trim();
                     if (!string.IsNullOrEmpty(host) && !host.StartsWith("//")) // Add Support Comment //
                     {
-                        if (host.StartsWith("www."))
-                            host = host.Replace("www.", string.Empty);
+                        if (host.StartsWith("www.")) host = host.TrimStart("www.");
 
                         // If Match
-                        if (destHostnameNoWWW.Equals(host)) return true;
+                        if (!host.StartsWith("*."))
+                        {
+                            // No Wildcard
+                            if (host.Equals(destHostnameNoWWW)) return true;
+                        }
+                        else
+                        {
+                            // Wildcard
+                            host = host[2..];
+                            if (!destHostnameNoWWW.Equals(host) && destHostnameNoWWW.EndsWith(host)) return true;
+                        }
                     }
                 }
             }

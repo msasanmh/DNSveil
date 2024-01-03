@@ -8,6 +8,13 @@ namespace SecureDNSClient;
 public partial class FormMain
 {
     //============================== Get Settings Vars
+    public string GetDefaultSniSetting()
+    {
+        string defaultSni = string.Empty;
+        this.InvokeIt(() => defaultSni = CustomTextBoxProxySSLDefaultSni.Text);
+        return defaultSni.Trim();
+    }
+
     public int GetCheckTimeoutSetting()
     {
         int timeoutMS = 5000;
@@ -24,58 +31,85 @@ public partial class FormMain
     public int GetParallelSizeSetting()
     {
         int parallelSize = 5;
-        this.InvokeIt(() => parallelSize = Convert.ToInt32(CustomNumericUpDownCheckInParallel.Value));
+        try
+        {
+            this.InvokeIt(() => parallelSize = Convert.ToInt32(CustomNumericUpDownCheckInParallel.Value));
+        }
+        catch (Exception) { }
         return parallelSize;
+    }
+
+    public int GetMaxServersToConnectSetting()
+    {
+        int max = 5;
+        try
+        {
+            this.InvokeIt(() => max = decimal.ToInt32(CustomNumericUpDownSettingMaxServers.Value));
+        }
+        catch (Exception) { }
+        return max;
     }
 
     public int GetUpdateAutoDelaySetting()
     {
         int updateAutoDelayMS = 500;
-        this.InvokeIt(() => updateAutoDelayMS = Convert.ToInt32(CustomNumericUpDownUpdateAutoDelayMS.Value));
+        try
+        {
+            this.InvokeIt(() => updateAutoDelayMS = Convert.ToInt32(CustomNumericUpDownUpdateAutoDelayMS.Value));
+        }
+        catch (Exception) { }
         return updateAutoDelayMS;
     }
 
     public int GetKillOnCpuUsageSetting()
     {
         int killOnCpuUsage = 40;
-        this.InvokeIt(() => killOnCpuUsage = Convert.ToInt32(CustomNumericUpDownSettingCpuKillProxyRequests.Value));
+        try
+        {
+            this.InvokeIt(() => killOnCpuUsage = Convert.ToInt32(CustomNumericUpDownSettingCpuKillProxyRequests.Value));
+        }
+        catch (Exception) { }
         return killOnCpuUsage;
     }
 
     public IPAddress GetBootstrapSetting(out int bootstrapPort)
     {
         // Get Bootstrap IP and Port
-        IPAddress bootstrap;
-        int bootstrapPortD;
-        bool isBootstrap = NetworkTool.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? bootstrapIP);
-        if (isBootstrap && bootstrapIP != null)
+        IPAddress bootstrap = SecureDNS.BootstrapDnsIPv4;
+        int bootstrapPortD = SecureDNS.BootstrapDnsPort;
+        try
         {
-            bootstrap = bootstrapIP;
-            bootstrapPortD = Convert.ToInt32(CustomNumericUpDownSettingBootstrapDnsPort.Value);
-        }
-        else
-        {
-            bootstrap = CultureInfo.InstalledUICulture switch
+            bool isBootstrap = NetworkTool.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? bootstrapIP);
+            if (isBootstrap && bootstrapIP != null)
             {
-                { Name: string n } when n.ToLower().StartsWith("fa") => IPAddress.Parse("8.8.8.8"), // Iran
-                { Name: string n } when n.ToLower().StartsWith("ru") => IPAddress.Parse("77.88.8.7"), // Russia
-                { Name: string n } when n.ToLower().StartsWith("zh") => IPAddress.Parse("223.6.6.6"), // China
-                _ => SecureDNS.BootstrapDnsIPv4 // Others
-            };
-            if (bootstrap.Equals(SecureDNS.BootstrapDnsIPv4))
-                bootstrapPortD = SecureDNS.BootstrapDnsPort;
+                bootstrap = bootstrapIP;
+                bootstrapPortD = Convert.ToInt32(CustomNumericUpDownSettingBootstrapDnsPort.Value);
+            }
             else
-                bootstrapPortD = 53;
-
-            this.InvokeIt(() =>
             {
-                if (!CustomTextBoxSettingBootstrapDnsIP.Focused)
+                bootstrap = CultureInfo.InstalledUICulture switch
                 {
-                    CustomTextBoxSettingBootstrapDnsIP.Text = bootstrap.ToString();
-                    CustomNumericUpDownSettingBootstrapDnsPort.Value = bootstrapPortD;
-                }
-            });
+                    { Name: string n } when n.ToLower().StartsWith("fa") => IPAddress.Parse("8.8.8.8"), // Iran
+                    { Name: string n } when n.ToLower().StartsWith("ru") => IPAddress.Parse("77.88.8.7"), // Russia
+                    { Name: string n } when n.ToLower().StartsWith("zh") => IPAddress.Parse("223.6.6.6"), // China
+                    _ => SecureDNS.BootstrapDnsIPv4 // Others
+                };
+                if (bootstrap.Equals(SecureDNS.BootstrapDnsIPv4))
+                    bootstrapPortD = SecureDNS.BootstrapDnsPort;
+                else
+                    bootstrapPortD = 53;
+
+                this.InvokeIt(() =>
+                {
+                    if (!CustomTextBoxSettingBootstrapDnsIP.Focused)
+                    {
+                        CustomTextBoxSettingBootstrapDnsIP.Text = bootstrap.ToString();
+                        CustomNumericUpDownSettingBootstrapDnsPort.Value = bootstrapPortD;
+                    }
+                });
+            }
         }
+        catch (Exception) { }
         bootstrapPort = bootstrapPortD;
         return bootstrap;
     }
@@ -86,24 +120,29 @@ public partial class FormMain
         string defaultAddr = "www.youtube.com";
 
         bool isBlockedDomainValid = SecureDNS.IsBlockedDomainValid(CustomTextBoxSettingCheckDPIHost, out string blockedDomain);
-        if (!isBlockedDomainValid)
+        
+        try
         {
+            if (!isBlockedDomainValid)
+            {
+                this.InvokeIt(() =>
+                {
+                    if (!CustomTextBoxSettingCheckDPIHost.Focused)
+                        CustomTextBoxSettingCheckDPIHost.Text = defaultAddr;
+                });
+
+                blockedDomainNoWww = defaultAddr[4..];
+                return defaultAddr;
+            }
+
             this.InvokeIt(() =>
             {
-                if (!CustomTextBoxSettingCheckDPIHost.Focused)
-                    CustomTextBoxSettingCheckDPIHost.Text = defaultAddr;
+                if (!CustomTextBoxSettingCheckDPIHost.Text.Equals(blockedDomain))
+                    if (!CustomTextBoxSettingCheckDPIHost.Focused)
+                        CustomTextBoxSettingCheckDPIHost.Text = blockedDomain;
             });
-
-            blockedDomainNoWww = defaultAddr[4..];
-            return defaultAddr;
         }
-
-        this.InvokeIt(() =>
-        {
-            if (!CustomTextBoxSettingCheckDPIHost.Text.Equals(blockedDomain))
-                if (!CustomTextBoxSettingCheckDPIHost.Focused)
-                    CustomTextBoxSettingCheckDPIHost.Text = blockedDomain;
-        });
+        catch (Exception) { }
 
         // strip www. from blocked domain
         string blockedDomainNoWwwD = blockedDomain;
@@ -116,22 +155,46 @@ public partial class FormMain
 
     public int GetDohPortSetting()
     {
-        return Convert.ToInt32(CustomNumericUpDownSettingWorkingModeSetDohPort.Value);
+        int dohPort = 443;
+        try
+        {
+            this.InvokeIt(() => dohPort = Convert.ToInt32(CustomNumericUpDownSettingWorkingModeSetDohPort.Value));
+        }
+        catch (Exception) { }
+        return dohPort;
     }
 
     public int GetProxyPortSetting()
     {
-        return Convert.ToInt32(CustomNumericUpDownSettingProxyPort.Value);
+        int proxyPort = 8080;
+        try
+        {
+            this.InvokeIt(() => proxyPort = Convert.ToInt32(CustomNumericUpDownSettingProxyPort.Value));
+        }
+        catch (Exception) { }
+        return proxyPort;
     }
 
     public int GetFakeProxyPortSetting()
     {
-        return Convert.ToInt32(CustomNumericUpDownSettingFakeProxyPort.Value);
+        int fakeProxyPort = 8070;
+        try
+        {
+            this.InvokeIt(() => fakeProxyPort = Convert.ToInt32(CustomNumericUpDownSettingFakeProxyPort.Value));
+        }
+        catch (Exception) { }
+        return fakeProxyPort;
     }
 
     public int GetCamouflageDnsPortSetting()
     {
-        return Convert.ToInt32(CustomNumericUpDownSettingCamouflageDnsPort.Value);
+        int camouflageDnsPort = 5380;
+        try
+        {
+            this.InvokeIt(() => camouflageDnsPort = Convert.ToInt32(CustomNumericUpDownSettingCamouflageDnsPort.Value));
+        }
+        catch (Exception) { }
+        return camouflageDnsPort;
     }
 
     /// <summary>

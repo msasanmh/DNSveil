@@ -161,7 +161,7 @@ public partial class FormMain
             {
                 while (true)
                 {
-                    if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                    if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
                     if (IsCheckingStarted || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
                     await Task.Delay(100);
                 }
@@ -169,7 +169,7 @@ public partial class FormMain
             await wait4.WaitAsync(CancellationToken.None);
 
             // Get number of max servers
-            int maxServers = decimal.ToInt32(CustomNumericUpDownSettingMaxServers.Value);
+            int maxServers = GetMaxServersToConnectSetting();
 
             // Wait until we have enough servers or check is done
             QuickConnectTimeout.Restart();
@@ -205,7 +205,7 @@ public partial class FormMain
                 {
                     while (true)
                     {
-                        if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                        if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
                         if (!IsCheckingStarted) break;
                         await Task.Delay(100);
                     }
@@ -252,8 +252,9 @@ public partial class FormMain
             {
                 while (true)
                 {
-                    if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                    if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
                     if (!isConnectSuccess) break;
+                    await UpdateBools();
                     if (IsConnected || QuickConnectTimeout.ElapsedMilliseconds > 30000) break;
                     await Task.Delay(100);
                 }
@@ -271,7 +272,7 @@ public partial class FormMain
                 while (true)
                 {
                     if (!IsConnected) break;
-                    if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                    if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
                     if (IsDNSConnected || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
                     await Task.Delay(200);
                 }
@@ -287,7 +288,12 @@ public partial class FormMain
                 // Check if NIC is Ok
                 bool isNicOk1 = IsNicOk(nicName, out _);
                 if (!isNicOk1)
+                {
+                    // Update NICs
+                    SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+                    await Task.Delay(200);
                     this.InvokeIt(() => nicName = CustomComboBoxNICs.SelectedItem as string);
+                }
 
                 bool isNicOk2 = IsNicOk(nicName, out _);
                 if (!isNicOk2)
@@ -335,9 +341,9 @@ public partial class FormMain
                         {
                             while (true)
                             {
-                                if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                                if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
                                 isDnsSetOn = SetDnsOnNic_.IsDnsSet(LastNicName);
-                                if (isDnsSetOn || QuickConnectTimeout.ElapsedMilliseconds > 40000) break;
+                                if (isDnsSetOn || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
                                 await Task.Delay(100);
                             }
                         });
@@ -356,7 +362,7 @@ public partial class FormMain
                 {
                     while (true)
                     {
-                        if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                        if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
                         if (!IsProxyDeactivating || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
                         await Task.Delay(100);
                     }
@@ -393,7 +399,8 @@ public partial class FormMain
                     {
                         while (true)
                         {
-                            if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                            if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                            IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
                             if (IsProxyActivated || QuickConnectTimeout.ElapsedMilliseconds > 30000) break;
                             await Task.Delay(100);
                         }
@@ -411,13 +418,17 @@ public partial class FormMain
 
                 IsProxySet = await runSetProxy(); // 1
                 await Task.Delay(delay); // 2
-                IsProxySet = UpdateBoolIsProxySet();
+                IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+                IsAnotherProxySet = isAnotherProxySet;
+                CurrentSystemProxy = currentSystemProxy;
                 if (!IsProxySet)
                 {
                     if (await cancelOnCondition()) return;
                     await runSetProxy();
                     await Task.Delay(delay); // 3
-                    IsProxySet = UpdateBoolIsProxySet();
+                    IsProxySet = UpdateBoolIsProxySet(out isAnotherProxySet, out currentSystemProxy);
+                    IsAnotherProxySet = isAnotherProxySet;
+                    CurrentSystemProxy = currentSystemProxy;
                     if (!IsProxySet)
                     {
                         if (await cancelOnCondition()) return;
@@ -435,7 +446,10 @@ public partial class FormMain
                     {
                         while (true)
                         {
-                            if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                            if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                            IsProxySet = UpdateBoolIsProxySet(out isAnotherProxySet, out currentSystemProxy);
+                            IsAnotherProxySet = isAnotherProxySet;
+                            CurrentSystemProxy = currentSystemProxy;
                             if (IsProxySet || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
                             await Task.Delay(100);
                         }
@@ -477,7 +491,8 @@ public partial class FormMain
                     {
                         while (true)
                         {
-                            if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                            if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                            IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
                             if (IsGoodbyeDPIBasicActive || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
                             await Task.Delay(100);
                         }
@@ -518,7 +533,8 @@ public partial class FormMain
                     {
                         while (true)
                         {
-                            if (IsExiting || StopQuickConnect || (!Program.Startup && !IsInternetOnline)) break;
+                            if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                            IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
                             if (IsGoodbyeDPIAdvancedActive || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
                             await Task.Delay(100);
                         }
@@ -569,7 +585,7 @@ public partial class FormMain
             }
             if (!IsInternetOnline)
             {
-                if (!Program.Startup)
+                if (!Program.IsStartup)
                 {
                     endOfQuickConnect(); return true;
                 }
@@ -614,6 +630,11 @@ public partial class FormMain
 
             if (showWarning && !IsExiting && !StopQuickConnect)
             {
+                // Update Bools
+                await UpdateBools();
+                await UpdateBoolProxy();
+                await UpdateStatusLong();
+
                 string msgNotifyUser = string.Empty;
                 if (!IsInternetOnline) msgNotifyUser += $"There is no Internet connectivity.{NL}";
                 else if (!IsConnected) msgNotifyUser += $"Couldn't Connect.{NL}";
@@ -624,6 +645,10 @@ public partial class FormMain
                 {
                     SetProxy();
                     await Task.Delay(500);
+                    // Update bool IsProxySet
+                    IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+                    IsAnotherProxySet = isAnotherProxySet;
+                    CurrentSystemProxy = currentSystemProxy;
                     if (setProxy != IsProxySet)
                         msgNotifyUser += $"Couldn't Set Proxy.{NL}";
                 }
@@ -684,7 +709,6 @@ public partial class FormMain
                     if (!IsConnected && !IsConnecting) break;
                     if (QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
                     await Task.Delay(100);
-                    Debug.WriteLine("HHHHHHHHHHHH");
                 }
             });
             await wait.WaitAsync(CancellationToken.None);

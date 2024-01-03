@@ -1,9 +1,12 @@
 ﻿using Ae.Dns.Client;
 using Ae.Dns.Protocol;
+using Android.App;
+using Android.Net;
 using MsmhToolsClass;
 using MsmhToolsClass.DnsTool;
 using MsmhToolsClass.MsmhProxyServer;
 using MsmhToolsClass.ProxyServerPrograms;
+using SdcMaui.Vpn;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +15,7 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Activity = Android.App.Activity;
 
 #nullable enable
 namespace SdcMaui
@@ -58,13 +62,20 @@ namespace SdcMaui
         private static bool IsProxyDpiBypassActive { get; set; } = false;
 
         // Local DNS Server
-        public CancellationTokenSource CancelTokenDnsServer = new();
+        public CancellationTokenSource? CancelTokenDnsServer;
         public static IDnsServer? DnsUdpServer { get; set; }
         public static IDnsServer? DnsTcpServer { get; set; }
-        //public static IDnsRawClient? dnsRawClient { get; set; }
+        public static bool IsDnsServerRunning { get; set; }
 
-        // Local HTTP Proxy Server
+        // Local Proxy Server
         public static MsmhProxyServer ProxyServer { get; set; } = new();
+
+        // Notification
+        public static readonly int MainNotificationId = 1001;
+
+        // VPN
+        //public static SdcVpnService? SdcVpn;
+
 
     }
 }

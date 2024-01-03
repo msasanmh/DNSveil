@@ -25,6 +25,9 @@ public partial class FormMain
     {
         if (IsExiting) return;
 
+        // Return if binary files are missing
+        if (!CheckNecessaryFiles()) return;
+
         // Check Internet Connectivity
         if (!IsInternetOnline) return;
 
@@ -71,21 +74,23 @@ public partial class FormMain
         if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic))
         {
             // Write DPI Mode to log
-            string msg = "DPI bypass is active, mode: ";
+            string msg = "GoodbyeDPI is active, mode: ";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(text + NL, Color.DodgerBlue));
 
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIBasicActive = true;
+            IsGoodbyeDPIAdvancedActive = false;
+            if (Visible) await UpdateStatusShortOnBoolsChanged();
 
             // To See Status Immediately
             IsDPIActive = UpdateBoolIsDpiActive();
-            await UpdateStatusLong();
+            if (Visible) await UpdateStatusLong();
         }
         else
         {
             // Write DPI Error to log
-            string msg = "DPI bypass couldn't connect, try again.";
+            string msg = "GoodbyeDPI couldn't start, try again.";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed));
         }
     }
@@ -93,6 +98,9 @@ public partial class FormMain
     private async void GoodbyeDPIAdvanced()
     {
         if (IsExiting) return;
+
+        // Return if binary files are missing
+        if (!CheckNecessaryFiles()) return;
 
         // Check Internet Connectivity
         if (!IsInternetOnline) return;
@@ -266,21 +274,23 @@ public partial class FormMain
         if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced))
         {
             // Write DPI Mode to log
-            string msg = "DPI bypass is active, mode: ";
+            string msg = "GoodbyeDPI is active, mode: ";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(text + NL, Color.DodgerBlue));
 
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIAdvancedActive = true;
+            IsGoodbyeDPIBasicActive = false;
+            if (Visible) await UpdateStatusShortOnBoolsChanged();
 
             // To See Status Immediately
             IsDPIActive = UpdateBoolIsDpiActive();
-            await UpdateStatusLong();
+            if (Visible) await UpdateStatusLong();
         }
         else
         {
             // Write DPI Error to log
-            string msg = "DPI bypass couldn't connect, try again.";
+            string msg = "GoodbyeDPI couldn't start, try again.";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed));
         }
     }
@@ -331,13 +341,16 @@ public partial class FormMain
             {
                 // Set IsGoodbyeDPIBasicActive to False
                 IsGoodbyeDPIBasicActive = false;
+                if (Visible) await UpdateStatusShortOnBoolsChanged();
 
                 string msgDC = "GoodbyeDPI (Basic) deactivated." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
 
+                PIDGoodbyeDPIBasic = -1;
+
                 // To See Status Immediately
                 IsDPIActive = UpdateBoolIsDpiActive();
-                await UpdateStatusLong();
+                if (Visible) await UpdateStatusLong();
             }
         }
 
@@ -353,13 +366,16 @@ public partial class FormMain
             {
                 // Set IsGoodbyeDPIAdvancedActive to False
                 IsGoodbyeDPIAdvancedActive = false;
+                if (Visible) await UpdateStatusShortOnBoolsChanged();
 
                 string msgDC = "GoodbyeDPI (Advanced) deactivated." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
 
+                PIDGoodbyeDPIAdvanced = -1;
+
                 // To See Status Immediately
                 IsDPIActive = UpdateBoolIsDpiActive();
-                await UpdateStatusLong();
+                if (Visible) await UpdateStatusLong();
             }
         }
 

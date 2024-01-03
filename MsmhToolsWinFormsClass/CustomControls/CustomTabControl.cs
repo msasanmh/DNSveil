@@ -207,7 +207,8 @@ namespace CustomControls
         private void TabPage_Paint(object? sender, PaintEventArgs e)
         {
             if (sender is not TabPage tabPage) return;
-            
+            if (!Visible) return;
+
             Color tabPageColor;
             if (Enabled)
                 tabPageColor = tabPage.BackColor;
@@ -295,6 +296,8 @@ namespace CustomControls
 
         private void PaintTabControl(TabControl tc, Graphics g)
         {
+            if (!Visible) return;
+
             Color backColor = GetBackColor();
             Color foreColor = GetForeColor();
             Color borderColor = GetBorderColor();
@@ -563,6 +566,7 @@ namespace CustomControls
 
         private void PaintImageText(Graphics graphics, TabControl tc, TabPage tabPage, Rectangle rectTab, Image? tabImage, Font font, Color foreColor)
         {
+            if (!Visible) return;
             if (HideTabHeader) return;
             if (tabImage != null)
             {

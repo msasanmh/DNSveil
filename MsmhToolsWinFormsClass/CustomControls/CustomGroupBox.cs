@@ -226,7 +226,8 @@ namespace CustomControls
 
         private void CustomGroupBox_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false) return;
+            if (!ApplicationIdle) return;
+            if (!Visible) return;
 
             GetPoint = PointToScreen(Location);
             GetName = Name;

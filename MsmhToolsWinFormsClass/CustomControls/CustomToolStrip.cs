@@ -123,6 +123,8 @@ namespace CustomControls
 
         private void CustomToolStrip_Paint(object? sender, PaintEventArgs e)
         {
+            if (!Visible) return;
+
             // Paint Background
             using SolidBrush bgBrush = new(GetBackColor());
             e.Graphics.FillRectangle(bgBrush, ClientRectangle);

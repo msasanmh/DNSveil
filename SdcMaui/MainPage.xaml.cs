@@ -1,4 +1,9 @@
-﻿using System.Diagnostics;
+﻿using Android.App;
+using Android.Content;
+using Android.Net;
+using Plugin.LocalNotification;
+using SdcMaui.Vpn;
+using System.Diagnostics;
 
 namespace SdcMaui;
 

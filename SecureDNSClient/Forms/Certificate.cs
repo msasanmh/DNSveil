@@ -30,7 +30,7 @@ public partial class FormMain
 
     private async Task InstallCertificateForDoH()
     {
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
             if (File.Exists(SecureDNS.IssuerCertPath) && !CustomCheckBoxSettingDontAskCertificate.Checked)
             {
@@ -54,6 +54,15 @@ public partial class FormMain
                                 CustomMessageBox.Show(this, msgCertChanged, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             }
                         }
+
+                        // Check If Proxy Server Is Running With Previous Cert
+                        if (IsProxyActivated && IsProxySSLDecryptionActive)
+                        {
+                            // Stop Proxy
+                            await StartProxy(true);
+                            string msg = "Due to Certificate changes you need to restart Proxy Server.";
+                            CustomMessageBox.Show(this, msg, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
                     }
 
                     bool certInstalled = CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
@@ -74,6 +83,20 @@ public partial class FormMain
         bool isCertInstalled = CertificateTool.IsCertificateInstalled(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
         if (isCertInstalled)
         {
+            if (IsDoHConnected)
+            {
+                string msg = "You cannot uninstall certificate while DoH Server is active.";
+                CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (IsProxySSLDecryptionActive)
+            {
+                string msg = "You cannot uninstall certificate while Proxy Server is active and using SSL Decryption.";
+                CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             // Uninstall Certs
             CertificateTool.UninstallCertificate(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
 

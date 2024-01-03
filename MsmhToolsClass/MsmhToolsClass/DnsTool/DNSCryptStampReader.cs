@@ -359,7 +359,7 @@ public class DNSCryptStampReader
                 Buffer.BlockCopy(stampBinary, position, bHostPort, 0, hostPortLength);
 
             string hostPort = Encoding.UTF8.GetString(bHostPort);
-            NetworkTool.GetHostDetails(hostPort, defaultPort, out host, out _, out port, out _, out bool _);
+            NetworkTool.GetHostDetails(hostPort, defaultPort, out host, out _, out _, out port, out _, out bool _);
             position += hostPortLength; // Skip Host:Port
 
             return position;

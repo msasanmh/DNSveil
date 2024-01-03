@@ -207,6 +207,8 @@ namespace CustomControls
 
         private void CustomContextMenuStrip_Paint(object? sender, PaintEventArgs e)
         {
+            if (!Visible) return;
+
             // Main Menu Border
             Color borderColor = GetBorderColor();
             Rectangle rect = new(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width - 1, ClientRectangle.Height - 1);

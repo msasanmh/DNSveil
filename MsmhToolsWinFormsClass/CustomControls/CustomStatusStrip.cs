@@ -122,6 +122,8 @@ namespace CustomControls
 
         private void CustomStatusStrip_Paint(object? sender, PaintEventArgs e)
         {
+            if (!Visible) return;
+
             if (Border)
             {
                 Color borderColor = GetBorderColor();

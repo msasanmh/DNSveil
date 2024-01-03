@@ -11,7 +11,8 @@ public class SettingsSSL
     public X509Certificate2 RootCA { get; private set; }
     public string? RootCA_Path { get; set; }
     public string? RootCA_KeyPath { get; set; }
-    public bool ChangeSniToIP { get; set; } = true;
+    public bool ChangeSni { get; set; } = true;
+    public string DefaultSni { get; set; } = string.Empty;
 
     public SettingsSSL(bool enableSSL)
     {

@@ -174,6 +174,8 @@ namespace CustomControls
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            if (!Visible) return;
+
             base.OnPaint(e);
 
             Rectangle rect = ClientRectangle;
@@ -218,6 +220,7 @@ namespace CustomControls
         private void UpDown_Paint(object? sender, PaintEventArgs e)
         {
             if (sender is not Control UpDown) return;
+            if (!Visible) return;
 
             Color backColor = GetBackColor();
             Color foreColor = GetForeColor();

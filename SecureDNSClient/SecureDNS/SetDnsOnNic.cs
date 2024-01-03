@@ -3,6 +3,7 @@ using MsmhToolsClass;
 using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
+using static MsmhToolsClass.NetworkInterfaces;
 
 namespace SecureDNSClient;
 
@@ -26,7 +27,7 @@ public class SetDnsOnNic
     private void AddOrUpdate(NetworkInterface nic, bool isSet)
     {
         //NetworkInterfaces nis = new(nic.Name);
-        //isSet = nis.DnsAddresses.Any() && nis.DnsAddresses[0].Equals(IPAddress.Loopback.ToString()); // Only works on Win 11
+        //isSet = nis.DnsAddresses.Any() && nis.DnsAddresses[0].Equals(IPAddress.Loopback.ToString());
 
         bool exist = false;
 
@@ -213,39 +214,68 @@ public class SetDnsOnNic
         }
     }
 
-    public bool IsDnsSet()
+    public bool IsDnsSet(bool alsoDetectUnset)
     {
-        bool isDnsSet = false;
+        bool isAnyDnsSet = false;
         for (int n = 0; n < DnsOnNics.Count; n++)
             if (DnsOnNics[n].IsSet)
             {
-                isDnsSet = true; break;
+                isAnyDnsSet = true; break;
             }
 
+        // Detect If DNS Get Unset By Another App
+        bool detectUnset = alsoDetectUnset;
+
+        // Detect If DNS Get Set By Another App
+        bool detectSet = !isAnyDnsSet;
+
+        bool detectChanges = detectUnset || detectSet;
+
         // If User Set DNS Outside Of SDC Detect It
-        if (!isDnsSet)
+        if (detectChanges)
         {
-            bool isUnknownDnsSet = NetworkTool.IsDnsSetToLocal(out _, out string dnsIp);
-            if (isUnknownDnsSet)
+            bool isUnknownDnsSet = NetworkTool.IsDnsSetToLocal(out _, out _);
+            if (detectUnset || isUnknownDnsSet)
             {
-                // We Need To Get The New NIC With New Properties
-                List<string> nics = NetworkInterfaces.GetAllNetworkInterfaces(true);
-                for (int n = 0; n < nics.Count; n++)
+                try
                 {
-                    NetworkInterface? nic = NetworkTool.GetNICByName(nics[n]);
-                    if (nic != null)
+                    // We Need To Get The New NIC With New Properties
+                    List<NICResult> nics = GetAllNetworkInterfaces();
+                    for (int n = 0; n < nics.Count; n++)
                     {
-                        IPAddressCollection dnss = nic.GetIPProperties().DnsAddresses;
-                        if (dnss.Count > 0 && dnss[0].ToString().Equals(dnsIp))
+                        NICResult nicResult = nics[n];
+                        if (!nicResult.IsUpAndRunning) continue;
+                        NetworkInterface? nic = NetworkTool.GetNICByName(nicResult.NIC);
+                        if (nic != null)
                         {
-                            AddOrUpdate(nic, true);
+                            IPAddressCollection dnss = nic.GetIPProperties().DnsAddresses;
+                            if (dnss.Count > 0)
+                            {
+                                bool isSet = dnss[0].ToString().Equals(IPAddress.Loopback.ToString());
+                                if (!detectUnset)
+                                {
+                                    if (isSet) AddOrUpdate(nic, true);
+                                }
+                                else
+                                {
+                                    AddOrUpdate(nic, isSet);
+                                }
+                            }
                         }
                     }
                 }
+                catch (Exception) { }
             }
-        }
 
-        return isDnsSet;
+            isAnyDnsSet = false;
+            for (int n = 0; n < DnsOnNics.Count; n++)
+                if (DnsOnNics[n].IsSet)
+                {
+                    isAnyDnsSet = true; break;
+                }
+        }
+        
+        return isAnyDnsSet;
     }
 
     public bool IsDnsSet(NetworkInterface nic)

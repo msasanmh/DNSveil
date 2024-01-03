@@ -15,6 +15,8 @@ public partial class FormDnsLookup : Form
     private readonly Settings AppSettings;
     private List<string> ResultList = new();
     private int PID = -1;
+    private bool IsExiting { get; set; } = false;
+    private bool IsExitDone { get; set; } = false;
 
     public FormDnsLookup()
     {
@@ -47,12 +49,14 @@ public partial class FormDnsLookup : Form
 
         CustomTextBoxResult.Text = string.Empty;
 
-        Shown -= FormDnsLookup_Shown;
-        Shown += FormDnsLookup_Shown;
+        FixScreenDpi();
     }
 
-    private void FormDnsLookup_Shown(object? sender, EventArgs e)
+    private async void FixScreenDpi()
     {
+        // Setting Width Of Controls
+        await FormMain.SettingWidthOfControls(this);
+
         // Fix Controls Location
         int shw = TextRenderer.MeasureText("I", Font).Width;
         int spaceBottom = 10, spaceRight = 12, spaceV = 6, spaceH = shw;
@@ -114,13 +118,14 @@ public partial class FormDnsLookup : Form
 
         CustomTextBoxSUBNET.Left = CustomLabelSUBNET.Right + spaceH;
         CustomTextBoxSUBNET.Top = CustomTextBoxCLASS.Top;
+        CustomTextBoxSUBNET.Width = ClientRectangle.Width - CustomTextBoxSUBNET.Left - spaceRight;
 
         CustomLabelEDNSOPT.Left = spaceRight;
         CustomLabelEDNSOPT.Top = CustomTextBoxSUBNET.Bottom + spaceV;
 
         CustomTextBoxEDNSOPT.Left = CustomLabelEDNSOPT.Right + spaceH;
         CustomTextBoxEDNSOPT.Top = CustomLabelEDNSOPT.Top - 2;
-        CustomTextBoxEDNSOPT.Width = ClientRectangle.Width - CustomTextBoxEDNSOPT.Left - CustomButtonLookup.Width - spaceH - spaceRight;
+        CustomTextBoxEDNSOPT.Width = ClientRectangle.Width - CustomTextBoxEDNSOPT.Left - spaceRight;
 
         CustomTextBoxResult.Left = spaceRight;
         CustomTextBoxResult.Top = CustomTextBoxEDNSOPT.Bottom + spaceV;
@@ -295,8 +300,11 @@ public partial class FormDnsLookup : Form
 
     private async void FormDnsLookup_FormClosing(object sender, FormClosingEventArgs e)
     {
-        if (e.CloseReason == CloseReason.UserClosing || e.CloseReason == CloseReason.WindowsShutDown)
+        if (!IsExiting)
         {
+            e.Cancel = true;
+            IsExiting = true;
+
             CustomTextBoxResult.Text = string.Empty;
 
             // Select Control type and properties to save
@@ -310,6 +318,21 @@ public partial class FormDnsLookup : Form
 
             // Save Application Settings
             await AppSettings.SaveAsync(SettingsXmlPath);
+            await Task.Delay(100);
+            IsExitDone = true;
+
+            e.Cancel = false;
+            Close();
+        }
+        else
+        {
+            if (!IsExitDone)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Dispose();
         }
     }
 

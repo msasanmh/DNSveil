@@ -7,76 +7,101 @@ public partial class FormMain
 {
     private async void SetProxy(bool unset = false)
     {
-        if (!IsProxySet)
+        if (IsAnotherProxySet)
         {
-            // Set Proxy
-            if (unset) return;
-
-            // Write Let Proxy Start to log
-            if (IsProxyActivating)
-            {
-                string msg = "Let Proxy Start." + NL;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Orange));
-                return;
-            }
-
-            // Write Enable Proxy first to log
-            if (!IsProxyRunning)
-            {
-                string msg = "Enable Proxy first." + NL;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                return;
-            }
-
-            // Get IP:Port
-            string ip = IPAddress.Loopback.ToString();
-            int port = ProxyPort != -1 ? ProxyPort : GetProxyPortSetting();
-
-            // Start Set Proxy
-            await SetProxyInternalAsync();
-
+            // Unset Another Proxy
+            NetworkTool.UnsetProxy(false, true);
             await Task.Delay(300); // Wait a moment
 
-            IsProxySet = UpdateBoolIsProxySet();
-            if (IsProxySet)
+            IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+            IsAnotherProxySet = isAnotherProxySet;
+            CurrentSystemProxy = currentSystemProxy;
+            if (!IsAnotherProxySet)
             {
-                // Write Set Proxy message to log
-                string msg1 = "Proxy Server ";
-                string msg2 = $"{ip}:{port}";
-                string msg3 = " set to system.";
-                CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
-                CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
-                CustomRichTextBoxLog.AppendText(msg3 + NL, Color.LightGray);
+                // Write Unset Proxy message to log
+                string msg = $"Proxy Server ({CurrentSystemProxy}) removed from system.";
+                CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray);
             }
             else
             {
-                // Write Set Proxy error to log
-                string msg = "Couldn't set Proxy Server to system.";
+                // Write Unset Proxy error to log
+                string msg = $"Couldn't unset Proxy Server ({CurrentSystemProxy}) from system.";
                 CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
             }
         }
         else
         {
-            // Unset Proxy
-            NetworkTool.UnsetProxy(false, true);
-
-            await Task.Delay(300); // Wait a moment
-
-            bool isProxySet = NetworkTool.IsProxySet(out string _, out string _, out string _, out string _);
-            if (!isProxySet)
+            if (!IsProxySet)
             {
-                // Update bool
-                IsProxySet = false;
+                // Set Proxy
+                if (unset) return;
 
-                // Write Unset Proxy message to log
-                string msg1 = "Proxy Server removed from system.";
-                CustomRichTextBoxLog.AppendText(msg1 + NL, Color.LightGray);
+                // Write Let Proxy Start to log
+                if (IsProxyActivating)
+                {
+                    string msg = "Let Proxy Start." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Orange));
+                    return;
+                }
+
+                // Write Enable Proxy first to log
+                if (!IsProxyRunning)
+                {
+                    string msg = "Enable Proxy first." + NL;
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                    return;
+                }
+
+                // Get IP:Port
+                string ip = IPAddress.Loopback.ToString();
+                int port = ProxyPort != -1 ? ProxyPort : GetProxyPortSetting();
+
+                // Start Set Proxy
+                await SetProxyInternalAsync();
+
+                await Task.Delay(300); // Wait a moment
+
+                IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+                IsAnotherProxySet = isAnotherProxySet;
+                CurrentSystemProxy = currentSystemProxy;
+                if (IsProxySet)
+                {
+                    // Write Set Proxy message to log
+                    string msg1 = "Proxy Server ";
+                    string msg2 = $"{ip}:{port}";
+                    string msg3 = " set to system.";
+                    CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
+                    CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
+                    CustomRichTextBoxLog.AppendText(msg3 + NL, Color.LightGray);
+                }
+                else
+                {
+                    // Write Set Proxy error to log
+                    string msg = "Couldn't set Proxy Server to system.";
+                    CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+                }
             }
             else
             {
-                // Write Unset Proxy error to log
-                string msg = "Couldn't unset Proxy Server from system.";
-                CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+                // Unset Proxy
+                NetworkTool.UnsetProxy(false, true);
+                await Task.Delay(300); // Wait a moment
+
+                IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+                IsAnotherProxySet = isAnotherProxySet;
+                CurrentSystemProxy = currentSystemProxy;
+                if (!IsProxySet)
+                {
+                    // Write Unset Proxy message to log
+                    string msg = $"Proxy Server ({CurrentSystemProxy}) removed from system.";
+                    CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray);
+                }
+                else
+                {
+                    // Write Unset Proxy error to log
+                    string msg = $"Couldn't unset Proxy Server ({CurrentSystemProxy}) from system.";
+                    CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+                }
             }
         }
 

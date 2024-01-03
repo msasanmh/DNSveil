@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Copyright>MSasanMH</Copyright>
     <Product>SDC - Secure DNS Client</Product>
-    <Version>$(VersionPrefix)2.8.2</Version>
+    <Version>$(VersionPrefix)2.8.5</Version>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
     <Platforms>AnyCPU;x64;x86</Platforms>
@@ -65,11 +65,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ae.Dns.Client" Version="2.0.0" />
-    <PackageReference Include="Ae.Dns.Server" Version="2.0.0" />
-    <PackageReference Include="ARSoft.Tools.Net" Version="3.5.0" />
-    <PackageReference Include="System.Management" Version="8.0.0-preview.4.23259.5" />
-    <PackageReference Include="TaskScheduler" Version="2.10.1" />
+    <PackageReference Include="Ae.Dns.Client" Version="2.1.0" />
+    <PackageReference Include="Ae.Dns.Server" Version="2.1.0" />
+    <PackageReference Include="ARSoft.Tools.Net" Version="3.6.0" />
   </ItemGroup>
 
   <ItemGroup>

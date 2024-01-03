@@ -385,13 +385,22 @@ public partial class FormMain
         {
             if (IsExiting)
             {
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Full Flushing DNS...{NL}", Color.LightGray));
-                await Task.Run(async () => await FlushDnsOnExit(false));
+                if (!IsDnsFullFlushed)
+                {
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Full Flushing DNS...{NL}", Color.LightGray));
+                    await Task.Run(async () => await FlushDnsOnExit(false));
+                    IsDnsFlushed = true;
+                    IsDnsFullFlushed = true;
+                }
             }
             else
             {
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flushing DNS...{NL}", Color.LightGray));
-                await FlushDNS(false, false);
+                if (!IsDnsFlushed)
+                {
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flushing DNS...{NL}", Color.LightGray));
+                    await FlushDNS(false, false);
+                    IsDnsFlushed = true;
+                }
             }
         }
 

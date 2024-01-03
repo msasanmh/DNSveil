@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Reflection;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace SDCProxyServer;
 
@@ -27,7 +26,7 @@ public static partial class Program
     private const bool DefaultBlockPort80 = true;
     // Defaults SSL Settings
     private const bool DefaultSSLEnable = false;
-    private const bool DefaultSSLChangeSniToIP = false;
+    private const bool DefaultSSLChangeSni = false;
     // Defaults Dns
     private const int DefaultDnsTimeoutSec = 3;
     private const int DefaultDnsTimeoutSecMin = 2;
@@ -60,6 +59,7 @@ public static partial class Program
     private static ProxyProgram.UpStreamProxy UpStreamProxyProgram { get; set; } = new();
     private static ProxyProgram.Dns DnsProgram { get; set; } = new();
     private static ProxyProgram.FakeDns FakeDnsProgram { get; set; } = new();
+    private static ProxyProgram.FakeSni FakeSniProgram { get; set; } = new();
     private static ProxyProgram.BlackWhiteList BWListProgram { get; set; } = new();
     private static ProxyProgram.DontBypass DontBypassProgram { get; set; } = new();
 
@@ -182,7 +182,7 @@ public static partial class Program
         mainDetails += $"{ProxyServer.BWListProgram.ListMode}|"; // 11
         mainDetails += $"{ProxyServer.DontBypassProgram.DontBypassMode}|"; // 12
         mainDetails += $"{ProxyServer.SettingsSSL_.EnableSSL}|"; // 13
-        mainDetails += $"{ProxyServer.SettingsSSL_.ChangeSniToIP}"; // 14
+        mainDetails += $"{ProxyServer.SettingsSSL_.ChangeSni}"; // 14
 
         WriteToStdout(mainDetails);
     }
@@ -238,7 +238,11 @@ public static partial class Program
             msg += $"\nRootCA_KeyPath:";
             msg += $"\n{ProxyServer.SettingsSSL_.RootCA_KeyPath}";
         }
-        msg += $"\nChange SNI To IP: {ProxyServer.SettingsSSL_.ChangeSniToIP}";
+        msg += $"\nChange SNI: {ProxyServer.SettingsSSL_.ChangeSni}";
+        if (!string.IsNullOrEmpty(ProxyServer.SettingsSSL_.DefaultSni) && !string.IsNullOrWhiteSpace(ProxyServer.SettingsSSL_.DefaultSni))
+            msg += $"\nDefault SNI: {ProxyServer.SettingsSSL_.DefaultSni}";
+        else
+            msg += "\nDefault SNI: Empty (Original SNI Will Be Used)";
         WriteToStdout(msg, ConsoleColor.Blue);
 
         // Save Command To List
@@ -246,7 +250,8 @@ public static partial class Program
         string cmd = $"{baseCmd} -{Key.SSLSetting.Enable}={ProxyServer.SettingsSSL_.EnableSSL}";
         cmd += $" -{Key.SSLSetting.RootCA_Path}=\"{ProxyServer.SettingsSSL_.RootCA_Path}\"";
         cmd += $" -{Key.SSLSetting.RootCA_KeyPath}=\"{ProxyServer.SettingsSSL_.RootCA_KeyPath}\"";
-        cmd += $" -{Key.SSLSetting.ChangeSniToIP}={ProxyServer.SettingsSSL_.ChangeSniToIP}";
+        cmd += $" -{Key.SSLSetting.ChangeSni}={ProxyServer.SettingsSSL_.ChangeSni}";
+        cmd += $" -{Key.SSLSetting.DefaultSni}={ProxyServer.SettingsSSL_.DefaultSni}";
         LoadCommands.AddCommand(baseCmd, cmd);
     }
 
@@ -360,6 +365,19 @@ public static partial class Program
         LoadCommands.AddCommand(baseCmd, cmd);
     }
 
+    private static void ShowFakeSniMsg()
+    {
+        WriteToStdout($"\n{Key.Programs.FakeSni.Name} Mode: {FakeSniProgram.FakeSniMode}", ConsoleColor.Green);
+        if (FakeSniProgram.FakeSniMode != ProxyProgram.FakeSni.Mode.Disable)
+            WriteToStdout($"Rules:\n{FakeSniProgram.PathOrText}", ConsoleColor.Green);
+
+        // Save Command To List
+        string baseCmd = $"{Key.Programs.Name} {Key.Programs.FakeSni.Name}";
+        string cmd = $"{baseCmd} -{Key.Programs.FakeSni.Mode.Name}={FakeSniProgram.FakeSniMode}";
+        cmd += $" -{Key.Programs.FakeSni.PathOrText}=\"{FakeSniProgram.PathOrText.Replace(Environment.NewLine, "\\n")}\"";
+        LoadCommands.AddCommand(baseCmd, cmd);
+    }
+
     private static void ShowUpStreamProxyMsg()
     {
         string result = $"\n{Key.Programs.UpStreamProxy.Name} Mode: {UpStreamProxyProgram.UpStreamMode}";
@@ -391,6 +409,7 @@ public static partial class Program
         ShowDontBypassMsg();
         ShowDpiBypassMsg();
         ShowFakeDnsMsg();
+        ShowFakeSniMsg();
         ShowUpStreamProxyMsg();
     }
 

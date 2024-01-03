@@ -57,22 +57,22 @@
 
                         <Border Grid.Row="3">
                             <Grid RowDefinitions="*" ColumnDefinitions="200,*" HeightRequest="50">
-                                <Label Grid.Row="0" Grid.Column="0" VerticalOptions="Center" Text=" HTTP Proxy: " />
-                                <Label Grid.Row="0" Grid.Column="1" VerticalOptions="Center" x:Name="labelStatusHttpProxy" Text="Inactive" />
+                                <Label Grid.Row="0" Grid.Column="0" VerticalOptions="Center" Text=" Proxy: " />
+                                <Label Grid.Row="0" Grid.Column="1" VerticalOptions="Center" x:Name="labelStatusProxy" Text="Inactive" />
                             </Grid>
                         </Border>
 
                         <Border Grid.Row="4">
                             <Grid RowDefinitions="*" ColumnDefinitions="200,*" HeightRequest="50">
                                 <Label Grid.Row="0" Grid.Column="0" VerticalOptions="Center" Text=" Proxy Requests: " />
-                                <Label Grid.Row="0" Grid.Column="1" VerticalOptions="Center" x:Name="labelStatusHttpProxyRequests" Text="0 of 250" />
+                                <Label Grid.Row="0" Grid.Column="1" VerticalOptions="Center" x:Name="labelStatusProxyRequests" Text="0" />
                             </Grid>
                         </Border>
 
                         <Border Grid.Row="5">
                             <Grid RowDefinitions="*" ColumnDefinitions="200,*" HeightRequest="50">
                                 <Label Grid.Row="0" Grid.Column="0" VerticalOptions="Center" Text=" Proxy DPI Bypass: " />
-                                <Label Grid.Row="0" Grid.Column="1" VerticalOptions="Center" x:Name="labelStatusHttpProxyDpiBypass" Text="Inactive" />
+                                <Label Grid.Row="0" Grid.Column="1" VerticalOptions="Center" x:Name="labelStatusProxyDpiBypass" Text="Inactive" />
                             </Grid>
                         </Border>
 

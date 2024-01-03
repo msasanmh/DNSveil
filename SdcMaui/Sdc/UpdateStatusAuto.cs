@@ -1,6 +1,8 @@
 ﻿using Ae.Dns.Client;
 using Ae.Dns.Protocol;
 using Microsoft.Maui.Devices.Sensors;
+using Plugin.LocalNotification.AndroidOption;
+using Plugin.LocalNotification;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,10 +22,13 @@ namespace SdcMaui
                 while (true)
                 {
                     await Task.Delay(500);
-                    Dispatcher.Dispatch(() =>
+                    Dispatcher.Dispatch(async () =>
                     {
                         // Fix Word wrap Bug
                         labelStatus.WidthRequest = Width;
+
+                        // Update bool Is DNS Server Running
+                        IsDnsServerRunning = CancelTokenDnsServer != null && !CancelTokenDnsServer.IsCancellationRequested;
 
                         // Update Working Servers
                         labelStatusWorkingServers.TextColor = Colors.DodgerBlue;
@@ -50,20 +55,20 @@ namespace SdcMaui
                         // Update Proxy Status
                         if (IsProxyActive)
                         {
-                            labelStatusHttpProxy.TextColor = Colors.MediumSeaGreen;
-                            labelStatusHttpProxy.Text = "Active";
+                            labelStatusProxy.TextColor = Colors.MediumSeaGreen;
+                            labelStatusProxy.Text = "Active";
                         }
                         else
                         {
-                            labelStatusHttpProxy.TextColor = Colors.IndianRed;
-                            labelStatusHttpProxy.Text = "Inactive";
+                            labelStatusProxy.TextColor = Colors.IndianRed;
+                            labelStatusProxy.Text = "Inactive";
                         }
 
-                        labelStatusHttpProxyRequests.TextColor = Colors.DodgerBlue;
-                        labelStatusHttpProxyRequests.Text = $"{ProxyRequests} of {ProxyMaxRequests}";
+                        labelStatusProxyRequests.TextColor = Colors.DodgerBlue;
+                        labelStatusProxyRequests.Text = $"{ProxyRequests} of {ProxyMaxRequests}";
 
-                        labelStatusHttpProxyDpiBypass.TextColor = IsProxyDpiBypassActive ? Colors.MediumSeaGreen : Colors.IndianRed;
-                        labelStatusHttpProxyDpiBypass.Text = IsProxyDpiBypassActive ? "Active" : "Inactive";
+                        labelStatusProxyDpiBypass.TextColor = IsProxyDpiBypassActive ? Colors.MediumSeaGreen : Colors.IndianRed;
+                        labelStatusProxyDpiBypass.Text = IsProxyDpiBypassActive ? "Active" : "Inactive";
 
                         // Check Button Text
                         if (StopChecking)
@@ -81,7 +86,37 @@ namespace SdcMaui
                         // Connect Button Text
                         if (IsDisconnecting) BtnConnect.Text = "Disconnecting...";
                         else if (IsConnecting) BtnConnect.Text = "Connecting...";
-                        else BtnConnect.Text = IsDnsConnected ? "Disconnect" : "Connect";
+                        else BtnConnect.Text = IsDnsServerRunning ? "Disconnect" : "Connect";
+
+
+                        if (IsDnsServerRunning)
+                        {
+                            string msg = $"DNS Latency: {LocalDnsLatency} ms.{NL}";
+                            string proxyActive = IsProxyActive ? "Active." : "Inactive.";
+                            msg += $"Proxy: {proxyActive}{NL}";
+                            string dpiBypassActive = IsProxyDpiBypassActive ? "Active." : "Inactive.";
+                            msg += $"DPI Bypass: {dpiBypassActive}";
+
+                            NotificationRequest request = new()
+                            {
+                                NotificationId = MainNotificationId,
+                                Title = "SDC",
+                                Subtitle = "Secure DNS Client",
+                                Description = msg,
+                                Silent = true,
+                                Android = new AndroidOptions
+                                {
+                                    Ongoing = true,
+                                    AutoCancel = false,
+                                }
+                            };
+
+                            await LocalNotificationCenter.Current.Show(request);
+                        }
+                        else
+                        {
+                            LocalNotificationCenter.Current.ClearAll();
+                        }
                     });
                 }
             });

@@ -21,7 +21,7 @@ public class CamouflageDNSServer
         Port = port;
         DohUrl = dohUrl.Trim();
         DohCleanIP = dohCleanIP.Trim();
-        NetworkTool.GetUrlDetails(dohUrl.Trim(), 443, out _, out string host, out _, out int dohPort, out string _, out bool _);
+        NetworkTool.GetUrlDetails(dohUrl.Trim(), 443, out _, out string host, out _, out _, out int dohPort, out string _, out bool _);
         DohHost = host;
         DohPort = dohPort;
     }

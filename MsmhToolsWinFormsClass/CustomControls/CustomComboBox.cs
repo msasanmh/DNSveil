@@ -254,6 +254,7 @@ namespace CustomControls
         protected override void OnPaint(PaintEventArgs e)
         {
             if (!ApplicationIdle) return;
+            if (!Visible) return;
 
             Color backColor = GetBackColor();
             Color foreColor = GetForeColor();
@@ -360,6 +361,8 @@ namespace CustomControls
 
         protected override void OnDrawItem(DrawItemEventArgs e)
         {
+            if (!Visible) return;
+
             Graphics g = e.Graphics;
             Rectangle rect = e.Bounds;
 

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MsmhToolsClass.ProxyServerPrograms;
+﻿namespace MsmhToolsClass.ProxyServerPrograms;
 
 public partial class ProxyProgram
 {
@@ -16,7 +14,7 @@ public partial class ProxyProgram
         public Mode FakeDnsMode { get; private set; } = Mode.Disable;
         public string PathOrText { get; private set; } = string.Empty;
         public string TextContent { get; private set; } = string.Empty;
-        private List<string> HostIpList { get; set; } = new();
+        private List<string> Host_Ip_List { get; set; } = new();
 
         public FakeDns() { }
 
@@ -38,10 +36,7 @@ public partial class ProxyProgram
                 {
                     TextContent = File.ReadAllText(Path.GetFullPath(filePathOrText));
                 }
-                catch (Exception)
-                {
-                    // do nothing
-                }
+                catch (Exception) { }
             }
             else if (FakeDnsMode == Mode.Text)
                 TextContent = filePathOrText;
@@ -49,7 +44,7 @@ public partial class ProxyProgram
             if (!string.IsNullOrEmpty(TextContent) || !string.IsNullOrWhiteSpace(TextContent))
             {
                 TextContent += Environment.NewLine;
-                HostIpList = TextContent.SplitToLines();
+                Host_Ip_List = TextContent.SplitToLines();
             }
         }
 
@@ -57,13 +52,15 @@ public partial class ProxyProgram
         {
             string destHostnameNoWWW = destHostname;
             if (destHostnameNoWWW.StartsWith("www."))
-                destHostnameNoWWW = destHostnameNoWWW.Replace("www.", string.Empty);
+                destHostnameNoWWW = destHostnameNoWWW.TrimStart("www.");
 
-            if (HostIpList.Any())
+            if (destHostnameNoWWW.EndsWith('/')) destHostnameNoWWW = destHostnameNoWWW[0..^1];
+
+            if (Host_Ip_List.Any())
             {
-                for (int n = 0; n < HostIpList.Count; n++)
+                for (int n = 0; n < Host_Ip_List.Count; n++)
                 {
-                    string hostIP = HostIpList[n].Trim();
+                    string hostIP = Host_Ip_List[n].Trim();
                     if (!string.IsNullOrEmpty(hostIP))
                         if (split(hostIP, out string destIP))
                             return destIP;
@@ -81,60 +78,40 @@ public partial class ProxyProgram
                 }
                 else
                 {
-                    if (hostIP.Contains('|'))
+                    try
                     {
-                        string[] split = hostIP.Split('|');
-                        string host = split[0].Trim();
-                        if (host.StartsWith("www."))
-                            host = host.Replace("www.", string.Empty);
-                        string ip = split[1].Trim();
-
-                        if (!host.StartsWith("*."))
+                        if (hostIP.Contains('|'))
                         {
-                            // No Wildcard
-                            if (destHostnameNoWWW.Equals(host))
+                            string[] split = hostIP.Split('|');
+                            string host = split[0].Trim();
+                            if (host.StartsWith("www.")) host = host.TrimStart("www.");
+                            string ip = split[1].Trim(); // IP or Fake SNI
+
+                            if (!host.StartsWith("*."))
                             {
-                                destIP = ip; return true;
+                                // No Wildcard
+                                if (host.Equals(destHostnameNoWWW))
+                                {
+                                    destIP = ip; return true;
+                                }
                             }
                             else
                             {
-                                destIP = destHostname; return false;
-                            }
-                        }
-                        else
-                        {
-                            // Wildcard
-                            string destMainHost = string.Empty;
-                            string[] splitByDot = destHostnameNoWWW.Split('.');
-
-                            if (splitByDot.Length >= 3)
-                            {
+                                // Wildcard
                                 host = host[2..];
+                                string hostWithDot = $".{host}";
 
-                                for (int n = 1; n < splitByDot.Length; n++)
-                                    destMainHost += $"{splitByDot[n]}.";
-                                if (destMainHost.EndsWith('.')) destMainHost = destMainHost[0..^1];
-
-                                if (destMainHost.Equals(host))
+                                if (!destHostnameNoWWW.Equals(host) && destHostnameNoWWW.EndsWith(hostWithDot))
                                 {
                                     destIP = ip;
                                     return true;
                                 }
-                                else
-                                {
-                                    destIP = destHostname; return false;
-                                }
-                            }
-                            else
-                            {
-                                destIP = destHostname; return false;
                             }
                         }
                     }
-                    else
-                    {
-                        destIP = destHostname; return false;
-                    }
+                    catch (Exception) { }
+
+                    destIP = destHostname; return false;
                 }
             }
         }

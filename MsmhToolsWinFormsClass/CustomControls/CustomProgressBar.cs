@@ -174,6 +174,7 @@ namespace CustomControls
             try
             {
                 if (!ApplicationIdle) return;
+                if (!Visible) return;
 
                 Color backColor = GetBackColor();
                 Color foreColor = GetForeColor();

@@ -48,34 +48,28 @@ public static class ExtensionsMethods
     public static string TrimStart(this string source, string value)
     {
         string result = source;
-        if (result.StartsWith(value))
+        try
         {
-            try
+            if (result.StartsWith(value))
             {
                 result = result[value.Length..];
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
         }
+        catch (Exception) { }
         return result;
     }
     //-----------------------------------------------------------------------------------
     public static string TrimEnd(this string source, string value)
     {
         string result = source;
-        if (result.EndsWith(value))
+        try
         {
-            try
+            if (result.EndsWith(value))
             {
                 result = result.Remove(source.LastIndexOf(value, StringComparison.Ordinal));
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
         }
+        catch (Exception) { }
         return result;
     }
     //-----------------------------------------------------------------------------------

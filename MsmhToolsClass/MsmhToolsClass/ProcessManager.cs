@@ -29,7 +29,7 @@ public static class ProcessManager
     /// <returns>Returns -1 if fail</returns>
     public static async Task<float> GetCpuUsage(int pid, int delay)
     {
-        //if (!FindProcessByPID(pid))
+        if (pid < 0) return -1;
         string processName = GetProcessNameByPID(pid);
         if (!string.IsNullOrEmpty(processName))
             return await GetCpuUsage(processName, delay);
@@ -527,6 +527,7 @@ public static class ProcessManager
     public static string GetProcessNameByPID(int pid)
     {
         string result = string.Empty;
+        if (pid < 0) return result;
 
         Process[] processes = Process.GetProcesses();
         for (int n = 0; n < processes.Length; n++)

@@ -263,14 +263,13 @@ public class ProxyClientSSL
             //ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
             static bool callback(object sender, X509Certificate? cert, X509Chain? chain, SslPolicyErrors sslPolicyErrors) => true;
             SslProtocols protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
-            
-            string pass = Guid.NewGuid().ToString();
 
+            string pass = Guid.NewGuid().ToString();
             List<string> domains = new()
             {
-                req.AddressOrig, req.Address
+                req.AddressOrig, req.Address, req.AddressSNI
             };
-            string certSubject = MsmhProxyServer.GetWildCardDomainName(req.AddressOrig);
+            string certSubject = CommonTools.GetWildCardDomainName(req.AddressOrig);
             X509Certificate2 certificate = CertificateTool.GenerateCertificateByIssuer(SettingsSSL_.RootCA, domains, certSubject, out RSA privateKey);
             if (!certificate.HasPrivateKey)
                 certificate = certificate.CopyWithPrivateKey(privateKey);
@@ -294,15 +293,22 @@ public class ProxyClientSSL
             //===== Client Authentication
             SslStream sslStreamRemote = new(remoteStream, false, callback, null);
             SslClientAuthenticationOptions optionsClient = new();
-            
-            // Apply DontBypass Program
-            bool changeSniToIp = SettingsSSL_.ChangeSniToIP && req.ApplyDpiBypass;
 
-            // We Use IP Address As SNI Instead Of Website Address To Bypass DPI
-            if (changeSniToIp)
-                optionsClient.TargetHost = req.Address;
-            else
+            // Apply DontBypass Program
+            if (!req.ApplyDpiBypass)
                 optionsClient.TargetHost = req.AddressOrig;
+            else
+            {
+                if (SettingsSSL_.ChangeSni)
+                {
+                    // Use Fake DNS/SNI List (Change SNI) To Bypass DPI
+                    optionsClient.TargetHost = req.AddressSNI;
+                }
+                else
+                {
+                    optionsClient.TargetHost = req.AddressOrig;
+                }
+            }
 
             optionsClient.EnabledSslProtocols = protocols;
             optionsClient.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;

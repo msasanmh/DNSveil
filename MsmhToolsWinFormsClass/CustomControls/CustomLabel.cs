@@ -149,6 +149,8 @@ namespace CustomControls
 
         private void CustomLabel_Paint(object? sender, PaintEventArgs e)
         {
+            if (!Visible) return;
+
             Color backColor = GetBackColor();
             Color foreColor = GetForeColor();
             Color borderColor = GetBorderColor();

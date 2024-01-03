@@ -17,12 +17,14 @@ public partial class FormMain : Form
     public static readonly Architecture ArchProcess = RuntimeInformation.ProcessArchitecture;
     public static int UpdateAutoDelayMS { get; set; } = 500; // Default
     public static int UpdateDnsDohDelayMS { get; set; } = 500; // Default
+    private readonly CheckDns ScanDns = new(false, false, ProcessPriorityClass.Normal);
+    private string BoolsChangedText { get; set; } = string.Empty;
 
     public static ToolTip MainToolTip { get; set; } = new();
     private FormWindowState LastWindowState;
     public static readonly CustomLabel LabelScreen = new();
     private static float BaseScreenDpi = 96f; // 100%
-    private Stopwatch LabelMainStopWatch = new();
+    private readonly Stopwatch LabelMainStopWatch = new();
     private static readonly CustomLabel LabelMain = new();
     public List<Tuple<long, string>> WorkingDnsList = new();
     public List<string> SavedDnsList = new();
@@ -35,6 +37,7 @@ public partial class FormMain : Form
     private bool InternetOffline = true;
     public static bool IsInternetOnline { get; set; } = false;
     private bool Once { get; set; } = true;
+    private bool Once2 { get; set; } = true;
     public static bool IsInActionState { get; set; } = false;
     private bool IsOnStartup { get; set; } = false;
     private bool IsStartupPathOk { get; set; } = false;
@@ -60,10 +63,11 @@ public partial class FormMain : Form
     private SetDnsOnNic SetDnsOnNic_ { get; set; } = new();
     private bool DoesDNSSetOnce { get; set; } = false;
     private bool IsFlushingDns { get; set; } = false;
+    private bool IsDnsFlushed { get; set; } = false; // On Unset
+    private bool IsDnsFullFlushed { get; set; } = false; // On Exit and Tools when Dns is not set.
     private bool IsDPIActive { get; set; } = false;
     private bool IsGoodbyeDPIBasicActive { get; set; } = false;
     private bool IsGoodbyeDPIAdvancedActive { get; set; } = false;
-    private bool ConnectAllClicked { get; set; } = false;
     public static IPAddress? LocalIP { get; set; } = IPAddress.Loopback; // as default
     public Settings? AppSettings { get; set; }
     private readonly ToolStripMenuItem ToolStripMenuItemIcon = new();
@@ -115,14 +119,18 @@ public partial class FormMain : Form
     private ProxyProgram.BlackWhiteList.Mode ProxyBWListMode { get; set; } = ProxyProgram.BlackWhiteList.Mode.Disable;
     private ProxyProgram.DontBypass.Mode DontBypassMode { get; set; } = ProxyProgram.DontBypass.Mode.Disable;
     private bool IsProxySSLDecryptionActive { get; set; } = false;
-    private bool IsProxySSLChangeSniToIpActive { get; set; } = false;
+    private bool IsProxySSLChangeSniActive { get; set; } = false;
     private bool IsProxySet { get; set; } = false;
+    private bool IsAnotherProxySet { get; set; } = false;
+    private string CurrentSystemProxy { get; set; } = string.Empty;
     private static bool UpdateProxyBools { get; set; } = true;
     private string LastDpiBypassProgramCommand { get; set; } = string.Empty;
+    private string LastDefaultSni { get; set; } = string.Empty;
 
     // Fake Proxy
     private ProcessConsole FakeProxyConsole { get; set; } = new();
     private static int PIDFakeProxy { get; set; } = -1;
+    private bool IsFakeProxyActivated { get; set; } = false;
 
     // Check DPI Bypass Cancel Token
     private Task? CheckDpiBypass;
@@ -130,10 +138,16 @@ public partial class FormMain : Form
 
     // Menus
     private readonly CustomContextMenuStrip CMS = new();
+
+    // Menu: Custom Servers
     private readonly ToolStripMenuItem TsiEdit = new("Manage custom servers");
     private readonly ToolStripMenuItem TsiViewWorkingServers = new("View working servers");
     private readonly ToolStripMenuItem TsiClearWorkingServers = new("Clear working servers");
 
+    // Menu: Scan
+    private readonly ToolStripMenuItem TsiScanBuiltIn = new("Built-In Servers");
+
+    // Menu: Main Context Menu & Quick Connect Button
     private readonly ToolStripMenuItem TsiGoodbyeDpiBasic = new("Activate GoodbyeDPI Basic");
     private readonly ToolStripMenuItem TsiGoodbyeDpiAdvanced = new();
     private readonly ToolStripMenuItem TsiGoodbyeDpiDeactive = new("Deactive GoodbyeDPI");

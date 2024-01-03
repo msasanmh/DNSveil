@@ -13,7 +13,7 @@ namespace SdcMaui
     {
         public void StartProxy()
         {
-            // Apply HTTP Proxy Programs
+            // Apply Proxy Programs
             ProxyProgram.Dns dnsProgram = new();
             dnsProgram.Set(ProxyProgram.Dns.Mode.PlainDNS, $"{IPAddress.Loopback}:{DnsPort}", null, 2, null);
             ProxyServer.EnableDNS(dnsProgram);
@@ -22,7 +22,7 @@ namespace SdcMaui
             dpiBypassProgram.Set(ProxyProgram.DPIBypass.Mode.Program, DpiBeforeSniChunks, DpiChunkMode, DpiSniChunks, DpiAntiPattern, DpiFragmentDelay);
             ProxyServer.EnableStaticDPIBypass(dpiBypassProgram);
 
-            // Start HTTP Proxy
+            // Start Proxy
             if (!ProxyServer.IsRunning)
                 ProxyServer.Start(IPAddress.Any, ProxyPort, ProxyMaxRequests, 40, 0, true);
         }

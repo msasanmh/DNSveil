@@ -1,11 +1,13 @@
 using MsmhToolsClass;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace SecureDNSClient;
 
-internal static class Program
+internal static partial class Program
 {
-    internal static bool Startup = false;
+    internal static bool IsPortable = false;
+    internal static bool IsStartup = false;
     internal static int StartupDelaySec = 0; // Default
 
     /// <summary>
@@ -17,40 +19,79 @@ internal static class Program
         // Exit If It's Root Directory
         if (FileDirectory.IsRootDirectory())
         {
-            string isRoot = "Application cannot run on root directory.";
-            MessageBox.Show(isRoot, "Not Supported", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            Environment.Exit(0);
-            Application.Exit();
-            return;
+            try
+            {
+                string isRoot = "Application cannot run on root directory.";
+                MessageBox.Show(isRoot, "Not Supported", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Environment.Exit(0);
+                Application.Exit();
+                return;
+            }
+            catch (Exception) { }
         }
 
-        string[] args = Environment.GetCommandLineArgs();
-        if (args.Any())
+        try
         {
-            if (args.Length >= 2)
+            string[] args = Environment.GetCommandLineArgs();
+            bool oldCli = false;
+            if (args.Any())
             {
-                string su = args[1].Trim().ToLower();
-                if (su.Equals("startup")) Startup = true;
-            }
+                // Support Old Cli
+                if (args.Length >= 2)
+                {
+                    string su = args[1].Trim().ToLower();
+                    if (su.Equals("startup"))
+                    {
+                        IsPortable = true;
+                        IsStartup = true;
+                        oldCli = true;
+                    }
+                }
 
-            if (args.Length >= 3)
-            {
-                string d = args[2].Trim().ToLower();
-                bool isInt = int.TryParse(d, out int value);
-                if (isInt) StartupDelaySec = value;
+                if (oldCli && args.Length >= 3)
+                {
+                    string d = args[2].Trim().ToLower();
+                    bool isInt = int.TryParse(d, out int value);
+                    if (isInt) StartupDelaySec = value;
+                }
+
+                // New Cli
+                if (!oldCli)
+                {
+                    for (int n = 0; n < args.Length; n++)
+                    {
+                        string arg = args[n].ToLower().Trim(); // e.g. -IsStartup=True
+
+                        KeyValue kv = GetValue(arg);
+                        if (string.IsNullOrEmpty(kv.Key)) continue;
+                        if (kv.Key.Equals(Key.IsPortable, StringComparison.InvariantCultureIgnoreCase) && kv.Type == typeof(bool)) IsPortable = kv.ValueBool;
+                        if (kv.Key.Equals(Key.IsStartup, StringComparison.InvariantCultureIgnoreCase) && kv.Type == typeof(bool)) IsStartup = kv.ValueBool;
+                        if (kv.Key.Equals(Key.StartupDelaySec, StringComparison.InvariantCultureIgnoreCase) && kv.Type == typeof(int)) StartupDelaySec = kv.ValueInt;
+                    }
+                }
             }
         }
-        
+        catch (Exception) { }
+
+#if DEBUG
+        Debug.WriteLine("=========");
+        Debug.WriteLine("Is Portable: " + IsPortable);
+        Debug.WriteLine("Is Startup: " + IsStartup);
+        Debug.WriteLine("Startup Delay: " + StartupDelaySec);
+        Debug.WriteLine("=========");
+#endif
+
         // To customize application configuration such as set high DPI settings or default font,
         // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
         // Prevent multiple instances
-        using Mutex mutex = new(false, Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName);
+        string productName = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName ?? "SDC - Secure DNS Client";
+        using Mutex mutex = new(false, productName);
         if (!mutex.WaitOne(0, true))
         {
-            MessageBox.Show($"{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName} is already running.");
+            MessageBox.Show($"{productName} is already running.");
             Environment.Exit(0);
             Application.Exit();
             return;

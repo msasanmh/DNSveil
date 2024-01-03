@@ -271,7 +271,8 @@ namespace CustomControls
 
         private void CustomPanel_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false) return;
+            if (!ApplicationIdle) return;
+            if (!Visible) return;
 
             Rectangle rect = new(0, 0, ClientRectangle.Width, ClientRectangle.Height);
 

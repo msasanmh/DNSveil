@@ -222,6 +222,8 @@ namespace CustomControls
 
         private void CustomMenuStrip_Paint(object? sender, PaintEventArgs e)
         {
+            if (!Visible) return;
+
             if (Border)
             {
                 // Menu Strip Border

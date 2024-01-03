@@ -863,14 +863,20 @@ public class NetworkInterfaces
         }
     }
 
+    public class NICResult
+    {
+        public string NIC { get; set; } = string.Empty;
+        public bool IsUpAndRunning { get; set; } = false;
+    }
+
     /// <summary>
     /// Get All Network Interfaces
     /// </summary>
     /// <returns>A List of NIC Names (NetConnectionID)</returns>
-    public static List<string> GetAllNetworkInterfaces(bool upAndRunning)
+    public static List<NICResult> GetAllNetworkInterfaces()
     {
-        List<string> nicNames = new();
-        if (!OperatingSystem.IsWindows()) return nicNames;
+        List<NICResult> nicsList = new();
+        if (!OperatingSystem.IsWindows()) return nicsList;
 
         try
         {
@@ -885,18 +891,17 @@ public class NetworkInterfaces
                 if (nnObj == null) continue;
                 string nn = nnObj.ToString() ?? string.Empty;
                 nn = nn.Trim(); // NetConnectionStatus
-                if (!string.IsNullOrEmpty(nn))
+                if (!string.IsNullOrEmpty(nn) && !string.IsNullOrWhiteSpace(nn))
                 {
                     ushort up = 0;
                     try { up = Convert.ToUInt16(m[nameof(NetConnectionStatus)]); } catch (Exception) { }
-
-                    if (upAndRunning)
+                    bool isUpAndRunning = up == 2; // Connected
+                    NICResult nic = new()
                     {
-                        if (up == 2) // Connected
-                            nicNames.Add(nn);
-                    }
-                    else
-                        nicNames.Add(nn);
+                        NIC = nn,
+                        IsUpAndRunning = isUpAndRunning
+                    };
+                    nicsList.Add(nic);
                 }
             }
         }
@@ -905,7 +910,7 @@ public class NetworkInterfaces
             Debug.WriteLine($"GetAllNetworkInterfaces: {ex.Message}");
         }
 
-        return nicNames;
+        return nicsList;
     }
     //== TEST
     private static void GetAllNetworkInterfaces22()

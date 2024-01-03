@@ -93,7 +93,7 @@
             SplitContainerMain.Panel2.Controls.Add(CustomRichTextBoxLog);
             SplitContainerMain.Panel2MinSize = 200;
             SplitContainerMain.Size = new Size(584, 561);
-            SplitContainerMain.SplitterDistance = 200;
+            SplitContainerMain.SplitterDistance = 242;
             SplitContainerMain.TabIndex = 0;
             // 
             // CustomCheckBoxCheckInsecure
@@ -108,7 +108,7 @@
             CustomCheckBoxCheckInsecure.Location = new Point(387, 134);
             CustomCheckBoxCheckInsecure.Name = "CustomCheckBoxCheckInsecure";
             CustomCheckBoxCheckInsecure.SelectionColor = Color.LightBlue;
-            CustomCheckBoxCheckInsecure.Size = new Size(179, 17);
+            CustomCheckBoxCheckInsecure.Size = new Size(174, 17);
             CustomCheckBoxCheckInsecure.TabIndex = 30;
             CustomCheckBoxCheckInsecure.Text = "Check insecure if secure fails";
             CustomCheckBoxCheckInsecure.UseVisualStyleBackColor = false;
@@ -125,7 +125,7 @@
             CustomCheckBoxClearExportData.Location = new Point(387, 111);
             CustomCheckBoxClearExportData.Name = "CustomCheckBoxClearExportData";
             CustomCheckBoxClearExportData.SelectionColor = Color.LightBlue;
-            CustomCheckBoxClearExportData.Size = new Size(189, 17);
+            CustomCheckBoxClearExportData.Size = new Size(184, 17);
             CustomCheckBoxClearExportData.TabIndex = 27;
             CustomCheckBoxClearExportData.Text = "Clear export data on new scan";
             CustomCheckBoxClearExportData.UseVisualStyleBackColor = false;
@@ -139,7 +139,7 @@
             CustomCheckBoxSmartDNS.Location = new Point(12, 102);
             CustomCheckBoxSmartDNS.Name = "CustomCheckBoxSmartDNS";
             CustomCheckBoxSmartDNS.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSmartDNS.Size = new Size(237, 17);
+            CustomCheckBoxSmartDNS.Size = new Size(232, 17);
             CustomCheckBoxSmartDNS.TabIndex = 24;
             CustomCheckBoxSmartDNS.Text = "Select domains to check for SmartDNS:";
             CustomCheckBoxSmartDNS.UseVisualStyleBackColor = false;
@@ -267,7 +267,7 @@
             CustomNumericUpDownDnsTimeout.BorderStyle = BorderStyle.FixedSingle;
             CustomNumericUpDownDnsTimeout.DecimalPlaces = 1;
             CustomNumericUpDownDnsTimeout.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
-            CustomNumericUpDownDnsTimeout.Location = new Point(479, 163);
+            CustomNumericUpDownDnsTimeout.Location = new Point(106, 202);
             CustomNumericUpDownDnsTimeout.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownDnsTimeout.Minimum = new decimal(new int[] { 5, 0, 0, 65536 });
             CustomNumericUpDownDnsTimeout.Name = "CustomNumericUpDownDnsTimeout";
@@ -284,7 +284,7 @@
             CustomLabelDnsTimeout.BorderColor = Color.Blue;
             CustomLabelDnsTimeout.FlatStyle = FlatStyle.Flat;
             CustomLabelDnsTimeout.ForeColor = Color.White;
-            CustomLabelDnsTimeout.Location = new Point(388, 165);
+            CustomLabelDnsTimeout.Location = new Point(15, 204);
             CustomLabelDnsTimeout.Name = "CustomLabelDnsTimeout";
             CustomLabelDnsTimeout.RoundedCorners = 0;
             CustomLabelDnsTimeout.Size = new Size(85, 17);
@@ -438,7 +438,7 @@
             CustomRichTextBoxLog.SelectionLength = 0;
             CustomRichTextBoxLog.SelectionStart = 0;
             CustomRichTextBoxLog.ShortcutsEnabled = true;
-            CustomRichTextBoxLog.Size = new Size(584, 357);
+            CustomRichTextBoxLog.Size = new Size(584, 315);
             CustomRichTextBoxLog.TabIndex = 0;
             CustomRichTextBoxLog.Texts = "";
             CustomRichTextBoxLog.UnderlinedStyle = false;

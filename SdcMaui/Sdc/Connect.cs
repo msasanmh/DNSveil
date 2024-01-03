@@ -1,18 +1,18 @@
 ﻿using Ae.Dns.Client;
 using Ae.Dns.Protocol;
 using Ae.Dns.Server;
-using Microsoft.Maui.Controls.PlatformConfiguration;
+using Android.App;
+using AndroidX.Core.App;
+using Microsoft.Maui.Controls.Compatibility;
 using MsmhToolsClass.DnsTool;
 using MsmhToolsClass.MsmhProxyServer;
 using MsmhToolsClass.ProxyServerPrograms;
-using System;
-using System.Collections;
-using System.Collections.Generic;
+using Plugin.LocalNotification;
+using Plugin.LocalNotification.AndroidOption;
+using SdcMaui.Vpn;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
+using Application = Microsoft.Maui.Controls.Application;
 
 namespace SdcMaui
 {
@@ -22,7 +22,7 @@ namespace SdcMaui
         {
             try
             {
-                if (!IsDnsConnected && !IsConnecting)
+                if (!IsDnsServerRunning && !IsConnecting)
                 {
                     // Connect
                     if (IsConnecting) return;
@@ -91,10 +91,15 @@ namespace SdcMaui
                         if (!ProxyServer.IsRunning)
                         {
                             disconnect();
-                            Log("Couldn't Start HTTP Proxy Server.", Colors.IndianRed);
+                            Log("Couldn't Start Proxy Server.", Colors.IndianRed);
                         }
                         else
+                        {
                             Log("DNS and Proxy Servers are Running.", Colors.MediumSeaGreen);
+
+                            
+                            //SdcVpnService.StartVPN();
+                        }
                     }
 
                     IsConnecting = false;
@@ -125,7 +130,11 @@ namespace SdcMaui
                     if (IsConnecting || IsDnsConnected)
                         Log("Couldn't Disconnect", Colors.IndianRed);
                     else
+                    {
                         Log("Disconnected.", Colors.MediumSeaGreen);
+
+                        //SdcVpnService.StopVPN();
+                    }
 
                     IsDisconnecting = false;
                 }
@@ -151,7 +160,7 @@ namespace SdcMaui
                         }
 
                         // Stop DNS Server
-                        CancelTokenDnsServer.Cancel();
+                        CancelTokenDnsServer?.Cancel();
                     }
                     catch (Exception)
                     {
@@ -261,18 +270,21 @@ namespace SdcMaui
                 ConnectedDnsPort = DnsPort;
 
                 // Start DNS Server
-                await DnsUdpServer.Listen(CancelTokenDnsServer.Token);
-                //Task tcp = DnsTcpServer.Listen(CancelTokenDnsServer.Token);
+                if (CancelTokenDnsServer != null)
+                {
+                    await DnsUdpServer.Listen(CancelTokenDnsServer.Token);
+                    //Task tcp = DnsTcpServer.Listen(CancelTokenDnsServer.Token);
 
-                //try
-                //{
-                    
-                //    await Task.WhenAll(udp, tcp);
-                //}
-                //catch (Exception e)
-                //{
-                //    Log(e.Message, Colors.IndianRed);
-                //}
+                    //try
+                    //{
+
+                    //    await Task.WhenAll(udp, tcp);
+                    //}
+                    //catch (Exception e)
+                    //{
+                    //    Log(e.Message, Colors.IndianRed);
+                    //}
+                }
             }
             catch (Exception ex)
             {

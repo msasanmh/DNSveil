@@ -713,6 +713,8 @@ namespace CustomControls
         // Overridden Methods
         protected override void OnPaint(PaintEventArgs e)
         {
+            if (!Visible) return;
+
             base.OnPaint(e);
 
             Color borderColor = GetBorderColor();

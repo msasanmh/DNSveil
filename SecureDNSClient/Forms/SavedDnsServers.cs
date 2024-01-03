@@ -156,7 +156,7 @@ public partial class FormMain
 
     private async Task SavedDnsUpdate()
     {
-        if (Program.Startup && CustomCheckBoxSettingQcOnStartup.Checked) return;
+        if (Program.IsStartup && CustomCheckBoxSettingQcOnStartup.Checked) return;
         
         // Wait Until App Is Ready
         Task waitNet = Task.Run(async () =>

@@ -27,12 +27,16 @@ public partial class FormDnsScanner : Form
     private readonly List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>>> ExportList = new();
     private readonly List<string> ExportListPrivate = new();
     private bool IsRunning = false;
+    private bool IsExiting { get; set; } = false;
+    private bool IsExitDone { get; set; } = false;
     private bool Exit = false;
 
     public FormDnsScanner(string? dns = null)
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         InitializeComponent();
+
+        if (!string.IsNullOrEmpty(dns)) DNS = dns;
 
         // Invariant Culture
         Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
@@ -52,28 +56,23 @@ public partial class FormDnsScanner : Form
         DomainsToCheckForSmartDNS.Clear();
         CustomButtonExport.Enabled = false;
 
-        if (!string.IsNullOrEmpty(dns)) DNS = dns;
-
-        CustomLabelBootstrapIp.Visible = false;
+        //CustomLabelBootstrapIp.Visible = false;
         CustomTextBoxBootstrapIpPort.Enabled = false;
-        CustomTextBoxBootstrapIpPort.Visible = false;
-        CustomLabelBootstrapPort.Visible = false;
+        //CustomTextBoxBootstrapIpPort.Visible = false;
+        //CustomLabelBootstrapPort.Visible = false;
         CustomNumericUpDownBootstrapPort.Enabled = false;
-        CustomNumericUpDownBootstrapPort.Visible = false;
+        //CustomNumericUpDownBootstrapPort.Visible = false;
 
+        FixScreenDpi();
+
+        Shown -= FormDnsScanner_Shown;
         Shown += FormDnsScanner_Shown;
     }
 
-    private void FormDnsScanner_Shown(object? sender, EventArgs e)
+    private async void FixScreenDpi()
     {
-        if (!string.IsNullOrEmpty(DNS))
-        {
-            CustomRadioButtonDnsUrl.Checked = true;
-            CustomRadioButtonDnsBrowse.Checked = false;
-            CustomRadioButtonCustomServers.Checked = false;
-            CustomTextBoxDnsUrl.Text = DNS;
-            CustomButtonScan_Click(null, null);
-        }
+        // Setting Width Of Controls
+        await FormMain.SettingWidthOfControls(this);
 
         // Fix Controls Location
         int shw = TextRenderer.MeasureText("I", Font).Width;
@@ -133,13 +132,32 @@ public partial class FormDnsScanner : Form
         CustomNumericUpDownBootstrapPort.Left = CustomLabelBootstrapPort.Right + spaceH;
         CustomNumericUpDownBootstrapPort.Top = CustomTextBoxBootstrapIpPort.Top;
 
-        CustomLabelDnsTimeout.Left = CustomNumericUpDownBootstrapPort.Right + (spaceH * 2);
-        CustomLabelDnsTimeout.Top = CustomLabelBootstrapPort.Top;
+        CustomLabelDnsTimeout.Left = CustomLabelBootstrapIp.Left;
+        CustomLabelDnsTimeout.Top = CustomTextBoxBootstrapIpPort.Bottom + (spaceV * 2);
 
         CustomNumericUpDownDnsTimeout.Left = CustomLabelDnsTimeout.Right + spaceH;
-        CustomNumericUpDownDnsTimeout.Top = CustomNumericUpDownBootstrapPort.Top;
+        CustomNumericUpDownDnsTimeout.Top = CustomLabelDnsTimeout.Top - 2;
+
+        try
+        {
+            SplitContainerMain.Panel1MinSize = CustomNumericUpDownDnsTimeout.Bottom;
+            SplitContainerMain.SplitterDistance = CustomNumericUpDownDnsTimeout.Bottom + (spaceV * 2);
+        }
+        catch (Exception) { }
 
         CustomRichTextBoxLog.Location = new Point(0, 0);
+    }
+
+    private void FormDnsScanner_Shown(object? sender, EventArgs e)
+    {
+        if (!string.IsNullOrEmpty(DNS))
+        {
+            CustomRadioButtonDnsUrl.Checked = true;
+            CustomRadioButtonDnsBrowse.Checked = false;
+            CustomRadioButtonCustomServers.Checked = false;
+            CustomTextBoxDnsUrl.Text = DNS;
+            CustomButtonScan_Click(null, null);
+        }
     }
 
     private void CustomRadioButtonDnsBrowse_CheckedChanged(object sender, EventArgs e)
@@ -542,7 +560,7 @@ public partial class FormDnsScanner : Form
             insecureAddress = dns;
             if (!string.IsNullOrEmpty(ip))
             {
-                NetworkTool.GetUrlDetails(dns, dnsReader.Port, out string scheme, out _, out _, out _, out _, out _);
+                NetworkTool.GetUrlDetails(dns, dnsReader.Port, out string scheme, out _, out _, out _, out _, out _, out _);
                 if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsReader.DnsProtocol.DoH) scheme = "https://";
                 if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsReader.DnsProtocol.DoT) scheme = "tls://";
                 if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsReader.DnsProtocol.DoQ) scheme = "quic://";
@@ -679,23 +697,59 @@ public partial class FormDnsScanner : Form
 
     private async void FormDnsScanner_FormClosing(object sender, FormClosingEventArgs e)
     {
-        Exit = true;
+        if (!IsExiting)
+        {
+            e.Cancel = true;
+            IsExiting = true;
 
-        SelectedFilesList.Clear();
-        DomainsToCheckForSmartDNS.Clear();
+            Exit = true;
+            this.InvokeIt(() =>
+            {
+                CustomButtonScan.Text = "Exiting...";
+                CustomButtonScan.Enabled = false;
+            });
 
-        // Select Control type and properties to save
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomNumericUpDown), "Value");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
+            SelectedFilesList.Clear();
+            DomainsToCheckForSmartDNS.Clear();
 
-        // Add Settings to save
-        AppSettings.AddSelectedSettings(this);
+            // Select Control type and properties to save
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomNumericUpDown), "Value");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
 
-        // Save Application Settings
-        await AppSettings.SaveAsync(SettingsXmlPath);
+            // Add Settings to save
+            AppSettings.AddSelectedSettings(this);
+
+            // Save Application Settings
+            await AppSettings.SaveAsync(SettingsXmlPath);
+
+            // Wait For Cancel
+            await Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(100);
+                    if (!IsRunning) break;
+                }
+            });
+
+            IsExitDone = true;
+
+            e.Cancel = false;
+            Close();
+        }
+        else
+        {
+            if (!IsExitDone)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Dispose();
+        }
     }
 
 }

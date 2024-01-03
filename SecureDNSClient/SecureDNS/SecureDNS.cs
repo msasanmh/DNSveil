@@ -5,6 +5,7 @@ using System.Reflection;
 using MsmhToolsClass;
 using MsmhToolsClass.DnsTool;
 using System.Runtime.InteropServices;
+using static MsmhToolsClass.NetworkInterfaces;
 
 namespace SecureDNSClient;
 
@@ -60,7 +61,31 @@ public class SecureDNS
 
     // User Data
     private const string UDN = "UserData";
-    public static readonly string UserDataDirPath = Path.GetFullPath(Path.Combine(GetParent, UDN));
+
+    public static string UserDataDirPath
+    {
+        get
+        {
+            if (Program.IsPortable) return Path.GetFullPath(Path.Combine(GetParent, UDN));
+            else
+            {
+                try
+                {
+                    string appDataLocal = Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+                    return Path.GetFullPath(Path.Combine(appDataLocal, "SecureDNSClient", UDN));
+                }
+                catch (Exception)
+                {
+                    string msgErr = "System AppData Folder Is Not Reachable.";
+                    MessageBox.Show(msgErr, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Environment.Exit(0);
+                    Application.Exit();
+                    return Path.GetFullPath(Path.Combine(GetParent, UDN));
+                }
+            }
+        }
+    }
+
     public static readonly string SettingsXmlPath = Path.GetFullPath(Path.Combine(UserDataDirPath, appNameWithoutExtension + ".xml")); // Settings XML path
     public static readonly string SettingsXmlDnsLookup = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsLookupSettings.xml"));
     public static readonly string SettingsXmlIpScanner = Path.GetFullPath(Path.Combine(UserDataDirPath, "IpScannerSettings.xml"));
@@ -68,6 +93,7 @@ public class SecureDNS
     public static readonly string SettingsXmlDnsScannerExport = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsScannerExportSettings.xml"));
     public static readonly string UserIdPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "uid.txt"));
     public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeDnsRules.txt"));
+    public static readonly string FakeSniRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeSniRules.txt"));
     public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "BlackWhiteList.txt"));
     public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DontBypassList.txt"));
     public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers.txt"));
@@ -272,7 +298,7 @@ public class SecureDNS
 
     public static async Task<string> UrlToCompanyOffline(string url)
     {
-        NetworkTool.GetUrlDetails(url, 53, out _, out string host, out _, out int _, out string _, out bool _);
+        NetworkTool.GetUrlDetails(url, 53, out _, out string host, out _, out _, out int _, out string _, out bool _);
         return await HostToCompanyOffline(host);
     }
 
@@ -308,7 +334,7 @@ public class SecureDNS
     public static async Task<string> UrlToCompanyAsync(string url, string? proxyScheme = null)
     {
         string company = "Couldn't retrieve information.";
-        NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out int _, out string _, out bool _);
+        NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out _, out int _, out string _, out bool _);
         if (!string.IsNullOrWhiteSpace(host))
         {
             string ipStr = GetIP.GetIpFromSystem(host);
@@ -337,22 +363,28 @@ public class SecureDNS
         return company;
     }
 
-    public static void UpdateNICs(CustomComboBox ccb, bool upAndRunning, out List<string> availableNICs)
+    public static void UpdateNICs(CustomComboBox ccb, out List<string> availableNICs)
     {
-        ccb.Text = "Select a Network Adapter";
-        object item = ccb.SelectedItem;
-        ccb.Items.Clear();
-        List<string> nics = NetworkInterfaces.GetAllNetworkInterfaces(upAndRunning);
-        availableNICs = new(nics);
+        ccb.InvokeIt(() => ccb.Text = "Select a Network Adapter");
+        object? item = null;
+        ccb.InvokeIt(() => item = ccb.SelectedItem);
+        ccb.InvokeIt(() => ccb.Items.Clear());
+        List<NICResult> nics = GetAllNetworkInterfaces();
+        availableNICs = new();
         if (nics == null || nics.Count < 1)
         {
             Debug.WriteLine("There is no Network Interface.");
+            ccb.InvokeIt(() => ccb.SelectedIndex = -1);
             return;
         }
+        string upAndRunningNic = string.Empty;
         for (int n = 0; n < nics.Count; n++)
         {
-            string nicName = nics[n];
-            ccb.Items.Add(nicName);
+            NICResult nicResult = nics[n];
+            ccb.InvokeIt(() => ccb.Items.Add(nicResult.NIC));
+            availableNICs.Add(nicResult.NIC);
+            if (string.IsNullOrEmpty(upAndRunningNic) && nicResult.IsUpAndRunning)
+                upAndRunningNic = nicResult.NIC;
         }
         if (ccb.Items.Count > 0)
         {
@@ -366,13 +398,21 @@ public class SecureDNS
                     break;
                 }
             }
-            if (exist)
-                ccb.SelectedItem = item;
-            else
-                ccb.SelectedIndex = 0;
-            ccb.DropDownHeight = nics.Count * ccb.Height;
+            ccb.InvokeIt(() =>
+            {
+                if (exist)
+                    ccb.SelectedItem = item;
+                else
+                {
+                    if (!string.IsNullOrEmpty(upAndRunningNic))
+                        ccb.SelectedItem = upAndRunningNic;
+                    else
+                        ccb.SelectedIndex = 0;
+                }
+                ccb.DropDownHeight = nics.Count * ccb.Height;
+            });
         }
-        else ccb.SelectedIndex = -1;
+        else ccb.InvokeIt(() => ccb.SelectedIndex = -1);
     }
 
     // HostToCompany file Generator
@@ -409,7 +449,7 @@ public class SecureDNS
                 string company = await UrlToCompanyAsync(dns);
                 if (!company.Contains("Couldn't retrieve information."))
                 {
-                    NetworkTool.GetUrlDetails(dns, 443, out _, out string host, out _, out int _, out string _, out bool _);
+                    NetworkTool.GetUrlDetails(dns, 443, out _, out string host, out _, out _, out int _, out string _, out bool _);
                     object hostToCom = host + "|" + company;
                     HostToCompanyList.Add(hostToCom);
                     Debug.WriteLine(hostToCom);

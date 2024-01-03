@@ -61,7 +61,7 @@ public partial class FormMain
 
         // Get Fake Proxy DoH Address
         string url = CustomTextBoxSettingFakeProxyDohAddress.Text;
-        NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out int _, out string _, out bool _);
+        NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out _, out int _, out string _, out bool _);
         string host1 = "dns.cloudflare.com";
         string host2 = "cloudflare-dns.com";
         string host3 = "every1dns.com";
@@ -97,6 +97,16 @@ public partial class FormMain
             {
                 // Start Proxy
                 if (stop) return;
+
+                this.InvokeIt(() => CustomButtonShare.Enabled = false);
+
+                // Return if binary files are missing
+                if (!CheckNecessaryFiles())
+                {
+                    this.InvokeIt(() => CustomButtonShare.Enabled = true);
+                    return;
+                }
+
                 if (IsProxyActivating || IsProxyDeactivating) return;
 
                 if (IsDNSSetting)
@@ -115,6 +125,7 @@ public partial class FormMain
 
                 UpdateProxyBools = false;
                 IsProxyActivating = true;
+                await UpdateStatusShortOnBoolsChanged();
 
                 // Start Share
                 string msgStart = $"Starting Proxy Server...{NL}";
@@ -141,6 +152,7 @@ public partial class FormMain
                 if (!isPortOk)
                 {
                     IsProxyActivating = false;
+                    await UpdateStatusShortOnBoolsChanged();
                     return;
                 }
 
@@ -166,6 +178,7 @@ public partial class FormMain
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
                     ProcessManager.KillProcessByPID(PIDProxy);
                     IsProxyActivating = false;
+                    await UpdateStatusShortOnBoolsChanged();
                     return;
                 }
 
@@ -221,7 +234,7 @@ public partial class FormMain
                     string? msg = e.Data;
                     if (!string.IsNullOrEmpty(msg))
                     {
-                        if (StopWatchWriteProxyOutputDelay.ElapsedMilliseconds < 50) return;
+                        if (StopWatchWriteProxyOutputDelay.ElapsedMilliseconds < 100) return;
                         StopWatchWriteProxyOutputDelay.Restart();
 
                         if (!IsInternetOnline) return;
@@ -232,15 +245,15 @@ public partial class FormMain
                         if (!IsCheckingStarted && !IsConnecting && !IsExiting && IsProxyActivated && IsProxyRunning)
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, reqColor));
 
-                        // Write to file
-                        try
-                        {
-                            FileDirectory.AppendTextLine(SecureDNS.ProxyServerRequestLogPath, msg, new UTF8Encoding(false));
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Write Proxy Request log file: {ex.Message}");
-                        }
+                        // Write to file // No Need For Extra IO, We Have "Write log window to file" Option.
+                        //try
+                        //{
+                        //    FileDirectory.AppendTextLine(SecureDNS.ProxyServerRequestLogPath, msg, new UTF8Encoding(false));
+                        //}
+                        //catch (Exception ex)
+                        //{
+                        //    Debug.WriteLine($"Write Proxy Request log file: {ex.Message}");
+                        //}
                     }
                 }
 
@@ -275,6 +288,16 @@ public partial class FormMain
                 // Apply Fake DNS Support
                 bool isFakeDnsOk = await ApplyPFakeDNS();
                 if (!isFakeDnsOk)
+                {
+                    ProcessManager.KillProcessByPID(PIDFakeProxy);
+                    ProcessManager.KillProcessByPID(PIDProxy);
+                    IsProxyActivating = false;
+                    return;
+                }
+
+                // Apply Fake SNI Support
+                bool isFakeSniOk = await ApplyPFakeSNI();
+                if (!isFakeSniOk)
                 {
                     ProcessManager.KillProcessByPID(PIDFakeProxy);
                     ProcessManager.KillProcessByPID(PIDProxy);
@@ -378,6 +401,7 @@ public partial class FormMain
                 IsProxyRunning = true;
                 UpdateProxyBools = true;
                 IsProxyActivating = false;
+                await UpdateStatusShortOnBoolsChanged();
 
                 // Start Delay Timer
                 StopWatchWriteProxyOutputDelay.Restart();
@@ -398,6 +422,7 @@ public partial class FormMain
                 // Stop Proxy
                 if (IsProxyActivating || IsProxyDeactivating) return;
                 IsProxyDeactivating = true;
+                await UpdateStatusShortOnBoolsChanged();
 
                 // Stop Fake Proxy
                 ProcessManager.KillProcessByPID(PIDFakeProxy);
@@ -427,6 +452,7 @@ public partial class FormMain
                     {
                         // Update Bool
                         IsProxyRunning = false;
+                        await UpdateStatusShortOnBoolsChanged();
 
                         // Write deactivated message to log
                         string msgDiactivated = $"Proxy Server deactivated.{NL}";
@@ -434,6 +460,9 @@ public partial class FormMain
 
                         // Stop Delay Timer
                         StopWatchWriteProxyOutputDelay.Reset();
+
+                        PIDFakeProxy = -1;
+                        PIDProxy = -1;
                     }
                     else
                     {
@@ -455,6 +484,7 @@ public partial class FormMain
                 }
 
                 IsProxyDeactivating = false;
+                await UpdateStatusShortOnBoolsChanged();
             }
         });
     }
@@ -794,6 +824,18 @@ public partial class FormMain
         return true;
     }
 
+    public async Task<bool> ApplyPFakeSNI()
+    {
+        if (CustomCheckBoxSettingProxyEnableFakeSNI.Checked)
+        {
+            string command = $"Programs FakeSni -Mode=File -PathOrText=\"{SecureDNS.FakeSniRulesPath}\"";
+            Debug.WriteLine(command);
+            return await ProxyConsole.SendCommandAsync(command);
+        }
+
+        return true;
+    }
+
     public async Task<bool> ApplyPBlackWhiteList()
     {
         if (CustomCheckBoxSettingProxyEnableBlackWhiteList.Checked)
@@ -820,14 +862,21 @@ public partial class FormMain
 
     public async Task<bool> ApplyPSSLDecryption()
     {
-        bool changeSniToIp = false;
-        this.InvokeIt(() => changeSniToIp = CustomCheckBoxProxySSLChangeSniToIP.Checked);
+        bool changeSni = false;
+        this.InvokeIt(() => changeSni = CustomCheckBoxProxySSLChangeSni.Checked);
 
         if (IsSSLDecryptionEnable())
         {
-            string command = $"SSLSetting -Enable=True -RootCA_Path=\"{SecureDNS.IssuerCertPath}\" -RootCA_KeyPath=\"{SecureDNS.IssuerKeyPath}\" -ChangeSniToIP={changeSniToIp}";
+            // Get Default SNI
+            string defaultSni = GetDefaultSniSetting();
+
+            string command = $"SSLSetting -Enable=True -RootCA_Path=\"{SecureDNS.IssuerCertPath}\" -RootCA_KeyPath=\"{SecureDNS.IssuerKeyPath}\" -ChangeSni={changeSni} -DefaultSni={defaultSni}";
+
             Debug.WriteLine(command);
-            return await ProxyConsole.SendCommandAsync(command);
+            bool isSuccess = await ProxyConsole.SendCommandAsync(command);
+
+            if (isSuccess) LastDefaultSni = defaultSni;
+            return isSuccess;
         }
         else
         {

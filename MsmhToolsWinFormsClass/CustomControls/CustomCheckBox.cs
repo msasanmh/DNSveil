@@ -1,5 +1,6 @@
 ﻿using MsmhToolsClass;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms.Design;
@@ -31,9 +32,9 @@ namespace CustomControls
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new ContentAlignment CheckAlign { get; set; }
 
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public new bool AutoSize { get; set; }
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Property Changed"), Description("Text Changed")]
+        public new event EventHandler? TextChanged;
 
         private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
@@ -86,12 +87,12 @@ namespace CustomControls
             }
         }
 
-        private string? mText = string.Empty;
+        private string mText = string.Empty;
         [Editor("System.ComponentModel.Design.MultilineStringEditor, System.Design, Version=2.0.0.0," +
             "Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", typeof(UITypeEditor))]
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Category("Appearance"), Description("Text")]
-        public override string? Text
+        public override string Text
         {
             get { return mText; }
             set
@@ -99,10 +100,14 @@ namespace CustomControls
                 if (mText != value)
                 {
                     mText = value;
+                    TextChanged?.Invoke(this, EventArgs.Empty);
                     Invalidate();
                 }
             }
         }
+
+        // I Need My Own AutoSize
+        public override bool AutoSize { get; set; }
 
         private bool ApplicationIdle = false;
         private bool once = true;
@@ -188,100 +193,125 @@ namespace CustomControls
 
         private void CustomCheckBox_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false) return;
-
-            if (sender is CheckBox checkBox)
+            try
             {
-                Color backColor = GetBackColor(checkBox);
-                Color foreColor = GetForeColor();
-                Color borderColor = GetBorderColor();
-                Color checkColor = GetCheckColor();
+                if (ApplicationIdle == false) return;
+                if (!Visible) return;
 
-                e.Graphics.Clear(backColor);
-                checkBox.Appearance = Appearance.Button;
-                checkBox.FlatStyle = FlatStyle.Flat;
-                
-                checkBox.FlatAppearance.BorderSize = 0;
-                checkBox.AutoSize = false;
-                checkBox.UseVisualStyleBackColor = false;
-
-                SizeF sizeF = checkBox.CreateGraphics().MeasureString(checkBox.Text, checkBox.Font);
-                SizeF rectSizeF = sizeF;
-                int rectSize = 10;
-                try
+                if (sender is CheckBox checkBox)
                 {
-                    if (checkBox.Text.Contains(Environment.NewLine))
-                        rectSizeF = checkBox.CreateGraphics().MeasureString(checkBox.Text.Split(Environment.NewLine)[0], checkBox.Font);
-                    rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - 2);
-                    checkBox.Height = Convert.ToInt32(Math.Round(sizeF.Height));
-                    checkBox.Width = Convert.ToInt32(Math.Round(sizeF.Width) + rectSize);
-                }
-                catch (Exception)
-                {
-                    // do nothing
-                }
+                    Color backColor = GetBackColor(checkBox);
+                    Color foreColor = GetForeColor();
+                    Color borderColor = GetBorderColor();
+                    Color checkColor = GetCheckColor();
 
-                int x;
-                float textX;
-                
-                if (checkBox.RightToLeft != RightToLeft.Yes)
-                {
-                    checkBox.TextAlign = ContentAlignment.MiddleLeft;
-                    x = 0;
-                    textX = rectSize;
-                }
-                else
-                {
-                    checkBox.TextAlign = ContentAlignment.MiddleRight;
-                    x = checkBox.Width - rectSize;
-                    textX = 0;
-                }
+                    e.Graphics.Clear(backColor);
+                    checkBox.Appearance = Appearance.Button;
+                    checkBox.FlatStyle = FlatStyle.Flat;
 
-                int y = (checkBox.ClientRectangle.Y + 1 + (checkBox.ClientRectangle.Height - rectSize)) / 2;
-                Point pt = new(x, y);
-                Rectangle rectCheck = new(pt, new Size(rectSize, rectSize));
+                    checkBox.FlatAppearance.BorderSize = 0;
+                    checkBox.UseVisualStyleBackColor = false;
 
-                // Draw Selection Border
-                Rectangle cRect = new(checkBox.ClientRectangle.X, checkBox.ClientRectangle.Y, checkBox.ClientRectangle.Width - 1, checkBox.ClientRectangle.Height - 1);
-                if (checkBox.Focused)
-                {
-                    using Pen pen = new(SelectionColor) { DashStyle = DashStyle.Dot };
-                    e.Graphics.DrawRectangle(pen, cRect);
-                }
+                    SizeF sizeF = checkBox.CreateGraphics().MeasureString(checkBox.Text, checkBox.Font);
+                    SizeF rectSizeF = sizeF;
+                    int boxOffset = 4; // Must Be Even
+                    int rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
+                    int lineCount = 1;
 
-                // Draw Text
-                using SolidBrush brush1 = new(foreColor);
-                e.Graphics.DrawString(checkBox.Text, checkBox.Font, brush1, textX, 0);
-
-                // Fill Check Rect
-                using SolidBrush brush2 = new(backColor);
-                e.Graphics.FillRectangle(brush2, rectCheck);
-
-                // Draw Check
-                if (checkBox.Checked)
-                {
-                    if (checkBox.CheckState == CheckState.Checked)
+                    try
                     {
-                        // Draw Check
-                        using Pen p = new(checkColor, 2);
-                        rectCheck.Inflate(-2, -2);
-                        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                        e.Graphics.DrawLines(p, new Point[] { new Point(rectCheck.Left, rectCheck.Bottom - rectCheck.Height / 2), new Point(rectCheck.Left + rectCheck.Width / 3, rectCheck.Bottom), new Point(rectCheck.Right, rectCheck.Top) });
-                        e.Graphics.SmoothingMode = SmoothingMode.Default;
-                        rectCheck.Inflate(+2, +2);
+                        if (checkBox.AutoSize)
+                        {
+                            string text = checkBox.Text;
+                            if (text.Contains(Environment.NewLine)) // Handle Multiline
+                            {
+                                List<string> lines = text.SplitToLines();
+                                lineCount = lines.Count;
+                                text = lines[0];
+                                for (int i = 0; i < lines.Count; i++)
+                                {
+                                    string line = lines[i];
+                                    if (line.Length > text.Length) text = line;
+                                }
+                            }
+                            rectSizeF = e.Graphics.MeasureString(text, checkBox.Font);
+                            rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
+                            checkBox.Height = Convert.ToInt32(Math.Round(sizeF.Height * 1.1));
+                            checkBox.Width = Convert.ToInt32(Math.Round(sizeF.Width) + rectSize);
+                        }
                     }
-                    else if (checkBox.CheckState == CheckState.Indeterminate)
+                    catch (Exception)
                     {
-                        // Draw Indeterminate
-                        using SolidBrush sb = new(checkColor);
-                        rectCheck.Inflate(-2, -2);
-                        e.Graphics.FillRectangle(sb, rectCheck);
-                        rectCheck.Inflate(+2, +2);
+                        // do nothing
                     }
-                }
 
-                // Draw Check Rect (Check Border)
-                ControlPaint.DrawBorder(e.Graphics, rectCheck, borderColor, ButtonBorderStyle.Solid);
+                    int x;
+                    float textX;
+
+                    if (checkBox.RightToLeft != RightToLeft.Yes)
+                    {
+                        checkBox.TextAlign = ContentAlignment.MiddleLeft;
+                        x = 0;
+                        textX = rectSize;
+                    }
+                    else
+                    {
+                        checkBox.TextAlign = ContentAlignment.MiddleRight;
+                        x = checkBox.Width - rectSize;
+                        textX = 0;
+                    }
+
+                    int y = (checkBox.ClientRectangle.Y + (checkBox.ClientRectangle.Height - rectSize)) / 2;
+                    Point pt = new(x, y);
+                    Rectangle rectCheck = new(pt, new Size(rectSize, rectSize));
+
+                    // Draw Selection Border
+                    Rectangle cRect = new(checkBox.ClientRectangle.X, checkBox.ClientRectangle.Y, checkBox.ClientRectangle.Width - 1, checkBox.ClientRectangle.Height - 1);
+                    if (checkBox.Focused)
+                    {
+                        using Pen pen = new(SelectionColor) { DashStyle = DashStyle.Dot };
+                        e.Graphics.DrawRectangle(pen, cRect);
+                    }
+
+                    // Draw Text
+                    int yt = (checkBox.ClientRectangle.Y + (checkBox.ClientRectangle.Height - Convert.ToInt32(Math.Round(rectSizeF.Height * lineCount)))) / 2;
+                    using SolidBrush brush1 = new(foreColor);
+                    e.Graphics.DrawString(checkBox.Text, checkBox.Font, brush1, textX, yt);
+
+                    // Fill Check Rect
+                    using SolidBrush brush2 = new(backColor);
+                    e.Graphics.FillRectangle(brush2, rectCheck);
+
+                    // Draw Check
+                    if (checkBox.Checked)
+                    {
+                        if (checkBox.CheckState == CheckState.Checked)
+                        {
+                            // Draw Check
+                            using Pen p = new(checkColor, 2);
+                            rectCheck.Inflate(-2, -2);
+                            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                            e.Graphics.DrawLines(p, new Point[] { new Point(rectCheck.Left, rectCheck.Bottom - rectCheck.Height / 2), new Point(rectCheck.Left + rectCheck.Width / 3, rectCheck.Bottom), new Point(rectCheck.Right, rectCheck.Top) });
+                            e.Graphics.SmoothingMode = SmoothingMode.Default;
+                            rectCheck.Inflate(+2, +2);
+                        }
+                        else if (checkBox.CheckState == CheckState.Indeterminate)
+                        {
+                            // Draw Indeterminate
+                            using SolidBrush sb = new(checkColor);
+                            rectCheck.Inflate(-2, -2);
+                            e.Graphics.FillRectangle(sb, rectCheck);
+                            rectCheck.Inflate(+2, +2);
+                        }
+                    }
+
+                    // Draw Check Rect (Check Border)
+                    ControlPaint.DrawBorder(e.Graphics, rectCheck, borderColor, ButtonBorderStyle.Solid);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("CustomCheckBox Paint: " + ex.Message);
             }
         }
 

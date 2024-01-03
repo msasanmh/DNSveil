@@ -1,10 +1,10 @@
 dnslookup-X64 1.10.0
 dnslookup-X86 1.10.0
-dnsproxy-X64 0.59.1
-dnsproxy-X86 0.59.1
+dnsproxy-X64 0.61.1
+dnsproxy-X86 0.61.1
 dnscrypt-proxy-X64 2.1.5
 dnscrypt-proxy-X86 2.1.5
-sdcproxyserver-X64 2.5.6
-sdcproxyserver-X86 2.5.6
+sdcproxyserver-X64 2.6.0
+sdcproxyserver-X86 2.6.0
 goodbyedpi-X64 0.2.2
 goodbyedpi-X86 0.2.2

@@ -230,6 +230,7 @@ namespace CustomControls
         private void CustomButton_Paint(object? sender, PaintEventArgs e)
         {
             if (ApplicationIdle == false) return;
+            if (!Visible) return;
 
             try
             {

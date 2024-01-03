@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MsmhToolsClass.ProxyServerPrograms;
+﻿namespace MsmhToolsClass.ProxyServerPrograms;
 
 public partial class ProxyProgram
 {
@@ -40,10 +38,7 @@ public partial class ProxyProgram
                 {
                     TextContent = File.ReadAllText(Path.GetFullPath(filePathOrText));
                 }
-                catch (Exception)
-                {
-                    // do nothing
-                }
+                catch (Exception) { }
             }
             else if (ListMode == Mode.BlackListText || ListMode == Mode.WhiteListText)
                 TextContent = filePathOrText;
@@ -60,7 +55,7 @@ public partial class ProxyProgram
         {
             string destHostnameNoWWW = destHostname;
             if (destHostnameNoWWW.StartsWith("www."))
-                destHostnameNoWWW = destHostnameNoWWW.Replace("www.", string.Empty);
+                destHostnameNoWWW = destHostnameNoWWW.TrimStart("www.");
 
             if (BWList.Any())
             {
@@ -69,11 +64,20 @@ public partial class ProxyProgram
                     string host = BWList[n].Trim();
                     if (!string.IsNullOrEmpty(host) && !host.StartsWith("//")) // Add Support Comment //
                     {
-                        if (host.StartsWith("www."))
-                            host = host.Replace("www.", string.Empty);
+                        if (host.StartsWith("www.")) host = host.TrimStart("www.");
 
                         // If Match
-                        if (destHostnameNoWWW.Equals(host)) return match();
+                        if (!host.StartsWith("*."))
+                        {
+                            // No Wildcard
+                            if (host.Equals(destHostnameNoWWW)) return match();
+                        }
+                        else
+                        {
+                            // Wildcard
+                            host = host[2..];
+                            if (!destHostnameNoWWW.Equals(host) && destHostnameNoWWW.EndsWith(host)) return match();
+                        }
                     }
                 }
             }

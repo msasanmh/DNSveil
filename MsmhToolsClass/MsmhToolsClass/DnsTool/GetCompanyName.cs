@@ -33,7 +33,7 @@ public static class GetCompanyName
 
     public static string UrlToCompanyOffline(string url, string fileContent)
     {
-        NetworkTool.GetUrlDetails(url, 53, out _, out string host, out _, out int _, out string _, out bool _);
+        NetworkTool.GetUrlDetails(url, 53, out _, out string host, out _, out _, out int _, out string _, out bool _);
         return HostToCompanyOffline(host, fileContent);
     }
 

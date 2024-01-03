@@ -1,4 +1,12 @@
-﻿using System;
+﻿using Android;
+using Android.Content;
+using Android.Content.PM;
+using Android.Net;
+using Android.OS;
+using AndroidX.Core.App;
+using AndroidX.Core.Content;
+using Plugin.LocalNotification;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -35,7 +43,37 @@ namespace SdcMaui
                     return false;
                 }
             }
-            
+
+            if ((int)Build.VERSION.SdkInt >= 33)
+            {
+                bool isNotificationGranted = await LocalNotificationCenter.Current.AreNotificationsEnabled();
+                if (!isNotificationGranted)
+                {
+                    await LocalNotificationCenter.Current.RequestNotificationPermission();
+                    isNotificationGranted = await LocalNotificationCenter.Current.AreNotificationsEnabled();
+                    if (!isNotificationGranted)
+                    {
+                        Log("Notification Permition is Required.", Colors.IndianRed);
+                        return false;
+                    }
+                }
+
+                if (Platform.CurrentActivity != null)
+                {
+                    Permission notification = ContextCompat.CheckSelfPermission(Platform.CurrentActivity, Manifest.Permission.PostNotifications);
+                    if (notification != Permission.Granted)
+                    {
+                        ActivityCompat.RequestPermissions(Platform.CurrentActivity, new[] { Manifest.Permission.PostNotifications }, 1);
+                        notification = ContextCompat.CheckSelfPermission(Platform.CurrentActivity, Manifest.Permission.PostNotifications);
+                        if (notification != Permission.Granted)
+                        {
+                            Log("Notification Permition is Required.", Colors.IndianRed);
+                            return false;
+                        }
+                    }
+                }
+            }
+
             //PermissionStatus StorageRead = await Permissions.CheckStatusAsync<Permissions.StorageRead>();
             //if (StorageRead != PermissionStatus.Granted)
             //{
@@ -46,8 +84,9 @@ namespace SdcMaui
             //        return false;
             //    }
             //}
-            
+
             return true;
         }
+
     }
 }

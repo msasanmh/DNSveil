@@ -435,7 +435,8 @@ namespace CustomControls
         private void DataGridView_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
         {
             if (sender is not DataGridView gv) return;
-            
+            if (!Visible) return;
+
             // Update Colors
             DataGridViewColor(gv);
 
@@ -592,7 +593,9 @@ namespace CustomControls
 
         private void DataGridView_Paint(object? sender, PaintEventArgs e)
         {
-            var gv = sender as DataGridView;
+            if (sender is not DataGridView gv) return;
+            if (!Visible) return;
+
             // Update Colors
             DataGridViewColor(gv);
 

@@ -65,7 +65,7 @@ public class ProxyRequest
 
                         // Get Address & Port
                         string hostPort = requestLine[1];
-                        NetworkTool.GetUrlDetails(hostPort, defaultPort, out _, out address, out _, out port, out path, out _);
+                        NetworkTool.GetUrlDetails(hostPort, defaultPort, out _, out address, out _, out _, out port, out path, out _);
 
                         if (address.StartsWith('[')) address = address.TrimStart('[');
                         if (address.EndsWith(']')) address = address.TrimEnd(']');
@@ -382,6 +382,7 @@ public class ProxyRequest
         AddressType = addressType;
         Address = address;
         AddressOrig = address;
+        AddressSNI = address;
         Port = port;
         UserId = user;
         Password = pass;
@@ -394,7 +395,8 @@ public class ProxyRequest
     public Socks.Commands Command { get; private set; }
     public string Address { get; set; }
     public string AddressOrig { get; set; }
-    public bool AddressIsIp => IPAddress.TryParse(AddressOrig, out _);
+    public string AddressSNI { get; set; }
+    public bool AddressIsIp => NetworkTool.IsIp(AddressOrig, out _);
     public int Port { get; set; }
     public string UserId { get; set; }
     public string Password { get; set; }

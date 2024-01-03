@@ -68,6 +68,7 @@ public static partial class Program
                     else if (input.ToLower().Equals($"{prefix} {Key.Programs.DontBypass.Name.ToLower()}")) Help.GetHelpDontBypass();
                     else if (input.ToLower().Equals($"{prefix} {Key.Programs.DpiBypass.Name.ToLower()}")) Help.GetHelpDpiBypass();
                     else if (input.ToLower().Equals($"{prefix} {Key.Programs.FakeDns.Name.ToLower()}")) Help.GetHelpFakeDns();
+                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.FakeSni.Name.ToLower()}")) Help.GetHelpFakeSni();
                     else if (input.ToLower().Equals($"{prefix} {Key.Programs.UpStreamProxy.Name.ToLower()}")) Help.GetHelpUpStreamProxy();
                     else
                         Help.GetHelpPrograms();
@@ -231,7 +232,8 @@ public static partial class Program
                     bool enable = DefaultSSLEnable;
                     string? rootCA_Path = null;
                     string? rootCA_KeyPath = null;
-                    bool changeSniToIp = false;
+                    bool changeSni = false;
+                    string defaultSni = string.Empty;
 
                     // Interactive Mode
                     if (input.ToLower().Equals(Key.SSLSetting.Name.ToLower()))
@@ -311,26 +313,47 @@ public static partial class Program
                             }
 
                             // Change SNI To IP
-                            msgRV = $"Change SNI To IP To Bypass DPI, Enter True/False (Default: {DefaultSSLChangeSniToIP})";
+                            msgRV = $"Change SNI To Bypass DPI, Enter True/False (Default: {DefaultSSLChangeSni})";
                             while (true)
                             {
-                                object value = await ConsoleTools.ReadValue(msgRV, changeSniToIp, typeof(bool));
-                                changeSniToIp = Convert.ToBoolean(value);
+                                object value = await ConsoleTools.ReadValue(msgRV, changeSni, typeof(bool));
+                                changeSni = Convert.ToBoolean(value);
 
-                                WriteToStdout($"ChangeSniToIP Set to {changeSniToIp}", ConsoleColor.Green);
+                                WriteToStdout($"ChangeSni Set to {changeSni}", ConsoleColor.Green);
                                 break;
+                            }
+
+                            // Default SNI
+                            if (changeSni)
+                            {
+                                msgRV = $"Set Default SNI, E.G. speedtest.net (Default: Empty)";
+                                while (true)
+                                {
+                                    object value = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
+                                    string defaultSniOut = value.ToString() ?? string.Empty;
+                                    if (!string.IsNullOrEmpty(defaultSniOut))
+                                    {
+                                        defaultSni = defaultSniOut;
+                                        WriteToStdout($"DefaultSni Set to {defaultSni}", ConsoleColor.Green);
+                                        break;
+                                    }
+
+                                    WriteToStdout($"DefaultSni Set to Empty", ConsoleColor.Green);
+                                    break;
+                                }
                             }
                         }
                     }
                     else // Command Mode
                     {
-                        // sslsetting -Enable=m -RootCA_Path="" -RootCA_KeyPath="" -ChangeSniToIP=
+                        // sslsetting -Enable=m -RootCA_Path="" -RootCA_KeyPath="" -ChangeSni= -DefaultSni
 
                         KeyValues keyValues = new();
                         keyValues.Add(Key.SSLSetting.Enable, true, false, typeof(bool));
                         keyValues.Add(Key.SSLSetting.RootCA_Path, false, true, typeof(string));
                         keyValues.Add(Key.SSLSetting.RootCA_KeyPath, false, true, typeof(string));
-                        keyValues.Add(Key.SSLSetting.ChangeSniToIP, false, false, typeof(bool));
+                        keyValues.Add(Key.SSLSetting.ChangeSni, false, false, typeof(bool));
+                        keyValues.Add(Key.SSLSetting.DefaultSni, false, false, typeof(string));
 
                         bool isListOk = keyValues.GetValuesByKeys(input, out List<KeyValue> list);
                         if (!isListOk) return;
@@ -340,14 +363,16 @@ public static partial class Program
                             if (kv.Key.Equals(Key.SSLSetting.Enable)) enable = kv.ValueBool;
                             if (kv.Key.Equals(Key.SSLSetting.RootCA_Path)) rootCA_Path = kv.ValueString;
                             if (kv.Key.Equals(Key.SSLSetting.RootCA_KeyPath)) rootCA_KeyPath = kv.ValueString;
-                            if (kv.Key.Equals(Key.SSLSetting.ChangeSniToIP)) changeSniToIp = kv.ValueBool;
+                            if (kv.Key.Equals(Key.SSLSetting.ChangeSni)) changeSni = kv.ValueBool;
+                            if (kv.Key.Equals(Key.SSLSetting.DefaultSni)) defaultSni = kv.ValueString;
                         }
                     }
 
                     SettingsSSL_.EnableSSL = enable;
                     SettingsSSL_.RootCA_Path = rootCA_Path;
                     SettingsSSL_.RootCA_KeyPath = rootCA_KeyPath;
-                    SettingsSSL_.ChangeSniToIP = changeSniToIp;
+                    SettingsSSL_.ChangeSni = changeSni;
+                    SettingsSSL_.DefaultSni = defaultSni;
 
                     await ProxyServer.EnableSSL(SettingsSSL_);
 
@@ -363,6 +388,7 @@ public static partial class Program
                     msg += $"{Key.Programs.DontBypass.Name}\n";
                     msg += $"{Key.Programs.DpiBypass.Name}\n";
                     msg += $"{Key.Programs.FakeDns.Name}\n";
+                    msg += $"{Key.Programs.FakeSni.Name}\n";
                     msg += $"{Key.Programs.UpStreamProxy.Name}\n";
 
                     // Interactive Mode
@@ -937,6 +963,87 @@ public static partial class Program
                                 ShowFakeDnsMsg();
                             }
 
+                            // Fake Sni
+                            else if (programName.ToLower().Equals(Key.Programs.FakeSni.Name.ToLower()))
+                            {
+                                string msgAm = $"Available {Key.Programs.FakeSni.Name} Modes:\n\n";
+                                msgAm += $"{Key.Programs.FakeSni.Mode.File}\n";
+                                msgAm += $"{Key.Programs.FakeSni.Mode.Text}\n";
+                                msgAm += $"{Key.Programs.FakeSni.Mode.Disable}\n";
+
+                                WriteToStdout(msgAm, ConsoleColor.Cyan);
+
+                                string modeStr = Key.Programs.FakeSni.Mode.Disable;
+                                ProxyProgram.FakeSni.Mode mode = ProxyProgram.FakeSni.Mode.Disable;
+                                string msgRV = $"Enter One Of Modes (Default: {mode}):";
+                                while (true)
+                                {
+                                    object value = await ConsoleTools.ReadValue(msgRV, modeStr, typeof(string));
+                                    modeStr = value.ToString() ?? string.Empty;
+                                    if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.File.ToLower()))
+                                        mode = ProxyProgram.FakeSni.Mode.File;
+                                    else if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.Text.ToLower()))
+                                        mode = ProxyProgram.FakeSni.Mode.Text;
+                                    else if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.Disable.ToLower()))
+                                        mode = ProxyProgram.FakeSni.Mode.Disable;
+                                    else
+                                    {
+                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
+                                        continue;
+                                    }
+                                    break;
+                                }
+
+                                string filePathOrText = string.Empty;
+
+                                if (mode == ProxyProgram.FakeSni.Mode.File)
+                                {
+                                    while (true)
+                                    {
+                                        msgRV = $"Enter The Path Of {mode} (Default: Cancel):";
+                                        object valuePath = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
+                                        filePathOrText = valuePath.ToString() ?? string.Empty;
+                                        if (string.IsNullOrEmpty(filePathOrText))
+                                        {
+                                            mode = ProxyProgram.FakeSni.Mode.Disable;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            filePathOrText = Path.GetFullPath(filePathOrText);
+                                            if (!File.Exists(filePathOrText))
+                                            {
+                                                string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
+                                                WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                                continue;
+                                            }
+                                            else break;
+                                        }
+                                    }
+                                }
+
+                                if (mode == ProxyProgram.FakeSni.Mode.Text)
+                                {
+                                    msgRV = $"Enter Rules Of {Key.Programs.FakeSni.Name} As Text (Default: Cancel):";
+                                    msgRV += "\n    e.g. Youtube.com|Google.com\\n*.googlevideo.com|*.c.docs.google.com";
+                                    object valueText = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
+                                    filePathOrText = valueText.ToString() ?? string.Empty;
+                                    if (string.IsNullOrEmpty(filePathOrText))
+                                    {
+                                        mode = ProxyProgram.FakeSni.Mode.Disable;
+                                    }
+                                    else
+                                    {
+                                        filePathOrText = filePathOrText.ToLower().Replace(@"\n", Environment.NewLine);
+                                    }
+                                }
+
+                                FakeSniProgram.Set(mode, filePathOrText);
+                                ProxyServer.EnableFakeSNI(FakeSniProgram);
+
+                                ShowFakeSniMsg();
+                            }
+
                             // UpStream Proxy
                             else if (programName.ToLower().Equals(Key.Programs.UpStreamProxy.Name.ToLower()))
                             {
@@ -1393,6 +1500,69 @@ public static partial class Program
                             ProxyServer.EnableFakeDNS(FakeDnsProgram);
 
                             ShowFakeDnsMsg();
+                        }
+
+                        // FakeSni
+                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.FakeSni.Name.ToLower()}"))
+                        {
+                            // Programs FakeSni -Mode=m -PathOrText="m"
+
+                            // Get ModeStr
+                            string modeStr = Key.Programs.FakeSni.Mode.Disable;
+                            string key = Key.Programs.FakeSni.Mode.Name;
+                            isValueOk = ConsoleTools.GetValueByKey(input, key, true, false, out string value);
+                            if (!isValueOk) return;
+
+                            KeyValues modes = new();
+                            modes.Add(Key.Programs.FakeSni.Mode.File, true, false, typeof(string));
+                            modes.Add(Key.Programs.FakeSni.Mode.Text, true, false, typeof(string));
+                            modes.Add(Key.Programs.FakeSni.Mode.Disable, true, false, typeof(string));
+
+                            isValueOk = ConsoleTools.GetString(key, value, true, modes, out value);
+                            if (!isValueOk) return;
+                            modeStr = value;
+
+                            // Get -Mode
+                            ProxyProgram.FakeSni.Mode mode = ProxyProgram.FakeSni.Mode.Disable;
+                            if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.File.ToLower()))
+                                mode = ProxyProgram.FakeSni.Mode.File;
+                            else if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.Text.ToLower()))
+                                mode = ProxyProgram.FakeSni.Mode.Text;
+                            else if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.Disable.ToLower()))
+                                mode = ProxyProgram.FakeSni.Mode.Disable;
+
+                            // Get -PathOrText
+                            string pathOrText = string.Empty;
+                            key = Key.Programs.FakeSni.PathOrText;
+                            if (mode != ProxyProgram.FakeSni.Mode.Disable)
+                            {
+                                isValueOk = ConsoleTools.GetValueByKey(input, key, true, true, out value);
+                                if (!isValueOk) return;
+                                isValueOk = ConsoleTools.GetString(key, value, true, out value);
+                                if (!isValueOk) return;
+                                pathOrText = value;
+                            }
+
+                            if (mode == ProxyProgram.FakeSni.Mode.File)
+                            {
+                                pathOrText = Path.GetFullPath(pathOrText);
+                                if (!File.Exists(pathOrText))
+                                {
+                                    string msgNotExist = $"{pathOrText}\nFile Not Exist.";
+                                    WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                    return;
+                                }
+                            }
+
+                            if (mode == ProxyProgram.FakeSni.Mode.Text)
+                            {
+                                pathOrText = pathOrText.ToLower().Replace(@"\n", Environment.NewLine);
+                            }
+
+                            FakeSniProgram.Set(mode, pathOrText);
+                            ProxyServer.EnableFakeSNI(FakeSniProgram);
+
+                            ShowFakeSniMsg();
                         }
 
                         // UpStreamProxy

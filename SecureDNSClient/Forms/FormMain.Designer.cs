@@ -80,9 +80,11 @@
             CustomLabelSetDNSInfo = new CustomControls.CustomLabel();
             CustomComboBoxNICs = new CustomControls.CustomComboBox();
             TabPageShare = new TabPage();
+            CustomTextBoxProxySSLDefaultSni = new CustomControls.CustomTextBox();
+            CustomLabelProxySSLDefaultSni = new CustomControls.CustomLabel();
             CustomCheckBoxPDpiEnableDpiBypass = new CustomControls.CustomCheckBox();
-            CustomLabelProxySSLChangeSniToIpInfo = new CustomControls.CustomLabel();
-            CustomCheckBoxProxySSLChangeSniToIP = new CustomControls.CustomCheckBox();
+            CustomLabelProxySSLChangeSniInfo = new CustomControls.CustomLabel();
+            CustomCheckBoxProxySSLChangeSni = new CustomControls.CustomCheckBox();
             CustomCheckBoxProxyEnableSSL = new CustomControls.CustomCheckBox();
             CustomLabelProxySSLInfo = new CustomControls.CustomLabel();
             CustomLabelShareSeparator2 = new CustomControls.CustomLabel();
@@ -211,6 +213,7 @@
             CustomNumericUpDownSettingMaxServers = new CustomControls.CustomNumericUpDown();
             CustomLabelSettingMaxServers = new CustomControls.CustomLabel();
             TabPageSettingsSetUnsetDNS = new TabPage();
+            CustomCheckBoxSettingDnsDetectUnset = new CustomControls.CustomCheckBox();
             CustomTextBoxSettingUnsetDns2 = new CustomControls.CustomTextBox();
             CustomTextBoxSettingUnsetDns1 = new CustomControls.CustomTextBox();
             CustomLabelSettingUnsetDns2 = new CustomControls.CustomLabel();
@@ -250,6 +253,10 @@
             CustomLabelSettingShareSeparator1 = new CustomControls.CustomLabel();
             CustomLabelSettingProxyFakeDNS = new CustomControls.CustomLabel();
             CustomButtonSettingProxyFakeDNS = new CustomControls.CustomButton();
+            TabPageSettingProxySslDecryption = new TabPage();
+            CustomCheckBoxSettingProxyEnableFakeSNI = new CustomControls.CustomCheckBox();
+            CustomLabelSettingProxyFakeSNI = new CustomControls.CustomLabel();
+            CustomButtonSettingProxyFakeSNI = new CustomControls.CustomButton();
             TabPageSettingsFakeProxy = new TabPage();
             CustomTextBoxSettingFakeProxyDohCleanIP = new CustomControls.CustomTextBox();
             CustomTextBoxSettingFakeProxyDohAddress = new CustomControls.CustomTextBox();
@@ -285,6 +292,7 @@
             CustomCheckBoxSettingDontAskCertificate = new CustomControls.CustomCheckBox();
             CustomTextBoxSettingBootstrapDnsIP = new CustomControls.CustomTextBox();
             TabPageAbout = new TabPage();
+            LinkLabelStWolfkingal2000 = new LinkLabel();
             CustomLabelAboutVersion = new CustomControls.CustomLabel();
             PictureBoxFarvahar = new PictureBox();
             CustomLabelAboutCopyright = new CustomControls.CustomLabel();
@@ -304,6 +312,7 @@
             NotifyIconMain = new NotifyIcon(components);
             CustomContextMenuStripIcon = new CustomControls.CustomContextMenuStrip();
             CustomGroupBoxStatus = new CustomControls.CustomGroupBox();
+            CustomButtonBenchmark = new CustomControls.CustomButton();
             CustomButtonProcessMonitor = new CustomControls.CustomButton();
             SplitContainerMain = new SplitContainer();
             SplitContainerTop = new SplitContainer();
@@ -356,6 +365,7 @@
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingProxyPort).BeginInit();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingProxyHandleRequests).BeginInit();
             TabPageSettingProxyAdvanced.SuspendLayout();
+            TabPageSettingProxySslDecryption.SuspendLayout();
             TabPageSettingsFakeProxy.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingFakeProxyPort).BeginInit();
             TabPageSettingsCPU.SuspendLayout();
@@ -392,7 +402,7 @@
             CustomRichTextBoxLog.DetectUrls = false;
             CustomRichTextBoxLog.Dock = DockStyle.Fill;
             CustomRichTextBoxLog.EnableAutoDragDrop = false;
-            CustomRichTextBoxLog.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomRichTextBoxLog.Font = new Font("Segoe UI", 9F);
             CustomRichTextBoxLog.ForeColor = Color.White;
             CustomRichTextBoxLog.HideSelection = false;
             CustomRichTextBoxLog.Location = new Point(3, 19);
@@ -416,6 +426,7 @@
             CustomRichTextBoxLog.UnderlinedStyle = false;
             CustomRichTextBoxLog.WordWrap = true;
             CustomRichTextBoxLog.ZoomFactor = 1F;
+            CustomRichTextBoxLog.SizeChanged += CustomRichTextBoxLog_SizeChanged;
             // 
             // CustomButtonCheck
             // 
@@ -430,7 +441,7 @@
             CustomButtonCheck.TabIndex = 2;
             CustomButtonCheck.Text = "Stopping...";
             CustomButtonCheck.UseVisualStyleBackColor = true;
-            CustomButtonCheck.Click += CustomButtonCheck_Click;
+            CustomButtonCheck.MouseUp += CustomButtonCheck_MouseUp;
             // 
             // CustomGroupBoxLog
             // 
@@ -561,7 +572,7 @@
             CustomTextBoxHTTPProxy.BorderSize = 1;
             CustomTextBoxHTTPProxy.CharacterCasing = CharacterCasing.Normal;
             CustomTextBoxHTTPProxy.Enabled = false;
-            CustomTextBoxHTTPProxy.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxHTTPProxy.Font = new Font("Segoe UI", 9F);
             CustomTextBoxHTTPProxy.ForeColor = Color.White;
             CustomTextBoxHTTPProxy.HideSelection = true;
             CustomTextBoxHTTPProxy.Location = new Point(312, 168);
@@ -729,6 +740,7 @@
             CustomTabControlSecureDNS.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSecureDNS.TabIndex = 0;
             CustomTabControlSecureDNS.Tag = 0;
+            CustomTabControlSecureDNS.SelectedIndexChanged += CustomTabControlSecureDNS_SelectedIndexChanged;
             // 
             // TabPageCheck
             // 
@@ -946,7 +958,7 @@
             CustomRadioButtonConnectDNSCrypt.TabIndex = 13;
             CustomRadioButtonConnectDNSCrypt.Text = "Connect to popular servers using HTTP(S) proxy:";
             CustomRadioButtonConnectDNSCrypt.UseVisualStyleBackColor = false;
-            CustomRadioButtonConnectDNSCrypt.CheckedChanged += SecureDNSClient_CheckedChanged;
+            CustomRadioButtonConnectDNSCrypt.CheckedChanged += CustomRadioButtonConnectDNSCrypt_CheckedChanged;
             // 
             // TabPageSetDNS
             // 
@@ -1003,7 +1015,7 @@
             CustomDataGridViewNicStatus.ColumnHeadersBorder = true;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F);
             dataGridViewCellStyle1.ForeColor = Color.White;
             dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(73, 73, 73);
             dataGridViewCellStyle1.SelectionForeColor = Color.White;
@@ -1014,7 +1026,7 @@
             CustomDataGridViewNicStatus.Columns.AddRange(new DataGridViewColumn[] { ColumnNicStatusName, ColumnNicStatusText });
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = Color.DimGray;
-            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
             dataGridViewCellStyle2.ForeColor = Color.White;
             dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(97, 177, 255);
             dataGridViewCellStyle2.SelectionForeColor = Color.White;
@@ -1028,7 +1040,7 @@
             CustomDataGridViewNicStatus.ReadOnly = true;
             CustomDataGridViewNicStatus.RowHeadersVisible = false;
             CustomDataGridViewNicStatus.RowTemplate.Height = 25;
-            CustomDataGridViewNicStatus.ScrollBars = ScrollBars.None;
+            CustomDataGridViewNicStatus.ScrollBars = ScrollBars.Vertical;
             CustomDataGridViewNicStatus.SelectionColor = Color.DodgerBlue;
             CustomDataGridViewNicStatus.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             CustomDataGridViewNicStatus.SelectionModeFocus = false;
@@ -1137,9 +1149,11 @@
             // TabPageShare
             // 
             TabPageShare.BackColor = Color.Transparent;
+            TabPageShare.Controls.Add(CustomTextBoxProxySSLDefaultSni);
+            TabPageShare.Controls.Add(CustomLabelProxySSLDefaultSni);
             TabPageShare.Controls.Add(CustomCheckBoxPDpiEnableDpiBypass);
-            TabPageShare.Controls.Add(CustomLabelProxySSLChangeSniToIpInfo);
-            TabPageShare.Controls.Add(CustomCheckBoxProxySSLChangeSniToIP);
+            TabPageShare.Controls.Add(CustomLabelProxySSLChangeSniInfo);
+            TabPageShare.Controls.Add(CustomCheckBoxProxySSLChangeSni);
             TabPageShare.Controls.Add(CustomCheckBoxProxyEnableSSL);
             TabPageShare.Controls.Add(CustomLabelProxySSLInfo);
             TabPageShare.Controls.Add(CustomLabelShareSeparator2);
@@ -1171,6 +1185,50 @@
             TabPageShare.Tag = 3;
             TabPageShare.Text = "4. Share + Bypass DPI";
             // 
+            // CustomTextBoxProxySSLDefaultSni
+            // 
+            CustomTextBoxProxySSLDefaultSni.AcceptsReturn = false;
+            CustomTextBoxProxySSLDefaultSni.AcceptsTab = false;
+            CustomTextBoxProxySSLDefaultSni.BackColor = Color.DimGray;
+            CustomTextBoxProxySSLDefaultSni.Border = true;
+            CustomTextBoxProxySSLDefaultSni.BorderColor = Color.Blue;
+            CustomTextBoxProxySSLDefaultSni.BorderSize = 1;
+            CustomTextBoxProxySSLDefaultSni.CharacterCasing = CharacterCasing.Normal;
+            CustomTextBoxProxySSLDefaultSni.Font = new Font("Segoe UI", 9F);
+            CustomTextBoxProxySSLDefaultSni.ForeColor = Color.White;
+            CustomTextBoxProxySSLDefaultSni.HideSelection = true;
+            CustomTextBoxProxySSLDefaultSni.Location = new Point(461, 213);
+            CustomTextBoxProxySSLDefaultSni.MaxLength = 32767;
+            CustomTextBoxProxySSLDefaultSni.Multiline = false;
+            CustomTextBoxProxySSLDefaultSni.Name = "CustomTextBoxProxySSLDefaultSni";
+            CustomTextBoxProxySSLDefaultSni.ReadOnly = false;
+            CustomTextBoxProxySSLDefaultSni.RoundedCorners = 0;
+            CustomTextBoxProxySSLDefaultSni.ScrollBars = ScrollBars.None;
+            CustomTextBoxProxySSLDefaultSni.ShortcutsEnabled = true;
+            CustomTextBoxProxySSLDefaultSni.Size = new Size(168, 23);
+            CustomTextBoxProxySSLDefaultSni.TabIndex = 0;
+            CustomTextBoxProxySSLDefaultSni.TextAlign = HorizontalAlignment.Left;
+            CustomTextBoxProxySSLDefaultSni.Texts = "speedtest.net";
+            CustomTextBoxProxySSLDefaultSni.UnderlinedStyle = true;
+            CustomTextBoxProxySSLDefaultSni.UsePasswordChar = false;
+            CustomTextBoxProxySSLDefaultSni.WordWrap = true;
+            CustomTextBoxProxySSLDefaultSni.KeyUp += CustomTextBoxProxySSLDefaultSni_KeyUp;
+            // 
+            // CustomLabelProxySSLDefaultSni
+            // 
+            CustomLabelProxySSLDefaultSni.AutoSize = true;
+            CustomLabelProxySSLDefaultSni.BackColor = Color.DimGray;
+            CustomLabelProxySSLDefaultSni.Border = false;
+            CustomLabelProxySSLDefaultSni.BorderColor = Color.Blue;
+            CustomLabelProxySSLDefaultSni.FlatStyle = FlatStyle.Flat;
+            CustomLabelProxySSLDefaultSni.ForeColor = Color.White;
+            CustomLabelProxySSLDefaultSni.Location = new Point(384, 215);
+            CustomLabelProxySSLDefaultSni.Name = "CustomLabelProxySSLDefaultSni";
+            CustomLabelProxySSLDefaultSni.RoundedCorners = 0;
+            CustomLabelProxySSLDefaultSni.Size = new Size(69, 15);
+            CustomLabelProxySSLDefaultSni.TabIndex = 56;
+            CustomLabelProxySSLDefaultSni.Text = "Default SNI:";
+            // 
             // CustomCheckBoxPDpiEnableDpiBypass
             // 
             CustomCheckBoxPDpiEnableDpiBypass.BackColor = Color.DimGray;
@@ -1186,35 +1244,38 @@
             CustomCheckBoxPDpiEnableDpiBypass.TabIndex = 55;
             CustomCheckBoxPDpiEnableDpiBypass.Text = "Enable DPI bypass";
             CustomCheckBoxPDpiEnableDpiBypass.UseVisualStyleBackColor = false;
+            CustomCheckBoxPDpiEnableDpiBypass.TextChanged += CustomCheckBoxPDpiEnableDpiBypass_TextChanged;
+            CustomCheckBoxPDpiEnableDpiBypass.CheckedChanged += CustomCheckBoxPDpiEnableDpiBypass_CheckedChanged;
             // 
-            // CustomLabelProxySSLChangeSniToIpInfo
+            // CustomLabelProxySSLChangeSniInfo
             // 
-            CustomLabelProxySSLChangeSniToIpInfo.AutoSize = true;
-            CustomLabelProxySSLChangeSniToIpInfo.BackColor = Color.DimGray;
-            CustomLabelProxySSLChangeSniToIpInfo.Border = false;
-            CustomLabelProxySSLChangeSniToIpInfo.BorderColor = Color.Blue;
-            CustomLabelProxySSLChangeSniToIpInfo.FlatStyle = FlatStyle.Flat;
-            CustomLabelProxySSLChangeSniToIpInfo.ForeColor = Color.White;
-            CustomLabelProxySSLChangeSniToIpInfo.Location = new Point(402, 154);
-            CustomLabelProxySSLChangeSniToIpInfo.Name = "CustomLabelProxySSLChangeSniToIpInfo";
-            CustomLabelProxySSLChangeSniToIpInfo.RoundedCorners = 0;
-            CustomLabelProxySSLChangeSniToIpInfo.Size = new Size(329, 45);
-            CustomLabelProxySSLChangeSniToIpInfo.TabIndex = 52;
-            CustomLabelProxySSLChangeSniToIpInfo.Text = "Some websites may break when this option is enabled.\r\nYou can use \"Don't Bypass\" list to exclude them.\r\nYou can use \"Fake DNS\" list to set a custom SNI for a website.";
+            CustomLabelProxySSLChangeSniInfo.AutoSize = true;
+            CustomLabelProxySSLChangeSniInfo.BackColor = Color.DimGray;
+            CustomLabelProxySSLChangeSniInfo.Border = false;
+            CustomLabelProxySSLChangeSniInfo.BorderColor = Color.Blue;
+            CustomLabelProxySSLChangeSniInfo.FlatStyle = FlatStyle.Flat;
+            CustomLabelProxySSLChangeSniInfo.ForeColor = Color.White;
+            CustomLabelProxySSLChangeSniInfo.Location = new Point(402, 144);
+            CustomLabelProxySSLChangeSniInfo.Name = "CustomLabelProxySSLChangeSniInfo";
+            CustomLabelProxySSLChangeSniInfo.RoundedCorners = 0;
+            CustomLabelProxySSLChangeSniInfo.Size = new Size(324, 45);
+            CustomLabelProxySSLChangeSniInfo.TabIndex = 52;
+            CustomLabelProxySSLChangeSniInfo.Text = "Some websites may break when this option is enabled.\r\nYou can use \"Don't Bypass\" list to exclude them.\r\nYou can use \"Fake SNI\" list to set a custom SNI for a website.";
             // 
-            // CustomCheckBoxProxySSLChangeSniToIP
+            // CustomCheckBoxProxySSLChangeSni
             // 
-            CustomCheckBoxProxySSLChangeSniToIP.BackColor = Color.DimGray;
-            CustomCheckBoxProxySSLChangeSniToIP.BorderColor = Color.Blue;
-            CustomCheckBoxProxySSLChangeSniToIP.CheckColor = Color.Blue;
-            CustomCheckBoxProxySSLChangeSniToIP.ForeColor = Color.White;
-            CustomCheckBoxProxySSLChangeSniToIP.Location = new Point(384, 134);
-            CustomCheckBoxProxySSLChangeSniToIP.Name = "CustomCheckBoxProxySSLChangeSniToIP";
-            CustomCheckBoxProxySSLChangeSniToIP.SelectionColor = Color.LightBlue;
-            CustomCheckBoxProxySSLChangeSniToIP.Size = new Size(194, 17);
-            CustomCheckBoxProxySSLChangeSniToIP.TabIndex = 51;
-            CustomCheckBoxProxySSLChangeSniToIP.Text = "Change SNI to IP to Bypass DPI";
-            CustomCheckBoxProxySSLChangeSniToIP.UseVisualStyleBackColor = false;
+            CustomCheckBoxProxySSLChangeSni.BackColor = Color.DimGray;
+            CustomCheckBoxProxySSLChangeSni.BorderColor = Color.Blue;
+            CustomCheckBoxProxySSLChangeSni.CheckColor = Color.Blue;
+            CustomCheckBoxProxySSLChangeSni.ForeColor = Color.White;
+            CustomCheckBoxProxySSLChangeSni.Location = new Point(384, 124);
+            CustomCheckBoxProxySSLChangeSni.Name = "CustomCheckBoxProxySSLChangeSni";
+            CustomCheckBoxProxySSLChangeSni.SelectionColor = Color.LightBlue;
+            CustomCheckBoxProxySSLChangeSni.Size = new Size(82, 17);
+            CustomCheckBoxProxySSLChangeSni.TabIndex = 51;
+            CustomCheckBoxProxySSLChangeSni.Text = "Change SNI";
+            CustomCheckBoxProxySSLChangeSni.UseVisualStyleBackColor = false;
+            CustomCheckBoxProxySSLChangeSni.CheckedChanged += CustomCheckBoxProxySSLChangeSniToIP_CheckedChanged;
             // 
             // CustomCheckBoxProxyEnableSSL
             // 
@@ -1316,6 +1377,7 @@
             CustomNumericUpDownPDpiBeforeSniChunks.Size = new Size(45, 23);
             CustomNumericUpDownPDpiBeforeSniChunks.TabIndex = 44;
             CustomNumericUpDownPDpiBeforeSniChunks.Value = new decimal(new int[] { 50, 0, 0, 0 });
+            CustomNumericUpDownPDpiBeforeSniChunks.ValueChanged += CustomNumericUpDownPDpiFragment_ValueChanged;
             // 
             // CustomLabelPDpiBeforeSniChunks
             // 
@@ -1362,6 +1424,7 @@
             CustomComboBoxPDpiSniChunkMode.SelectionColor = Color.DodgerBlue;
             CustomComboBoxPDpiSniChunkMode.Size = new Size(100, 23);
             CustomComboBoxPDpiSniChunkMode.TabIndex = 41;
+            CustomComboBoxPDpiSniChunkMode.SelectedIndexChanged += CustomComboBoxPDpiSniChunkMode_SelectedIndexChanged;
             // 
             // CustomNumericUpDownPDpiAntiPatternOffset
             // 
@@ -1375,6 +1438,7 @@
             CustomNumericUpDownPDpiAntiPatternOffset.Size = new Size(45, 23);
             CustomNumericUpDownPDpiAntiPatternOffset.TabIndex = 40;
             CustomNumericUpDownPDpiAntiPatternOffset.Value = new decimal(new int[] { 2, 0, 0, 0 });
+            CustomNumericUpDownPDpiAntiPatternOffset.ValueChanged += CustomNumericUpDownPDpiFragment_ValueChanged;
             // 
             // CustomLabelPDpiAntiPatternOffset
             // 
@@ -1432,6 +1496,7 @@
             CustomNumericUpDownPDpiFragDelay.Size = new Size(45, 23);
             CustomNumericUpDownPDpiFragDelay.TabIndex = 36;
             CustomNumericUpDownPDpiFragDelay.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            CustomNumericUpDownPDpiFragDelay.ValueChanged += CustomNumericUpDownPDpiFragment_ValueChanged;
             // 
             // CustomLabelPDpiFragDelay
             // 
@@ -1476,6 +1541,7 @@
             CustomNumericUpDownPDpiSniChunks.Size = new Size(45, 23);
             CustomNumericUpDownPDpiSniChunks.TabIndex = 28;
             CustomNumericUpDownPDpiSniChunks.Value = new decimal(new int[] { 5, 0, 0, 0 });
+            CustomNumericUpDownPDpiSniChunks.ValueChanged += CustomNumericUpDownPDpiFragment_ValueChanged;
             // 
             // CustomLabelPDpiSniChunks
             // 
@@ -1542,7 +1608,7 @@
             CustomLabelShareInfo.Border = false;
             CustomLabelShareInfo.BorderColor = Color.Blue;
             CustomLabelShareInfo.FlatStyle = FlatStyle.Flat;
-            CustomLabelShareInfo.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomLabelShareInfo.Font = new Font("Segoe UI", 12F);
             CustomLabelShareInfo.ForeColor = Color.White;
             CustomLabelShareInfo.Location = new Point(25, 10);
             CustomLabelShareInfo.Name = "CustomLabelShareInfo";
@@ -1578,7 +1644,7 @@
             CustomTabControlDPIBasicAdvanced.Size = new Size(751, 330);
             CustomTabControlDPIBasicAdvanced.SizeMode = TabSizeMode.Fixed;
             CustomTabControlDPIBasicAdvanced.TabIndex = 13;
-            CustomTabControlDPIBasicAdvanced.Tag = 1;
+            CustomTabControlDPIBasicAdvanced.Tag = 0;
             // 
             // TabPageDPIBasic
             // 
@@ -1615,7 +1681,7 @@
             CustomLabelInfoDPIModes.Border = false;
             CustomLabelInfoDPIModes.BorderColor = Color.Blue;
             CustomLabelInfoDPIModes.FlatStyle = FlatStyle.Flat;
-            CustomLabelInfoDPIModes.Font = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
+            CustomLabelInfoDPIModes.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             CustomLabelInfoDPIModes.ForeColor = Color.White;
             CustomLabelInfoDPIModes.Location = new Point(25, 15);
             CustomLabelInfoDPIModes.Name = "CustomLabelInfoDPIModes";
@@ -1807,7 +1873,7 @@
             CustomTextBoxDPIAdvAutoTTL.BorderColor = Color.Blue;
             CustomTextBoxDPIAdvAutoTTL.BorderSize = 1;
             CustomTextBoxDPIAdvAutoTTL.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxDPIAdvAutoTTL.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxDPIAdvAutoTTL.Font = new Font("Segoe UI", 9F);
             CustomTextBoxDPIAdvAutoTTL.ForeColor = Color.White;
             CustomTextBoxDPIAdvAutoTTL.HideSelection = true;
             CustomTextBoxDPIAdvAutoTTL.Location = new Point(393, 93);
@@ -2079,7 +2145,7 @@
             CustomTextBoxDPIAdvIpId.BorderColor = Color.Blue;
             CustomTextBoxDPIAdvIpId.BorderSize = 1;
             CustomTextBoxDPIAdvIpId.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxDPIAdvIpId.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxDPIAdvIpId.Font = new Font("Segoe UI", 9F);
             CustomTextBoxDPIAdvIpId.ForeColor = Color.White;
             CustomTextBoxDPIAdvIpId.HideSelection = true;
             CustomTextBoxDPIAdvIpId.Location = new Point(529, 63);
@@ -2320,6 +2386,7 @@
             // 
             // TabPageTools
             // 
+            TabPageTools.AutoScroll = true;
             TabPageTools.BackColor = Color.Transparent;
             TabPageTools.Controls.Add(CustomButtonToolsFlushDns);
             TabPageTools.Controls.Add(CustomButtonToolsDnsScanner);
@@ -2342,7 +2409,7 @@
             CustomButtonToolsFlushDns.Name = "CustomButtonToolsFlushDns";
             CustomButtonToolsFlushDns.RoundedCorners = 5;
             CustomButtonToolsFlushDns.SelectionColor = Color.LightBlue;
-            CustomButtonToolsFlushDns.Size = new Size(110, 27);
+            CustomButtonToolsFlushDns.Size = new Size(115, 27);
             CustomButtonToolsFlushDns.TabIndex = 5;
             CustomButtonToolsFlushDns.Text = "Flush DNS";
             CustomButtonToolsFlushDns.UseVisualStyleBackColor = true;
@@ -2356,7 +2423,7 @@
             CustomButtonToolsDnsScanner.Name = "CustomButtonToolsDnsScanner";
             CustomButtonToolsDnsScanner.RoundedCorners = 5;
             CustomButtonToolsDnsScanner.SelectionColor = Color.LightBlue;
-            CustomButtonToolsDnsScanner.Size = new Size(110, 27);
+            CustomButtonToolsDnsScanner.Size = new Size(115, 27);
             CustomButtonToolsDnsScanner.TabIndex = 4;
             CustomButtonToolsDnsScanner.Text = "DNS Scanner";
             CustomButtonToolsDnsScanner.UseVisualStyleBackColor = true;
@@ -2370,7 +2437,7 @@
             CustomButtonToolsStampGenerator.Name = "CustomButtonToolsStampGenerator";
             CustomButtonToolsStampGenerator.RoundedCorners = 5;
             CustomButtonToolsStampGenerator.SelectionColor = Color.LightBlue;
-            CustomButtonToolsStampGenerator.Size = new Size(110, 27);
+            CustomButtonToolsStampGenerator.Size = new Size(115, 27);
             CustomButtonToolsStampGenerator.TabIndex = 3;
             CustomButtonToolsStampGenerator.Text = "Stamp Generator";
             CustomButtonToolsStampGenerator.UseVisualStyleBackColor = true;
@@ -2384,7 +2451,7 @@
             CustomButtonToolsStampReader.Name = "CustomButtonToolsStampReader";
             CustomButtonToolsStampReader.RoundedCorners = 5;
             CustomButtonToolsStampReader.SelectionColor = Color.LightBlue;
-            CustomButtonToolsStampReader.Size = new Size(110, 27);
+            CustomButtonToolsStampReader.Size = new Size(115, 27);
             CustomButtonToolsStampReader.TabIndex = 2;
             CustomButtonToolsStampReader.Text = "Stamp Reader";
             CustomButtonToolsStampReader.UseVisualStyleBackColor = true;
@@ -2398,7 +2465,7 @@
             CustomButtonToolsDnsLookup.Name = "CustomButtonToolsDnsLookup";
             CustomButtonToolsDnsLookup.RoundedCorners = 5;
             CustomButtonToolsDnsLookup.SelectionColor = Color.LightBlue;
-            CustomButtonToolsDnsLookup.Size = new Size(110, 27);
+            CustomButtonToolsDnsLookup.Size = new Size(115, 27);
             CustomButtonToolsDnsLookup.TabIndex = 1;
             CustomButtonToolsDnsLookup.Text = "DNS Lookup";
             CustomButtonToolsDnsLookup.UseVisualStyleBackColor = true;
@@ -2412,7 +2479,7 @@
             CustomButtonToolsIpScanner.Name = "CustomButtonToolsIpScanner";
             CustomButtonToolsIpScanner.RoundedCorners = 5;
             CustomButtonToolsIpScanner.SelectionColor = Color.LightBlue;
-            CustomButtonToolsIpScanner.Size = new Size(110, 27);
+            CustomButtonToolsIpScanner.Size = new Size(115, 27);
             CustomButtonToolsIpScanner.TabIndex = 0;
             CustomButtonToolsIpScanner.Text = "Clean IP Scanner";
             CustomButtonToolsIpScanner.UseVisualStyleBackColor = true;
@@ -2456,7 +2523,7 @@
             CustomTabControlSettings.Size = new Size(765, 365);
             CustomTabControlSettings.SizeMode = TabSizeMode.Fixed;
             CustomTabControlSettings.TabIndex = 10;
-            CustomTabControlSettings.Tag = 7;
+            CustomTabControlSettings.Tag = 5;
             // 
             // TabPageSettingsWorkingMode
             // 
@@ -2583,6 +2650,7 @@
             // 
             // TabPageSettingsCheck
             // 
+            TabPageSettingsCheck.AutoScroll = true;
             TabPageSettingsCheck.BackColor = Color.Transparent;
             TabPageSettingsCheck.Controls.Add(CustomGroupBoxSettingCheckDnsProtocol);
             TabPageSettingsCheck.Controls.Add(CustomGroupBoxSettingCheckSDNS);
@@ -2779,7 +2847,7 @@
             CustomTextBoxSettingCheckDPIHost.BorderColor = Color.Blue;
             CustomTextBoxSettingCheckDPIHost.BorderSize = 1;
             CustomTextBoxSettingCheckDPIHost.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxSettingCheckDPIHost.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingCheckDPIHost.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingCheckDPIHost.ForeColor = Color.White;
             CustomTextBoxSettingCheckDPIHost.HideSelection = true;
             CustomTextBoxSettingCheckDPIHost.Location = new Point(274, 63);
@@ -2919,6 +2987,7 @@
             CustomCheckBoxSettingQcUseSavedServers.TabIndex = 15;
             CustomCheckBoxSettingQcUseSavedServers.Text = "Use Saved Servers if available";
             CustomCheckBoxSettingQcUseSavedServers.UseVisualStyleBackColor = false;
+            CustomCheckBoxSettingQcUseSavedServers.CheckedChanged += CustomCheckBoxSettingQcUseSavedServers_CheckedChanged;
             // 
             // CustomButtonSettingQcStartup
             // 
@@ -3038,6 +3107,7 @@
             CustomCheckBoxSettingQcStartProxyServer.TabIndex = 7;
             CustomCheckBoxSettingQcStartProxyServer.Text = "Start Proxy Server";
             CustomCheckBoxSettingQcStartProxyServer.UseVisualStyleBackColor = false;
+            CustomCheckBoxSettingQcStartProxyServer.CheckedChanged += CustomCheckBoxSettingQcStartProxyServer_CheckedChanged;
             // 
             // CustomButtonSettingQcUpdateNics
             // 
@@ -3088,7 +3158,7 @@
             CustomComboBoxSettingQcConnectMode.BackColor = Color.DimGray;
             CustomComboBoxSettingQcConnectMode.BorderColor = Color.Blue;
             CustomComboBoxSettingQcConnectMode.DrawMode = DrawMode.OwnerDrawVariable;
-            CustomComboBoxSettingQcConnectMode.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomComboBoxSettingQcConnectMode.Font = new Font("Segoe UI", 9F);
             CustomComboBoxSettingQcConnectMode.ForeColor = Color.White;
             CustomComboBoxSettingQcConnectMode.FormattingEnabled = true;
             CustomComboBoxSettingQcConnectMode.ItemHeight = 17;
@@ -3099,6 +3169,7 @@
             CustomComboBoxSettingQcConnectMode.Size = new Size(250, 23);
             CustomComboBoxSettingQcConnectMode.TabIndex = 2;
             CustomComboBoxSettingQcConnectMode.Text = "Select a Connect Mode";
+            CustomComboBoxSettingQcConnectMode.SelectedIndexChanged += CustomComboBoxSettingQcConnectMode_SelectedIndexChanged;
             // 
             // CustomLabelSettingQcInfo
             // 
@@ -3117,6 +3188,7 @@
             // 
             // TabPageSettingsConnect
             // 
+            TabPageSettingsConnect.AutoScroll = true;
             TabPageSettingsConnect.BackColor = Color.Transparent;
             TabPageSettingsConnect.Controls.Add(CustomCheckBoxSettingEnableCache);
             TabPageSettingsConnect.Controls.Add(CustomNumericUpDownSettingCamouflageDnsPort);
@@ -3207,7 +3279,9 @@
             // 
             // TabPageSettingsSetUnsetDNS
             // 
+            TabPageSettingsSetUnsetDNS.AutoScroll = true;
             TabPageSettingsSetUnsetDNS.BackColor = Color.Transparent;
+            TabPageSettingsSetUnsetDNS.Controls.Add(CustomCheckBoxSettingDnsDetectUnset);
             TabPageSettingsSetUnsetDNS.Controls.Add(CustomTextBoxSettingUnsetDns2);
             TabPageSettingsSetUnsetDNS.Controls.Add(CustomTextBoxSettingUnsetDns1);
             TabPageSettingsSetUnsetDNS.Controls.Add(CustomLabelSettingUnsetDns2);
@@ -3222,6 +3296,21 @@
             TabPageSettingsSetUnsetDNS.Tag = 4;
             TabPageSettingsSetUnsetDNS.Text = "Set/Unset DNS";
             // 
+            // CustomCheckBoxSettingDnsDetectUnset
+            // 
+            CustomCheckBoxSettingDnsDetectUnset.AutoSize = true;
+            CustomCheckBoxSettingDnsDetectUnset.BackColor = Color.DimGray;
+            CustomCheckBoxSettingDnsDetectUnset.BorderColor = Color.Blue;
+            CustomCheckBoxSettingDnsDetectUnset.CheckColor = Color.Blue;
+            CustomCheckBoxSettingDnsDetectUnset.ForeColor = Color.White;
+            CustomCheckBoxSettingDnsDetectUnset.Location = new Point(50, 198);
+            CustomCheckBoxSettingDnsDetectUnset.Name = "CustomCheckBoxSettingDnsDetectUnset";
+            CustomCheckBoxSettingDnsDetectUnset.SelectionColor = Color.LightBlue;
+            CustomCheckBoxSettingDnsDetectUnset.Size = new Size(280, 19);
+            CustomCheckBoxSettingDnsDetectUnset.TabIndex = 4;
+            CustomCheckBoxSettingDnsDetectUnset.Text = "Detect changes if DNS get unset by another app";
+            CustomCheckBoxSettingDnsDetectUnset.UseVisualStyleBackColor = false;
+            // 
             // CustomTextBoxSettingUnsetDns2
             // 
             CustomTextBoxSettingUnsetDns2.AcceptsReturn = false;
@@ -3231,7 +3320,7 @@
             CustomTextBoxSettingUnsetDns2.BorderColor = Color.Blue;
             CustomTextBoxSettingUnsetDns2.BorderSize = 1;
             CustomTextBoxSettingUnsetDns2.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxSettingUnsetDns2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingUnsetDns2.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingUnsetDns2.ForeColor = Color.White;
             CustomTextBoxSettingUnsetDns2.HideSelection = true;
             CustomTextBoxSettingUnsetDns2.Location = new Point(180, 138);
@@ -3259,7 +3348,7 @@
             CustomTextBoxSettingUnsetDns1.BorderColor = Color.Blue;
             CustomTextBoxSettingUnsetDns1.BorderSize = 1;
             CustomTextBoxSettingUnsetDns1.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxSettingUnsetDns1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingUnsetDns1.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingUnsetDns1.ForeColor = Color.White;
             CustomTextBoxSettingUnsetDns1.HideSelection = true;
             CustomTextBoxSettingUnsetDns1.Location = new Point(180, 103);
@@ -3355,6 +3444,7 @@
             CustomTabControlSettingProxy.BorderColor = Color.Blue;
             CustomTabControlSettingProxy.Controls.Add(TabPageSettingProxyBasic);
             CustomTabControlSettingProxy.Controls.Add(TabPageSettingProxyAdvanced);
+            CustomTabControlSettingProxy.Controls.Add(TabPageSettingProxySslDecryption);
             CustomTabControlSettingProxy.Dock = DockStyle.Fill;
             CustomTabControlSettingProxy.HideTabHeader = false;
             CustomTabControlSettingProxy.Location = new Point(3, 3);
@@ -3368,6 +3458,7 @@
             // 
             // TabPageSettingProxyBasic
             // 
+            TabPageSettingProxyBasic.AutoScroll = true;
             TabPageSettingProxyBasic.BackColor = Color.Transparent;
             TabPageSettingProxyBasic.Controls.Add(CustomNumericUpDownSettingProxyKillRequestTimeout);
             TabPageSettingProxyBasic.Controls.Add(CustomLabelSettingProxyKillRequestTimeout);
@@ -3416,7 +3507,7 @@
             CustomLabelSettingProxyKillRequestTimeout.Location = new Point(6, 65);
             CustomLabelSettingProxyKillRequestTimeout.Name = "CustomLabelSettingProxyKillRequestTimeout";
             CustomLabelSettingProxyKillRequestTimeout.RoundedCorners = 0;
-            CustomLabelSettingProxyKillRequestTimeout.Size = new Size(158, 15);
+            CustomLabelSettingProxyKillRequestTimeout.Size = new Size(160, 17);
             CustomLabelSettingProxyKillRequestTimeout.TabIndex = 55;
             CustomLabelSettingProxyKillRequestTimeout.Text = "Kill request on timeout (sec):";
             // 
@@ -3459,7 +3550,7 @@
             CustomTextBoxSettingProxyUpstreamHost.BorderColor = Color.Blue;
             CustomTextBoxSettingProxyUpstreamHost.BorderSize = 1;
             CustomTextBoxSettingProxyUpstreamHost.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxSettingProxyUpstreamHost.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingProxyUpstreamHost.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingProxyUpstreamHost.ForeColor = Color.White;
             CustomTextBoxSettingProxyUpstreamHost.HideSelection = true;
             CustomTextBoxSettingProxyUpstreamHost.Location = new Point(156, 165);
@@ -3489,7 +3580,7 @@
             CustomLabelSettingProxyUpstreamPort.Location = new Point(330, 168);
             CustomLabelSettingProxyUpstreamPort.Name = "CustomLabelSettingProxyUpstreamPort";
             CustomLabelSettingProxyUpstreamPort.RoundedCorners = 0;
-            CustomLabelSettingProxyUpstreamPort.Size = new Size(32, 15);
+            CustomLabelSettingProxyUpstreamPort.Size = new Size(34, 17);
             CustomLabelSettingProxyUpstreamPort.TabIndex = 49;
             CustomLabelSettingProxyUpstreamPort.Text = "Port:";
             // 
@@ -3504,7 +3595,7 @@
             CustomLabelSettingProxyUpstreamHost.Location = new Point(113, 168);
             CustomLabelSettingProxyUpstreamHost.Name = "CustomLabelSettingProxyUpstreamHost";
             CustomLabelSettingProxyUpstreamHost.RoundedCorners = 0;
-            CustomLabelSettingProxyUpstreamHost.Size = new Size(35, 15);
+            CustomLabelSettingProxyUpstreamHost.Size = new Size(37, 17);
             CustomLabelSettingProxyUpstreamHost.TabIndex = 48;
             CustomLabelSettingProxyUpstreamHost.Text = "Host:";
             // 
@@ -3549,7 +3640,7 @@
             CustomLabelSettingProxyPort.Location = new Point(6, 25);
             CustomLabelSettingProxyPort.Name = "CustomLabelSettingProxyPort";
             CustomLabelSettingProxyPort.RoundedCorners = 0;
-            CustomLabelSettingProxyPort.Size = new Size(68, 15);
+            CustomLabelSettingProxyPort.Size = new Size(70, 17);
             CustomLabelSettingProxyPort.TabIndex = 42;
             CustomLabelSettingProxyPort.Text = "Proxy. Port:";
             // 
@@ -3580,7 +3671,7 @@
             CustomLabelSettingProxyHandleRequests.Location = new Point(161, 25);
             CustomLabelSettingProxyHandleRequests.Name = "CustomLabelSettingProxyHandleRequests";
             CustomLabelSettingProxyHandleRequests.RoundedCorners = 0;
-            CustomLabelSettingProxyHandleRequests.Size = new Size(135, 15);
+            CustomLabelSettingProxyHandleRequests.Size = new Size(137, 17);
             CustomLabelSettingProxyHandleRequests.TabIndex = 43;
             CustomLabelSettingProxyHandleRequests.Text = "Handle requests per sec:";
             // 
@@ -3604,7 +3695,7 @@
             CustomNumericUpDownSettingProxyHandleRequests.BorderColor = Color.Blue;
             CustomNumericUpDownSettingProxyHandleRequests.BorderStyle = BorderStyle.FixedSingle;
             CustomNumericUpDownSettingProxyHandleRequests.Location = new Point(310, 23);
-            CustomNumericUpDownSettingProxyHandleRequests.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            CustomNumericUpDownSettingProxyHandleRequests.Maximum = new decimal(new int[] { 2000, 0, 0, 0 });
             CustomNumericUpDownSettingProxyHandleRequests.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             CustomNumericUpDownSettingProxyHandleRequests.Name = "CustomNumericUpDownSettingProxyHandleRequests";
             CustomNumericUpDownSettingProxyHandleRequests.RoundedCorners = 5;
@@ -3614,6 +3705,7 @@
             // 
             // TabPageSettingProxyAdvanced
             // 
+            TabPageSettingProxyAdvanced.AutoScroll = true;
             TabPageSettingProxyAdvanced.BackColor = Color.Transparent;
             TabPageSettingProxyAdvanced.Controls.Add(CustomButtonSettingProxyDontBypass);
             TabPageSettingProxyAdvanced.Controls.Add(CustomLabelSettingProxyDontBypass);
@@ -3750,6 +3842,7 @@
             CustomCheckBoxSettingProxyCfCleanIP.TabIndex = 1;
             CustomCheckBoxSettingProxyCfCleanIP.Text = "Redirect all Cloudflare IPs to a clean IP:";
             CustomCheckBoxSettingProxyCfCleanIP.UseVisualStyleBackColor = false;
+            CustomCheckBoxSettingProxyCfCleanIP.CheckedChanged += CustomCheckBoxSettingProxyCfCleanIP_CheckedChanged;
             // 
             // CustomLabelSettingShareSeparator2
             // 
@@ -3773,7 +3866,7 @@
             CustomTextBoxSettingProxyCfCleanIP.BorderColor = Color.Blue;
             CustomTextBoxSettingProxyCfCleanIP.BorderSize = 1;
             CustomTextBoxSettingProxyCfCleanIP.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxSettingProxyCfCleanIP.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingProxyCfCleanIP.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingProxyCfCleanIP.ForeColor = Color.White;
             CustomTextBoxSettingProxyCfCleanIP.HideSelection = true;
             CustomTextBoxSettingProxyCfCleanIP.Location = new Point(244, 43);
@@ -3844,9 +3937,9 @@
             CustomLabelSettingProxyFakeDNS.Location = new Point(22, 110);
             CustomLabelSettingProxyFakeDNS.Name = "CustomLabelSettingProxyFakeDNS";
             CustomLabelSettingProxyFakeDNS.RoundedCorners = 0;
-            CustomLabelSettingProxyFakeDNS.Size = new Size(132, 30);
+            CustomLabelSettingProxyFakeDNS.Size = new Size(141, 30);
             CustomLabelSettingProxyFakeDNS.TabIndex = 4;
-            CustomLabelSettingProxyFakeDNS.Text = "Each line one rule. e.g:\r\n dns.google.com|8.8.8.8";
+            CustomLabelSettingProxyFakeDNS.Text = "Each line one rule. e.g:\r\n dns.google.com|8.8.8.8   ";
             // 
             // CustomButtonSettingProxyFakeDNS
             // 
@@ -3862,8 +3955,67 @@
             CustomButtonSettingProxyFakeDNS.UseVisualStyleBackColor = true;
             CustomButtonSettingProxyFakeDNS.Click += CustomButtonSettingProxyFakeDNS_Click;
             // 
+            // TabPageSettingProxySslDecryption
+            // 
+            TabPageSettingProxySslDecryption.AutoScroll = true;
+            TabPageSettingProxySslDecryption.BackColor = Color.Transparent;
+            TabPageSettingProxySslDecryption.Controls.Add(CustomCheckBoxSettingProxyEnableFakeSNI);
+            TabPageSettingProxySslDecryption.Controls.Add(CustomLabelSettingProxyFakeSNI);
+            TabPageSettingProxySslDecryption.Controls.Add(CustomButtonSettingProxyFakeSNI);
+            TabPageSettingProxySslDecryption.Location = new Point(4, 25);
+            TabPageSettingProxySslDecryption.Name = "TabPageSettingProxySslDecryption";
+            TabPageSettingProxySslDecryption.Padding = new Padding(3);
+            TabPageSettingProxySslDecryption.Size = new Size(653, 322);
+            TabPageSettingProxySslDecryption.TabIndex = 2;
+            TabPageSettingProxySslDecryption.Tag = 2;
+            TabPageSettingProxySslDecryption.Text = "SSL Decryption";
+            // 
+            // CustomCheckBoxSettingProxyEnableFakeSNI
+            // 
+            CustomCheckBoxSettingProxyEnableFakeSNI.BackColor = Color.DimGray;
+            CustomCheckBoxSettingProxyEnableFakeSNI.BorderColor = Color.Blue;
+            CustomCheckBoxSettingProxyEnableFakeSNI.CheckColor = Color.Blue;
+            CustomCheckBoxSettingProxyEnableFakeSNI.ForeColor = Color.White;
+            CustomCheckBoxSettingProxyEnableFakeSNI.Location = new Point(6, 15);
+            CustomCheckBoxSettingProxyEnableFakeSNI.Name = "CustomCheckBoxSettingProxyEnableFakeSNI";
+            CustomCheckBoxSettingProxyEnableFakeSNI.SelectionColor = Color.LightBlue;
+            CustomCheckBoxSettingProxyEnableFakeSNI.Size = new Size(116, 17);
+            CustomCheckBoxSettingProxyEnableFakeSNI.TabIndex = 6;
+            CustomCheckBoxSettingProxyEnableFakeSNI.Text = "Enable Fake SNI";
+            CustomCheckBoxSettingProxyEnableFakeSNI.UseVisualStyleBackColor = false;
+            // 
+            // CustomLabelSettingProxyFakeSNI
+            // 
+            CustomLabelSettingProxyFakeSNI.AutoSize = true;
+            CustomLabelSettingProxyFakeSNI.BackColor = Color.DimGray;
+            CustomLabelSettingProxyFakeSNI.Border = false;
+            CustomLabelSettingProxyFakeSNI.BorderColor = Color.Blue;
+            CustomLabelSettingProxyFakeSNI.FlatStyle = FlatStyle.Flat;
+            CustomLabelSettingProxyFakeSNI.ForeColor = Color.White;
+            CustomLabelSettingProxyFakeSNI.Location = new Point(22, 35);
+            CustomLabelSettingProxyFakeSNI.Name = "CustomLabelSettingProxyFakeSNI";
+            CustomLabelSettingProxyFakeSNI.RoundedCorners = 0;
+            CustomLabelSettingProxyFakeSNI.Size = new Size(225, 45);
+            CustomLabelSettingProxyFakeSNI.TabIndex = 7;
+            CustomLabelSettingProxyFakeSNI.Text = "Each line one rule. e.g:\r\n youtube.com|google.com\r\n*.googlevideos.com|*.c.docs.google.com";
+            // 
+            // CustomButtonSettingProxyFakeSNI
+            // 
+            CustomButtonSettingProxyFakeSNI.BorderColor = Color.Blue;
+            CustomButtonSettingProxyFakeSNI.FlatStyle = FlatStyle.Flat;
+            CustomButtonSettingProxyFakeSNI.Location = new Point(292, 29);
+            CustomButtonSettingProxyFakeSNI.Name = "CustomButtonSettingProxyFakeSNI";
+            CustomButtonSettingProxyFakeSNI.RoundedCorners = 5;
+            CustomButtonSettingProxyFakeSNI.SelectionColor = Color.LightBlue;
+            CustomButtonSettingProxyFakeSNI.Size = new Size(120, 27);
+            CustomButtonSettingProxyFakeSNI.TabIndex = 8;
+            CustomButtonSettingProxyFakeSNI.Text = "Edit Fake SNI rules";
+            CustomButtonSettingProxyFakeSNI.UseVisualStyleBackColor = true;
+            CustomButtonSettingProxyFakeSNI.Click += CustomButtonSettingProxyFakeSNI_Click;
+            // 
             // TabPageSettingsFakeProxy
             // 
+            TabPageSettingsFakeProxy.AutoScroll = true;
             TabPageSettingsFakeProxy.BackColor = Color.Transparent;
             TabPageSettingsFakeProxy.Controls.Add(CustomTextBoxSettingFakeProxyDohCleanIP);
             TabPageSettingsFakeProxy.Controls.Add(CustomTextBoxSettingFakeProxyDohAddress);
@@ -3889,7 +4041,7 @@
             CustomTextBoxSettingFakeProxyDohCleanIP.BorderColor = Color.Blue;
             CustomTextBoxSettingFakeProxyDohCleanIP.BorderSize = 1;
             CustomTextBoxSettingFakeProxyDohCleanIP.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxSettingFakeProxyDohCleanIP.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingFakeProxyDohCleanIP.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingFakeProxyDohCleanIP.ForeColor = Color.White;
             CustomTextBoxSettingFakeProxyDohCleanIP.HideSelection = true;
             CustomTextBoxSettingFakeProxyDohCleanIP.Location = new Point(128, 148);
@@ -3917,7 +4069,7 @@
             CustomTextBoxSettingFakeProxyDohAddress.BorderColor = Color.Blue;
             CustomTextBoxSettingFakeProxyDohAddress.BorderSize = 1;
             CustomTextBoxSettingFakeProxyDohAddress.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxSettingFakeProxyDohAddress.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingFakeProxyDohAddress.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingFakeProxyDohAddress.ForeColor = Color.White;
             CustomTextBoxSettingFakeProxyDohAddress.HideSelection = true;
             CustomTextBoxSettingFakeProxyDohAddress.Location = new Point(128, 98);
@@ -3973,7 +4125,7 @@
             CustomLabelSettingFakeProxyInfo.Border = false;
             CustomLabelSettingFakeProxyInfo.BorderColor = Color.Blue;
             CustomLabelSettingFakeProxyInfo.FlatStyle = FlatStyle.Flat;
-            CustomLabelSettingFakeProxyInfo.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomLabelSettingFakeProxyInfo.Font = new Font("Segoe UI", 12F);
             CustomLabelSettingFakeProxyInfo.ForeColor = Color.White;
             CustomLabelSettingFakeProxyInfo.Location = new Point(20, 10);
             CustomLabelSettingFakeProxyInfo.Name = "CustomLabelSettingFakeProxyInfo";
@@ -4013,6 +4165,7 @@
             // 
             // TabPageSettingsCPU
             // 
+            TabPageSettingsCPU.AutoScroll = true;
             TabPageSettingsCPU.BackColor = Color.Transparent;
             TabPageSettingsCPU.Controls.Add(CustomNumericUpDownUpdateAutoDelayMS);
             TabPageSettingsCPU.Controls.Add(CustomLabelUpdateAutoDelayMS);
@@ -4058,7 +4211,7 @@
             CustomLabelUpdateAutoDelayMS.Location = new Point(50, 220);
             CustomLabelUpdateAutoDelayMS.Name = "CustomLabelUpdateAutoDelayMS";
             CustomLabelUpdateAutoDelayMS.RoundedCorners = 0;
-            CustomLabelUpdateAutoDelayMS.Size = new Size(156, 17);
+            CustomLabelUpdateAutoDelayMS.Size = new Size(154, 15);
             CustomLabelUpdateAutoDelayMS.TabIndex = 8;
             CustomLabelUpdateAutoDelayMS.Text = "Variables update delay (ms):";
             // 
@@ -4087,7 +4240,7 @@
             CustomLabelSettingCpuKillProxyRequests.Location = new Point(50, 260);
             CustomLabelSettingCpuKillProxyRequests.Name = "CustomLabelSettingCpuKillProxyRequests";
             CustomLabelSettingCpuKillProxyRequests.RoundedCorners = 0;
-            CustomLabelSettingCpuKillProxyRequests.Size = new Size(233, 17);
+            CustomLabelSettingCpuKillProxyRequests.Size = new Size(231, 15);
             CustomLabelSettingCpuKillProxyRequests.TabIndex = 6;
             CustomLabelSettingCpuKillProxyRequests.Text = "Kill Proxy requests when CPU is above (%):";
             // 
@@ -4174,7 +4327,7 @@
             CustomLabelSettingInfoCPU.Location = new Point(50, 35);
             CustomLabelSettingInfoCPU.Name = "CustomLabelSettingInfoCPU";
             CustomLabelSettingInfoCPU.RoundedCorners = 0;
-            CustomLabelSettingInfoCPU.Size = new Size(134, 17);
+            CustomLabelSettingInfoCPU.Size = new Size(132, 15);
             CustomLabelSettingInfoCPU.TabIndex = 0;
             CustomLabelSettingInfoCPU.Text = "Set processing priorities";
             // 
@@ -4287,7 +4440,7 @@
             CustomTextBoxSettingFallbackDnsIP.BorderSize = 1;
             CustomTextBoxSettingFallbackDnsIP.CharacterCasing = CharacterCasing.Normal;
             CustomTextBoxSettingFallbackDnsIP.Enabled = false;
-            CustomTextBoxSettingFallbackDnsIP.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingFallbackDnsIP.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingFallbackDnsIP.ForeColor = Color.White;
             CustomTextBoxSettingFallbackDnsIP.HideSelection = true;
             CustomTextBoxSettingFallbackDnsIP.Location = new Point(120, 68);
@@ -4417,7 +4570,7 @@
             CustomTextBoxSettingBootstrapDnsIP.BorderColor = Color.Blue;
             CustomTextBoxSettingBootstrapDnsIP.BorderSize = 1;
             CustomTextBoxSettingBootstrapDnsIP.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxSettingBootstrapDnsIP.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxSettingBootstrapDnsIP.Font = new Font("Segoe UI", 9F);
             CustomTextBoxSettingBootstrapDnsIP.ForeColor = Color.White;
             CustomTextBoxSettingBootstrapDnsIP.HideSelection = true;
             CustomTextBoxSettingBootstrapDnsIP.Location = new Point(120, 18);
@@ -4441,6 +4594,7 @@
             // 
             TabPageAbout.BackColor = Color.Transparent;
             TabPageAbout.BackgroundImageLayout = ImageLayout.Stretch;
+            TabPageAbout.Controls.Add(LinkLabelStWolfkingal2000);
             TabPageAbout.Controls.Add(CustomLabelAboutVersion);
             TabPageAbout.Controls.Add(PictureBoxFarvahar);
             TabPageAbout.Controls.Add(CustomLabelAboutCopyright);
@@ -4461,6 +4615,18 @@
             TabPageAbout.TabIndex = 2;
             TabPageAbout.Tag = 3;
             TabPageAbout.Text = "About";
+            // 
+            // LinkLabelStWolfkingal2000
+            // 
+            LinkLabelStWolfkingal2000.AutoSize = true;
+            LinkLabelStWolfkingal2000.LinkBehavior = LinkBehavior.NeverUnderline;
+            LinkLabelStWolfkingal2000.Location = new Point(461, 193);
+            LinkLabelStWolfkingal2000.Name = "LinkLabelStWolfkingal2000";
+            LinkLabelStWolfkingal2000.Size = new Size(88, 15);
+            LinkLabelStWolfkingal2000.TabIndex = 13;
+            LinkLabelStWolfkingal2000.TabStop = true;
+            LinkLabelStWolfkingal2000.Text = "Wolfkingal2000";
+            LinkLabelStWolfkingal2000.LinkClicked += LinkLabelStWolfkingal2000_LinkClicked;
             // 
             // CustomLabelAboutVersion
             // 
@@ -4506,7 +4672,7 @@
             // 
             LinkLabelStAlidxdydz.AutoSize = true;
             LinkLabelStAlidxdydz.LinkBehavior = LinkBehavior.NeverUnderline;
-            LinkLabelStAlidxdydz.Location = new Point(461, 174);
+            LinkLabelStAlidxdydz.Location = new Point(461, 172);
             LinkLabelStAlidxdydz.Name = "LinkLabelStAlidxdydz";
             LinkLabelStAlidxdydz.Size = new Size(59, 15);
             LinkLabelStAlidxdydz.TabIndex = 10;
@@ -4525,9 +4691,9 @@
             CustomLabelAboutSpecialThanks.Location = new Point(446, 135);
             CustomLabelAboutSpecialThanks.Name = "CustomLabelAboutSpecialThanks";
             CustomLabelAboutSpecialThanks.RoundedCorners = 0;
-            CustomLabelAboutSpecialThanks.Size = new Size(81, 75);
+            CustomLabelAboutSpecialThanks.Size = new Size(81, 90);
             CustomLabelAboutSpecialThanks.TabIndex = 9;
-            CustomLabelAboutSpecialThanks.Text = "special thanks\r\n{\r\n\r\n\r\n}";
+            CustomLabelAboutSpecialThanks.Text = "special thanks\r\n{\r\n\r\n\r\n\r\n}";
             // 
             // LinkLabelGoodbyeDPI
             // 
@@ -4615,7 +4781,7 @@
             CustomLabelAboutThis.BorderColor = Color.Blue;
             CustomLabelAboutThis.Cursor = Cursors.Hand;
             CustomLabelAboutThis.FlatStyle = FlatStyle.Flat;
-            CustomLabelAboutThis.Font = new Font("Verdana", 19F, FontStyle.Bold, GraphicsUnit.Point);
+            CustomLabelAboutThis.Font = new Font("Verdana", 19F, FontStyle.Bold);
             CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
             CustomLabelAboutThis.Location = new Point(235, 33);
             CustomLabelAboutThis.Name = "CustomLabelAboutThis";
@@ -4645,7 +4811,7 @@
             CustomDataGridViewStatus.ColumnHeadersBorder = true;
             dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle3.BackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F);
             dataGridViewCellStyle3.ForeColor = Color.White;
             dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(73, 73, 73);
             dataGridViewCellStyle3.SelectionForeColor = Color.White;
@@ -4656,7 +4822,7 @@
             CustomDataGridViewStatus.Columns.AddRange(new DataGridViewColumn[] { ColumnStatusName, ColumnStatusText });
             dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle4.BackColor = Color.DimGray;
-            dataGridViewCellStyle4.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle4.Font = new Font("Segoe UI", 9F);
             dataGridViewCellStyle4.ForeColor = Color.White;
             dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(97, 177, 255);
             dataGridViewCellStyle4.SelectionForeColor = Color.White;
@@ -4669,7 +4835,7 @@
             CustomDataGridViewStatus.ReadOnly = true;
             CustomDataGridViewStatus.RowHeadersVisible = false;
             CustomDataGridViewStatus.RowTemplate.Height = 25;
-            CustomDataGridViewStatus.ScrollBars = ScrollBars.None;
+            CustomDataGridViewStatus.ScrollBars = ScrollBars.Vertical;
             CustomDataGridViewStatus.SelectionColor = Color.DodgerBlue;
             CustomDataGridViewStatus.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             CustomDataGridViewStatus.SelectionModeFocus = false;
@@ -4721,6 +4887,7 @@
             // CustomGroupBoxStatus
             // 
             CustomGroupBoxStatus.BorderColor = Color.Blue;
+            CustomGroupBoxStatus.Controls.Add(CustomButtonBenchmark);
             CustomGroupBoxStatus.Controls.Add(CustomDataGridViewStatus);
             CustomGroupBoxStatus.Controls.Add(CustomButtonProcessMonitor);
             CustomGroupBoxStatus.Dock = DockStyle.Fill;
@@ -4732,6 +4899,21 @@
             CustomGroupBoxStatus.TabIndex = 8;
             CustomGroupBoxStatus.TabStop = false;
             CustomGroupBoxStatus.Text = "Status";
+            // 
+            // CustomButtonBenchmark
+            // 
+            CustomButtonBenchmark.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            CustomButtonBenchmark.BorderColor = Color.Blue;
+            CustomButtonBenchmark.FlatStyle = FlatStyle.Flat;
+            CustomButtonBenchmark.Location = new Point(158, 366);
+            CustomButtonBenchmark.Name = "CustomButtonBenchmark";
+            CustomButtonBenchmark.RoundedCorners = 5;
+            CustomButtonBenchmark.SelectionColor = Color.LightBlue;
+            CustomButtonBenchmark.Size = new Size(37, 27);
+            CustomButtonBenchmark.TabIndex = 21;
+            CustomButtonBenchmark.Text = "BM";
+            CustomButtonBenchmark.UseVisualStyleBackColor = true;
+            CustomButtonBenchmark.Click += CustomButtonBenchmark_Click;
             // 
             // CustomButtonProcessMonitor
             // 
@@ -4864,6 +5046,8 @@
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingProxyHandleRequests).EndInit();
             TabPageSettingProxyAdvanced.ResumeLayout(false);
             TabPageSettingProxyAdvanced.PerformLayout();
+            TabPageSettingProxySslDecryption.ResumeLayout(false);
+            TabPageSettingProxySslDecryption.PerformLayout();
             TabPageSettingsFakeProxy.ResumeLayout(false);
             TabPageSettingsFakeProxy.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownSettingFakeProxyPort).EndInit();
@@ -5154,8 +5338,8 @@
         private CustomControls.CustomButton CustomButtonEnableDisableNic;
         private CustomControls.CustomButton CustomButtonPDpiCheck;
         private CustomControls.CustomLabel CustomLabelShareSeparator2;
-        private CustomControls.CustomLabel CustomLabelProxySSLChangeSniToIpInfo;
-        private CustomControls.CustomCheckBox CustomCheckBoxProxySSLChangeSniToIP;
+        private CustomControls.CustomLabel CustomLabelProxySSLChangeSniInfo;
+        private CustomControls.CustomCheckBox CustomCheckBoxProxySSLChangeSni;
         private CustomControls.CustomCheckBox CustomCheckBoxProxyEnableSSL;
         private CustomControls.CustomLabel CustomLabelProxySSLInfo;
         private CustomControls.CustomCheckBox CustomCheckBoxPDpiEnableDpiBypass;
@@ -5166,5 +5350,14 @@
         private CustomControls.CustomNumericUpDown CustomNumericUpDownCheckInParallel;
         private CustomControls.CustomLabel CustomLabelUpdateAutoDelayMS;
         private CustomControls.CustomNumericUpDown CustomNumericUpDownUpdateAutoDelayMS;
+        private CustomControls.CustomButton CustomButtonBenchmark;
+        private LinkLabel LinkLabelStWolfkingal2000;
+        private CustomControls.CustomCheckBox CustomCheckBoxSettingDnsDetectUnset;
+        private TabPage TabPageSettingProxySslDecryption;
+        private CustomControls.CustomCheckBox CustomCheckBoxSettingProxyEnableFakeSNI;
+        private CustomControls.CustomLabel CustomLabelSettingProxyFakeSNI;
+        private CustomControls.CustomButton CustomButtonSettingProxyFakeSNI;
+        private CustomControls.CustomTextBox CustomTextBoxProxySSLDefaultSni;
+        private CustomControls.CustomLabel CustomLabelProxySSLDefaultSni;
     }
 }

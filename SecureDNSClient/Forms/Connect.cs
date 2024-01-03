@@ -9,15 +9,21 @@ public partial class FormMain
 {
     private async Task<bool> StartConnect(ConnectMode connectMode, bool reconnect = false)
     {
+        this.InvokeIt(() => CustomButtonConnect.Enabled = false);
+
         // Return if binary files are missing
-        if (!CheckNecessaryFiles()) return false;
+        if (!CheckNecessaryFiles())
+        {
+            this.InvokeIt(() => CustomButtonConnect.Enabled = true);
+            return false;
+        }
 
         // Update Bools
         await UpdateBools();
 
         bool isConnectSuccess = false;
 
-        if (!IsConnected && !IsConnecting)
+        if (!IsConnected && !IsConnecting && !IsDisconnecting)
         {
             try
             {
@@ -27,12 +33,14 @@ public partial class FormMain
 
                 if (IsConnecting) return false;
                 IsConnecting = true;
+                this.InvokeIt(() => CustomButtonConnect.Enabled = true);
+                await UpdateStatusShortOnBoolsChanged();
 
                 // Create uid
                 SecureDNS.GenerateUid(this);
 
                 // Update NICs
-                SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
+                SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
 
                 Task taskConnect = Task.Run(async () =>
                 {
@@ -50,9 +58,10 @@ public partial class FormMain
                         isConnectSuccess = await Connect(connectMode);
                 });
 
-                await taskConnect.ContinueWith(_ =>
+                await taskConnect.ContinueWith(async _ =>
                 {
                     IsConnecting = false;
+                    await UpdateStatusShortOnBoolsChanged();
 
                     string msg = $"{NL}Connect Task: {taskConnect.Status}{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
@@ -80,6 +89,8 @@ public partial class FormMain
                 // Disconnect
                 if (IsDisconnecting) return false;
                 IsDisconnecting = true;
+                this.InvokeIt(() => CustomButtonConnect.Enabled = true);
+                await UpdateStatusShortOnBoolsChanged();
 
                 // Write Disconnecting message to log
                 string msgDisconnecting = $"{NL}Disconnecting...{NL}";
@@ -136,7 +147,13 @@ public partial class FormMain
                 // Remove Connect ToolTip
                 this.InvokeIt(() => CustomButtonConnect.SetToolTip(MainToolTip, string.Empty, string.Empty));
 
+                PIDDNSProxy = -1;
+                PIDDNSProxyBypass = -1;
+                PIDDNSCrypt = -1;
+                PIDDNSCryptBypass = -1;
+
                 IsDisconnecting = false;
+                await UpdateStatusShortOnBoolsChanged();
 
                 // Reconnect
                 if (!StopQuickConnect) // Make Quick Connect Cancel faster
@@ -158,7 +175,7 @@ public partial class FormMain
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnecting, Color.MediumSeaGreen));
 
         // Solve: "bind: An attempt was made to access a socket in a way forbidden by its access permissions"
-        if (!Program.Startup) await NetworkTool.RestartNATDriver();
+        if (!Program.IsStartup) await NetworkTool.RestartNATDriver();
 
         // Check Plain DNS port
         bool portDns = GetListeningPort(53, "You need to resolve the conflict.", Color.IndianRed);

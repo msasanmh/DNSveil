@@ -44,6 +44,13 @@ public partial class MsmhProxyServer
         FakeDNSProgram = fakeDnsProgram;
     }
 
+    //======================================= Fake SNI Support
+    public ProxyProgram.FakeSni FakeSNIProgram = new();
+    public void EnableFakeSNI(ProxyProgram.FakeSni fakeSniProgram)
+    {
+        FakeSNIProgram = fakeSniProgram;
+    }
+
     //======================================= Black White List Support
     public ProxyProgram.BlackWhiteList BWListProgram = new();
     public void EnableBlackWhiteList(ProxyProgram.BlackWhiteList blackWhiteListProgram)

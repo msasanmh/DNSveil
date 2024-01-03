@@ -22,7 +22,7 @@ public partial class FormMain
         //if (LocalIP != null)
         //    dnss += "," + LocalIP;
 
-        bool isDnsSetOn = SetDnsOnNic_.IsDnsSet(LastNicName);
+        bool isDnsSetOn = SetDnsOnNic_.IsDnsSet(LastNicName); // LastNicName got updated in IsNicOk()
         if (!isDnsSetOn)
         {
             if (unset) return;
@@ -30,6 +30,7 @@ public partial class FormMain
 
             // Set DNS
             IsDNSSetting = true;
+            await UpdateStatusShortOnBoolsChanged();
 
             // Write Connect first to log
             string msgConnect = string.Empty;
@@ -38,6 +39,7 @@ public partial class FormMain
                 msgConnect = "Connect first." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
                 IsDNSSetting = false;
+                await UpdateStatusShortOnBoolsChanged();
                 return;
             }
             else if (!IsDNSConnected)
@@ -45,6 +47,7 @@ public partial class FormMain
                 msgConnect = "Wait until DNS gets online." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
                 IsDNSSetting = false;
+                await UpdateStatusShortOnBoolsChanged();
                 return;
             }
 
@@ -52,6 +55,7 @@ public partial class FormMain
             if (!IsInternetOnline)
             {
                 IsDNSSetting = false;
+                await UpdateStatusShortOnBoolsChanged();
                 return;
             }
 
@@ -63,6 +67,7 @@ public partial class FormMain
                 if (dr == DialogResult.No)
                 {
                     IsDNSSetting = false;
+                    await UpdateStatusShortOnBoolsChanged();
                     return;
                 }
             }
@@ -75,9 +80,11 @@ public partial class FormMain
             LastNicName = nic.Name;
             IsDNSSet = true;
             DoesDNSSetOnce = true;
+            IsDnsFlushed = false;
+            IsDnsFullFlushed = false;
 
             // Flush DNS
-            if (!Program.Startup)
+            if (!Program.IsStartup)
                 if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNS(true, true);
 
             // To See Status Immediately
@@ -97,6 +104,8 @@ public partial class FormMain
             }
             
             IsDNSSetting = false;
+            await UpdateStatusShortOnBoolsChanged();
+            await Task.Run(() => UpdateStatusNic());
         }
         else
         {
@@ -107,6 +116,7 @@ public partial class FormMain
             CustomRichTextBoxLog.AppendText($"Unsetting DNS...{NL}", Color.MediumSeaGreen);
 
             IsDNSUnsetting = true;
+            await UpdateStatusShortOnBoolsChanged();
 
             bool unsetToDHCP = CustomRadioButtonSettingUnsetDnsToDhcp.Checked;
             if (unsetToDHCP)
@@ -124,25 +134,41 @@ public partial class FormMain
             }
 
             LastNicName = nic.Name;
+
+            isDnsSetOn = SetDnsOnNic_.IsDnsSet(nic);
+            if (!isDnsSetOn)
+            {
+                // Flush DNS
+                await FlushDNS(true, true);
+                IsDnsFlushed = true;
+
+                // To See Status Immediately
+                await UpdateStatusLong();
+
+                // Write Unset DNS message to log
+                string msg1 = "Local DNS ";
+                string msg2 = loopbackIP;
+                string msg3 = " removed from ";
+                string msg4 = $"{nicName} ({nic.Description})";
+
+                CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
+                CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
+                CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
+                CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
+            }
+            else
+            {
+                // Write Couldn't Unset DNS to log
+                string msg1 = "Couldn't Unset DNS ";
+                string msg2 = $"{nicName} ({nic.Description})";
+                CustomRichTextBoxLog.AppendText(msg1, Color.IndianRed);
+                CustomRichTextBoxLog.AppendText(msg2 + NL, Color.DodgerBlue);
+            }
+
             IsDNSUnsetting = false;
             IsDNSSet = false;
-
-            // Flush DNS
-            await FlushDNS(true, true);
-
-            // To See Status Immediately
-            await UpdateStatusLong();
-
-            // Write Unset DNS message to log
-            string msg1 = "Local DNS ";
-            string msg2 = loopbackIP;
-            string msg3 = " removed from ";
-            string msg4 = $"{nicName} ({nic.Description})";
-
-            CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
-            CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
-            CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
-            CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
+            await UpdateStatusShortOnBoolsChanged();
+            await Task.Run(() => UpdateStatusNic());
         }
     }
 
@@ -159,7 +185,7 @@ public partial class FormMain
 
         NetworkInterfaces nis = new(nicName);
         Task.Delay(300).Wait();
-        if (nis.NetConnectionStatus != 2)
+        if (nis.NetConnectionStatus != 2) // 2 = Connected
         {
             string msgNotConnected = $"Network Adapter \"{nis.NetConnectionID}\" Status: {nis.NetConnectionStatusMessage}{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNotConnected, Color.IndianRed));

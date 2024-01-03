@@ -77,4 +77,24 @@ public static class CommonTools
         }
     }
 
+    /// <summary>
+    /// Get root domain from a given hostname
+    /// </summary>
+    /// <param name="hostname"></param>
+    /// <returns></returns>
+    public static string GetWildCardDomainName(string hostname)
+    {
+        // Only for subdomains we need wild card
+        // Example www.google.com or gstatic.google.com
+        // But NOT for google.com or IP address
+
+        if (NetworkTool.IsIp(hostname, out _)) return hostname;
+
+        NetworkTool.GetHostDetails(hostname, 443, out _, out _, out string baseHost, out _, out _, out _);
+
+        if (baseHost.Equals(hostname)) return hostname;
+
+        return $"*.{baseHost}";
+    }
+
 }

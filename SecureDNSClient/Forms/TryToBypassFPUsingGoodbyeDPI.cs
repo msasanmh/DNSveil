@@ -14,7 +14,7 @@ public partial class FormMain
 
         // Get Fake Proxy DoH Address
         string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
-        NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string dohHost, out _, out int _, out string _, out bool _);
+        NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string dohHost, out _, out _, out int _, out string _, out bool _);
 
         // It's blocked message
         string msgBlocked = $"It's blocked.{NL}";

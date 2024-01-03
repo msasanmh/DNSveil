@@ -26,7 +26,7 @@ public partial class FormMain
         }
 
         // Get Host and Port of Proxy
-        NetworkTool.GetUrlDetails(proxyScheme, 0, out _, out string host, out _, out int port, out string _, out bool _);
+        NetworkTool.GetUrlDetails(proxyScheme, 0, out _, out string host, out _, out _, out int port, out string _, out bool _);
 
         // Convert proxy host to IP
         string ipStr = string.Empty;

@@ -11,7 +11,9 @@ namespace SecureDNSClient;
 
 public partial class FormCustomServers : Form
 {
-    private readonly CustomLabel LabelMoving = new();
+    private readonly CustomLabel LabelMain = new();
+    private readonly Stopwatch LabelMainStopWatch = new();
+    private readonly System.Timers.Timer MainTimer = new(300);
     private static XDocument XDoc = new();
     private static readonly List<string> ListGroupNames = new();
     private static readonly string CustomServersXmlPath = SecureDNS.CustomServersXmlPath;
@@ -48,6 +50,8 @@ public partial class FormCustomServers : Form
     private static readonly ToolStripMenuItem MenuSA = new();
     private static readonly ToolStripMenuItem MenuIS = new();
 
+    private bool IsExiting { get; set; } = false;
+
     public FormCustomServers()
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
@@ -62,33 +66,77 @@ public partial class FormCustomServers : Form
 
         // Load Theme
         Theme.LoadTheme(this, Theme.Themes.Dark);
+        Theme.SetColors(LabelMain);
 
         // Load XML Custom Servers
         LoadXmlCS(CustomServersXmlPath);
 
-        // Label Moving
-        Controls.Add(LabelMoving);
-        LabelMoving.Text = "Now Moving...";
-        LabelMoving.Size = new(300, 150);
-        LabelMoving.Location = new((ClientSize.Width / 2) - (LabelMoving.Width / 2), (ClientSize.Height / 2) - (LabelMoving.Height / 2));
-        LabelMoving.TextAlign = ContentAlignment.MiddleCenter;
-        LabelMoving.Font = new(Font.Name, Font.Size * 2);
-        Theme.SetColors(LabelMoving);
-        LabelMoving.Visible = false;
-        LabelMoving.SendToBack();
+        // Label Main
+        Controls.Add(LabelMain);
+        LabelMain.Text = "Getting Ready...";
+        LabelMain.Dock = DockStyle.Fill;
+        LabelMain.TextAlign = ContentAlignment.MiddleCenter;
+        LabelMain.Font = new Font(Font.FontFamily, Font.Size * 1.5f);
+        SplitContainerMain.Visible = true;
+        LabelMain.Visible = false;
+        LabelMain.SendToBack();
 
         Shown += FormCustomServers_Shown;
         Move += FormCustomServers_Move;
-        ResizeEnd += FormCustomServers_ResizeEnd;
         Resize += FormCustomServers_Resize;
+        LocationChanged += FormCustomServers_LocationChanged;
+
+        MainTimer.Elapsed += MainTimer_Elapsed;
+        MainTimer.Start();
     }
 
-    private void FormCustomServers_Shown(object? sender, EventArgs e)
+    private void MainTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
     {
-        LabelMoving.Visible = false;
-        LabelMoving.SendToBack();
+        // Hide Label Main After a period of time
+        LabelMainHide();
+    }
+
+    private void ShowLabelMain(string text)
+    {
+        this.InvokeIt(() =>
+        {
+            SplitContainerMain.Visible = false;
+            LabelMain.Text = text;
+            LabelMain.Visible = true;
+            LabelMain.BringToFront();
+            LabelMainStopWatch.Restart();
+        });
+    }
+
+    private void HideLabelMain()
+    {
+        if (!LabelMain.Visible) return;
+        this.InvokeIt(() =>
+        {
+            LabelMain.Visible = false;
+            LabelMain.SendToBack();
+            SplitContainerMain.Visible = true;
+        });
+    }
+
+    private void LabelMainHide()
+    {
+        if (LabelMainStopWatch.ElapsedMilliseconds > 300)
+        {
+            HideLabelMain();
+            LabelMainStopWatch.Restart();
+        }
+    }
+
+    private async void FormCustomServers_Shown(object? sender, EventArgs e)
+    {
+        LabelMain.Visible = false;
+        LabelMain.SendToBack();
         SplitContainerMain.Visible = true;
         ReadGroups(null, false);
+
+        // Setting Width Of Controls
+        await FormMain.SettingWidthOfControls(this);
 
         // Fix Controls Location
         int spaceBottom = 6, spaceRight = 6, spaceV = 6, spaceH = 6;
@@ -140,27 +188,26 @@ public partial class FormCustomServers : Form
 
     private void FormCustomServers_Move(object? sender, EventArgs e)
     {
-        SplitContainerMain.Visible = false;
-        LabelMoving.Location = new((ClientSize.Width / 2) - (LabelMoving.Width / 2), (ClientSize.Height / 2) - (LabelMoving.Height / 2));
-        LabelMoving.Visible = true;
-        LabelMoving.BringToFront();
-    }
-
-    private void FormCustomServers_ResizeEnd(object? sender, EventArgs e)
-    {
-        SplitContainerMain.Visible = true;
-        LabelMoving.Visible = false;
-        LabelMoving.SendToBack();
+        if (LabelMainStopWatch.IsRunning)
+        {
+            ShowLabelMain("Now Moving...");
+        }
     }
 
     private void FormCustomServers_Resize(object? sender, EventArgs e)
     {
         if (WindowState != FormWindowState.Minimized)
         {
-            SplitContainerMain.Visible = true;
-            LabelMoving.Visible = false;
-            LabelMoving.SendToBack();
+            if (LabelMainStopWatch.IsRunning)
+            {
+                ShowLabelMain("Now Resizing...");
+            }
         }
+    }
+
+    private void FormCustomServers_LocationChanged(object? sender, EventArgs e)
+    {
+        LabelMainStopWatch.Restart();
     }
 
     public void LoadXmlCS(string path)
@@ -1900,7 +1947,7 @@ public partial class FormCustomServers : Form
         if (!string.IsNullOrEmpty(dns))
         {
             FormDnsScanner formDnsScanner = new(dns);
-            formDnsScanner.FormClosing += (s, e) => { formDnsScanner.Dispose(); };
+            formDnsScanner.StartPosition = FormStartPosition.CenterParent;
             formDnsScanner.ShowDialog(this);
         }
     }
@@ -3219,11 +3266,23 @@ public partial class FormCustomServers : Form
 
     private async void FormCustomServers_FormClosing(object sender, FormClosingEventArgs e)
     {
-        if (e.CloseReason == CloseReason.UserClosing || e.CloseReason == CloseReason.WindowsShutDown)
+        if (!IsExiting)
         {
+            e.Cancel = true;
+            IsExiting = true;
+
+            // Stop Main Timer
+            if (MainTimer.Enabled) MainTimer.Stop();
+
             // Save xDocument to File
-            //XDoc.Save(CustomServersXmlPath, SaveOptions.None);
             await XDoc.SaveAsync(CustomServersXmlPath);
+
+            e.Cancel = false;
+            Close();
+        }
+        else
+        {
+            Dispose();
         }
     }
 

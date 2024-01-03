@@ -15,6 +15,8 @@ public partial class FormDnsScannerExport : Form
     private readonly Settings AppSettings;
     private List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>>> ExportList = new();
     private readonly List<string> ResultList = new();
+    private bool IsExiting { get; set; } = false;
+    private bool IsExitDone { get; set; } = false;
 
     public FormDnsScannerExport(List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>>> exportList)
     {
@@ -40,12 +42,14 @@ public partial class FormDnsScannerExport : Form
 
         ExportList = exportList;
 
-        Shown -= FormDnsScannerExport_Shown;
-        Shown += FormDnsScannerExport_Shown;
+        FixScreenDpi();
     }
 
-    private void FormDnsScannerExport_Shown(object? sender, EventArgs e)
+    private async void FixScreenDpi()
     {
+        // Setting Width Of Controls
+        await FormMain.SettingWidthOfControls(this);
+
         // Fix Controls Location
         int spaceBottom = 10, spaceRight = 12, spaceV = 12, spaceH = 16;
         CustomLabelFilterExport.Location = new Point(spaceRight, spaceBottom);
@@ -77,11 +81,13 @@ public partial class FormDnsScannerExport : Form
         CustomRadioButtonSortByInsecure.Top = CustomRadioButtonSortBySecure.Top;
 
         spaceV = 10;
-        CustomButtonExport.Left = CustomRadioButtonSortByInsecure.Left + (spaceH * 6);
+        CustomButtonExport.Left = CustomRadioButtonSortByInsecure.Left + (CustomRadioButtonSortByInsecure.Width / 3);
         CustomButtonExport.Top = CustomRadioButtonSortByInsecure.Bottom + spaceV;
 
-        Width = CustomCheckBoxBingSafeSearchActive.Right + (spaceRight * 2) + (Width - ClientRectangle.Width);
-        Height = CustomButtonExport.Bottom + (spaceBottom * 2) + (Height - ClientRectangle.Height);
+        // Client Size
+        int w = CustomCheckBoxBingSafeSearchActive.Right + (spaceRight * 3);
+        int h = CustomButtonExport.Bottom + (spaceBottom * 3);
+        ClientSize = new(w, h);
     }
 
     private async void CustomButtonExport_Click(object sender, EventArgs e)
@@ -204,15 +210,35 @@ public partial class FormDnsScannerExport : Form
 
     private async void FormDnsScannerExport_FormClosing(object sender, FormClosingEventArgs e)
     {
-        // Select Control type and properties to save
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "CheckState");
-        AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
+        if (!IsExiting)
+        {
+            e.Cancel = true;
+            IsExiting = true;
 
-        // Add Settings to save
-        AppSettings.AddSelectedSettings(this);
+            // Select Control type and properties to save
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "CheckState");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
 
-        // Save Application Settings
-        await AppSettings.SaveAsync(SettingsXmlPath);
+            // Add Settings to save
+            AppSettings.AddSelectedSettings(this);
+
+            // Save Application Settings
+            await AppSettings.SaveAsync(SettingsXmlPath);
+            IsExitDone = true;
+
+            e.Cancel = false;
+            Close();
+        }
+        else
+        {
+            if (!IsExitDone)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Dispose();
+        }
     }
 }

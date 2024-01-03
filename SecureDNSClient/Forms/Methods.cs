@@ -4,6 +4,7 @@ using Microsoft.Win32.TaskScheduler;
 using MsmhToolsClass;
 using MsmhToolsClass.ProxyServerPrograms;
 using MsmhToolsWinFormsClass.Themes;
+using SecureDNSClient.DPIBasic;
 using System.Diagnostics;
 using System.Net;
 using System.Reflection;
@@ -79,7 +80,7 @@ public partial class FormMain
         if (cancel) return;
 
         // Update NICs
-        SecureDNS.UpdateNICs(CustomComboBoxNICs, false, out _);
+        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
 
         // Start Quick Connect
         await StartQuickConnect(null);
@@ -111,9 +112,21 @@ public partial class FormMain
 
                         if (!string.IsNullOrEmpty(existStr))
                         {
-                            if (existStr.Contains("\" "))
-                                existStr = $"{existStr.Split("\" ")[0]}\"";
-                            if (existStr.Equals(appPath) && td.Principal.RunLevel == TaskRunLevel.Highest) isPathOk = true;
+                            string separator = "\" ";
+                            if (existStr.Contains(separator))
+                                existStr = $"{existStr.Split(separator)[0]}\"";
+                            string appPathOnTaskScheduler = existStr;
+                            if (appPathOnTaskScheduler.Equals(appPath) && td.Principal.RunLevel == TaskRunLevel.Highest) isPathOk = true;
+                            else
+                            {
+                                appPathOnTaskScheduler = appPathOnTaskScheduler.Trim('"');
+                                try { appPathOnTaskScheduler = Path.GetFullPath(appPathOnTaskScheduler); } catch (Exception) { }
+                                if (!File.Exists(appPathOnTaskScheduler))
+                                {
+                                    // Remove Startup: App Path On TaskScheduler Does Not Exist.
+                                    ActivateWindowsStartup(false);
+                                }
+                            }
                         }
                     }
 
@@ -137,7 +150,7 @@ public partial class FormMain
             int startupDelay = 0;
             string taskName = "SecureDnsClientStartup";
             string appPath = $"\"{Path.GetFullPath(Application.ExecutablePath)}\"";
-            string appArgs = $"startup {startupDelay}";
+            string appArgs = $"-IsPortable={Program.IsPortable} -IsStartup=True -StartupDelaySec={startupDelay}";
             using TaskService ts = new();
             TaskDefinition td = ts.NewTask();
             td.RegistrationInfo.Description = "Secure DNS Client Startup";
@@ -201,6 +214,21 @@ public partial class FormMain
         }
     }
 
+    private void FillComboBoxes()
+    {
+        // Update NICs
+        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+
+        // Update Connect Modes (Quick Connect Settings)
+        UpdateConnectModes(CustomComboBoxSettingQcConnectMode);
+
+        // Update NICs (Quick Connect Settings)
+        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, out _);
+
+        // Update GoodbyeDPI Basic Modes (Quick Connect Settings)
+        DPIBasicBypass.UpdateGoodbyeDpiBasicModes(CustomComboBoxSettingQcGdBasic);
+    }
+
     public enum ConnectMode
     {
         ConnectToWorkingServers,
@@ -247,40 +275,43 @@ public partial class FormMain
 
     public void UpdateConnectModes(CustomComboBox ccb)
     {
-        ccb.Text = "Select a Connect Mode";
-        object item = ccb.SelectedItem;
-        ccb.Items.Clear();
-        List<string> connectModeNames = new()
+        ccb.InvokeIt(() =>
         {
-            ConnectModeName.WorkingServers,
-            ConnectModeName.FakeProxyViaProxyDPI,
-            ConnectModeName.FakeProxyViaGoodbyeDPI,
-            ConnectModeName.PopularServersWithProxy
-        };
-        for (int n = 0; n < connectModeNames.Count; n++)
-        {
-            string connectModeName = connectModeNames[n];
-            ccb.Items.Add(connectModeName);
-        }
-        if (ccb.Items.Count > 0)
-        {
-            bool exist = false;
-            for (int i = 0; i < ccb.Items.Count; i++)
+            ccb.Text = "Select a Connect Mode";
+            object item = ccb.SelectedItem;
+            ccb.Items.Clear();
+            List<string> connectModeNames = new()
             {
-                object selectedItem = ccb.Items[i];
-                if (item != null && item.Equals(selectedItem))
-                {
-                    exist = true;
-                    break;
-                }
+                ConnectModeName.WorkingServers,
+                ConnectModeName.FakeProxyViaProxyDPI,
+                ConnectModeName.FakeProxyViaGoodbyeDPI,
+                ConnectModeName.PopularServersWithProxy
+            };
+            for (int n = 0; n < connectModeNames.Count; n++)
+            {
+                string connectModeName = connectModeNames[n];
+                ccb.Items.Add(connectModeName);
             }
-            if (exist)
-                ccb.SelectedItem = item;
-            else
-                ccb.SelectedIndex = 0;
-            ccb.DropDownHeight = connectModeNames.Count * ccb.Height;
-        }
-        else ccb.SelectedIndex = -1;
+            if (ccb.Items.Count > 0)
+            {
+                bool exist = false;
+                for (int i = 0; i < ccb.Items.Count; i++)
+                {
+                    object selectedItem = ccb.Items[i];
+                    if (item != null && item.Equals(selectedItem))
+                    {
+                        exist = true;
+                        break;
+                    }
+                }
+                if (exist)
+                    ccb.SelectedItem = item;
+                else
+                    ccb.SelectedIndex = 0;
+                ccb.DropDownHeight = connectModeNames.Count * ccb.Height;
+            }
+            else ccb.SelectedIndex = -1;
+        });
     }
 
     public ConnectMode GetConnectMode()
@@ -428,23 +459,27 @@ public partial class FormMain
     {
         bool isAlive = false;
 
-        bool bootstrapCondition = AppUpTime.Elapsed < TimeSpan.FromSeconds(30) && !IsConnected && !IsDNSConnected;
+        try
+        {
+            bool bootstrapCondition = AppUpTime.Elapsed < TimeSpan.FromSeconds(30) && !IsConnected && !IsDNSConnected;
 
-        if (bootstrapCondition)
-        {
-            IPAddress bootstrapIP = GetBootstrapSetting(out _);
-            isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
-        }
-        else
-        {
-            isAlive = NetworkTool.IsInternetAlive();
-            if (!isAlive)
+            if (bootstrapCondition)
             {
-                // Read Bootstrap If Internet Is Not Based On Adapter
                 IPAddress bootstrapIP = GetBootstrapSetting(out _);
                 isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
             }
+            else
+            {
+                isAlive = NetworkTool.IsInternetAlive();
+                if (!isAlive)
+                {
+                    // Read Bootstrap If Internet Is Not Based On Adapter
+                    IPAddress bootstrapIP = GetBootstrapSetting(out _);
+                    isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
+                }
+            }
         }
+        catch (Exception) { }
         
         if (!isAlive)
         {
@@ -582,13 +617,13 @@ public partial class FormMain
     {
         if (!File.Exists(SecureDNS.DnsLookup) || !File.Exists(SecureDNS.DnsProxy) || !File.Exists(SecureDNS.DNSCrypt) ||
             !File.Exists(SecureDNS.DNSCryptConfigPath) || !File.Exists(SecureDNS.DNSCryptConfigFakeProxyPath) ||
-            !File.Exists(SecureDNS.GoodbyeDpi) || !File.Exists(SecureDNS.ProxyServerPath) || !File.Exists(SecureDNS.WinDivert) ||
-            !File.Exists(SecureDNS.WinDivert32) || !File.Exists(SecureDNS.WinDivert64))
+            !File.Exists(SecureDNS.ProxyServerPath) || !File.Exists(SecureDNS.GoodbyeDpi) ||
+            !File.Exists(SecureDNS.WinDivert) || !File.Exists(SecureDNS.WinDivert32) || !File.Exists(SecureDNS.WinDivert64))
         {
             if (showMessage)
             {
                 string msg = "ERROR: Some of binary files are missing!" + NL;
-                CustomRichTextBoxLog.AppendText(msg, Color.IndianRed);
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
             }
             return false;
         }
@@ -961,7 +996,7 @@ public partial class FormMain
                 bool isProxyPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), ProxyPort, 5);
                 Debug.WriteLine($"Is Proxy Port Open: {isProxyPortOpen}, Port: {ProxyPort}");
 
-                if (isProxyPortOpen && (IsProxyDpiBypassActive || IsProxySSLChangeSniToIpActive))
+                if (isProxyPortOpen && (IsProxyDpiBypassActive || IsProxySSLChangeSniActive))
                 {
                     Debug.WriteLine("Proxy");
 
@@ -1101,6 +1136,7 @@ public partial class FormMain
 
         using HttpClientHandler handler = new();
         handler.Proxy = new WebProxy(proxyScheme, true);
+        handler.UseProxy = true;
         // Ignore Cert Check To Make It Faster
         handler.ClientCertificateOptions = ClientCertificateOption.Manual;
         handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
@@ -1122,10 +1158,5 @@ public partial class FormMain
             return false;
         }
     }
-
-    //private object DetectProxyChanges()
-    //{
-
-    //}
 
 }

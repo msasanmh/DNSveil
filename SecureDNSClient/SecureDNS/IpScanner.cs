@@ -197,7 +197,7 @@ public class IpScanner
                         string[] split = CheckWebsite.Split("://");
                         urlScheme = $"{split[0].Trim().ToLower()}://";
                     }
-                    NetworkTool.GetUrlDetails(CheckWebsite, CheckPort, out _, out string host, out _, out int _, out string _, out bool _);
+                    NetworkTool.GetUrlDetails(CheckWebsite, CheckPort, out _, out string host, out _, out _, out int _, out string _, out bool _);
                     string url = $"{urlScheme}{host}:{CheckPort}";
 
                     Uri uri = new(url, UriKind.Absolute);

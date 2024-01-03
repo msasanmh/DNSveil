@@ -30,9 +30,13 @@ public partial class FormMain
         bool isCertInstalled = false;
         if (File.Exists(SecureDNS.IssuerCertPath) && File.Exists(SecureDNS.IssuerKeyPath))
         {
-            X509Certificate2 rootCA = new(X509Certificate2.CreateFromCertFile(SecureDNS.IssuerCertPath));
-            isCertInstalled = CertificateTool.IsCertificateInstalled(rootCA, StoreName.Root, StoreLocation.CurrentUser);
-            rootCA.Dispose();
+            try
+            {
+                X509Certificate2 rootCA = new(X509Certificate2.CreateFromCertFile(SecureDNS.IssuerCertPath));
+                isCertInstalled = CertificateTool.IsCertificateInstalled(rootCA, StoreName.Root, StoreLocation.CurrentUser);
+                rootCA.Dispose();
+            }
+            catch (Exception) { }
         }
         if (isCertInstalled) return;
 
@@ -54,6 +58,13 @@ public partial class FormMain
                             string msgCertChanged = "Certificate Regenerated, You Must Uninstall The Previous One.";
                             CustomMessageBox.Show(this, msgCertChanged, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
+                    }
+
+                    // Check If DoH Server Is Running With Previous Cert
+                    if (IsConnected && IsDoHConnected)
+                    {
+                        string msg = "Due to Certificate changes you need to restart DoH Server.";
+                        CustomMessageBox.Show(this, msg, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 });
             }
@@ -84,14 +95,36 @@ public partial class FormMain
 
     private bool IsSSLDecryptionEnable()
     {
+        bool isSSLDecryptionEnable = false;
         if (CustomCheckBoxProxyEnableSSL.Checked)
         {
             if (File.Exists(SecureDNS.IssuerCertPath) && File.Exists(SecureDNS.IssuerKeyPath))
             {
-                // Check By Subject Name For Performance
-                return CertificateTool.IsCertificateInstalled(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+                try
+                {
+                    X509Certificate2 rootCA = new(X509Certificate2.CreateFromCertFile(SecureDNS.IssuerCertPath));
+                    bool isCertInstalled = CertificateTool.IsCertificateInstalled(rootCA, StoreName.Root, StoreLocation.CurrentUser);
+                    rootCA.Dispose();
+                    isSSLDecryptionEnable = isCertInstalled;
+                }
+                catch (Exception) { }
             }
         }
-        return false;
+
+        if (!isSSLDecryptionEnable)
+        {
+            this.InvokeIt(() =>
+            {
+                if (CustomCheckBoxProxyEnableSSL.Tag == null)
+                {
+                    CustomCheckBoxProxyEnableSSL.Checked = false;
+                    if (!CustomCheckBoxPDpiEnableDpiBypass.Enabled)
+                        CustomCheckBoxPDpiEnableDpiBypass.Enabled = true;
+                }
+                CustomCheckBoxProxyEnableSSL.Tag = null;
+            });
+        }
+
+        return isSSLDecryptionEnable;
     }
 }

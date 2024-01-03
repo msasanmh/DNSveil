@@ -111,7 +111,7 @@ public class DnsReader
 
     private void SetIpPortHostPath(string dns, int defaultPort)
     {
-        NetworkTool.GetUrlDetails(dns, defaultPort, out _, out string host, out _, out int port, out string path, out bool isIPv6);
+        NetworkTool.GetUrlDetails(dns, defaultPort, out _, out string host, out _, out _, out int port, out string path, out bool isIPv6);
         Port = port;
         Path = path;
         bool isIPv4 = NetworkTool.IsIPv4Valid(host, out IPAddress? _);
@@ -135,7 +135,7 @@ public class DnsReader
 
     private void SetIpPortHost(string hostIpPort, int defaultPort)
     {
-        NetworkTool.GetHostDetails(hostIpPort, defaultPort, out string host, out _, out int port, out string _, out bool isIPv6);
+        NetworkTool.GetHostDetails(hostIpPort, defaultPort, out string host, out _, out _, out int port, out string _, out bool isIPv6);
         Port = port;
         bool isIPv4 = NetworkTool.IsIPv4Valid(host, out IPAddress? _);
         if (isIPv6 || isIPv4)

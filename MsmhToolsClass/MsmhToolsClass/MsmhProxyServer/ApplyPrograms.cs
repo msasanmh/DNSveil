@@ -34,7 +34,7 @@ public partial class MsmhProxyServer
         {
             // Event
             string msgEvent = $"Block Port 80: {req.Address}:{req.Port}, Request Denied.";
-            OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+            OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
             return null;
         }
 
@@ -45,8 +45,16 @@ public partial class MsmhProxyServer
             if (isMatch)
             {
                 // Event
-                string msgEvent = $"Black White list: {req.Address}:{req.Port}, Request Denied.";
-                OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+                string msgEvent = string.Empty;
+
+                if (BWListProgram.ListMode == ProxyProgram.BlackWhiteList.Mode.BlackListFile || BWListProgram.ListMode == ProxyProgram.BlackWhiteList.Mode.BlackListText)
+                msgEvent = $"Black List: {req.Address}:{req.Port}, Request Denied.";
+
+                if (BWListProgram.ListMode == ProxyProgram.BlackWhiteList.Mode.WhiteListFile || BWListProgram.ListMode == ProxyProgram.BlackWhiteList.Mode.WhiteListText)
+                    msgEvent = $"White List: {req.Address}:{req.Port}, Request Allowed.";
+
+                if (!string.IsNullOrEmpty(msgEvent))
+                    OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
                 return null;
             }
         }
@@ -62,21 +70,38 @@ public partial class MsmhProxyServer
         //// FakeDNS Program
         if (FakeDNSProgram.FakeDnsMode != ProxyProgram.FakeDns.Mode.Disable)
         {
-            string ipOrSni = FakeDNSProgram.Get(req.Address);
-            if (!ipOrSni.Equals(req.Address))
+            string ipOut = FakeDNSProgram.Get(req.Address);
+            if (!ipOut.Equals(req.Address))
             {
-                bool isIP = IPAddress.TryParse(ipOrSni, out _);
-                if (isIP) req.Address = ipOrSni;
-                else
+                bool isIP = NetworkTool.IsIp(ipOut, out _);
+                if (isIP) req.Address = ipOut;
+            }
+        }
+
+        //// FakeSNI Program
+        if (SettingsSSL_.EnableSSL && SettingsSSL_.ChangeSni)
+        {
+            if (FakeSNIProgram.FakeSniMode != ProxyProgram.FakeSni.Mode.Disable)
+            {
+                string sni = FakeSNIProgram.Get(req.AddressOrig);
+                if (!sni.Equals(req.AddressOrig))
                 {
-                    // It's SNI
-                    if (SettingsSSL_.EnableSSL) req.Address = ipOrSni;
+                    req.AddressSNI = sni;
+                }
+            }
+
+            if (req.AddressSNI.Equals(req.AddressOrig))
+            {
+                string defaultSni = SettingsSSL_.DefaultSni;
+                if (!string.IsNullOrEmpty(defaultSni) && !string.IsNullOrWhiteSpace(defaultSni))
+                {
+                    req.AddressSNI = defaultSni;
                 }
             }
         }
 
         // Check If Address Is An IP
-        bool isIp = IPAddress.TryParse(req.Address, out IPAddress? _);
+        bool isIp = NetworkTool.IsIp(req.Address, out _);
 
         //// DNS Program
         if (req.AddressOrig.Equals(req.Address))
@@ -102,6 +127,9 @@ public partial class MsmhProxyServer
             msgReqEvent += $"{req.AddressOrig}:{req.Port}";
         else
             msgReqEvent += $"{req.AddressOrig}:{req.Port} => {req.Address}:{req.Port}";
+
+        if (!req.AddressOrig.Equals(req.AddressSNI) && req.ApplyDpiBypass && SettingsSSL_.EnableSSL && SettingsSSL_.ChangeSni)
+            msgReqEvent += $" => {req.AddressSNI}:{req.Port}";
 
         // Is Upstream Active
         bool isUpStreamProgramActive = UpStreamProxyProgram.UpStreamMode != ProxyProgram.UpStreamProxy.Mode.Disable;

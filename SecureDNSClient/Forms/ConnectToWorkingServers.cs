@@ -25,8 +25,7 @@ public partial class FormMain
             WorkingDnsList = WorkingDnsList.OrderBy(t => t.Item1).ToList();
 
         // Get number of max servers
-        int maxServers = 0;
-        this.InvokeIt(() => maxServers = decimal.ToInt32(CustomNumericUpDownSettingMaxServers.Value));
+        int maxServers = GetMaxServersToConnectSetting();
 
         if (File.Exists(TheDll))
         {

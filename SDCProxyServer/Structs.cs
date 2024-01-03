@@ -23,7 +23,8 @@ public struct Key
         public static readonly string Enable = "Enable";
         public static readonly string RootCA_Path = "RootCA_Path";
         public static readonly string RootCA_KeyPath = "RootCA_KeyPath";
-        public static readonly string ChangeSniToIP = "ChangeSniToIP";
+        public static readonly string ChangeSni = "ChangeSni";
+        public static readonly string DefaultSni = "DefaultSni";
     }
 
     public readonly struct Programs
@@ -105,6 +106,19 @@ public struct Key
         public readonly struct FakeDns
         {
             public static readonly string Name = "FakeDns";
+            public readonly struct Mode
+            {
+                public static readonly string Name = "Mode";
+                public static readonly string File = "File";
+                public static readonly string Text = "Text";
+                public static readonly string Disable = "Disable";
+            }
+            public static readonly string PathOrText = "PathOrText";
+        }
+
+        public readonly struct FakeSni
+        {
+            public static readonly string Name = "FakeSni";
             public readonly struct Mode
             {
                 public static readonly string Name = "Mode";

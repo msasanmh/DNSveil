@@ -160,7 +160,7 @@
             CustomButtonLookup.AutoSize = true;
             CustomButtonLookup.BorderColor = Color.Blue;
             CustomButtonLookup.FlatStyle = FlatStyle.Flat;
-            CustomButtonLookup.Location = new Point(370, 50);
+            CustomButtonLookup.Location = new Point(445, 50);
             CustomButtonLookup.Name = "CustomButtonLookup";
             CustomButtonLookup.RoundedCorners = 5;
             CustomButtonLookup.SelectionColor = Color.LightBlue;
@@ -192,7 +192,7 @@
             CustomTextBoxResult.RoundedCorners = 5;
             CustomTextBoxResult.ScrollBars = ScrollBars.Vertical;
             CustomTextBoxResult.ShortcutsEnabled = true;
-            CustomTextBoxResult.Size = new Size(433, 262);
+            CustomTextBoxResult.Size = new Size(508, 262);
             CustomTextBoxResult.TabIndex = 0;
             CustomTextBoxResult.TextAlign = HorizontalAlignment.Left;
             CustomTextBoxResult.Texts = "";
@@ -209,7 +209,7 @@
             CustomCheckBoxHTTP3.Location = new Point(12, 80);
             CustomCheckBoxHTTP3.Name = "CustomCheckBoxHTTP3";
             CustomCheckBoxHTTP3.SelectionColor = Color.LightBlue;
-            CustomCheckBoxHTTP3.Size = new Size(110, 17);
+            CustomCheckBoxHTTP3.Size = new Size(105, 17);
             CustomCheckBoxHTTP3.TabIndex = 10;
             CustomCheckBoxHTTP3.Text = "HTTP/3 support";
             CustomCheckBoxHTTP3.UseVisualStyleBackColor = false;
@@ -223,7 +223,7 @@
             CustomCheckBoxVERIFY.Location = new Point(132, 80);
             CustomCheckBoxVERIFY.Name = "CustomCheckBoxVERIFY";
             CustomCheckBoxVERIFY.SelectionColor = Color.LightBlue;
-            CustomCheckBoxVERIFY.Size = new Size(193, 17);
+            CustomCheckBoxVERIFY.Size = new Size(188, 17);
             CustomCheckBoxVERIFY.TabIndex = 14;
             CustomCheckBoxVERIFY.Text = "Disable Certificates Verification";
             CustomCheckBoxVERIFY.UseVisualStyleBackColor = false;
@@ -323,7 +323,7 @@
             CustomCheckBoxDNSSEC.Location = new Point(12, 100);
             CustomCheckBoxDNSSEC.Name = "CustomCheckBoxDNSSEC";
             CustomCheckBoxDNSSEC.SelectionColor = Color.LightBlue;
-            CustomCheckBoxDNSSEC.Size = new Size(69, 17);
+            CustomCheckBoxDNSSEC.Size = new Size(64, 17);
             CustomCheckBoxDNSSEC.TabIndex = 19;
             CustomCheckBoxDNSSEC.Text = "DNSSEC";
             CustomCheckBoxDNSSEC.UseVisualStyleBackColor = false;
@@ -380,7 +380,7 @@
             CustomCheckBoxPAD.Location = new Point(83, 100);
             CustomCheckBoxPAD.Name = "CustomCheckBoxPAD";
             CustomCheckBoxPAD.SelectionColor = Color.LightBlue;
-            CustomCheckBoxPAD.Size = new Size(136, 17);
+            CustomCheckBoxPAD.Size = new Size(131, 17);
             CustomCheckBoxPAD.TabIndex = 22;
             CustomCheckBoxPAD.Text = "Add EDNS0 Padding";
             CustomCheckBoxPAD.UseVisualStyleBackColor = false;
@@ -394,7 +394,7 @@
             CustomCheckBoxVERBOSE.Location = new Point(221, 100);
             CustomCheckBoxVERBOSE.Name = "CustomCheckBoxVERBOSE";
             CustomCheckBoxVERBOSE.SelectionColor = Color.LightBlue;
-            CustomCheckBoxVERBOSE.Size = new Size(117, 17);
+            CustomCheckBoxVERBOSE.Size = new Size(112, 17);
             CustomCheckBoxVERBOSE.TabIndex = 23;
             CustomCheckBoxVERBOSE.Text = "Verbose Logging";
             CustomCheckBoxVERBOSE.UseVisualStyleBackColor = false;
@@ -444,10 +444,11 @@
             // 
             // CustomButtonDefault
             // 
+            CustomButtonDefault.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomButtonDefault.AutoSize = true;
             CustomButtonDefault.BorderColor = Color.Blue;
             CustomButtonDefault.FlatStyle = FlatStyle.Flat;
-            CustomButtonDefault.Location = new Point(370, 12);
+            CustomButtonDefault.Location = new Point(445, 12);
             CustomButtonDefault.Name = "CustomButtonDefault";
             CustomButtonDefault.RoundedCorners = 5;
             CustomButtonDefault.SelectionColor = Color.LightBlue;
@@ -466,7 +467,7 @@
             CustomCheckBoxJSON.Location = new Point(340, 100);
             CustomCheckBoxJSON.Name = "CustomCheckBoxJSON";
             CustomCheckBoxJSON.SelectionColor = Color.LightBlue;
-            CustomCheckBoxJSON.Size = new Size(48, 17);
+            CustomCheckBoxJSON.Size = new Size(43, 17);
             CustomCheckBoxJSON.TabIndex = 34;
             CustomCheckBoxJSON.Text = "Json";
             CustomCheckBoxJSON.UseVisualStyleBackColor = false;
@@ -477,7 +478,7 @@
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
-            ClientSize = new Size(459, 461);
+            ClientSize = new Size(534, 461);
             Controls.Add(CustomCheckBoxJSON);
             Controls.Add(CustomButtonDefault);
             Controls.Add(CustomTextBoxEDNSOPT);
@@ -503,8 +504,8 @@
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
-            MaximumSize = new Size(475, 500);
-            MinimumSize = new Size(475, 500);
+            MaximumSize = new Size(550, 500);
+            MinimumSize = new Size(550, 500);
             Name = "FormDnsLookup";
             SizeGripStyle = SizeGripStyle.Hide;
             Text = "DNS Lookup";

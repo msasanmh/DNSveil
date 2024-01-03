@@ -199,6 +199,8 @@ namespace CustomControls
 
         private void CustomTimeUpDown_Paint(object? sender, PaintEventArgs e)
         {
+            if (!Visible) return;
+
             UpdateSizeAndColor();
             e.Graphics.Clear(GetBackColor());
             if (Border)

@@ -34,7 +34,7 @@ public static class NetworkTool
                 result = line.Replace("name:", string.Empty).Trim();
                 if (result.Contains('.'))
                 {
-                    GetHostDetails(result, 0, out _, out baseHost, out _, out _, out _);
+                    GetHostDetails(result, 0, out _, out _, out baseHost, out _, out _, out _);
                 }
                 break;
             }
@@ -157,7 +157,7 @@ public static class NetworkTool
         return null;
     }
 
-    public static void GetUrlDetails(string url, int defaultPort, out string scheme, out string host, out string baseHost, out int port, out string path, out bool isIPv6)
+    public static void GetUrlDetails(string url, int defaultPort, out string scheme, out string host, out string subHost, out string baseHost, out int port, out string path, out bool isIPv6)
     {
         url = url.Trim();
         scheme = string.Empty;
@@ -174,81 +174,118 @@ public static class NetworkTool
                 url = split[1];
         }
 
-        GetHostDetails(url, defaultPort, out host, out baseHost, out port, out path, out isIPv6);
+        GetHostDetails(url, defaultPort, out host, out subHost, out baseHost, out port, out path, out isIPv6);
     }
 
-    public static void GetHostDetails(string hostIpPort, int defaultPort, out string host, out string baseHost, out int port, out string path, out bool isIPv6)
+    public static void GetHostDetails(string hostIpPort, int defaultPort, out string host, out string subHost, out string baseHost, out int port, out string path, out bool isIPv6)
     {
         hostIpPort = hostIpPort.Trim();
-        baseHost = string.Empty;
+        host = hostIpPort;
+        subHost = string.Empty;
+        baseHost = host;
+        port = defaultPort;
         path = string.Empty;
         isIPv6 = false;
 
-        // Strip /xxxx (Path)
-        if (!hostIpPort.Contains("//") && hostIpPort.Contains('/'))
+        try
         {
-            string[] split = hostIpPort.Split('/');
-            if (!string.IsNullOrEmpty(split[0]))
-                hostIpPort = split[0];
-
-            // Get Path
-            string slash = "/";
-            string outPath = slash;
-            for (int n = 0; n < split.Length; n++)
+            // Strip /xxxx (Path)
+            if (!hostIpPort.Contains("//") && hostIpPort.Contains('/'))
             {
-                if (n != 0) outPath += split[n] + "/";
+                string[] split = hostIpPort.Split('/');
+                if (!string.IsNullOrEmpty(split[0]))
+                    hostIpPort = split[0];
+
+                // Get Path
+                string slash = "/";
+                string outPath = slash;
+                for (int n = 0; n < split.Length; n++)
+                {
+                    if (n != 0) outPath += split[n] + "/";
+                }
+                if (outPath.Length > 1 && outPath.EndsWith("/")) outPath = outPath.TrimEnd(slash.ToCharArray());
+                if (!outPath.Equals("/")) path = outPath;
             }
-            if (outPath.Length > 1 && outPath.EndsWith("/")) outPath = outPath.TrimEnd(slash.ToCharArray());
-            if (!outPath.Equals("/")) path = outPath;
+
+            string host0 = hostIpPort;
+            port = defaultPort;
+
+            // Split Host and Port
+            if (hostIpPort.Contains('[') && hostIpPort.Contains("]:")) // IPv6 + Port
+            {
+                string[] split = hostIpPort.Split("]:");
+                if (split.Length == 2)
+                {
+                    isIPv6 = true;
+                    host0 = $"{split[0]}]";
+                    bool isInt = int.TryParse(split[1], out int result);
+                    if (isInt) port = result;
+                }
+            }
+            else if (hostIpPort.Contains('[') && hostIpPort.Contains(']')) // IPv6
+            {
+                string[] split = hostIpPort.Split(']');
+                if (split.Length == 2)
+                {
+                    isIPv6 = true;
+                    host0 = $"{split[0]}]";
+                }
+            }
+            else if (!hostIpPort.Contains('[') && !hostIpPort.Contains(']') && hostIpPort.Contains(':')) // Host + Port OR IPv4 + Port
+            {
+                string[] split = hostIpPort.Split(':');
+                if (split.Length == 2)
+                {
+                    host0 = split[0];
+                    bool isInt = int.TryParse(split[1], out int result);
+                    if (isInt) port = result;
+                }
+            }
+
+            host = host0;
+
+            // Get Base Host
+            if (!IsIp(host, out _) && host.Contains('.'))
+            {
+                baseHost = host;
+                string[] dotSplit = host.Split('.');
+                int realLength = dotSplit.Length;
+                if (realLength >= 3)
+                {
+                    // e.g. *.co.uk, *.org.us
+                    if (dotSplit[^2].Length <= 3 && dotSplit[^1].Length <= 2) realLength--;
+
+                    if (realLength >= 3)
+                    {
+                        if (realLength == 3 && dotSplit[0].Equals("www"))
+                            baseHost = baseHost.TrimStart("www.");
+                        else
+                        {
+                            int domainLength = realLength < dotSplit.Length ? 3 : 2;
+
+                            baseHost = string.Empty;
+                            for (int i = 0; i < dotSplit.Length; i++)
+                            {
+                                if (i >= dotSplit.Length - domainLength)
+                                    baseHost += $"{dotSplit[i]}.";
+                            }
+                            if (baseHost.EndsWith('.')) baseHost = baseHost[..^1];
+                        }
+                    }
+                }
+            }
+
+            // Get Sub Host (Subdomain)
+            if (!baseHost.Equals(host))
+            {
+                string baseHostWithDot = $".{baseHost}";
+                if (host.Contains(baseHostWithDot))
+                    subHost = host.Replace(baseHostWithDot, string.Empty);
+            }
         }
-
-        string host0 = hostIpPort;
-        port = defaultPort;
-
-        // Split Host and Port
-        if (hostIpPort.Contains('[') && hostIpPort.Contains("]:")) // IPv6 + Port
+        catch (Exception ex)
         {
-            string[] split = hostIpPort.Split("]:");
-            if (split.Length == 2)
-            {
-                isIPv6 = true;
-                host0 = $"{split[0]}]";
-                bool isInt = int.TryParse(split[1], out int result);
-                if (isInt) port = result;
-            }
-        }
-        else if (hostIpPort.Contains('[') && hostIpPort.Contains(']')) // IPv6
-        {
-            string[] split = hostIpPort.Split(']');
-            if (split.Length == 2)
-            {
-                isIPv6 = true;
-                host0 = $"{split[0]}]";
-            }
-        }
-        else if (!hostIpPort.Contains('[') && !hostIpPort.Contains(']') && hostIpPort.Contains(':')) // Host + Port OR IPv4 + Port
-        {
-            string[] split = hostIpPort.Split(':');
-            if (split.Length == 2)
-            {
-                host0 = split[0];
-                bool isInt = int.TryParse(split[1], out int result);
-                if (isInt) port = result;
-            }
-        }
-
-        host = host0;
-
-        // Get Base Host
-        if (!IsIp(host, out _) && host.Contains('.'))
-        {
-            string[] dotSplit = host.Split('.');
-            for (int i = 0; i < dotSplit.Length; i++)
-            {
-                if (i >= dotSplit.Length - 2)
-                    baseHost += $"{dotSplit[i]}.";
-            }
-            if (baseHost.EndsWith('.')) baseHost = baseHost[..^1];
+            Debug.WriteLine("GetHostDetails: " + ex.Message);
         }
     }
 
@@ -322,18 +359,45 @@ public static class NetworkTool
         }
     }
 
-    public static IPAddress? GetDefaultGateway()
+    public static IPAddress? GetDefaultGateway(bool ipv6 = false)
     {
-        IPAddress? gateway = NetworkInterface
-            .GetAllNetworkInterfaces()
-            .Where(n => n.OperationalStatus == OperationalStatus.Up)
-            .Where(n => n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-            .SelectMany(n => n?.GetIPProperties()?.GatewayAddresses)
-            .Select(g => g?.Address)
-            .Where(a => a != null)
-            .Where(a => a?.AddressFamily == AddressFamily.InterNetwork)
-            //.Where(a => Array.FindIndex(a.GetAddressBytes(), b => b != 0) >= 0) // Filter out 0.0.0.0
-            .FirstOrDefault();
+        IPAddress? gateway = null;
+        try
+        {
+            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+            for (int n = 0; n < nics.Length; n++)
+            {
+                NetworkInterface nic = nics[n];
+                if (nic.OperationalStatus == OperationalStatus.Up && nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                {
+                    IPInterfaceProperties ipProperties = nic.GetIPProperties();
+                    GatewayIPAddressInformationCollection gatewayAddresses = ipProperties.GatewayAddresses;
+                    foreach (GatewayIPAddressInformation gatewayAddress in gatewayAddresses)
+                    {
+                        IPAddress address = gatewayAddress.Address;
+                        if (!ipv6)
+                        {
+                            if (address.AddressFamily == AddressFamily.InterNetwork)
+                            {
+                                gateway = address;
+                                Debug.WriteLine("GetDefaultGateway: " + gateway);
+                                return gateway;
+                            }
+                        }
+                        else
+                        {
+                            if (address.AddressFamily == AddressFamily.InterNetworkV6)
+                            {
+                                gateway = address;
+                                Debug.WriteLine("GetDefaultGateway: " + gateway);
+                                return gateway;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception) { }
         return gateway;
     }
 
@@ -341,52 +405,53 @@ public static class NetworkTool
     private static extern int GetBestInterface(uint destAddr, out uint bestIfIndex);
     public static IPAddress? GetGatewayForDestination(IPAddress destinationAddress)
     {
-        uint destaddr = BitConverter.ToUInt32(destinationAddress.GetAddressBytes(), 0);
-
-        int result = GetBestInterface(destaddr, out uint interfaceIndex);
-        if (result != 0)
+        try
         {
-            Debug.WriteLine(new Win32Exception(result));
-            return null;
-        }
+            uint destaddr = BitConverter.ToUInt32(destinationAddress.GetAddressBytes(), 0);
 
-        foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
-        {
-            var niprops = ni.GetIPProperties();
-            if (niprops == null)
-                continue;
-
-            var gateway = niprops.GatewayAddresses?.FirstOrDefault()?.Address;
-            if (gateway == null)
-                continue;
-
-            if (ni.Supports(NetworkInterfaceComponent.IPv4))
+            int result = GetBestInterface(destaddr, out uint interfaceIndex);
+            if (result != 0)
             {
-                var v4props = niprops.GetIPv4Properties();
-                if (v4props == null)
-                    continue;
-
-                if (v4props.Index == interfaceIndex)
-                    return gateway;
+                Debug.WriteLine(new Win32Exception(result));
+                return null;
             }
 
-            if (ni.Supports(NetworkInterfaceComponent.IPv6))
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
             {
-                var v6props = niprops.GetIPv6Properties();
-                if (v6props == null)
-                    continue;
+                var niprops = ni.GetIPProperties();
+                if (niprops == null) continue;
 
-                if (v6props.Index == interfaceIndex)
-                    return gateway;
+                var gateway = niprops.GatewayAddresses?.FirstOrDefault()?.Address;
+                if (gateway == null) continue;
+
+                if (ni.Supports(NetworkInterfaceComponent.IPv4))
+                {
+                    var v4props = niprops.GetIPv4Properties();
+                    if (v4props == null) continue;
+
+                    if (v4props.Index == interfaceIndex) return gateway;
+                }
+
+                if (ni.Supports(NetworkInterfaceComponent.IPv6))
+                {
+                    var v6props = niprops.GetIPv6Properties();
+                    if (v6props == null) continue;
+
+                    if (v6props.Index == interfaceIndex) return gateway;
+                }
             }
         }
+        catch (Exception) { }
 
         return null;
     }
 
     public static bool IsIp(string ipStr, out IPAddress? ip)
     {
-        return IPAddress.TryParse(ipStr, out ip);
+        ip = null;
+        if (!string.IsNullOrEmpty(ipStr))
+            return IPAddress.TryParse(ipStr, out ip);
+        return false;
     }
 
     public static bool IsIPv4(IPAddress iPAddress)
@@ -462,35 +527,39 @@ public static class NetworkTool
     public static List<NetworkInterface> GetNetworkInterfacesIPv4(bool upAndRunning = true)
     {
         List<NetworkInterface> nicList = new();
-        NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
-        for (int n1 = 0; n1 < networkInterfaces.Length; n1++)
+        try
         {
-            NetworkInterface nic = networkInterfaces[n1];
-            if (nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+            for (int n1 = 0; n1 < networkInterfaces.Length; n1++)
             {
-                var unicastAddresses = nic.GetIPProperties().UnicastAddresses;
-                for (int n2 = 0; n2 < unicastAddresses.Count; n2++)
+                NetworkInterface nic = networkInterfaces[n1];
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
                 {
-                    var unicastAddress = unicastAddresses[n2];
-                    if (unicastAddress.Address.AddressFamily == AddressFamily.InterNetwork)
+                    var unicastAddresses = nic.GetIPProperties().UnicastAddresses;
+                    for (int n2 = 0; n2 < unicastAddresses.Count; n2++)
                     {
-                        if (upAndRunning)
+                        var unicastAddress = unicastAddresses[n2];
+                        if (unicastAddress.Address.AddressFamily == AddressFamily.InterNetwork)
                         {
-                            if (nic.OperationalStatus == OperationalStatus.Up)
+                            if (upAndRunning)
+                            {
+                                if (nic.OperationalStatus == OperationalStatus.Up)
+                                {
+                                    nicList.Add(nic);
+                                    break;
+                                }
+                            }
+                            else
                             {
                                 nicList.Add(nic);
                                 break;
                             }
                         }
-                        else
-                        {
-                            nicList.Add(nic);
-                            break;
-                        }
                     }
                 }
             }
         }
+        catch (Exception) { }
         return nicList;
     }
 
@@ -520,23 +589,31 @@ public static class NetworkTool
 
     public static NetworkInterface? GetNICByName(string name)
     {
-        NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
-        for (int n = 0; n < networkInterfaces.Length; n++)
+        try
         {
-            NetworkInterface nic = networkInterfaces[n];
-            if (nic.Name.Equals(name)) return nic;
+            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+            for (int n = 0; n < networkInterfaces.Length; n++)
+            {
+                NetworkInterface nic = networkInterfaces[n];
+                if (nic.Name.Equals(name)) return nic;
+            }
         }
+        catch (Exception) { }
         return null;
     }
 
     public static NetworkInterface? GetNICByDescription(string description)
     {
-        NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
-        for (int n = 0; n < networkInterfaces.Length; n++)
+        try
         {
-            NetworkInterface nic = networkInterfaces[n];
-            if (nic.Description.Equals(description)) return nic;
+            NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+            for (int n = 0; n < networkInterfaces.Length; n++)
+            {
+                NetworkInterface nic = networkInterfaces[n];
+                if (nic.Description.Equals(description)) return nic;
+            }
         }
+        catch (Exception) { }
         return null;
     }
 
@@ -550,8 +627,23 @@ public static class NetworkTool
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation
-        // Only netsh can set DNS on Windows 7
         if (nic == null) return;
+
+        await SetDnsIPv4(nic.Name, dnsServers);
+    }
+
+    /// <summary>
+    /// Set's the IPv4 DNS Server of the local machine (Windows Only)
+    /// </summary>
+    /// <param name="nicName">NIC Name</param>
+    /// <param name="dnsServers">Comma seperated list of DNS server addresses</param>
+    /// <remarks>Requires a reference to the System.Management namespace</remarks>
+    public static async Task SetDnsIPv4(string nicName, string dnsServers)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        // Requires Elevation
+        // Only netsh can set DNS on Windows 7
+        if (string.IsNullOrEmpty(nicName)) return;
 
         try
         {
@@ -565,42 +657,18 @@ public static class NetworkTool
             }
 
             string processName = "netsh";
-            string processArgs1 = $"interface ipv4 delete dnsservers \"{nic.Name}\" all";
-            string processArgs2 = $"interface ipv4 set dnsservers \"{nic.Name}\" static {dnsServer1} primary";
-            string processArgs3 = $"interface ipv4 add dnsservers \"{nic.Name}\" {dnsServer2} index=2";
+            string processArgs1 = $"interface ipv4 delete dnsservers \"{nicName}\" all";
+            string processArgs2 = $"interface ipv4 set dnsservers \"{nicName}\" static {dnsServer1} primary";
+            string processArgs3 = $"interface ipv4 add dnsservers \"{nicName}\" {dnsServer2} index=2";
             await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
             await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
             if (!string.IsNullOrEmpty(dnsServer2))
                 await ProcessManager.ExecuteAsync(processName, null, processArgs3, true, true);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Debug.WriteLine(e.Message);
+            Debug.WriteLine("SetDnsIPv4: " + ex.Message);
         }
-
-        //// Using ManagementClass
-        //Task.Delay(200).Wait();
-        //try
-        //{
-        //    using ManagementClass managementClass = new("Win32_NetworkAdapterConfiguration");
-        //    using ManagementObjectCollection moc = managementClass.GetInstances();
-        //    foreach (ManagementObject mo in moc.Cast<ManagementObject>())
-        //    {
-        //        if ((bool)mo["IPEnabled"] && mo["Description"].Equals(nic.Description))
-        //        {
-        //            using ManagementBaseObject newDNS = mo.GetMethodParameters("SetDNSServerSearchOrder");
-        //            if (newDNS != null)
-        //            {
-        //                newDNS["DNSServerSearchOrder"] = dnsServers.Split(',');
-        //                mo.InvokeMethod("SetDNSServerSearchOrder", newDNS, new InvokeMethodOptions());
-        //            }
-        //        }
-        //    }
-        //}
-        //catch (Exception ex)
-        //{
-        //    Debug.WriteLine(ex.Message);
-        //}
     }
 
     /// <summary>
@@ -611,14 +679,27 @@ public static class NetworkTool
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
-        // NetSh Command: netsh interface ip set dns "nic.Name" source=dhcp
         if (nic == null) return;
+
+        await UnsetDnsIPv4(nic.Name);
+    }
+
+    /// <summary>
+    /// Unset IPv4 DNS to DHCP (Windows Only)
+    /// </summary>
+    /// <param name="nicName">Network Interface Name</param>
+    public static async Task UnsetDnsIPv4(string nicName)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
+        // NetSh Command: netsh interface ip set dns "nicName" source=dhcp
+        if (string.IsNullOrEmpty(nicName)) return;
 
         try
         {
             string processName = "netsh";
-            string processArgs1 = $"interface ipv4 delete dnsservers \"{nic.Name}\" all";
-            string processArgs2 = $"interface ipv4 set dnsservers \"{nic.Name}\" source=dhcp";
+            string processArgs1 = $"interface ipv4 delete dnsservers \"{nicName}\" all";
+            string processArgs2 = $"interface ipv4 set dnsservers \"{nicName}\" source=dhcp";
             await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
             await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
         }
@@ -626,29 +707,6 @@ public static class NetworkTool
         {
             Debug.WriteLine(ex.Message);
         }
-
-        //// Using ManagementClass
-        //try
-        //{
-        //    using ManagementClass managementClass = new("Win32_NetworkAdapterConfiguration");
-        //    using ManagementObjectCollection moc = managementClass.GetInstances();
-        //    foreach (ManagementObject mo in moc.Cast<ManagementObject>())
-        //    {
-        //        if (mo["Description"].Equals(nic.Description))
-        //        {
-        //            using ManagementBaseObject newDNS = mo.GetMethodParameters("SetDNSServerSearchOrder");
-        //            if (newDNS != null)
-        //            {
-        //                newDNS["DNSServerSearchOrder"] = null;
-        //                mo.InvokeMethod("SetDNSServerSearchOrder", newDNS, new InvokeMethodOptions());
-        //            }
-        //        }
-        //    }
-        //}
-        //catch (Exception ex)
-        //{
-        //    Debug.WriteLine(ex.Message);
-        //}
     }
 
     /// <summary>
@@ -657,10 +715,24 @@ public static class NetworkTool
     /// <param name="nic">Network Interface</param>
     /// <param name="dns1">Primary</param>
     /// <param name="dns2">Secondary</param>
-    public static async Task UnsetDnsIPv4(NetworkInterface nic, string dns1, string dns2)
+    public static async Task UnsetDnsIPv4(NetworkInterface nic, string dns1, string? dns2)
     {
-        string dnsServers = $"{dns1},{dns2}";
+        string dnsServers = dns1;
+        if (!string.IsNullOrEmpty(dns2)) dnsServers += $",{dns2}";
         await SetDnsIPv4(nic, dnsServers);
+    }
+
+    /// <summary>
+    /// Unset IPv4 DNS by seting DNS to Static
+    /// </summary>
+    /// <param name="nicName">Network Interface Name</param>
+    /// <param name="dns1">Primary</param>
+    /// <param name="dns2">Secondary</param>
+    public static async Task UnsetDnsIPv4(string nicName, string dns1, string? dns2)
+    {
+        string dnsServers = dns1;
+        if (!string.IsNullOrEmpty(dns2)) dnsServers += $",{dns2}";
+        await SetDnsIPv4(nicName, dnsServers);
     }
 
     /// <summary>
@@ -671,20 +743,33 @@ public static class NetworkTool
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
-        // NetSh Command: netsh interface ip set dns "nic.Name" source=dhcp
         if (nic == null) return;
+
+        await UnsetDnsIPv6(nic.Name);
+    }
+
+    /// <summary>
+    /// Unset IPv4 DNS to DHCP (Windows Only)
+    /// </summary>
+    /// <param name="nicName">Network Interface Name</param>
+    public static async Task UnsetDnsIPv6(string nicName)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
+        // NetSh Command: netsh interface ip set dns "nicName" source=dhcp
+        if (string.IsNullOrEmpty(nicName)) return;
 
         try
         {
             string processName = "netsh";
-            string processArgs1 = $"interface ipv6 delete dnsservers \"{nic.Name}\" all";
-            string processArgs2 = $"interface ipv6 set dnsservers \"{nic.Name}\" source=dhcp";
+            string processArgs1 = $"interface ipv6 delete dnsservers \"{nicName}\" all";
+            string processArgs2 = $"interface ipv6 set dnsservers \"{nicName}\" source=dhcp";
             await ProcessManager.ExecuteAsync(processName, null, processArgs1, true, true);
             await ProcessManager.ExecuteAsync(processName, null, processArgs2, true, true);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("UnsetDnsIPv6: " + ex.Message);
         }
     }
 
@@ -768,20 +853,28 @@ public static class NetworkTool
     /// </summary>
     public static bool IsInternetAlive()
     {
-        // only recognizes changes related to Internet adapters
-        if (NetworkInterface.GetIsNetworkAvailable())
+        try
         {
-            // however, this will include all adapters -- filter by opstatus and activity
-            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
-            bool attempt1 = (from face in interfaces
-                             where face.OperationalStatus == OperationalStatus.Up
-                             where (face.NetworkInterfaceType != NetworkInterfaceType.Tunnel) && (face.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                             select face.GetIPv4Statistics()).Any(statistics => (statistics.BytesReceived > 0) && (statistics.BytesSent > 0));
+            // Only recognizes changes related to Internet adapters
+            if (NetworkInterface.GetIsNetworkAvailable())
+            {
+                // however, this will include all adapters -- filter by op status and activity
+                NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
+                bool attempt1 = (from face in interfaces
+                                 where face.OperationalStatus == OperationalStatus.Up
+                                 where (face.NetworkInterfaceType != NetworkInterfaceType.Tunnel) && (face.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                                 select face.GetIPv4Statistics()).Any(statistics => (statistics.BytesReceived > 0) && (statistics.BytesSent > 0));
 
-            return attempt1;
+                return attempt1;
+            }
+            else
+            {
+                return false;
+            }
         }
-        else
+        catch (Exception)
         {
+            // NetworkInformationException The system cannot find the file specified
             return false;
         }
     }
@@ -847,7 +940,7 @@ public static class NetworkTool
         }
     }
 
-    public static async Task<bool> IsWebsiteOnlineAsync(string url, int timeoutMs)
+    public static async Task<bool> IsWebsiteOnlineAsync(string url, int timeoutMs, bool useSystemProxy)
     {
         try
         {
@@ -855,7 +948,26 @@ public static class NetworkTool
             Uri uri = new(url, UriKind.Absolute);
 
             using HttpClientHandler handler = new();
-            handler.UseProxy = false;
+            if (useSystemProxy)
+            {
+                // WebRequest.GetSystemWebProxy() Can't always detect System Proxy
+                string proxyScheme = GetSystemProxy(); // Reading from Registry
+                if (!string.IsNullOrEmpty(proxyScheme))
+                {
+                    Debug.WriteLine("IsWebsiteOnlineAsync: " + proxyScheme);
+                    handler.Proxy = new WebProxy(proxyScheme, true);
+                    handler.Credentials = CredentialCache.DefaultNetworkCredentials;
+                    handler.UseProxy = true;
+                }
+                else
+                {
+                    Debug.WriteLine("IsWebsiteOnlineAsync: System Proxy Is Null.");
+                    handler.UseProxy = false;
+                }
+            }
+            else
+                handler.UseProxy = false;
+
             // Ignore Cert Check To Make It Faster
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
             handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
@@ -946,6 +1058,19 @@ public static class NetworkTool
 
         }
         return isProxyEnable;
+    }
+
+    public static string GetSystemProxy()
+    {
+        string result = string.Empty;
+        bool isProxySet = IsProxySet(out string httpProxy, out string httpsProxy, out _, out string socksProxy);
+        if (isProxySet)
+        {
+            if (!string.IsNullOrEmpty(httpProxy)) result = $"http://{httpProxy}";
+            else if (!string.IsNullOrEmpty(httpsProxy)) result = $"https://{httpsProxy}";
+            else if (!string.IsNullOrEmpty(socksProxy)) result = $"socks5://{socksProxy}";
+        }
+        return result;
     }
 
     /// <summary>
@@ -1047,7 +1172,7 @@ public static class NetworkTool
         string url;
         if (port == 80) url = $"http://{host}:{port}";
         else url = $"https://{host}:{port}";
-        return !await IsWebsiteOnlineAsync(url, timeoutMS);
+        return !await IsWebsiteOnlineAsync(url, timeoutMS, false);
     }
 
     public static async Task<bool> CanPing(string host, int timeoutMS)

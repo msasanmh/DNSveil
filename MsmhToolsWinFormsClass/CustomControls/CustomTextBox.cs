@@ -351,13 +351,16 @@ namespace CustomControls
             BackColorChanged += CustomTextBox_BackColorChanged;
             ForeColorChanged += CustomTextBox_ForeColorChanged;
             textBox.Click += TextBox_Click;
+            textBox.KeyDown += TextBox_KeyDown;
+            textBox.KeyPress += TextBox_KeyPress;
+            textBox.KeyUp += TextBox_KeyUp;
+            textBox.PreviewKeyDown += TextBox_PreviewKeyDown;
             textBox.MouseDown += TextBox_MouseDown;
             textBox.MouseEnter += TextBox_MouseEnter;
             textBox.MouseHover += TextBox_MouseHover;
             textBox.MouseLeave += TextBox_MouseLeave;
             textBox.MouseMove += TextBox_MouseMove;
             textBox.MouseUp += TextBox_MouseUp;
-            textBox.KeyPress += TextBox_KeyPress;
             textBox.Enter += TextBox_Enter;
             textBox.Leave += TextBox_Leave;
             textBox.Invalidated += TextBox_Invalidated;
@@ -541,6 +544,26 @@ namespace CustomControls
             OnClick(e);
         }
 
+        private void TextBox_KeyDown(object? sender, KeyEventArgs e)
+        {
+            OnKeyDown(e);
+        }
+
+        private void TextBox_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            OnKeyPress(e);
+        }
+
+        private void TextBox_KeyUp(object? sender, KeyEventArgs e)
+        {
+            OnKeyUp(e);
+        }
+
+        private void TextBox_PreviewKeyDown(object? sender, PreviewKeyDownEventArgs e)
+        {
+            OnPreviewKeyDown(e);
+        }
+
         private void TextBox_MouseDown(object? sender, MouseEventArgs e)
         {
             OnMouseDown(e);
@@ -571,11 +594,6 @@ namespace CustomControls
             OnMouseUp(e);
         }
 
-        private void TextBox_KeyPress(object? sender, KeyPressEventArgs e)
-        {
-            OnKeyPress(e);
-        }
-
         private void TextBox_Enter(object? sender, EventArgs e)
         {
             isFocused = true;
@@ -603,6 +621,8 @@ namespace CustomControls
         // Overridden Methods
         protected override void OnPaint(PaintEventArgs e)
         {
+            if (!Visible) return;
+
             base.OnPaint(e);
 
             Color borderColor = GetBorderColor();

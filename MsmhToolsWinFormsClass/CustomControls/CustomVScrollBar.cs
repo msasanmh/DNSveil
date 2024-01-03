@@ -276,8 +276,7 @@ namespace CustomControls
 
         private void CustomVScrollBar_MouseWheel(object? sender, MouseEventArgs e)
         {
-            if (!Enabled)
-                return;
+            if (!Enabled) return;
 
             int nTrackHeight = Height - (UpArrow.Height + DownArrow.Height);
             int nThumbHeight = (int)GetThumbHeight();
@@ -498,6 +497,8 @@ namespace CustomControls
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            if (!Visible) return;
+
             // Update Colors
             OriginalColors = new Color[] { BackColor, ForeColor, BorderColor };
 

@@ -20,6 +20,10 @@ public partial class FormMain : Form
         CustomRadioButtonConnectDNSCrypt.Checked = false;
         CustomTextBoxHTTPProxy.Text = string.Empty;
 
+        // Set DNS
+        // Update NICs
+        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+
         // Share
         CustomCheckBoxProxyEventShowRequest.Checked = false;
         CustomCheckBoxProxyEventShowChunkDetails.Checked = false;
@@ -30,7 +34,8 @@ public partial class FormMain : Form
         CustomNumericUpDownPDpiAntiPatternOffset.Value = (decimal)2;
         CustomNumericUpDownPDpiFragDelay.Value = (decimal)1;
         CustomCheckBoxProxyEnableSSL.Checked = false;
-        CustomCheckBoxProxySSLChangeSniToIP.Checked = false;
+        CustomCheckBoxProxySSLChangeSni.Checked = false;
+        CustomTextBoxProxySSLDefaultSni.Text = "speedtest.net";
 
         // DPI Basic
         CustomRadioButtonDPIMode1.Checked = false;
@@ -101,8 +106,7 @@ public partial class FormMain : Form
         CustomCheckBoxSettingQcCheckAllServers.Checked = false;
         CustomCheckBoxSettingQcSetDnsTo.Checked = true;
         // Update NICs (Quick Connect Settings)
-        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, false, out _);
-        CustomComboBoxSettingQcNics.SelectedIndex = CustomComboBoxSettingQcNics.Items.Count > 0 ? 0 : -1;
+        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, out _);
         CustomCheckBoxSettingQcStartProxyServer.Checked = false;
         CustomCheckBoxSettingQcSetProxy.Checked = false;
         CustomCheckBoxSettingQcStartGoodbyeDpi.Checked = false;
@@ -121,6 +125,7 @@ public partial class FormMain : Form
         CustomRadioButtonSettingUnsetDnsToStatic.Checked = true;
         CustomTextBoxSettingUnsetDns1.Text = "8.8.8.8";
         CustomTextBoxSettingUnsetDns2.Text = "8.8.4.4";
+        CustomCheckBoxSettingDnsDetectUnset.Checked = false;
 
         // Settings Share Basic
         CustomNumericUpDownSettingProxyPort.Value = (decimal)8080;
@@ -140,6 +145,9 @@ public partial class FormMain : Form
         CustomCheckBoxSettingProxyEnableFakeDNS.Checked = false;
         CustomCheckBoxSettingProxyEnableBlackWhiteList.Checked = false;
         CustomCheckBoxSettingProxyEnableDontBypass.Checked = false;
+
+        // Settings Share SSL Decryption
+        CustomCheckBoxSettingProxyEnableFakeSNI.Checked = false;
 
         // Settings Fake Proxy
         CustomNumericUpDownSettingFakeProxyPort.Value = (decimal)8070;

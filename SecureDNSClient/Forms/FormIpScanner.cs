@@ -15,6 +15,9 @@ public partial class FormIpScanner : Form
 
     private readonly IpScanner Scanner = new();
     private readonly ToolStripMenuItem ToolStripMenuItemCopy = new();
+    private bool IsExiting { get; set; } = false;
+    private bool IsExitDone { get; set; } = false;
+
     public FormIpScanner()
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
@@ -46,12 +49,14 @@ public partial class FormIpScanner : Form
         else
             AppSettings = new(this);
 
-        Shown -= FormIpScanner_Shown;
-        Shown += FormIpScanner_Shown;
+        FixScreenDpi();
     }
 
-    private void FormIpScanner_Shown(object? sender, EventArgs e)
+    private async void FixScreenDpi()
     {
+        // Setting Width Of Controls
+        await FormMain.SettingWidthOfControls(this);
+
         // Fix Controls Location
         int shw = TextRenderer.MeasureText("I", Font).Width;
         int spaceBottom = 10, spaceRight = 12, spaceV = 10, spaceH = shw, spaceHH = (spaceH * 3);
@@ -75,7 +80,7 @@ public partial class FormIpScanner : Form
         CustomLabelCheckIpWithThisPort.Left = spaceRight;
         CustomLabelCheckIpWithThisPort.Top = CustomTextBoxCheckWebsite.Bottom + spaceV;
 
-        CustomNumericUpDownCheckIpWithThisPort.Left = CustomLabelCheckIpWithThisPort.Right;
+        CustomNumericUpDownCheckIpWithThisPort.Left = CustomLabelCheckIpWithThisPort.Right + spaceH;
         CustomNumericUpDownCheckIpWithThisPort.Top = CustomLabelCheckIpWithThisPort.Top - 2;
 
         CustomLabelProxyPort.Left = spaceRight;
@@ -89,11 +94,16 @@ public partial class FormIpScanner : Form
 
         CustomLabelChecking.Left = spaceRight;
         CustomLabelChecking.Top = CustomCheckBoxRandomScan.Bottom + spaceV;
+        CustomLabelChecking.Width = ClientRectangle.Width - (spaceRight * 2);
 
         CustomDataGridViewResult.Left = spaceRight;
         CustomDataGridViewResult.Top = CustomLabelChecking.Bottom + spaceV;
         CustomDataGridViewResult.Width = ClientRectangle.Width - (spaceRight * 2);
         CustomDataGridViewResult.Height = ClientRectangle.Height - CustomDataGridViewResult.Top - spaceBottom;
+
+        ClientSize = new(CustomButtonStartStop.Right + spaceRight, ClientSize.Height);
+
+        CustomButtonStartStop.Text = "Start";
     }
 
     private void CustomButtonStartStop_Click(object sender, EventArgs e)
@@ -133,19 +143,44 @@ public partial class FormIpScanner : Form
 
             Scanner.OnWorkingIpReceived -= Scanner_OnWorkingIpReceived;
             Scanner.OnWorkingIpReceived += Scanner_OnWorkingIpReceived;
+            Scanner.OnFullReportChanged -= Scanner_OnFullReportChanged;
             Scanner.OnFullReportChanged += Scanner_OnFullReportChanged;
 
             if (!Scanner.IsRunning)
+            {
                 Scanner.Start();
+                this.InvokeIt(() => CustomButtonStartStop.Text = "Stop");
+            }
         }
 
-        void stop()
+        async void stop()
         {
             // Stop
             if (Scanner.IsRunning)
             {
+                this.InvokeIt(() =>
+                {
+                    CustomButtonStartStop.Enabled = false;
+                    CustomButtonStartStop.Text = "Stopping";
+                    CustomLabelChecking.Text = "Checking: ";
+                });
+
                 Scanner.Stop();
-                this.InvokeIt(() => CustomLabelChecking.Text = "Checking: ");
+
+                await Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        await Task.Delay(100);
+                        if (!Scanner.IsRunning) break;
+                    }
+                });
+
+                this.InvokeIt(() =>
+                {
+                    CustomButtonStartStop.Enabled = true;
+                    CustomButtonStartStop.Text = "Start";
+                });
             }
         }
 
@@ -215,10 +250,18 @@ public partial class FormIpScanner : Form
 
     private async void FormIpScanner_FormClosing(object sender, FormClosingEventArgs e)
     {
-        if (e.CloseReason == CloseReason.UserClosing || e.CloseReason == CloseReason.WindowsShutDown)
+        if (!IsExiting)
         {
-            if (Scanner.IsRunning)
-                Scanner.Stop();
+            e.Cancel = true;
+            IsExiting = true;
+
+            this.InvokeIt(() =>
+            {
+                CustomButtonStartStop.Enabled = false;
+                CustomButtonStartStop.Text = "Exiting";
+            });
+
+            if (Scanner.IsRunning) Scanner.Stop();
 
             // Select Control type and properties to save
             AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
@@ -232,6 +275,30 @@ public partial class FormIpScanner : Form
 
             // Save Application Settings
             await AppSettings.SaveAsync(SettingsXmlPath);
+
+            await Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(100);
+                    if (!Scanner.IsRunning) break;
+                }
+            });
+            
+            IsExitDone = true;
+
+            e.Cancel = false;
+            Close();
+        }
+        else
+        {
+            if (!IsExitDone)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Dispose();
         }
     }
 }

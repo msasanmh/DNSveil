@@ -17,11 +17,13 @@ public partial class FormMain
             // Start Checking
             if (stop) return;
             IsCheckingStarted = true;
+            await UpdateStatusShortOnBoolsChanged();
 
             // Check Internet Connectivity
             if (!IsInternetOnline)
             {
                 IsCheckingStarted = false;
+                await UpdateStatusShortOnBoolsChanged();
                 return;
             }
 
@@ -35,7 +37,7 @@ public partial class FormMain
             {
                 Task taskCheck = Task.Run(async () => await CheckServers(groupName));
 
-                await taskCheck.ContinueWith(_ =>
+                await taskCheck.ContinueWith(async _ =>
                 {
                     // Save working servers to file
                     if (!CustomRadioButtonBuiltIn.Checked && WorkingDnsAndLatencyListToFile.Any())
@@ -50,13 +52,13 @@ public partial class FormMain
                         WorkingDnsListToFile.SaveToFile(SecureDNS.WorkingServersPath);
                     }
 
-                    IsCheckingStarted = false;
-
                     string msg = $"{NL}Check Task: {taskCheck.Status}{NL}";
                     CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue);
                     CustomButtonCheck.Enabled = true;
 
+                    IsCheckingStarted = false;
                     StopChecking = false;
+                    await UpdateStatusShortOnBoolsChanged();
                 }, TaskScheduler.FromCurrentSynchronizationContext());
             }
             catch (Exception ex)
@@ -68,6 +70,7 @@ public partial class FormMain
         {
             // Stop Checking
             StopChecking = true;
+            await UpdateStatusShortOnBoolsChanged();
             this.InvokeIt(() => CustomProgressBarCheck.StopTimer = true);
             this.InvokeIt(() => CustomButtonCheck.Enabled = false);
         }
@@ -116,17 +119,22 @@ public partial class FormMain
     /// <returns>Returns True if find any working server</returns>
     private async Task<bool> CheckServers(string? groupName = null)
     {
+        // Clear Log on new Check
+        if (!Program.IsStartup)
+            this.InvokeIt(() => CustomRichTextBoxLog.ResetText());
+
+        // MsgGroupName
+        string msgGroupName = groupName ?? string.Empty;
+        if (msgGroupName.Equals("builtin")) msgGroupName = "Built-In";
+        if (!string.IsNullOrEmpty(msgGroupName)) msgGroupName = $" (Group: {msgGroupName})";
+        
+        // Check servers comment
+        string checkingServers = $"Checking servers{msgGroupName}:{NL}{NL}";
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(checkingServers, Color.MediumSeaGreen));
+
         // Get blocked domain
         string blockedDomain = GetBlockedDomainSetting(out string blockedDomainNoWww);
         if (string.IsNullOrEmpty(blockedDomain)) return false;
-
-        // Clear Log on new Check
-        if (!Program.Startup)
-            this.InvokeIt(() => CustomRichTextBoxLog.ResetText());
-        
-        // Check servers comment
-        string checkingServers = "Checking servers:" + NL + NL;
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(checkingServers, Color.MediumSeaGreen));
 
         // Get Bootstrap IP and Port
         string bootstrap = GetBootstrapSetting(out int bootstrapPort).ToString();

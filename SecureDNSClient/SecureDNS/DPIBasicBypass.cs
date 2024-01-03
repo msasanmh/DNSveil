@@ -1,4 +1,5 @@
 ﻿using CustomControls;
+using MsmhToolsClass;
 
 namespace SecureDNSClient.DPIBasic;
 
@@ -56,34 +57,36 @@ public class DPIBasicBypass
 
     public static void UpdateGoodbyeDpiBasicModes(CustomComboBox ccb)
     {
-        ccb.Text = "Select a Mode";
-        object item = ccb.SelectedItem;
-        ccb.Items.Clear();
-        List<DPIBasicBypassMode> modeNames = GetAllModes();
-        for (int n = 0; n < modeNames.Count; n++)
+        ccb.InvokeIt(() =>
         {
-            DPIBasicBypassMode modeName = modeNames[n];
-            ccb.Items.Add(modeName.ToString());
-        }
-        if (ccb.Items.Count > 0)
-        {
-            bool exist = false;
-            for (int i = 0; i < ccb.Items.Count; i++)
+            ccb.Text = "Select a Mode";
+            object item = ccb.SelectedItem;
+            ccb.Items.Clear();
+            List<DPIBasicBypassMode> modeNames = GetAllModes();
+            for (int n = 0; n < modeNames.Count; n++)
             {
-                object selectedItem = ccb.Items[i];
-                if (item != null && item.Equals(selectedItem))
-                {
-                    exist = true;
-                    break;
-                }
+                DPIBasicBypassMode modeName = modeNames[n];
+                ccb.Items.Add(modeName.ToString());
             }
-            if (exist)
-                ccb.SelectedItem = item;
-            else
-                ccb.SelectedIndex = 0;
-            ccb.DropDownHeight = modeNames.Count * ccb.Height;
-        }
-        else ccb.SelectedIndex = -1;
+            if (ccb.Items.Count > 0)
+            {
+                bool exist = false;
+                for (int i = 0; i < ccb.Items.Count; i++)
+                {
+                    object selectedItem = ccb.Items[i];
+                    if (item != null && item.Equals(selectedItem))
+                    {
+                        exist = true; break;
+                    }
+                }
+                if (exist)
+                    ccb.SelectedItem = item;
+                else
+                    ccb.SelectedIndex = 0;
+                ccb.DropDownHeight = modeNames.Count * ccb.Height;
+            }
+            else ccb.SelectedIndex = -1;
+        });
     }
 
     public string Args { get; }

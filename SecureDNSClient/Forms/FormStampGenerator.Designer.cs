@@ -248,13 +248,14 @@
             // 
             // CustomLabelProviderName
             // 
+            CustomLabelProviderName.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomLabelProviderName.AutoSize = true;
             CustomLabelProviderName.BackColor = Color.DimGray;
             CustomLabelProviderName.Border = false;
             CustomLabelProviderName.BorderColor = Color.Blue;
             CustomLabelProviderName.FlatStyle = FlatStyle.Flat;
             CustomLabelProviderName.ForeColor = Color.White;
-            CustomLabelProviderName.Location = new Point(407, 50);
+            CustomLabelProviderName.Location = new Point(522, 50);
             CustomLabelProviderName.Name = "CustomLabelProviderName";
             CustomLabelProviderName.RoundedCorners = 0;
             CustomLabelProviderName.Size = new Size(91, 17);
@@ -265,6 +266,7 @@
             // 
             CustomTextBoxProviderName.AcceptsReturn = false;
             CustomTextBoxProviderName.AcceptsTab = false;
+            CustomTextBoxProviderName.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomTextBoxProviderName.BackColor = Color.DimGray;
             CustomTextBoxProviderName.Border = true;
             CustomTextBoxProviderName.BorderColor = Color.Blue;
@@ -273,7 +275,7 @@
             CustomTextBoxProviderName.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             CustomTextBoxProviderName.ForeColor = Color.White;
             CustomTextBoxProviderName.HideSelection = true;
-            CustomTextBoxProviderName.Location = new Point(407, 70);
+            CustomTextBoxProviderName.Location = new Point(522, 70);
             CustomTextBoxProviderName.MaxLength = 32767;
             CustomTextBoxProviderName.Multiline = false;
             CustomTextBoxProviderName.Name = "CustomTextBoxProviderName";
@@ -291,13 +293,14 @@
             // 
             // CustomLabelPublicKey
             // 
+            CustomLabelPublicKey.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomLabelPublicKey.AutoSize = true;
             CustomLabelPublicKey.BackColor = Color.DimGray;
             CustomLabelPublicKey.Border = false;
             CustomLabelPublicKey.BorderColor = Color.Blue;
             CustomLabelPublicKey.FlatStyle = FlatStyle.Flat;
             CustomLabelPublicKey.ForeColor = Color.White;
-            CustomLabelPublicKey.Location = new Point(407, 110);
+            CustomLabelPublicKey.Location = new Point(522, 110);
             CustomLabelPublicKey.Name = "CustomLabelPublicKey";
             CustomLabelPublicKey.RoundedCorners = 0;
             CustomLabelPublicKey.Size = new Size(355, 17);
@@ -308,6 +311,7 @@
             // 
             CustomTextBoxPublicKey.AcceptsReturn = false;
             CustomTextBoxPublicKey.AcceptsTab = false;
+            CustomTextBoxPublicKey.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomTextBoxPublicKey.BackColor = Color.DimGray;
             CustomTextBoxPublicKey.Border = true;
             CustomTextBoxPublicKey.BorderColor = Color.Blue;
@@ -316,7 +320,7 @@
             CustomTextBoxPublicKey.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             CustomTextBoxPublicKey.ForeColor = Color.White;
             CustomTextBoxPublicKey.HideSelection = true;
-            CustomTextBoxPublicKey.Location = new Point(407, 130);
+            CustomTextBoxPublicKey.Location = new Point(522, 130);
             CustomTextBoxPublicKey.MaxLength = 32767;
             CustomTextBoxPublicKey.Multiline = false;
             CustomTextBoxPublicKey.Name = "CustomTextBoxPublicKey";
@@ -334,13 +338,14 @@
             // 
             // CustomLabelHash
             // 
+            CustomLabelHash.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomLabelHash.AutoSize = true;
             CustomLabelHash.BackColor = Color.DimGray;
             CustomLabelHash.Border = false;
             CustomLabelHash.BorderColor = Color.Blue;
             CustomLabelHash.FlatStyle = FlatStyle.Flat;
             CustomLabelHash.ForeColor = Color.White;
-            CustomLabelHash.Location = new Point(407, 170);
+            CustomLabelHash.Location = new Point(522, 170);
             CustomLabelHash.Name = "CustomLabelHash";
             CustomLabelHash.RoundedCorners = 0;
             CustomLabelHash.Size = new Size(356, 17);
@@ -351,6 +356,7 @@
             // 
             CustomTextBoxHash.AcceptsReturn = false;
             CustomTextBoxHash.AcceptsTab = false;
+            CustomTextBoxHash.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomTextBoxHash.BackColor = Color.DimGray;
             CustomTextBoxHash.Border = true;
             CustomTextBoxHash.BorderColor = Color.Blue;
@@ -359,7 +365,7 @@
             CustomTextBoxHash.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             CustomTextBoxHash.ForeColor = Color.White;
             CustomTextBoxHash.HideSelection = true;
-            CustomTextBoxHash.Location = new Point(407, 190);
+            CustomTextBoxHash.Location = new Point(522, 190);
             CustomTextBoxHash.MaxLength = 32767;
             CustomTextBoxHash.Multiline = false;
             CustomTextBoxHash.Name = "CustomTextBoxHash";
@@ -439,7 +445,7 @@
             CustomTextBoxStamp.RoundedCorners = 5;
             CustomTextBoxStamp.ScrollBars = ScrollBars.Vertical;
             CustomTextBoxStamp.ShortcutsEnabled = true;
-            CustomTextBoxStamp.Size = new Size(602, 102);
+            CustomTextBoxStamp.Size = new Size(717, 102);
             CustomTextBoxStamp.TabIndex = 0;
             CustomTextBoxStamp.TextAlign = HorizontalAlignment.Left;
             CustomTextBoxStamp.Texts = "sdns://";
@@ -453,11 +459,11 @@
             CustomButtonClear.AutoSize = true;
             CustomButtonClear.BorderColor = Color.Blue;
             CustomButtonClear.FlatStyle = FlatStyle.Flat;
-            CustomButtonClear.Location = new Point(655, 280);
+            CustomButtonClear.Location = new Point(770, 280);
             CustomButtonClear.Name = "CustomButtonClear";
             CustomButtonClear.RoundedCorners = 5;
             CustomButtonClear.SelectionColor = Color.LightBlue;
-            CustomButtonClear.Size = new Size(75, 27);
+            CustomButtonClear.Size = new Size(80, 27);
             CustomButtonClear.TabIndex = 24;
             CustomButtonClear.Text = "Clear";
             CustomButtonClear.UseVisualStyleBackColor = true;
@@ -469,11 +475,11 @@
             CustomButtonDecode.AutoSize = true;
             CustomButtonDecode.BorderColor = Color.Blue;
             CustomButtonDecode.FlatStyle = FlatStyle.Flat;
-            CustomButtonDecode.Location = new Point(655, 317);
+            CustomButtonDecode.Location = new Point(770, 317);
             CustomButtonDecode.Name = "CustomButtonDecode";
             CustomButtonDecode.RoundedCorners = 5;
             CustomButtonDecode.SelectionColor = Color.LightBlue;
-            CustomButtonDecode.Size = new Size(75, 27);
+            CustomButtonDecode.Size = new Size(80, 27);
             CustomButtonDecode.TabIndex = 33;
             CustomButtonDecode.Text = "Decode";
             CustomButtonDecode.UseVisualStyleBackColor = true;
@@ -501,11 +507,11 @@
             CustomButtonEncode.AutoSize = true;
             CustomButtonEncode.BorderColor = Color.Blue;
             CustomButtonEncode.FlatStyle = FlatStyle.Flat;
-            CustomButtonEncode.Location = new Point(655, 355);
+            CustomButtonEncode.Location = new Point(770, 355);
             CustomButtonEncode.Name = "CustomButtonEncode";
             CustomButtonEncode.RoundedCorners = 5;
             CustomButtonEncode.SelectionColor = Color.LightBlue;
-            CustomButtonEncode.Size = new Size(75, 27);
+            CustomButtonEncode.Size = new Size(80, 27);
             CustomButtonEncode.TabIndex = 35;
             CustomButtonEncode.Text = "Encode";
             CustomButtonEncode.UseVisualStyleBackColor = true;
@@ -516,7 +522,7 @@
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
-            ClientSize = new Size(769, 411);
+            ClientSize = new Size(884, 411);
             Controls.Add(CustomButtonEncode);
             Controls.Add(CustomLabelStatus);
             Controls.Add(CustomButtonDecode);
@@ -544,8 +550,8 @@
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
-            MaximumSize = new Size(785, 450);
-            MinimumSize = new Size(785, 450);
+            MaximumSize = new Size(900, 450);
+            MinimumSize = new Size(900, 450);
             Name = "FormStampGenerator";
             Text = "DNSCrypt Stamp Generator";
             FormClosing += FormStampGenerator_FormClosing;

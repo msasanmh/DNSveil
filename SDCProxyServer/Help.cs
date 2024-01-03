@@ -150,9 +150,15 @@ public class Help
         help = $"      Path To Your Private Key File. (e.g. C:\\RootCA.key) - Leave Empty To Generate.";
         WriteToStdout(help);
 
-        help = $"    -{Key.SSLSetting.ChangeSniToIP}=";
+        help = $"    -{Key.SSLSetting.ChangeSni}=";
         WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      Change SNI To IP To Bypass DPI.";
+        help = $"      Change SNI To Bypass DPI.";
+        WriteToStdout(help);
+
+        help = $"    -{Key.SSLSetting.DefaultSni}=";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Change All SNIs To This SNI.";
+        help += $"\n      You Can Also Use FakeSNI List To Set A Custom SNI For A Domain.";
         WriteToStdout(help);
 
         // Programs Interactive Mode
@@ -194,6 +200,11 @@ public class Help
         help = $"    {Key.Programs.FakeDns.Name}";
         WriteToStdout(help, ConsoleColor.Cyan);
         help = $"      Resolve Domains To Desired IP Addresses.";
+        WriteToStdout(help);
+
+        help = $"    {Key.Programs.FakeSni.Name}";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Set A Custom SNI For A Domain.";
         WriteToStdout(help);
 
         help = $"    {Key.Programs.UpStreamProxy.Name}";
@@ -268,6 +279,7 @@ public class Help
         msg += $"    {Key.Programs.DontBypass.Name}\n";
         msg += $"    {Key.Programs.DpiBypass.Name}\n";
         msg += $"    {Key.Programs.FakeDns.Name}\n";
+        msg += $"    {Key.Programs.FakeSni.Name}\n";
         msg += $"    {Key.Programs.UpStreamProxy.Name}\n";
         WriteToStdout(msg, ConsoleColor.Cyan);
     }
@@ -570,6 +582,51 @@ public class Help
         help += $"\n  Programs FakeDns -Mode=Disable";
         help += $"\n  Programs FakeDns -Mode=File -PathOrText=\"C:\\list.txt\"";
         help += $"\n  Programs FakeDns -Mode=Text -PathOrText=\"Google.com|8.8.8.8\\nCloudflare.com|1.1.1.1\"";
+        WriteToStdout(help);
+    }
+
+    public static void GetHelpFakeSni()
+    {
+        // Help Program FakeSni
+        // Programs FakeSni -Mode=m -PathOrText="m"
+        string help;
+        help = $"\nPrograms {Key.Programs.FakeSni.Name}";
+        WriteToStdout(help, ConsoleColor.Blue);
+        help = $"  Change SNI To Bypass DPI.";
+        WriteToStdout(help);
+
+        // -Mode=
+        help = "\n  -Mode=";
+        WriteToStdout(help, ConsoleColor.Blue);
+
+        help = $"    {Key.Programs.FakeSni.Mode.File}";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      A FakeSni List File.";
+        WriteToStdout(help);
+
+        help = $"    {Key.Programs.FakeSni.Mode.Text}";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      A FakeSni List As Text.";
+        WriteToStdout(help);
+
+        help = $"    {Key.Programs.FakeSni.Mode.Disable}";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      To Disable {Key.Programs.FakeSni.Name}.";
+        WriteToStdout(help);
+
+        // -PathOrText=
+        help = $"\n  -{Key.Programs.FakeSni.PathOrText}=";
+        WriteToStdout(help, ConsoleColor.Blue);
+        help = $"    The File Path Or Text Depends On The Mode (Require Double Quotes).";
+        help += $"\n    File Mode: The Path Of File. (Each Line One Rule).";
+        help += $"\n    Text Mode: e.g. \"Youtube.com|Google.com\\n*.googlevideo.com|*.c.docs.google.com\"";
+        WriteToStdout(help);
+
+        // Examples
+        help = $"\nExamples:";
+        help += $"\n  Programs FakeSni -Mode=Disable";
+        help += $"\n  Programs FakeSni -Mode=File -PathOrText=\"C:\\list.txt\"";
+        help += $"\n  Programs FakeSni -Mode=Text -PathOrText=\"Youtube.com|Google.com\\n*.googlevideo.com|*.c.docs.google.com\"";
         WriteToStdout(help);
     }
 

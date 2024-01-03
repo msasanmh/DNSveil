@@ -1,6 +1,7 @@
 ﻿using MsmhToolsClass;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms.Design;
@@ -29,9 +30,9 @@ namespace CustomControls
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new ContentAlignment CheckAlign { get; set; }
 
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public new bool AutoSize { get; set; }
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Property Changed"), Description("Text Changed")]
+        public new event EventHandler? TextChanged;
 
         private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
@@ -84,12 +85,12 @@ namespace CustomControls
             }
         }
 
-        private string? mText = string.Empty;
+        private string mText = string.Empty;
         [Editor("System.ComponentModel.Design.MultilineStringEditor, System.Design, Version=2.0.0.0," +
             "Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", typeof(UITypeEditor))]
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Category("Appearance"), Description("Text")]
-        public override string? Text
+        public override string Text
         {
             get { return mText; }
             set
@@ -97,10 +98,14 @@ namespace CustomControls
                 if (mText != value)
                 {
                     mText = value;
+                    TextChanged?.Invoke(this, EventArgs.Empty);
                     Invalidate();
                 }
             }
         }
+
+        // I Need My Own AutoSize
+        public override bool AutoSize { get; set; }
 
         private bool ApplicationIdle = false;
         private bool once = true;
@@ -186,88 +191,123 @@ namespace CustomControls
         
         private void CustomRadioButton_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false) return;
-            
-            if (sender is RadioButton rb)
+            try
             {
-                Color backColor = GetBackColor(rb);
-                Color foreColor = GetForeColor();
-                Color borderColor = GetBorderColor();
-                Color checkColor = GetCheckColor();
+                if (!ApplicationIdle) return;
+                if (!Visible) return;
 
-                e.Graphics.Clear(backColor);
-                rb.Appearance = Appearance.Button;
-                rb.FlatStyle = FlatStyle.Flat;
-
-                rb.FlatAppearance.BorderSize = 0;
-                rb.AutoSize = false;
-                rb.UseVisualStyleBackColor = false;
-                SizeF sizeF = rb.CreateGraphics().MeasureString(rb.Text, rb.Font);
-                SizeF rectSizeF = sizeF;
-                if (rb.Text.Contains(Environment.NewLine))
-                    rectSizeF = rb.CreateGraphics().MeasureString(rb.Text.Split(Environment.NewLine)[0], rb.Font);
-                int rectSize = Convert.ToInt32(rectSizeF.Height - 2);
-                rb.Height = Convert.ToInt32(sizeF.Height);
-                rb.Width = Convert.ToInt32(sizeF.Width + rectSize + 5);
-                int x;
-                float textX;
-
-                if (rb.RightToLeft != RightToLeft.Yes)
+                if (sender is RadioButton rb)
                 {
-                    rb.TextAlign = ContentAlignment.MiddleLeft;
-                    x = 0;
-                    textX = rectSize;
-                }
-                else
-                {
-                    rb.TextAlign = ContentAlignment.MiddleRight;
-                    x = rb.Width - rectSize;
-                    textX = 0;
-                }
+                    Color backColor = GetBackColor(rb);
+                    Color foreColor = GetForeColor();
+                    Color borderColor = GetBorderColor();
+                    Color checkColor = GetCheckColor();
 
-                int y = (rb.ClientRectangle.Y + (rb.ClientRectangle.Height - rectSize)) / 2;
-                Point pt = new(x, y);
-                Rectangle rectCheck = new(pt, new Size(rectSize, rectSize));
+                    e.Graphics.Clear(backColor);
+                    rb.Appearance = Appearance.Button;
+                    rb.FlatStyle = FlatStyle.Flat;
 
-                // Draw Selection Border
-                Rectangle cRect = new(rb.ClientRectangle.X, rb.ClientRectangle.Y, rb.ClientRectangle.Width - 1, rb.ClientRectangle.Height - 1);
-                if (rb.Focused)
-                {
-                    using Pen pen = new(SelectionColor) { DashStyle = DashStyle.Dot };
-                    e.Graphics.DrawRectangle(pen, cRect);
-                }
+                    rb.FlatAppearance.BorderSize = 0;
+                    rb.UseVisualStyleBackColor = false;
 
-                // Draw Text
-                using SolidBrush brush1 = new(foreColor);
-                e.Graphics.DrawString(rb.Text, rb.Font, brush1, textX, 0);
+                    SizeF sizeF = e.Graphics.MeasureString(rb.Text, rb.Font);
+                    SizeF rectSizeF = sizeF;
+                    int boxOffset = 4; // Must Be Even
+                    int rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
+                    int lineCount = 1;
 
-                // Fill Check Rect
-                using SolidBrush brush2 = new(backColor);
-                e.Graphics.FillRectangle(brush2, rectCheck);
+                    try
+                    {
+                        if (rb.AutoSize)
+                        {
+                            string text = rb.Text;
+                            if (text.Contains(Environment.NewLine)) // Handle Multiline
+                            {
+                                List<string> lines = text.SplitToLines();
+                                lineCount = lines.Count;
+                                text = lines[0];
+                                for (int i = 0; i < lines.Count; i++)
+                                {
+                                    string line = lines[i];
+                                    if (line.Length > text.Length) text = line;
+                                }
+                            }
+                            rectSizeF = e.Graphics.MeasureString(text, rb.Font);
+                            rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
+                            rb.Height = Convert.ToInt32(Math.Round(sizeF.Height * 1.1));
+                            rb.Width = Convert.ToInt32(Math.Round(sizeF.Width) + rectSize);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // do nothing
+                    }
 
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    int x;
+                    float textX;
 
-                // Set Points
-                float centerX = rectCheck.X + (rectCheck.Width / 2);
-                float centerY = rectCheck.Y + (rectCheck.Height / 2);
-                float radius = rectCheck.Width / 2;
+                    if (rb.RightToLeft != RightToLeft.Yes)
+                    {
+                        rb.TextAlign = ContentAlignment.MiddleLeft;
+                        x = 0;
+                        textX = rectSize;
+                    }
+                    else
+                    {
+                        rb.TextAlign = ContentAlignment.MiddleRight;
+                        x = rb.Width - rectSize;
+                        textX = 0;
+                    }
 
-                // Draw Check
-                if (rb.Checked)
-                {
+                    int y = (rb.ClientRectangle.Y + (rb.ClientRectangle.Height - rectSize)) / 2;
+                    Point pt = new(x, y);
+                    Rectangle rectCheck = new(pt, new Size(rectSize, rectSize));
+
+                    // Draw Selection Border
+                    Rectangle cRect = new(rb.ClientRectangle.X, rb.ClientRectangle.Y, rb.ClientRectangle.Width - 1, rb.ClientRectangle.Height - 1);
+                    if (rb.Focused)
+                    {
+                        using Pen pen = new(SelectionColor) { DashStyle = DashStyle.Dot };
+                        e.Graphics.DrawRectangle(pen, cRect);
+                    }
+
+                    // Draw Text
+                    int yt = (rb.ClientRectangle.Y + (rb.ClientRectangle.Height - Convert.ToInt32(Math.Round(rectSizeF.Height * lineCount)))) / 2;
+                    using SolidBrush brush1 = new(foreColor);
+                    e.Graphics.DrawString(rb.Text, rb.Font, brush1, textX, yt);
+
+                    // Fill Check Rect
+                    using SolidBrush brush2 = new(backColor);
+                    e.Graphics.FillRectangle(brush2, rectCheck);
+
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    // Set Points
+                    float centerX = rectCheck.X + (rectCheck.Width / 2);
+                    float centerY = rectCheck.Y + (rectCheck.Height / 2);
+                    float radius = rectCheck.Width / 2;
+
                     // Draw Check
-                    using SolidBrush brushCheck = new(checkColor);
-                    rectCheck.Inflate(-2, -2);
-                    float radiusC = rectCheck.Width / 2;
-                    e.Graphics.FillEllipse(brushCheck, centerX - radiusC, centerY - radiusC, radiusC + radiusC, radiusC + radiusC);
-                    rectCheck.Inflate(+2, +2);
+                    if (rb.Checked)
+                    {
+                        // Draw Check
+                        using SolidBrush brushCheck = new(checkColor);
+                        rectCheck.Inflate(-2, -2);
+                        float radiusC = rectCheck.Width / 2;
+                        e.Graphics.FillEllipse(brushCheck, centerX - radiusC, centerY - radiusC, radiusC + radiusC, radiusC + radiusC);
+                        rectCheck.Inflate(+2, +2);
+                    }
+
+                    // Draw Check Rect (Check Border)
+                    using Pen penBorder = new(borderColor);
+                    e.Graphics.DrawEllipse(penBorder, centerX - radius, centerY - radius, radius + radius, radius + radius);
+
+                    e.Graphics.SmoothingMode = SmoothingMode.Default;
                 }
-
-                // Draw Check Rect (Check Border)
-                using Pen penBorder = new(borderColor);
-                e.Graphics.DrawEllipse(penBorder, centerX - radius, centerY - radius, radius + radius, radius + radius);
-
-                e.Graphics.SmoothingMode = SmoothingMode.Default;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("CustomRadioButton Paint: " + ex.Message);
             }
         }
 

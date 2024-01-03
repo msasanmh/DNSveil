@@ -10,7 +10,9 @@ namespace SecureDNSClient;
 public partial class FormStampGenerator : Form
 {
     private readonly Stopwatch ClearStatus = new();
-    private static bool IsExiting = false;
+    private static bool IsExiting { get; set; } = false;
+    private bool IsExitDone { get; set; } = false;
+
     public FormStampGenerator()
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
@@ -29,12 +31,14 @@ public partial class FormStampGenerator : Form
         IsExiting = false;
         ClearStatusAuto();
 
-        Shown -= FormStampGenerator_Shown;
-        Shown += FormStampGenerator_Shown;
+        FixScreenDpi();
     }
 
-    private void FormStampGenerator_Shown(object? sender, EventArgs e)
+    private async void FixScreenDpi()
     {
+        // Setting Width Of Controls
+        await FormMain.SettingWidthOfControls(this);
+
         // Fix Controls Location
         int shw = TextRenderer.MeasureText("I", Font).Width;
         int spaceBottom = 10, spaceRight = 10, spaceV = 10, spaceH = shw, spaceHH = (spaceH * 3);
@@ -44,7 +48,7 @@ public partial class FormStampGenerator : Form
         CustomComboBoxProtocol.Top = CustomLabelProtocol.Top - 2;
 
         CustomLabelIP.Left = spaceRight;
-        CustomLabelIP.Top = CustomComboBoxProtocol.Bottom + spaceV;
+        CustomLabelIP.Top = CustomLabelProtocol.Bottom + (spaceV * 2);
 
         CustomTextBoxIP.Left = spaceRight;
         CustomTextBoxIP.Top = CustomLabelIP.Bottom + spaceV;
@@ -79,40 +83,45 @@ public partial class FormStampGenerator : Form
         CustomLabelStatus.Left = spaceRight;
         CustomLabelStatus.Top = ClientRectangle.Height - CustomLabelStatus.Height - spaceBottom;
 
+        // Top-Right Side
+        CustomLabelHash.Left = ClientSize.Width - CustomLabelHash.Width - spaceRight;
+        CustomLabelHash.Top = CustomLabelPort.Top;
+
+        CustomTextBoxHash.Left = CustomLabelHash.Left;
+        CustomTextBoxHash.Top = CustomLabelHash.Bottom + spaceV;
+        CustomTextBoxHash.Width = CustomLabelHash.Width;
+
+        CustomLabelPublicKey.Left = CustomLabelHash.Left;
+        CustomLabelPublicKey.Top = CustomLabelHost.Top;
+
+        CustomTextBoxPublicKey.Left = CustomLabelHash.Left;
+        CustomTextBoxPublicKey.Top = CustomTextBoxHost.Top;
+        CustomTextBoxPublicKey.Width = CustomLabelHash.Width;
+
+        CustomLabelProviderName.Left = CustomLabelHash.Left;
+        CustomLabelProviderName.Top = CustomLabelIP.Top;
+
+        CustomTextBoxProviderName.Left = CustomLabelHash.Left;
+        CustomTextBoxProviderName.Top = CustomTextBoxIP.Top;
+        CustomTextBoxProviderName.Width = CustomLabelHash.Width;
+
         // Buttons
-        CustomButtonClear.Left = ClientRectangle.Width - CustomButtonClear.Width - spaceH;
+        CustomButtonClear.Left = ClientSize.Width - CustomButtonClear.Width - spaceRight;
         CustomButtonClear.Top = CustomCheckBoxIsNoLog.Bottom + spaceV;
 
-        CustomButtonDecode.Left = CustomButtonClear.Left;
+        CustomButtonDecode.Left = ClientSize.Width - CustomButtonDecode.Width - spaceRight;
         CustomButtonDecode.Top = CustomButtonClear.Bottom + spaceV;
 
-        CustomButtonEncode.Left = CustomButtonDecode.Left;
+        CustomButtonEncode.Left = ClientSize.Width - CustomButtonEncode.Width - spaceRight;
         CustomButtonEncode.Top = CustomButtonDecode.Bottom + spaceV;
 
         // The Box
         CustomTextBoxStamp.Left = spaceRight;
         CustomTextBoxStamp.Top = CustomCheckBoxIsNoLog.Bottom + spaceV;
-        CustomTextBoxStamp.Width = CustomButtonEncode.Left - CustomTextBoxStamp.Left - spaceH;
+        CustomTextBoxStamp.Width = ClientSize.Width - CustomTextBoxStamp.Left - (spaceH * 2) - (ClientSize.Width - CustomButtonDecode.Left);
         CustomTextBoxStamp.Height = CustomLabelStatus.Top - CustomTextBoxStamp.Top - spaceV;
 
-        // Top-Right Side
-        CustomLabelProviderName.Left = CustomComboBoxProtocol.Right + spaceHH;
-        CustomLabelProviderName.Top = CustomLabelIP.Top;
-
-        CustomTextBoxProviderName.Left = CustomLabelProviderName.Left;
-        CustomTextBoxProviderName.Top = CustomTextBoxIP.Top;
-
-        CustomLabelPublicKey.Left = CustomTextBoxProviderName.Left;
-        CustomLabelPublicKey.Top = CustomLabelHost.Top;
-
-        CustomTextBoxPublicKey.Left = CustomLabelPublicKey.Left;
-        CustomTextBoxPublicKey.Top = CustomTextBoxHost.Top;
-
-        CustomLabelHash.Left = CustomTextBoxPublicKey.Left;
-        CustomLabelHash.Top = CustomLabelPort.Top;
-
-        CustomTextBoxHash.Left = CustomLabelHash.Left;
-        CustomTextBoxHash.Top = CustomLabelHash.Bottom + spaceV;
+        CustomLabelStatus.Width = CustomTextBoxStamp.Width;
     }
 
     private void CustomButtonClear_Click(object? sender, EventArgs? e)
@@ -401,6 +410,8 @@ public partial class FormStampGenerator : Form
                 catch (Exception) { }
             }
         });
+
+        IsExitDone = true;
     }
 
     private void CustomComboBoxProtocol_SelectedIndexChanged(object sender, EventArgs e)
@@ -537,8 +548,34 @@ public partial class FormStampGenerator : Form
         }
     }
 
-    private void FormStampGenerator_FormClosing(object sender, FormClosingEventArgs e)
+    private async void FormStampGenerator_FormClosing(object sender, FormClosingEventArgs e)
     {
-        IsExiting = true;
+        if (!IsExiting)
+        {
+            e.Cancel = true;
+            IsExiting = true;
+
+            await Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(100);
+                    if (IsExitDone) break;
+                }
+            });
+
+            e.Cancel = false;
+            Close();
+        }
+        else
+        {
+            if (!IsExitDone)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Dispose();
+        }
     }
 }

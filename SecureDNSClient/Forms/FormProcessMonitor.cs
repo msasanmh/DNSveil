@@ -8,6 +8,8 @@ namespace SecureDNSClient;
 public partial class FormProcessMonitor : Form
 {
     private readonly string NL = Environment.NewLine;
+    private bool IsExiting { get; set; } = false;
+    private bool IsExitDone { get; set; } = false;
     private bool Exit = false;
     public FormProcessMonitor()
     {
@@ -177,8 +179,29 @@ public partial class FormProcessMonitor : Form
         dgv.Rows.AddRange(rList.ToArray());
     }
 
-    private void FormProcessMonitor_FormClosing(object sender, FormClosingEventArgs e)
+    private async void FormProcessMonitor_FormClosing(object sender, FormClosingEventArgs e)
     {
-        Exit = true;
+        if (!IsExiting)
+        {
+            e.Cancel = true;
+            IsExiting = true;
+
+            Exit = true;
+            await Task.Delay(200);
+            IsExitDone = true;
+
+            e.Cancel = false;
+            Close();
+        }
+        else
+        {
+            if (!IsExitDone)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Dispose();
+        }
     }
 }

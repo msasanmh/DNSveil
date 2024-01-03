@@ -8,6 +8,9 @@ namespace SecureDNSClient;
 public partial class FormStampReader : Form
 {
     private readonly string NL = Environment.NewLine;
+    private bool IsExiting { get; set; } = false;
+    private bool IsExitDone { get; set; } = false;
+
     public FormStampReader()
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
@@ -24,12 +27,17 @@ public partial class FormStampReader : Form
 
         CustomTextBoxResult.Text = string.Empty;
 
-        Shown -= FormStampReader_Shown;
-        Shown += FormStampReader_Shown;
+        FixScreenDpi();
+
+        FormClosing -= FormStampReader_FormClosing;
+        FormClosing += FormStampReader_FormClosing;
     }
 
-    private void FormStampReader_Shown(object? sender, EventArgs e)
+    private async void FixScreenDpi()
     {
+        // Setting Width Of Controls
+        await FormMain.SettingWidthOfControls(this);
+
         // Fix Controls Location
         int shw = TextRenderer.MeasureText("I", Font).Width;
         int spaceBottom = 10, spaceRight = 10, spaceV = 10, spaceH = shw, spaceHH = (spaceH * 3);
@@ -40,6 +48,7 @@ public partial class FormStampReader : Form
 
         CustomTextBoxStampUrl.Left = CustomLabelStampUrl.Right + spaceH;
         CustomTextBoxStampUrl.Top = CustomLabelStampUrl.Top - 2;
+        CustomTextBoxStampUrl.Width = ClientRectangle.Width - CustomTextBoxStampUrl.Left - spaceH - (ClientRectangle.Width - CustomButtonDecode.Left);
 
         CustomTextBoxResult.Left = spaceRight;
         CustomTextBoxResult.Top = CustomButtonDecode.Bottom + spaceV;
@@ -122,4 +131,30 @@ public partial class FormStampReader : Form
             return;
         }
     }
+
+    private async void FormStampReader_FormClosing(object? sender, FormClosingEventArgs e)
+    {
+        if (!IsExiting)
+        {
+            e.Cancel = true;
+            IsExiting = true;
+
+            await Task.Delay(200);
+            IsExitDone = true;
+
+            e.Cancel = false;
+            Close();
+        }
+        else
+        {
+            if (!IsExitDone)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Dispose();
+        }
+    }
+
 }
