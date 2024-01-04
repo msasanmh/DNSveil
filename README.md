@@ -14,8 +14,9 @@
 - *Share to other devices via Proxy (HTTP, HTTPS, SOCKS4, SOCKS4A, SOCKS5).*
 
 **Requirements:** .Net Destop Runtime 6. (Installing both x86 and x64 are required)<br>
-[Download Runtime x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.21-windows-x64-installer)<br>
-[Download Runtime x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.21-windows-x86-installer)<br>
+[Download Runtime x64 v6.0.25](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.25-windows-x64-installer)<br>
+[Download Runtime x86 v6.0.25](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.25-windows-x86-installer)<br>
+[Microsoft .NET 6.0 Runtime Page](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)<br>
 
 **Download:**<br>
 [Download latest version of Secure DNS Client](https://github.com/msasanmh/SecureDNSClient/releases/latest)<br>
