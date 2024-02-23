@@ -3,6 +3,7 @@ using ARSoft.Tools.Net.Dns;
 using System.Net;
 using MsmhToolsClass;
 using System.Diagnostics;
+using MsmhToolsClass.DnsTool;
 
 namespace SecureDNSClient;
 
@@ -72,102 +73,164 @@ public class CamouflageDNSServer
     private async Task DnsServer_QueryReceived(object sender, QueryReceivedEventArgs eventArgs)
     {
         if (eventArgs.Query is not DnsMessage message) return;
-        
+
         DnsMessage response = message.CreateResponseInstance();
+        response.AnswerRecords.Clear();
 
-        if ((message.Questions.Count == 1))
+        string fakeDomain = "msasanmh.net";
+
+        try
         {
-            // send query to upstream server
-            DnsQuestion question = message.Questions[0];
-            DnsMessage? upstreamResponse = await DnsClient.Default.ResolveAsync(question.Name, question.RecordType, question.RecordClass);
-
-            // if got an answer, copy it to the message sent to the client
-            if (upstreamResponse != null)
+            for (int n = 0; n < message.Questions.Count; n++)
             {
-                // Adding Records
-                foreach (DnsRecordBase record in (upstreamResponse.AnswerRecords))
+                DnsQuestion dnsQuestion = message.Questions[n];
+                //Debug.WriteLine("========> Question: " + dnsQuestion.Name);
+                string questionName = dnsQuestion.Name.ToString().ToLower().Trim();
+                if (questionName.EndsWith('.')) questionName = questionName[..^1];
+                Debug.WriteLine("========> Question Name: " + questionName);
+                Debug.WriteLine("========> RecordType: " + dnsQuestion.RecordType);
+
+                fakeDomain = questionName;
+
+                DohHost = DohHost.ToLower().Trim();
+
+                if (questionName.Equals(DohHost, StringComparison.OrdinalIgnoreCase))
                 {
-                    response.AnswerRecords.Add(record);
-                    Debug.WriteLine("========> Record: " + record.Name);
+                    ARecord aRecord1 = new(DomainName.Parse(DohHost), 60, IPAddress.Parse(DohCleanIP));
+                    response.AnswerRecords.Add(aRecord1);
                 }
-                foreach (DnsRecordBase record in (upstreamResponse.AdditionalRecords))
+                else if (questionName.Equals($"{DohHost}:{DohPort}", StringComparison.OrdinalIgnoreCase))
                 {
-                    response.AdditionalRecords.Add(record);
-                }
-
-                response.ReturnCode = ReturnCode.NoError;
-
-                // If it's Cloudflare
-                string host1 = "dns.cloudflare.com";
-                string host2 = "cloudflare-dns.com";
-                string host3 = "every1dns.com";
-                if (DohHost.Equals(host1) || DohHost.Equals(host2) || DohHost.Equals(host3))
-                {
-                    if (message.Questions[0].Name.Equals(DomainName.Parse("dns.cloudflare.com")))
-                    {
-                        response.AnswerRecords.Clear();
-                        if (message.Questions[0].RecordType == RecordType.A)
-                        {
-                            ARecord aRecord1 = new(DomainName.Parse("dns.cloudflare.com"), 60, IPAddress.Parse(DohCleanIP));
-                            response.AnswerRecords.Add(aRecord1);
-                        }
-                    }
-
-                    if (message.Questions[0].Name.Equals(DomainName.Parse("dns.cloudflare-dns.com")))
-                    {
-                        response.AnswerRecords.Clear();
-
-                        if (message.Questions[0].RecordType == RecordType.A)
-                        {
-                            ARecord aRecord1 = new(DomainName.Parse("dns.cloudflare-dns.com"), 60, IPAddress.Parse(DohCleanIP));
-                            response.AnswerRecords.Add(aRecord1);
-                        }
-
-                        if (message.Questions[0].RecordType == RecordType.CName)
-                        {
-                            CNameRecord cNameRecord = new(DomainName.Parse("dns.cloudflare-dns.com"), 60, DomainName.Parse("every1dns.com"));
-                            response.AnswerRecords.Add(cNameRecord);
-                        }
-                    }
-
-                    if (message.Questions[0].Name.Equals(DomainName.Parse("every1dns.com")))
-                    {
-                        response.AnswerRecords.Clear();
-
-                        if (message.Questions[0].RecordType == RecordType.A)
-                        {
-                            ARecord aRecord1 = new(DomainName.Parse("every1dns.com"), 60, IPAddress.Parse(DohCleanIP));
-                            response.AnswerRecords.Add(aRecord1);
-                        }
-                    }
+                    ARecord aRecord1 = new(DomainName.Parse($"{DohHost}:{DohPort}"), 60, IPAddress.Parse(DohCleanIP));
+                    response.AnswerRecords.Add(aRecord1);
                 }
                 else
                 {
-                    // If it's not Cloudflare
-                    if (message.Questions[0].Name.Equals(DomainName.Parse(DohHost)))
+                    // Get IPv4
+                    string ipv4 = await GetIP.GetIpFromPlainDNS(questionName, "8.8.8.8", 53, 3);
+                    if (!string.IsNullOrEmpty(ipv4))
                     {
-                        response.AnswerRecords.Clear();
-                        if (message.Questions[0].RecordType == RecordType.A)
-                        {
-                            ARecord aRecord1 = new(DomainName.Parse(DohHost), 60, IPAddress.Parse(DohCleanIP));
-                            response.AnswerRecords.Add(aRecord1);
-                        }
-                    }
-
-                    if (message.Questions[0].Name.Equals(DomainName.Parse($"{DohHost}:{DohPort}")))
-                    {
-                        response.AnswerRecords.Clear();
-                        if (message.Questions[0].RecordType == RecordType.A)
-                        {
-                            ARecord aRecord1 = new(DomainName.Parse($"{DohHost}:{DohPort}"), 60, IPAddress.Parse(DohCleanIP));
-                            response.AnswerRecords.Add(aRecord1);
-                        }
+                        ARecord aRecord1 = new(dnsQuestion.Name, 60, IPAddress.Parse(ipv4));
+                        response.AnswerRecords.Add(aRecord1);
                     }
                 }
-
-                // set the response
-                eventArgs.Response = response;
             }
         }
+        catch (Exception) { }
+
+        if (!response.AnswerRecords.Any())
+        {
+            ARecord aRecord1 = new(DomainName.Parse(fakeDomain), 60, IPAddress.Parse("0.0.0.0"));
+            response.AnswerRecords.Add(aRecord1);
+        }
+
+        // Set the response
+        foreach(DnsRecordBase ar in response.AnswerRecords)
+            Debug.WriteLine("========> Response: " + ar.ToString());
+        eventArgs.Response = response;
     }
+
+    //private async Task DnsServer_QueryReceived(object sender, QueryReceivedEventArgs eventArgs)
+    //{
+    //    if (eventArgs.Query is not DnsMessage message) return;
+
+    //    DnsMessage response = message.CreateResponseInstance();
+
+    //    if ((message.Questions.Count == 1))
+    //    {
+    //        // send query to upstream server
+    //        DnsQuestion question = message.Questions[0];
+    //        DnsMessage? upstreamResponse = await DnsClient.Default.ResolveAsync(question.Name, question.RecordType, question.RecordClass);
+
+    //        // if got an answer, copy it to the message sent to the client
+    //        if (upstreamResponse != null)
+    //        {
+    //            // Adding Records
+    //            foreach (DnsRecordBase record in (upstreamResponse.AnswerRecords))
+    //            {
+    //                response.AnswerRecords.Add(record);
+    //                Debug.WriteLine("========> Record: " + record.Name);
+    //            }
+    //            foreach (DnsRecordBase record in (upstreamResponse.AdditionalRecords))
+    //            {
+    //                response.AdditionalRecords.Add(record);
+    //            }
+
+    //            response.ReturnCode = ReturnCode.NoError;
+
+    //            // If it's Cloudflare
+    //            string host1 = "dns.cloudflare.com";
+    //            string host2 = "cloudflare-dns.com";
+    //            string host3 = "every1dns.com";
+    //            if (DohHost.Equals(host1) || DohHost.Equals(host2) || DohHost.Equals(host3))
+    //            {
+    //                if (message.Questions[0].Name.Equals(DomainName.Parse("dns.cloudflare.com")))
+    //                {
+    //                    response.AnswerRecords.Clear();
+    //                    if (message.Questions[0].RecordType == RecordType.A)
+    //                    {
+    //                        ARecord aRecord1 = new(DomainName.Parse("dns.cloudflare.com"), 60, IPAddress.Parse(DohCleanIP));
+    //                        response.AnswerRecords.Add(aRecord1);
+    //                    }
+    //                }
+
+    //                if (message.Questions[0].Name.Equals(DomainName.Parse("dns.cloudflare-dns.com")))
+    //                {
+    //                    response.AnswerRecords.Clear();
+
+    //                    if (message.Questions[0].RecordType == RecordType.A)
+    //                    {
+    //                        ARecord aRecord1 = new(DomainName.Parse("dns.cloudflare-dns.com"), 60, IPAddress.Parse(DohCleanIP));
+    //                        response.AnswerRecords.Add(aRecord1);
+    //                    }
+
+    //                    if (message.Questions[0].RecordType == RecordType.CName)
+    //                    {
+    //                        CNameRecord cNameRecord = new(DomainName.Parse("dns.cloudflare-dns.com"), 60, DomainName.Parse("every1dns.com"));
+    //                        response.AnswerRecords.Add(cNameRecord);
+    //                    }
+    //                }
+
+    //                if (message.Questions[0].Name.Equals(DomainName.Parse("every1dns.com")))
+    //                {
+    //                    response.AnswerRecords.Clear();
+
+    //                    if (message.Questions[0].RecordType == RecordType.A)
+    //                    {
+    //                        ARecord aRecord1 = new(DomainName.Parse("every1dns.com"), 60, IPAddress.Parse(DohCleanIP));
+    //                        response.AnswerRecords.Add(aRecord1);
+    //                    }
+    //                }
+    //            }
+    //            else
+    //            {
+    //                // If it's not Cloudflare
+    //                if (message.Questions[0].Name.Equals(DomainName.Parse(DohHost)))
+    //                {
+    //                    response.AnswerRecords.Clear();
+    //                    if (message.Questions[0].RecordType == RecordType.A)
+    //                    {
+    //                        ARecord aRecord1 = new(DomainName.Parse(DohHost), 60, IPAddress.Parse(DohCleanIP));
+    //                        response.AnswerRecords.Add(aRecord1);
+    //                    }
+    //                }
+
+    //                if (message.Questions[0].Name.Equals(DomainName.Parse($"{DohHost}:{DohPort}")))
+    //                {
+    //                    response.AnswerRecords.Clear();
+    //                    if (message.Questions[0].RecordType == RecordType.A)
+    //                    {
+    //                        ARecord aRecord1 = new(DomainName.Parse($"{DohHost}:{DohPort}"), 60, IPAddress.Parse(DohCleanIP));
+    //                        response.AnswerRecords.Add(aRecord1);
+    //                    }
+    //                }
+    //            }
+
+    //            // Set the response
+    //            if (response.AnswerRecords.Any())
+    //                Debug.WriteLine("========> Response: " + response.AnswerRecords[0].ToString());
+    //            eventArgs.Response = response;
+    //        }
+    //    }
+    //}
 }

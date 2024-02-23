@@ -83,7 +83,7 @@ public class DPIBasicBypass
                     ccb.SelectedItem = item;
                 else
                     ccb.SelectedIndex = 0;
-                ccb.DropDownHeight = modeNames.Count * ccb.Height;
+                ccb.DropDownHeight = 500;
             }
             else ccb.SelectedIndex = -1;
         });

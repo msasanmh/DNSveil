@@ -95,10 +95,11 @@ public class CheckDns
 
     private DnsLookupResult CheckDnsWork(string domain, string dnsServer, int timeoutMS)
     {
-        Process? process = null;
-        Task<DnsLookupResult> task = Task.Run(async () =>
+        DnsLookupResult dlr = new();
+
+        try
         {
-            DnsLookupResult dlr = await GetDnsLookupJsonAsync(domain, dnsServer, timeoutMS, "A", true);
+            dlr = GetDnsLookupJsonAsync(domain, dnsServer, timeoutMS, "A", true).Result;
             string result = dlr.Result;
 
             if (!string.IsNullOrEmpty(result) && !string.IsNullOrWhiteSpace(result) && !result.Contains("[fatal]"))
@@ -106,25 +107,17 @@ public class CheckDns
                 List<string> ips = GetDnsLookupAnswerRecordList(result);
                 dlr.IsDnsOnline = ips.Any() && !NetworkTool.IsLocalIP(ips[0].Trim());
             }
-
-            return dlr;
-        });
-
-        if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
-        {
-            try { process?.Kill(true); } catch (Exception) { }
-            return task.Result;
         }
-        else
-        {
-            try { process?.Kill(true); } catch (Exception) { }
-            return task.Result;
-        }
+        catch (Exception) { }
+
+        return dlr;
     }
 
     private DnsLookupResult CheckDnsWork(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
     {
-        Task<DnsLookupResult> task = Task.Run(() =>
+        DnsLookupResult dlr = new();
+
+        try
         {
             // Start local server
             string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
@@ -135,20 +128,16 @@ public class CheckDns
             // Wait for DNSProxy
             SpinWait.SpinUntil(() => ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 500);
 
-            DnsLookupResult dlr = CheckDnsWork(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
+            dlr = CheckDnsWork(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
 
             ProcessManager.KillProcessByPID(localServerPID);
 
             // Wait for DNSProxy to exit
             SpinWait.SpinUntil(() => !ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 1000);
+        }
+        catch (Exception) { }
 
-            return dlr;
-        });
-
-        if (task.Wait(TimeSpan.FromMilliseconds(timeoutMS)))
-            return task.Result;
-        else
-            return task.Result;
+        return dlr;
     }
 
     //================================= Check DNS Async
@@ -221,29 +210,37 @@ public class CheckDns
 
     private async Task<DnsLookupResult> CheckDnsWorkAsync(string domain, string dnsServer, int timeoutMS, int localPort, string bootstrap, int bootsratPort)
     {
-        // Start local server
-        string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
-        if (Insecure) dnsProxyArgs += "--insecure ";
-        dnsProxyArgs += $"-u {dnsServer} -b {bootstrap}:{bootsratPort}";
-        int localServerPID = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsProxyArgs, true, false, SecureDNS.CurrentPath, ProcessPriority);
+        DnsLookupResult dlr = new();
 
-        // Wait for DNSProxy
-        SpinWait.SpinUntil(() => ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 500);
+        try
+        {
+            // Start local server
+            string dnsProxyArgs = $"-l {IPAddress.Loopback} -p {localPort} ";
+            if (Insecure) dnsProxyArgs += "--insecure ";
+            dnsProxyArgs += $"-u {dnsServer} -b {bootstrap}:{bootsratPort}";
+            int localServerPID = ProcessManager.ExecuteOnly(SecureDNS.DnsProxy, dnsProxyArgs, true, false, SecureDNS.CurrentPath, ProcessPriority);
 
-        DnsLookupResult dlr = await CheckDnsWorkAsync(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
+            // Wait for DNSProxy
+            SpinWait.SpinUntil(() => ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 500);
 
-        ProcessManager.KillProcessByPID(localServerPID);
+            dlr = await CheckDnsWorkAsync(domain, $"{IPAddress.Loopback}:{localPort}", timeoutMS);
 
-        // Wait for DNSProxy to exit
-        SpinWait.SpinUntil(() => !ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 1000);
+            ProcessManager.KillProcessByPID(localServerPID);
+
+            // Wait for DNSProxy to exit
+            SpinWait.SpinUntil(() => !ProcessManager.FindProcessByPID(localServerPID), timeoutMS + 1000);
+        }
+        catch (Exception) { }
 
         return dlr;
     }
 
     //================================= Check Dns as SmartDns
 
-    public async Task<bool> CheckAsSmartDns(string uncensoredDns, string domain)
+    public async Task<bool> CheckAsSmartDns(string uncensoredDns, string domain, string? dns = null)
     {
+        if (!string.IsNullOrEmpty(dns)) DNS = dns;
+
         bool smart = false;
 
         List<string> realDomainIPs = await GetARecordIPsAsync(domain, uncensoredDns);
@@ -287,14 +284,14 @@ public class CheckDns
             {
                 if (smart) break;
                 string realDomainIP = realDomainIPs[n];
-                string readHeader = await NetworkTool.GetHeaders(domain, realDomainIP, null, 5, CancellationToken.None);
+                string readHeader = await NetworkTool.GetHeaders(domain, realDomainIP, 5000, false);
                 if (string.IsNullOrEmpty(readHeader)) continue; // There is nothing to check, continue
                 Debug.WriteLine(readHeader);
                 if (!readHeader.ToLower().StartsWith("forbidden")) break; // It's not Forbidden, break
                 for (int n2 = 0; n2 < domainIPs.Count; n2++)
                 {
                     string domainIP = domainIPs[n2];
-                    string header = await NetworkTool.GetHeaders(domain, domainIP, null, 5, CancellationToken.None);
+                    string header = await NetworkTool.GetHeaders(domain, domainIP, 5000, false);
                     if (string.IsNullOrEmpty(header)) continue;
                     Debug.WriteLine(header);
 
@@ -417,7 +414,7 @@ public class CheckDns
         return GetDnsLookupAnswerRecordList(jsonStr);
     }
 
-    private bool HasSameItem(List<string> list, List<string> uncensoredList, bool checkForLocalIPs)
+    private static bool HasSameItem(List<string> list, List<string> uncensoredList, bool checkForLocalIPs)
     {
         bool hasSameItem = false;
         for (int i = 0; i < uncensoredList.Count; i++)
@@ -442,7 +439,7 @@ public class CheckDns
         return hasSameItem;
     }
 
-    private bool HasLocalIP(List<string> list)
+    private static bool HasLocalIP(List<string> list)
     {
         for (int j = 0; j < list.Count; j++)
         {
@@ -456,7 +453,7 @@ public class CheckDns
     {
         public string Result { get; set; } = string.Empty;
         public int Latency { get; set; } = -1;
-        public bool IsDnsOnline { get; set; }
+        public bool IsDnsOnline { get; set; } = false;
     }
 
     private async Task<DnsLookupResult> GetDnsLookupJsonAsync(string domain, string dnsServer, int timeoutMS, string rrtype = "A", bool json = true)
@@ -503,43 +500,7 @@ public class CheckDns
 
     private static List<string> GetDnsLookupAnswerRecordList(string jsonStr, string rrtype = "A")
     {
-        List<string> aRecStr = new();
-        if (!string.IsNullOrEmpty(jsonStr))
-        {
-            try
-            {
-                JsonDocumentOptions jsonDocumentOptions = new();
-                jsonDocumentOptions.AllowTrailingCommas = true;
-                JsonDocument jsonDocument = JsonDocument.Parse(jsonStr, jsonDocumentOptions);
-                JsonElement json = jsonDocument.RootElement;
-
-                bool hasAnswer = json.TryGetProperty("Answer", out JsonElement answerE);
-                if (hasAnswer)
-                {
-                    if (answerE.ValueKind == JsonValueKind.Array)
-                    {
-                        JsonElement.ArrayEnumerator answerEArray = answerE.EnumerateArray();
-                        for (int n2 = 0; n2 < answerEArray.Count(); n2++)
-                        {
-                            JsonElement answerEV = answerEArray.ToArray()[n2];
-                            bool hasARec = answerEV.TryGetProperty(rrtype, out JsonElement aRec);
-                            if (hasARec)
-                            {
-                                string? aRecStrOut = aRec.GetString();
-                                if (!string.IsNullOrEmpty(aRecStrOut))
-                                    aRecStr.Add(aRecStrOut.Trim());
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("GetDnsLookupARecordList: " + ex.Message);
-                Debug.WriteLine("JSON String: " + jsonStr);
-            }
-        }
-        return aRecStr;
+        return JsonTool.GetValues(jsonStr, new List<string>() { "Answer", rrtype });
     }
 
     private static bool HasExtraRecord(string jsonStr)

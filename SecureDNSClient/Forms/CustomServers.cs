@@ -4,6 +4,14 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
+    public class ReadDnsResult
+    {
+        public string DNS { get; set; } = string.Empty;
+        public CheckMode CheckMode { get; set; } = CheckMode.Unknown;
+        public string GroupName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+
     private async Task<List<string>> ReadCustomServersXmlGroups(string xmlPath)
     {
         List<string> groupList = new();
@@ -50,13 +58,13 @@ public partial class FormMain
         return groupList;
     }
 
-    public static async Task<string> ReadCustomServersXml(string? xml, string? groupName = null, bool isXmlFile = true)
+    public static async Task<List<ReadDnsResult>> ReadCustomServersXml(string? xml, CheckRequest checkRequest, bool isXmlFile = true)
     {
-        Task<string> rcs = Task.Run(() =>
+        Task<List<ReadDnsResult>> rcs = Task.Run(() =>
         {
-            string output = string.Empty;
+            List<ReadDnsResult> output = new();
             if (string.IsNullOrEmpty(xml)) return output;
-
+            
             XDocument doc;
             if (isXmlFile)
             {
@@ -73,14 +81,17 @@ public partial class FormMain
 
             for (int a = 0; a < groups.Count(); a++)
             {
-                if (StopChecking) return output;
+                if (StopChecking) return output.ToList();
                 XElement group = groups.ToList()[a];
 
-                XElement? groupNameElement = group.Element("Name");
-                if (groupNameElement == null) continue;
+                XElement? dnsGroupNameElement = group.Element("Name");
+                if (dnsGroupNameElement == null) continue;
+                string dnsGroupName = dnsGroupNameElement.Value.Trim();
 
                 // Skip if group name is not match
-                if (isXmlFile && !string.IsNullOrEmpty(groupName) && !groupName.Trim().Equals(groupNameElement.Value.Trim())) continue;
+                bool isGroupNameMatch = !string.IsNullOrEmpty(checkRequest.GroupName.Trim()) &&
+                                        checkRequest.GroupName.Trim().Equals(dnsGroupName);
+                if (checkRequest.HasUserGroupName && !isGroupNameMatch) continue;
 
                 XElement? groupEnabledElement = group.Element("Enabled");
                 if (groupEnabledElement == null) continue;
@@ -98,14 +109,27 @@ public partial class FormMain
                         {
                             XElement? dnsElement = dnsItem.Element("Dns");
                             if (dnsElement == null) continue;
-                            string dnsAddress = dnsElement.Value;
-                            output += dnsAddress + NL;
+                            string dnsAddress = dnsElement.Value.Trim();
+
+                            ReadDnsResult rdr = new();
+                            rdr.DNS = dnsAddress;
+                            rdr.CheckMode = checkRequest.CheckMode;
+                            rdr.GroupName = rdr.CheckMode == CheckMode.BuiltIn || rdr.CheckMode == CheckMode.SavedServers
+                                            ? checkRequest.GroupName : dnsGroupName;
+
+                            XElement? dnsDescriptionElement = dnsItem.Element("Description");
+                            if (dnsDescriptionElement != null)
+                            {
+                                string dnsDescription = dnsDescriptionElement.Value.Trim();
+                                rdr.Description = dnsDescription;
+                            }
+                            
+                            output.Add(rdr);
                         }
                     }
                 }
             }
 
-            output = output.Trim(NL.ToCharArray());
             return output;
         });
 

@@ -136,7 +136,7 @@ public partial class FormCustomServers : Form
         ReadGroups(null, false);
 
         // Setting Width Of Controls
-        await FormMain.SettingWidthOfControls(this);
+        await ScreenDPI.SettingWidthOfControls(this);
 
         // Fix Controls Location
         int spaceBottom = 6, spaceRight = 6, spaceV = 6, spaceH = 6;
@@ -671,8 +671,8 @@ public partial class FormCustomServers : Form
         var dgvG = CustomDataGridViewGroups;
         var dgvS = CustomDataGridViewDNSs;
 
-        if (dgvG.RowCount == 0) return;
-        if (dgvG.SelectedCells.Count <= 0) return;
+        if (dgvG.RowCount < 1) return;
+        if (dgvG.SelectedCells.Count < 1) return;
 
         int currentRow = dgvG.SelectedCells[0].RowIndex;
 
@@ -796,9 +796,10 @@ public partial class FormCustomServers : Form
             int currentMouseOverRow = dgvG.HitTest(e.X, e.Y).RowIndex;
             int totalRows = dgvG.Rows.Count;
 
-            if (currentMouseOverRow != -1)
+            if (currentMouseOverRow != -1 && currentMouseOverRow < totalRows)
             {
-                dgvG.Rows[currentMouseOverRow].Cells[0].Selected = true;
+                if (dgvG.Rows[currentMouseOverRow].Cells.Count > 0)
+                    dgvG.Rows[currentMouseOverRow].Cells[0].Selected = true;
                 dgvG.Rows[currentMouseOverRow].Selected = true;
             }
 
@@ -984,6 +985,9 @@ public partial class FormCustomServers : Form
     private void MenuGroupRename_Click(object? sender, EventArgs? e)
     {
         var dgv = CustomDataGridViewGroups;
+
+        if (dgv.SelectedCells.Count < 1) return;
+
         int currentRow = dgv.SelectedCells[0].RowIndex;
         string? groupName = dgv.Rows[currentRow].Cells[1].Value.ToString();
         if (string.IsNullOrEmpty(groupName)) return;
@@ -1032,10 +1036,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"Group Renamed From \"{groupNameOld}\" To \"{groupNameNew}\"");
     }
@@ -1396,7 +1397,6 @@ public partial class FormCustomServers : Form
                 RoundedCorners = 5,
                 DialogResult = DialogResult.Cancel,
             };
-            buttonCancel.Location = new(Import.ClientRectangle.Width - buttonCancel.Width - 5, Import.ClientRectangle.Height - buttonCancel.Height - (buttonCancel.Height / 2));
             Import.Controls.Add(buttonCancel);
 
             CustomButton buttonOK = new()
@@ -1406,7 +1406,6 @@ public partial class FormCustomServers : Form
                 RoundedCorners = 5,
                 DialogResult = DialogResult.OK,
             };
-            buttonOK.Location = new(Import.ClientRectangle.Width - buttonOK.Width - 5 - buttonCancel.Width - 5, Import.ClientRectangle.Height - buttonOK.Height - (buttonOK.Height / 2));
             Import.Controls.Add(buttonOK);
 
             CustomPanel panel = new()
@@ -1420,10 +1419,6 @@ public partial class FormCustomServers : Form
             };
             Import.Controls.Add(panel);
 
-            // Modify Buttons Location
-            buttonCancel.Top = panel.Bottom + 5;
-            buttonOK.Top = buttonCancel.Top;
-
             // Measure Text Height Based On Font
             int labelScreenHeight = TextRenderer.MeasureText("MSasanMH", Font).Height;
             labelScreenHeight += labelScreenHeight / 2;
@@ -1436,6 +1431,7 @@ public partial class FormCustomServers : Form
                 string group = nodeGName.Value;
 
                 CustomCheckBox box = new();
+                box.AutoSize = true;
                 box.Checked = true;
                 box.Text = group;
                 box.Location = new(5, (labelScreenHeight / 2) + (n * labelScreenHeight));
@@ -1507,10 +1503,7 @@ public partial class FormCustomServers : Form
                 {
                     XDoc.Save(CustomServersXmlPath, SaveOptions.None);
                 }
-                catch (Exception)
-                {
-                    // do nothing
-                }
+                catch (Exception) { }
             }
 
             // Context Menu Import (Selection)
@@ -1577,6 +1570,12 @@ public partial class FormCustomServers : Form
             Import.Font = Font;
             ScreenDPI.FixDpiAfterInitializeComponent(Import);
 
+            // Locations
+            buttonCancel.Location = new(Import.ClientRectangle.Width - buttonCancel.Width - 5, Import.ClientRectangle.Height - buttonCancel.Height - (buttonCancel.Height / 2));
+            buttonOK.Location = new(Import.ClientRectangle.Width - buttonOK.Width - 5 - buttonCancel.Width - 5, Import.ClientRectangle.Height - buttonOK.Height - (buttonOK.Height / 2));
+            buttonCancel.Top = panel.Bottom + 5;
+            buttonOK.Top = buttonCancel.Top;
+
             Theme.LoadTheme(Import, Theme.Themes.Dark);
             Import.ShowDialog(this);
         }
@@ -1616,7 +1615,6 @@ public partial class FormCustomServers : Form
             RoundedCorners = 5,
             DialogResult = DialogResult.Cancel,
         };
-        buttonCancel.Location = new(Export.ClientRectangle.Width - buttonCancel.Width - 5, Export.ClientRectangle.Height - buttonCancel.Height - (buttonCancel.Height / 2));
         Export.Controls.Add(buttonCancel);
 
         CustomButton buttonOK = new()
@@ -1626,7 +1624,6 @@ public partial class FormCustomServers : Form
             RoundedCorners = 5,
             DialogResult = DialogResult.OK,
         };
-        buttonOK.Location = new(Export.ClientRectangle.Width - buttonOK.Width - 5 - buttonCancel.Width - 5, Export.ClientRectangle.Height - buttonOK.Height - (buttonOK.Height / 2));
         Export.Controls.Add(buttonOK);
 
         CustomPanel panel = new()
@@ -1640,10 +1637,6 @@ public partial class FormCustomServers : Form
         };
         Export.Controls.Add(panel);
 
-        // Modify Buttons Location
-        buttonCancel.Top = panel.Bottom + 5;
-        buttonOK.Top = buttonCancel.Top;
-
         // Measure Text Height Based On Font
         int labelScreenHeight = TextRenderer.MeasureText("MSasanMH", Font).Height;
         labelScreenHeight += labelScreenHeight / 2;
@@ -1652,6 +1645,7 @@ public partial class FormCustomServers : Form
         {
             string group = ListGroupNames[n];
             CustomCheckBox box = new();
+            box.AutoSize = true;
             box.Checked = true;
             box.Text = group;
             box.Location = new(5, (labelScreenHeight / 2) + (n * labelScreenHeight));
@@ -1784,6 +1778,12 @@ public partial class FormCustomServers : Form
         Export.Font = Font;
         ScreenDPI.FixDpiAfterInitializeComponent(Export);
 
+        // Locations
+        buttonCancel.Location = new(Export.ClientRectangle.Width - buttonCancel.Width - 5, Export.ClientRectangle.Height - buttonCancel.Height - (buttonCancel.Height / 2));
+        buttonOK.Location = new(Export.ClientRectangle.Width - buttonOK.Width - 5 - buttonCancel.Width - 5, Export.ClientRectangle.Height - buttonOK.Height - (buttonOK.Height / 2));
+        buttonCancel.Top = panel.Bottom + 5;
+        buttonOK.Top = buttonCancel.Top;
+
         Theme.LoadTheme(Export, Theme.Themes.Dark);
         Export.ShowDialog(this);
     }
@@ -1795,10 +1795,10 @@ public partial class FormCustomServers : Form
         var dgvG = CustomDataGridViewGroups;
         var dgvS = CustomDataGridViewDNSs;
 
-        if (dgvG.RowCount == 0) return;
-        if (dgvG.SelectedCells.Count <= 0) return;
-        if (dgvS.RowCount == 0) return;
-        if (dgvS.SelectedCells.Count <= 0) return;
+        if (dgvG.RowCount < 1) return;
+        if (dgvG.SelectedCells.Count < 1) return;
+        if (dgvS.RowCount < 1) return;
+        if (dgvS.SelectedCells.Count < 1) return;
 
         int currentRow = dgvS.SelectedCells[0].RowIndex;
         string? dns = dgvS.Rows[currentRow].Cells[1].Value.ToString();
@@ -1881,9 +1881,11 @@ public partial class FormCustomServers : Form
         // Save CheckBox State for DNSs
         var dgvG = CustomDataGridViewGroups;
         var dgvS = CustomDataGridViewDNSs;
-        if (dgvG.Rows.Count == 0) return;
-        if (dgvS.Rows.Count == 0) return;
+
+        if (dgvG.Rows.Count < 1) return;
+        if (dgvS.Rows.Count < 1) return;
         if (e.ColumnIndex != 0) return;
+        if (dgvG.SelectedCells.Count < 1) return;
 
         int groupIndex = dgvG.SelectedCells[0].RowIndex;
         string? groupName = dgvG.Rows[groupIndex].Cells[1].Value.ToString();
@@ -1960,22 +1962,26 @@ public partial class FormCustomServers : Form
             var dgvG = CustomDataGridViewGroups;
             if (dgvG.RowCount == 0) return;
             if (dgvG.SelectedRows.Count == 0) return;
+
             var dgvS = CustomDataGridViewDNSs;
             dgvS.Select(); // Set Focus on Control
 
             int currentMouseOverRow = dgvS.HitTest(e.X, e.Y).RowIndex;
+            int totalRows = dgvS.Rows.Count;
 
             // Disable MultiSelect by RightClick
-            if (currentMouseOverRow != -1)
+            if (currentMouseOverRow != -1 && currentMouseOverRow < totalRows)
             {
-                if (dgvS.Rows[currentMouseOverRow].Selected == false)
+                if (!dgvS.Rows[currentMouseOverRow].Selected)
                 {
                     dgvS.ClearSelection();
-                    dgvS.Rows[currentMouseOverRow].Cells[0].Selected = true;
+                    if (dgvS.Rows[currentMouseOverRow].Cells.Count > 0)
+                        dgvS.Rows[currentMouseOverRow].Cells[0].Selected = true;
                     dgvS.Rows[currentMouseOverRow].Selected = true;
                 }
 
-                dgvS.Rows[currentMouseOverRow].Cells[0].Selected = true;
+                if (dgvS.Rows[currentMouseOverRow].Cells.Count > 0)
+                    dgvS.Rows[currentMouseOverRow].Cells[0].Selected = true;
                 dgvS.Rows[currentMouseOverRow].Selected = true;
             }
 
@@ -1994,7 +2000,6 @@ public partial class FormCustomServers : Form
             else
                 firstSelectedCell = itemRows[0];
 
-            int totalRows = dgvS.Rows.Count;
             int totalSelectedRows = dgvS.SelectedRows.Count;
 
             // Remove Menus On Conditions
@@ -2124,7 +2129,9 @@ public partial class FormCustomServers : Form
     private void CreateMenuDNS()
     {
         var dgvG = CustomDataGridViewGroups;
+
         if (dgvG.Rows.Count == 0) return;
+        if (dgvG.SelectedCells.Count < 1) return;
 
         int groupIndex = dgvG.SelectedCells[0].RowIndex;
         string? groupName = dgvG.Rows[groupIndex].Cells[1].Value.ToString();
@@ -2872,8 +2879,8 @@ public partial class FormCustomServers : Form
     {
         var dgvG = CustomDataGridViewGroups;
         var dgvS = CustomDataGridViewDNSs;
-        if (dgvG.RowCount == 0) return;
-        if (dgvS.RowCount == 0) return;
+        if (dgvG.RowCount < 1) return;
+        if (dgvS.RowCount < 1) return;
 
         for (int n = 0; n < dgvS.RowCount; n++)
         {
@@ -2885,6 +2892,8 @@ public partial class FormCustomServers : Form
         }
 
         // Save CheckBox State for DNSs
+        if (dgvG.SelectedCells.Count < 1) return;
+
         int groupIndex = dgvG.SelectedCells[0].RowIndex;
         string? groupName = dgvG.Rows[groupIndex].Cells[1].Value.ToString();
         if (string.IsNullOrEmpty(groupName)) return;
@@ -2916,8 +2925,8 @@ public partial class FormCustomServers : Form
     {
         var dgvG = CustomDataGridViewGroups;
         var dgvS = CustomDataGridViewDNSs;
-        if (dgvG.RowCount == 0) return;
-        if (dgvS.RowCount == 0) return;
+        if (dgvG.RowCount < 1) return;
+        if (dgvS.RowCount < 1) return;
 
         for (int a = 0; a < dgvS.RowCount; a++)
         {
@@ -2938,6 +2947,8 @@ public partial class FormCustomServers : Form
         }
 
         // Save CheckBox State for DNSs
+        if (dgvG.SelectedCells.Count < 1) return;
+
         int groupIndex = dgvG.SelectedCells[0].RowIndex;
         string? groupName = dgvG.Rows[groupIndex].Cells[1].Value.ToString();
         if (string.IsNullOrEmpty(groupName)) return;

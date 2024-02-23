@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using MsmhToolsClass.MsmhProxyServer;
 using MsmhToolsClass.ProxyServerPrograms;
 using System.Diagnostics;
 using System.Net;
@@ -63,13 +62,10 @@ public static partial class Program
                 else if (input.ToLower().StartsWith("help program"))
                 {
                     string prefix = "help program";
-                    if (input.ToLower().Equals($"{prefix} {Key.Programs.BwList.Name.ToLower()}")) Help.GetHelpBwList();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.Dns.Name.ToLower()}")) Help.GetHelpDns();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.DontBypass.Name.ToLower()}")) Help.GetHelpDontBypass();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.DpiBypass.Name.ToLower()}")) Help.GetHelpDpiBypass();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.FakeDns.Name.ToLower()}")) Help.GetHelpFakeDns();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.FakeSni.Name.ToLower()}")) Help.GetHelpFakeSni();
+                    if (input.ToLower().Equals($"{prefix} {Key.Programs.Dns.Name.ToLower()}")) Help.GetHelpDns();
+                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.Fragment.Name.ToLower()}")) Help.GetHelpFragment();
                     else if (input.ToLower().Equals($"{prefix} {Key.Programs.UpStreamProxy.Name.ToLower()}")) Help.GetHelpUpStreamProxy();
+                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.Rules.Name.ToLower()}")) Help.GetHelpRules();
                     else
                         Help.GetHelpPrograms();
                 }
@@ -383,12 +379,9 @@ public static partial class Program
                 else if (input.ToLower().StartsWith(Key.Programs.Name.ToLower()))
                 {
                     string msg = "Available Programs:\n\n";
-                    msg += $"{Key.Programs.BwList.Name}\n";
                     msg += $"{Key.Programs.Dns.Name}\n";
-                    msg += $"{Key.Programs.DontBypass.Name}\n";
-                    msg += $"{Key.Programs.DpiBypass.Name}\n";
-                    msg += $"{Key.Programs.FakeDns.Name}\n";
-                    msg += $"{Key.Programs.FakeSni.Name}\n";
+                    msg += $"{Key.Programs.Fragment.Name}\n";
+                    msg += $"{Key.Programs.Rules.Name}\n";
                     msg += $"{Key.Programs.UpStreamProxy.Name}\n";
 
                     // Interactive Mode
@@ -405,93 +398,6 @@ public static partial class Program
                             {
                                 WriteToStdout($"Exited From {Key.Programs.Name}.");
                                 break;
-                            }
-
-                            // BwList
-                            if (programName.ToLower().Equals(Key.Programs.BwList.Name.ToLower()))
-                            {
-                                string msgAm = "Available Black White List Modes:\n\n";
-                                msgAm += $"{Key.Programs.BwList.Mode.BlackListFile}\n";
-                                msgAm += $"{Key.Programs.BwList.Mode.BlackListText}\n";
-                                msgAm += $"{Key.Programs.BwList.Mode.WhiteListFile}\n";
-                                msgAm += $"{Key.Programs.BwList.Mode.WhiteListText}\n";
-                                msgAm += $"{Key.Programs.BwList.Mode.Disable}\n";
-
-                                WriteToStdout(msgAm, ConsoleColor.Cyan);
-
-                                string modeStr = Key.Programs.BwList.Mode.Disable;
-                                ProxyProgram.BlackWhiteList.Mode mode = ProxyProgram.BlackWhiteList.Mode.Disable;
-                                string msgRV = $"Enter One Of Modes (Default: {mode}):";
-                                while (true)
-                                {
-                                    object value = await ConsoleTools.ReadValue(msgRV, modeStr, typeof(string));
-                                    modeStr = value.ToString() ?? string.Empty;
-                                    if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.BlackListFile.ToLower()))
-                                        mode = ProxyProgram.BlackWhiteList.Mode.BlackListFile;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.BlackListText.ToLower()))
-                                        mode = ProxyProgram.BlackWhiteList.Mode.BlackListText;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.WhiteListFile.ToLower()))
-                                        mode = ProxyProgram.BlackWhiteList.Mode.WhiteListFile;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.WhiteListText.ToLower()))
-                                        mode = ProxyProgram.BlackWhiteList.Mode.WhiteListText;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.Disable.ToLower()))
-                                        mode = ProxyProgram.BlackWhiteList.Mode.Disable;
-                                    else
-                                    {
-                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
-                                        continue;
-                                    }
-                                    break;
-                                }
-
-                                string filePathOrText = string.Empty;
-
-                                if (mode == ProxyProgram.BlackWhiteList.Mode.BlackListFile || mode == ProxyProgram.BlackWhiteList.Mode.WhiteListFile)
-                                {
-                                    while (true)
-                                    {
-                                        msgRV = $"Enter The Path Of {mode} (Default: Cancel):";
-                                        object valuePath = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
-                                        filePathOrText = valuePath.ToString() ?? string.Empty;
-                                        if (string.IsNullOrEmpty(filePathOrText))
-                                        {
-                                            mode = ProxyProgram.BlackWhiteList.Mode.Disable;
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            filePathOrText = Path.GetFullPath(filePathOrText);
-                                            if (!File.Exists(filePathOrText))
-                                            {
-                                                string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
-                                                WriteToStdout(msgNotExist, ConsoleColor.Red);
-                                                continue;
-                                            }
-                                            else break;
-                                        }
-                                    }
-                                }
-
-                                if (mode == ProxyProgram.BlackWhiteList.Mode.BlackListText || mode == ProxyProgram.BlackWhiteList.Mode.WhiteListText)
-                                {
-                                    msgRV = $"Enter Rules Of {mode} As Text (Default: Cancel):";
-                                    msgRV += "\n    e.g. Example.com\\nExample.net";
-                                    object valueText = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
-                                    filePathOrText = valueText.ToString() ?? string.Empty;
-                                    if (string.IsNullOrEmpty(filePathOrText) || string.IsNullOrWhiteSpace(filePathOrText))
-                                    {
-                                        mode = ProxyProgram.BlackWhiteList.Mode.Disable;
-                                    }
-                                    else
-                                    {
-                                        filePathOrText = filePathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                                    }
-                                }
-
-                                BWListProgram.Set(mode, filePathOrText);
-                                ProxyServer.EnableBlackWhiteList(BWListProgram);
-
-                                ShowBwListMsg();
                             }
 
                             // Dns
@@ -657,107 +563,26 @@ public static partial class Program
                                 ShowDnsMsg();
                             }
 
-                            // Dont Bypass
-                            else if (programName.ToLower().Equals(Key.Programs.DontBypass.Name.ToLower()))
-                            {
-                                string msgAm = $"Available {Key.Programs.DontBypass.Name} Modes:\n\n";
-                                msgAm += $"{Key.Programs.DontBypass.Mode.File}\n";
-                                msgAm += $"{Key.Programs.DontBypass.Mode.Text}\n";
-                                msgAm += $"{Key.Programs.DontBypass.Mode.Disable}\n";
-
-                                WriteToStdout(msgAm, ConsoleColor.Cyan);
-
-                                string modeStr = Key.Programs.DontBypass.Mode.Disable;
-                                ProxyProgram.DontBypass.Mode mode = ProxyProgram.DontBypass.Mode.Disable;
-                                string msgRV = $"Enter One Of Modes (Default: {mode}):";
-                                while (true)
-                                {
-                                    object value = await ConsoleTools.ReadValue(msgRV, modeStr, typeof(string));
-                                    modeStr = value.ToString() ?? string.Empty;
-                                    if (modeStr.ToLower().Equals(Key.Programs.DontBypass.Mode.File.ToLower()))
-                                        mode = ProxyProgram.DontBypass.Mode.File;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.DontBypass.Mode.Text.ToLower()))
-                                        mode = ProxyProgram.DontBypass.Mode.Text;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.DontBypass.Mode.Disable.ToLower()))
-                                        mode = ProxyProgram.DontBypass.Mode.Disable;
-                                    else
-                                    {
-                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
-                                        continue;
-                                    }
-                                    break;
-                                }
-
-                                string filePathOrText = string.Empty;
-
-                                if (mode == ProxyProgram.DontBypass.Mode.File)
-                                {
-                                    while (true)
-                                    {
-                                        msgRV = $"Enter The Path Of {mode} (Default: Cancel):";
-                                        object valuePath = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
-                                        filePathOrText = valuePath.ToString() ?? string.Empty;
-                                        if (string.IsNullOrEmpty(filePathOrText))
-                                        {
-                                            mode = ProxyProgram.DontBypass.Mode.Disable;
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            filePathOrText = Path.GetFullPath(filePathOrText);
-                                            if (!File.Exists(filePathOrText))
-                                            {
-                                                string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
-                                                WriteToStdout(msgNotExist, ConsoleColor.Red);
-                                                continue;
-                                            }
-                                            else break;
-                                        }
-                                    }
-                                }
-
-                                if (mode == ProxyProgram.DontBypass.Mode.Text)
-                                {
-                                    msgRV = $"Enter Rules Of {Key.Programs.DontBypass.Name} As Text (Default: Cancel):";
-                                    msgRV += "\n    e.g. Example.com\\nExample.net";
-                                    object valueText = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
-                                    filePathOrText = valueText.ToString() ?? string.Empty;
-                                    if (string.IsNullOrEmpty(filePathOrText) || string.IsNullOrWhiteSpace(filePathOrText))
-                                    {
-                                        mode = ProxyProgram.DontBypass.Mode.Disable;
-                                    }
-                                    else
-                                    {
-                                        filePathOrText = filePathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                                    }
-                                }
-
-                                DontBypassProgram.Set(mode, filePathOrText);
-                                ProxyServer.EnableDontBypass(DontBypassProgram);
-
-                                ShowDontBypassMsg();
-                            }
-
                             // DPI Bypass
-                            else if (programName.ToLower().Equals(Key.Programs.DpiBypass.Name.ToLower()))
+                            else if (programName.ToLower().Equals(Key.Programs.Fragment.Name.ToLower()))
                             {
-                                string msgAm = $"Available {Key.Programs.DpiBypass.Name} Modes:\n\n";
-                                msgAm += $"{Key.Programs.DpiBypass.Mode.Program.Name}\n";
-                                msgAm += $"{Key.Programs.DpiBypass.Mode.Disable}\n";
+                                string msgAm = $"Available {Key.Programs.Fragment.Name} Modes:\n\n";
+                                msgAm += $"{Key.Programs.Fragment.Mode.Program.Name}\n";
+                                msgAm += $"{Key.Programs.Fragment.Mode.Disable}\n";
 
                                 WriteToStdout(msgAm, ConsoleColor.Cyan);
 
-                                string modeStr = Key.Programs.DpiBypass.Mode.Disable;
-                                ProxyProgram.DPIBypass.Mode mode = ProxyProgram.DPIBypass.Mode.Disable;
+                                string modeStr = Key.Programs.Fragment.Mode.Disable;
+                                ProxyProgram.Fragment.Mode mode = ProxyProgram.Fragment.Mode.Disable;
                                 string msgRV = $"Enter One Of Modes (Default: {mode}):";
                                 while (true)
                                 {
                                     object value = await ConsoleTools.ReadValue(msgRV, modeStr, typeof(string));
                                     modeStr = value.ToString() ?? string.Empty;
-                                    if (modeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Program.Name.ToLower()))
-                                        mode = ProxyProgram.DPIBypass.Mode.Program;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Disable.ToLower()))
-                                        mode = ProxyProgram.DPIBypass.Mode.Disable;
+                                    if (modeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Program.Name.ToLower()))
+                                        mode = ProxyProgram.Fragment.Mode.Program;
+                                    else if (modeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Disable.ToLower()))
+                                        mode = ProxyProgram.Fragment.Mode.Disable;
                                     else
                                     {
                                         WriteToStdout("Wrong Mode.", ConsoleColor.Red);
@@ -766,53 +591,52 @@ public static partial class Program
                                     break;
                                 }
 
+                                int beforeSniChunks = DefaultFragmentBeforeSniChunks;
+                                ProxyProgram.Fragment.ChunkMode chunkMode = DefaultFragmentChunkMode;
+                                int sniChunks = DefaultFragmentSniChunks;
+                                int antiPatternOffset = DefaultFragmentAntiPatternOffset;
+                                int fragmentDelay = DefaultFragmentFragmentDelay;
 
-                                int beforeSniChunks = DefaultDPIBypassBeforeSniChunks;
-                                ProxyProgram.DPIBypass.ChunkMode chunkMode = DefaultDPIBypassChunkMode;
-                                int sniChunks = DefaultDPIBypassSniChunks;
-                                int antiPatternOffset = DefaultDPIBypassAntiPatternOffset;
-                                int fragmentDelay = DefaultDPIBypassFragmentDelay;
-
-                                if (mode == ProxyProgram.DPIBypass.Mode.Program)
+                                if (mode == ProxyProgram.Fragment.Mode.Program)
                                 {
                                     // Get Before Sni Chunks
-                                    msgRV = $"Enter Number Of Chunks Before SNI (Default: {DefaultDPIBypassBeforeSniChunks}):";
+                                    msgRV = $"Enter Number Of Chunks Before SNI (Default: {DefaultFragmentBeforeSniChunks}):";
                                     while (true)
                                     {
                                         object value = await ConsoleTools.ReadValue(msgRV, beforeSniChunks, typeof(int));
                                         int n = Convert.ToInt32(value);
-                                        if (n >= DefaultDPIBypassBeforeSniChunksMin && n <= DefaultDPIBypassBeforeSniChunksMax)
+                                        if (n >= DefaultFragmentBeforeSniChunksMin && n <= DefaultFragmentBeforeSniChunksMax)
                                         {
                                             beforeSniChunks = n;
                                             break;
                                         }
                                         else
                                         {
-                                            WriteToStdout($"Chunks Number Must Be Between {DefaultDPIBypassBeforeSniChunksMin} and {DefaultDPIBypassBeforeSniChunksMax}", ConsoleColor.Red);
+                                            WriteToStdout($"Chunks Number Must Be Between {DefaultFragmentBeforeSniChunksMin} and {DefaultFragmentBeforeSniChunksMax}", ConsoleColor.Red);
                                             continue;
                                         }
                                     }
 
                                     // Get Chunk Mode
-                                    msgAm = $"Available {Key.Programs.DpiBypass.Mode.Program.ChunkMode.Name} Modes:\n\n";
-                                    msgAm += $"{Key.Programs.DpiBypass.Mode.Program.ChunkMode.SNI}\n";
-                                    msgAm += $"{Key.Programs.DpiBypass.Mode.Program.ChunkMode.SniExtension}\n";
-                                    msgAm += $"{Key.Programs.DpiBypass.Mode.Program.ChunkMode.AllExtensions}\n";
+                                    msgAm = $"Available {Key.Programs.Fragment.Mode.Program.ChunkMode.Name} Modes:\n\n";
+                                    msgAm += $"{Key.Programs.Fragment.Mode.Program.ChunkMode.SNI}\n";
+                                    msgAm += $"{Key.Programs.Fragment.Mode.Program.ChunkMode.SniExtension}\n";
+                                    msgAm += $"{Key.Programs.Fragment.Mode.Program.ChunkMode.AllExtensions}\n";
 
                                     WriteToStdout(msgAm, ConsoleColor.Cyan);
 
-                                    modeStr = Key.Programs.DpiBypass.Mode.Program.ChunkMode.SNI;
+                                    modeStr = Key.Programs.Fragment.Mode.Program.ChunkMode.SNI;
                                     msgRV = $"Enter One Of Modes (Default: {chunkMode}):";
                                     while (true)
                                     {
                                         object value = await ConsoleTools.ReadValue(msgRV, modeStr, typeof(string));
                                         modeStr = value.ToString() ?? string.Empty;
-                                        if (modeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Program.ChunkMode.SNI.ToLower()))
-                                            chunkMode = ProxyProgram.DPIBypass.ChunkMode.SNI;
-                                        else if (modeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Program.ChunkMode.SniExtension.ToLower()))
-                                            chunkMode = ProxyProgram.DPIBypass.ChunkMode.SniExtension;
-                                        else if (modeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Program.ChunkMode.AllExtensions.ToLower()))
-                                            chunkMode = ProxyProgram.DPIBypass.ChunkMode.AllExtensions;
+                                        if (modeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Program.ChunkMode.SNI.ToLower()))
+                                            chunkMode = ProxyProgram.Fragment.ChunkMode.SNI;
+                                        else if (modeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Program.ChunkMode.SniExtension.ToLower()))
+                                            chunkMode = ProxyProgram.Fragment.ChunkMode.SniExtension;
+                                        else if (modeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Program.ChunkMode.AllExtensions.ToLower()))
+                                            chunkMode = ProxyProgram.Fragment.ChunkMode.AllExtensions;
                                         else
                                         {
                                             WriteToStdout("Wrong Mode.", ConsoleColor.Red);
@@ -822,226 +646,64 @@ public static partial class Program
                                     }
 
                                     // Get Sni Chunks
-                                    msgRV = $"Enter Number Of \"{chunkMode}\" Chunks (Default: {DefaultDPIBypassSniChunks}):";
+                                    msgRV = $"Enter Number Of \"{chunkMode}\" Chunks (Default: {DefaultFragmentSniChunks}):";
                                     while (true)
                                     {
                                         object value = await ConsoleTools.ReadValue(msgRV, sniChunks, typeof(int));
                                         int n = Convert.ToInt32(value);
-                                        if (n >= DefaultDPIBypassSniChunksMin && n <= DefaultDPIBypassSniChunksMax)
+                                        if (n >= DefaultFragmentSniChunksMin && n <= DefaultFragmentSniChunksMax)
                                         {
                                             sniChunks = n;
                                             break;
                                         }
                                         else
                                         {
-                                            WriteToStdout($"Chunks Number Must Be Between {DefaultDPIBypassSniChunksMin} and {DefaultDPIBypassSniChunksMax}", ConsoleColor.Red);
+                                            WriteToStdout($"Chunks Number Must Be Between {DefaultFragmentSniChunksMin} and {DefaultFragmentSniChunksMax}", ConsoleColor.Red);
                                             continue;
                                         }
                                     }
 
                                     // Get Anti-Pattern Offset
-                                    msgRV = $"Enter Number Of Anti-Pattern Offset (Default: {DefaultDPIBypassAntiPatternOffset}):";
+                                    msgRV = $"Enter Number Of Anti-Pattern Offset (Default: {DefaultFragmentAntiPatternOffset}):";
                                     while (true)
                                     {
                                         object value = await ConsoleTools.ReadValue(msgRV, antiPatternOffset, typeof(int));
                                         int n = Convert.ToInt32(value);
-                                        if (n >= DefaultDPIBypassAntiPatternOffsetMin && n <= DefaultDPIBypassAntiPatternOffsetMax)
+                                        if (n >= DefaultFragmentAntiPatternOffsetMin && n <= DefaultFragmentAntiPatternOffsetMax)
                                         {
                                             antiPatternOffset = n;
                                             break;
                                         }
                                         else
                                         {
-                                            WriteToStdout($"Chunks Number Must Be Between {DefaultDPIBypassAntiPatternOffsetMin} and {DefaultDPIBypassAntiPatternOffsetMin}", ConsoleColor.Red);
+                                            WriteToStdout($"Chunks Number Must Be Between {DefaultFragmentAntiPatternOffsetMin} and {DefaultFragmentAntiPatternOffsetMin}", ConsoleColor.Red);
                                             continue;
                                         }
                                     }
 
                                     // Get Fragment Delay
-                                    msgRV = $"Enter Milliseconds Of Fragment Delay (Default: {DefaultDPIBypassFragmentDelay}):";
+                                    msgRV = $"Enter Milliseconds Of Fragment Delay (Default: {DefaultFragmentFragmentDelay}):";
                                     while (true)
                                     {
                                         object value = await ConsoleTools.ReadValue(msgRV, fragmentDelay, typeof(int));
                                         int n = Convert.ToInt32(value);
-                                        if (n >= DefaultDPIBypassFragmentDelayMin && n <= DefaultDPIBypassFragmentDelayMax)
+                                        if (n >= DefaultFragmentFragmentDelayMin && n <= DefaultFragmentFragmentDelayMax)
                                         {
                                             fragmentDelay = n;
                                             break;
                                         }
                                         else
                                         {
-                                            WriteToStdout($"Fragment Delay Must Be Between {DefaultDPIBypassFragmentDelayMin} and {DefaultDPIBypassFragmentDelayMax} Milliseconds", ConsoleColor.Red);
+                                            WriteToStdout($"Fragment Delay Must Be Between {DefaultFragmentFragmentDelayMin} and {DefaultFragmentFragmentDelayMax} Milliseconds", ConsoleColor.Red);
                                             continue;
                                         }
                                     }
                                 }
 
-                                DpiBypassStaticProgram.Set(mode, beforeSniChunks, chunkMode, sniChunks, antiPatternOffset, fragmentDelay);
-                                ProxyServer.EnableStaticDPIBypass(DpiBypassStaticProgram);
+                                FragmentStaticProgram.Set(mode, beforeSniChunks, chunkMode, sniChunks, antiPatternOffset, fragmentDelay);
+                                ProxyServer.EnableStaticFragment(FragmentStaticProgram);
 
-                                ShowDpiBypassMsg();
-                            }
-
-                            // Fake Dns
-                            else if (programName.ToLower().Equals(Key.Programs.FakeDns.Name.ToLower()))
-                            {
-                                string msgAm = $"Available {Key.Programs.FakeDns.Name} Modes:\n\n";
-                                msgAm += $"{Key.Programs.FakeDns.Mode.File}\n";
-                                msgAm += $"{Key.Programs.FakeDns.Mode.Text}\n";
-                                msgAm += $"{Key.Programs.FakeDns.Mode.Disable}\n";
-
-                                WriteToStdout(msgAm, ConsoleColor.Cyan);
-
-                                string modeStr = Key.Programs.FakeDns.Mode.Disable;
-                                ProxyProgram.FakeDns.Mode mode = ProxyProgram.FakeDns.Mode.Disable;
-                                string msgRV = $"Enter One Of Modes (Default: {mode}):";
-                                while (true)
-                                {
-                                    object value = await ConsoleTools.ReadValue(msgRV, modeStr, typeof(string));
-                                    modeStr = value.ToString() ?? string.Empty;
-                                    if (modeStr.ToLower().Equals(Key.Programs.FakeDns.Mode.File.ToLower()))
-                                        mode = ProxyProgram.FakeDns.Mode.File;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.FakeDns.Mode.Text.ToLower()))
-                                        mode = ProxyProgram.FakeDns.Mode.Text;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.FakeDns.Mode.Disable.ToLower()))
-                                        mode = ProxyProgram.FakeDns.Mode.Disable;
-                                    else
-                                    {
-                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
-                                        continue;
-                                    }
-                                    break;
-                                }
-
-                                string filePathOrText = string.Empty;
-
-                                if (mode == ProxyProgram.FakeDns.Mode.File)
-                                {
-                                    while (true)
-                                    {
-                                        msgRV = $"Enter The Path Of {mode} (Default: Cancel):";
-                                        object valuePath = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
-                                        filePathOrText = valuePath.ToString() ?? string.Empty;
-                                        if (string.IsNullOrEmpty(filePathOrText))
-                                        {
-                                            mode = ProxyProgram.FakeDns.Mode.Disable;
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            filePathOrText = Path.GetFullPath(filePathOrText);
-                                            if (!File.Exists(filePathOrText))
-                                            {
-                                                string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
-                                                WriteToStdout(msgNotExist, ConsoleColor.Red);
-                                                continue;
-                                            }
-                                            else break;
-                                        }
-                                    }
-                                }
-
-                                if (mode == ProxyProgram.FakeDns.Mode.Text)
-                                {
-                                    msgRV = $"Enter Rules Of {Key.Programs.FakeDns.Name} As Text (Default: Cancel):";
-                                    msgRV += "\n    e.g. Google.com|8.8.8.8\\nCloudflare.com|1.1.1.1";
-                                    object valueText = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
-                                    filePathOrText = valueText.ToString() ?? string.Empty;
-                                    if (string.IsNullOrEmpty(filePathOrText))
-                                    {
-                                        mode = ProxyProgram.FakeDns.Mode.Disable;
-                                    }
-                                    else
-                                    {
-                                        filePathOrText = filePathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                                    }
-                                }
-
-                                FakeDnsProgram.Set(mode, filePathOrText);
-                                ProxyServer.EnableFakeDNS(FakeDnsProgram);
-
-                                ShowFakeDnsMsg();
-                            }
-
-                            // Fake Sni
-                            else if (programName.ToLower().Equals(Key.Programs.FakeSni.Name.ToLower()))
-                            {
-                                string msgAm = $"Available {Key.Programs.FakeSni.Name} Modes:\n\n";
-                                msgAm += $"{Key.Programs.FakeSni.Mode.File}\n";
-                                msgAm += $"{Key.Programs.FakeSni.Mode.Text}\n";
-                                msgAm += $"{Key.Programs.FakeSni.Mode.Disable}\n";
-
-                                WriteToStdout(msgAm, ConsoleColor.Cyan);
-
-                                string modeStr = Key.Programs.FakeSni.Mode.Disable;
-                                ProxyProgram.FakeSni.Mode mode = ProxyProgram.FakeSni.Mode.Disable;
-                                string msgRV = $"Enter One Of Modes (Default: {mode}):";
-                                while (true)
-                                {
-                                    object value = await ConsoleTools.ReadValue(msgRV, modeStr, typeof(string));
-                                    modeStr = value.ToString() ?? string.Empty;
-                                    if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.File.ToLower()))
-                                        mode = ProxyProgram.FakeSni.Mode.File;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.Text.ToLower()))
-                                        mode = ProxyProgram.FakeSni.Mode.Text;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.Disable.ToLower()))
-                                        mode = ProxyProgram.FakeSni.Mode.Disable;
-                                    else
-                                    {
-                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
-                                        continue;
-                                    }
-                                    break;
-                                }
-
-                                string filePathOrText = string.Empty;
-
-                                if (mode == ProxyProgram.FakeSni.Mode.File)
-                                {
-                                    while (true)
-                                    {
-                                        msgRV = $"Enter The Path Of {mode} (Default: Cancel):";
-                                        object valuePath = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
-                                        filePathOrText = valuePath.ToString() ?? string.Empty;
-                                        if (string.IsNullOrEmpty(filePathOrText))
-                                        {
-                                            mode = ProxyProgram.FakeSni.Mode.Disable;
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            filePathOrText = Path.GetFullPath(filePathOrText);
-                                            if (!File.Exists(filePathOrText))
-                                            {
-                                                string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
-                                                WriteToStdout(msgNotExist, ConsoleColor.Red);
-                                                continue;
-                                            }
-                                            else break;
-                                        }
-                                    }
-                                }
-
-                                if (mode == ProxyProgram.FakeSni.Mode.Text)
-                                {
-                                    msgRV = $"Enter Rules Of {Key.Programs.FakeSni.Name} As Text (Default: Cancel):";
-                                    msgRV += "\n    e.g. Youtube.com|Google.com\\n*.googlevideo.com|*.c.docs.google.com";
-                                    object valueText = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
-                                    filePathOrText = valueText.ToString() ?? string.Empty;
-                                    if (string.IsNullOrEmpty(filePathOrText))
-                                    {
-                                        mode = ProxyProgram.FakeSni.Mode.Disable;
-                                    }
-                                    else
-                                    {
-                                        filePathOrText = filePathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                                    }
-                                }
-
-                                FakeSniProgram.Set(mode, filePathOrText);
-                                ProxyServer.EnableFakeSNI(FakeSniProgram);
-
-                                ShowFakeSniMsg();
+                                ShowFragmentMsg();
                             }
 
                             // UpStream Proxy
@@ -1124,6 +786,87 @@ public static partial class Program
                                 ShowUpStreamProxyMsg();
                             }
 
+                            // Proxy Rules
+                            else if (programName.ToLower().Equals(Key.Programs.Rules.Name.ToLower()))
+                            {
+                                string msgAm = $"Available {Key.Programs.Rules.Name} Modes:\n\n";
+                                msgAm += $"{Key.Programs.Rules.Mode.File}\n";
+                                msgAm += $"{Key.Programs.Rules.Mode.Text}\n";
+                                msgAm += $"{Key.Programs.Rules.Mode.Disable}\n";
+
+                                WriteToStdout(msgAm, ConsoleColor.Cyan);
+
+                                string modeStr = Key.Programs.Rules.Mode.Disable;
+                                ProxyProgram.Rules.Mode mode = ProxyProgram.Rules.Mode.Disable;
+                                string msgRV = $"Enter One Of Modes (Default: {mode}):";
+                                while (true)
+                                {
+                                    object value = await ConsoleTools.ReadValue(msgRV, modeStr, typeof(string));
+                                    modeStr = value.ToString() ?? string.Empty;
+                                    if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.File.ToLower()))
+                                        mode = ProxyProgram.Rules.Mode.File;
+                                    else if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.Text.ToLower()))
+                                        mode = ProxyProgram.Rules.Mode.Text;
+                                    else if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.Disable.ToLower()))
+                                        mode = ProxyProgram.Rules.Mode.Disable;
+                                    else
+                                    {
+                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
+                                        continue;
+                                    }
+                                    break;
+                                }
+
+                                string filePathOrText = string.Empty;
+
+                                if (mode == ProxyProgram.Rules.Mode.File)
+                                {
+                                    while (true)
+                                    {
+                                        msgRV = $"Enter The Path Of {mode} (Default: Cancel):";
+                                        object valuePath = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
+                                        filePathOrText = valuePath.ToString() ?? string.Empty;
+                                        if (string.IsNullOrEmpty(filePathOrText))
+                                        {
+                                            mode = ProxyProgram.Rules.Mode.Disable;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            filePathOrText = Path.GetFullPath(filePathOrText);
+                                            if (!File.Exists(filePathOrText))
+                                            {
+                                                string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
+                                                WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                                continue;
+                                            }
+                                            else break;
+                                        }
+                                    }
+                                }
+
+                                if (mode == ProxyProgram.Rules.Mode.Text)
+                                {
+                                    msgRV = $"Enter Rules Of {Key.Programs.Rules.Name} As Text (Default: Cancel):";
+                                    msgRV += "\n    e.g. Google.com|8.8.8.8;\\nCloudflare.com|dns:tcp://8.8.8.8;";
+                                    object valueText = await ConsoleTools.ReadValue(msgRV, string.Empty, typeof(string));
+                                    filePathOrText = valueText.ToString() ?? string.Empty;
+                                    if (string.IsNullOrEmpty(filePathOrText))
+                                    {
+                                        mode = ProxyProgram.Rules.Mode.Disable;
+                                    }
+                                    else
+                                    {
+                                        filePathOrText = filePathOrText.ToLower().Replace(@"\n", Environment.NewLine);
+                                    }
+                                }
+
+                                RulesProgram.Set(mode, filePathOrText);
+                                ProxyServer.EnableRules(RulesProgram);
+
+                                ShowRulesMsg();
+                            }
+
                             else
                             {
                                 WriteToStdout("Wrong Program Name.", ConsoleColor.Red);
@@ -1134,76 +877,6 @@ public static partial class Program
                     else // Command Mode
                     {
                         bool isValueOk = false;
-
-                        // BwList
-                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.BwList.Name.ToLower()}"))
-                        {
-                            // Programs BwList -Mode=m -PathOrText="m"
-
-                            // Get ModeStr
-                            string modeStr = Key.Programs.BwList.Mode.Disable;
-                            string key = Key.Programs.BwList.Mode.Name;
-                            isValueOk = ConsoleTools.GetValueByKey(input, key, true, false, out string value);
-                            if (!isValueOk) return;
-
-                            KeyValues modes = new();
-                            modes.Add(Key.Programs.BwList.Mode.BlackListFile, true, false, typeof(string));
-                            modes.Add(Key.Programs.BwList.Mode.BlackListText, true, false, typeof(string));
-                            modes.Add(Key.Programs.BwList.Mode.WhiteListFile, true, false, typeof(string));
-                            modes.Add(Key.Programs.BwList.Mode.WhiteListText, true, false, typeof(string));
-                            modes.Add(Key.Programs.BwList.Mode.Disable, true, false, typeof(string));
-
-                            isValueOk = ConsoleTools.GetString(key, value, true, modes, out value);
-                            if (!isValueOk) return;
-                            modeStr = value;
-
-                            // Get -Mode
-                            ProxyProgram.BlackWhiteList.Mode mode = ProxyProgram.BlackWhiteList.Mode.Disable;
-                            if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.BlackListFile.ToLower()))
-                                mode = ProxyProgram.BlackWhiteList.Mode.BlackListFile;
-                            else if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.BlackListText.ToLower()))
-                                mode = ProxyProgram.BlackWhiteList.Mode.BlackListText;
-                            else if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.WhiteListFile.ToLower()))
-                                mode = ProxyProgram.BlackWhiteList.Mode.WhiteListFile;
-                            else if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.WhiteListText.ToLower()))
-                                mode = ProxyProgram.BlackWhiteList.Mode.WhiteListText;
-                            else if (modeStr.ToLower().Equals(Key.Programs.BwList.Mode.Disable.ToLower()))
-                                mode = ProxyProgram.BlackWhiteList.Mode.Disable;
-
-                            // Get -PathOrText
-                            string pathOrText = string.Empty;
-                            if (mode != ProxyProgram.BlackWhiteList.Mode.Disable)
-                            {
-                                key = Key.Programs.BwList.PathOrText;
-
-                                isValueOk = ConsoleTools.GetValueByKey(input, key, true, true, out value);
-                                if (!isValueOk) return;
-                                isValueOk = ConsoleTools.GetString(key, value, true, out value);
-                                if (!isValueOk) return;
-                                pathOrText = value;
-                            }
-
-                            if (mode == ProxyProgram.BlackWhiteList.Mode.BlackListFile || mode == ProxyProgram.BlackWhiteList.Mode.WhiteListFile)
-                            {
-                                pathOrText = Path.GetFullPath(pathOrText);
-                                if (!File.Exists(pathOrText))
-                                {
-                                    string msgNotExist = $"{pathOrText}\nFile Not Exist.";
-                                    WriteToStdout(msgNotExist, ConsoleColor.Red);
-                                    return;
-                                }
-                            }
-
-                            if (mode == ProxyProgram.BlackWhiteList.Mode.BlackListText || mode == ProxyProgram.BlackWhiteList.Mode.WhiteListText)
-                            {
-                                pathOrText = pathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                            }
-
-                            BWListProgram.Set(mode, pathOrText);
-                            ProxyServer.EnableBlackWhiteList(BWListProgram);
-
-                            ShowBwListMsg();
-                        }
 
                         // Dns
                         if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.Dns.Name.ToLower()}"))
@@ -1289,110 +962,47 @@ public static partial class Program
                             ShowDnsMsg();
                         }
 
-                        // DontBypass
-                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.DontBypass.Name.ToLower()}"))
+                        // Fragment
+                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.Fragment.Name.ToLower()}"))
                         {
-                            // Programs DontBypass -Mode=m -PathOrText="m"
+                            // Programs Fragment -Mode=m -BeforeSniChunks=m -ChunkMode=m -SniChunks=m -AntiPatternOffset=m -FragmentDelay=m
 
                             // Get ModeStr
-                            string modeStr = Key.Programs.DontBypass.Mode.Disable;
-                            string key = Key.Programs.DontBypass.Mode.Name;
+                            string modeStr = Key.Programs.Fragment.Mode.Disable;
+                            string key = Key.Programs.Fragment.Mode.Name;
                             isValueOk = ConsoleTools.GetValueByKey(input, key, true, false, out string value);
                             if (!isValueOk) return;
 
                             KeyValues modes = new();
-                            modes.Add(Key.Programs.DontBypass.Mode.File, true, false, typeof(string));
-                            modes.Add(Key.Programs.DontBypass.Mode.Text, true, false, typeof(string));
-                            modes.Add(Key.Programs.DontBypass.Mode.Disable, true, false, typeof(string));
+                            modes.Add(Key.Programs.Fragment.Mode.Program.Name, true, false, typeof(string));
+                            modes.Add(Key.Programs.Fragment.Mode.Disable, true, false, typeof(string));
 
                             isValueOk = ConsoleTools.GetString(key, value, true, modes, out value);
                             if (!isValueOk) return;
                             modeStr = value;
 
                             // Get -Mode
-                            ProxyProgram.DontBypass.Mode mode = ProxyProgram.DontBypass.Mode.Disable;
-                            if (modeStr.ToLower().Equals(Key.Programs.DontBypass.Mode.File.ToLower()))
-                                mode = ProxyProgram.DontBypass.Mode.File;
-                            else if (modeStr.ToLower().Equals(Key.Programs.DontBypass.Mode.Text.ToLower()))
-                                mode = ProxyProgram.DontBypass.Mode.Text;
-                            else if (modeStr.ToLower().Equals(Key.Programs.DontBypass.Mode.Disable.ToLower()))
-                                mode = ProxyProgram.DontBypass.Mode.Disable;
+                            ProxyProgram.Fragment.Mode mode = ProxyProgram.Fragment.Mode.Disable;
+                            if (modeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Program.Name.ToLower()))
+                                mode = ProxyProgram.Fragment.Mode.Program;
+                            else if (modeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Disable.ToLower()))
+                                mode = ProxyProgram.Fragment.Mode.Disable;
 
-                            // Get -PathOrText
-                            string pathOrText = string.Empty;
-                            key = Key.Programs.DontBypass.PathOrText;
-                            if (mode != ProxyProgram.DontBypass.Mode.Disable)
-                            {
-                                isValueOk = ConsoleTools.GetValueByKey(input, key, true, true, out value);
-                                if (!isValueOk) return;
-                                isValueOk = ConsoleTools.GetString(key, value, true, out value);
-                                if (!isValueOk) return;
-                                pathOrText = value;
-                            }
-
-                            if (mode == ProxyProgram.DontBypass.Mode.File)
-                            {
-                                pathOrText = Path.GetFullPath(pathOrText);
-                                if (!File.Exists(pathOrText))
-                                {
-                                    string msgNotExist = $"{pathOrText}\nFile Not Exist.";
-                                    WriteToStdout(msgNotExist, ConsoleColor.Red);
-                                    return;
-                                }
-                            }
-
-                            if (mode == ProxyProgram.DontBypass.Mode.Text)
-                            {
-                                pathOrText = pathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                            }
-
-                            DontBypassProgram.Set(mode, pathOrText);
-                            ProxyServer.EnableDontBypass(DontBypassProgram);
-
-                            ShowDontBypassMsg();
-                        }
-
-                        // DpiBypass
-                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.DpiBypass.Name.ToLower()}"))
-                        {
-                            // Programs DpiBypass -Mode=m -BeforeSniChunks=m -ChunkMode=m -SniChunks=m -AntiPatternOffset=m -FragmentDelay=m
-
-                            // Get ModeStr
-                            string modeStr = Key.Programs.DpiBypass.Mode.Disable;
-                            string key = Key.Programs.DpiBypass.Mode.Name;
-                            isValueOk = ConsoleTools.GetValueByKey(input, key, true, false, out string value);
-                            if (!isValueOk) return;
-
-                            KeyValues modes = new();
-                            modes.Add(Key.Programs.DpiBypass.Mode.Program.Name, true, false, typeof(string));
-                            modes.Add(Key.Programs.DpiBypass.Mode.Disable, true, false, typeof(string));
-
-                            isValueOk = ConsoleTools.GetString(key, value, true, modes, out value);
-                            if (!isValueOk) return;
-                            modeStr = value;
-
-                            // Get -Mode
-                            ProxyProgram.DPIBypass.Mode mode = ProxyProgram.DPIBypass.Mode.Disable;
-                            if (modeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Program.Name.ToLower()))
-                                mode = ProxyProgram.DPIBypass.Mode.Program;
-                            else if (modeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Disable.ToLower()))
-                                mode = ProxyProgram.DPIBypass.Mode.Disable;
-
-                            int beforeSniChunks = DefaultDPIBypassBeforeSniChunks;
-                            string chunkModeStr = DefaultDPIBypassChunkModeStr;
-                            int sniChunks = DefaultDPIBypassSniChunks;
-                            int antiPatternOffset = DefaultDPIBypassAntiPatternOffset;
-                            int fragmentDelay = DefaultDPIBypassFragmentDelay;
+                            int beforeSniChunks = DefaultFragmentBeforeSniChunks;
+                            string chunkModeStr = DefaultFragmentChunkModeStr;
+                            int sniChunks = DefaultFragmentSniChunks;
+                            int antiPatternOffset = DefaultFragmentAntiPatternOffset;
+                            int fragmentDelay = DefaultFragmentFragmentDelay;
 
                             // Get The Rest
-                            if (mode == ProxyProgram.DPIBypass.Mode.Program)
+                            if (mode == ProxyProgram.Fragment.Mode.Program)
                             {
                                 KeyValues keyValues = new();
-                                keyValues.Add(Key.Programs.DpiBypass.Mode.Program.BeforeSniChunks, true, false, typeof(int), DefaultDPIBypassBeforeSniChunksMin, DefaultDPIBypassBeforeSniChunksMax);
-                                keyValues.Add(Key.Programs.DpiBypass.Mode.Program.ChunkMode.Name, true, false, typeof(string));
-                                keyValues.Add(Key.Programs.DpiBypass.Mode.Program.SniChunks, true, false, typeof(int), DefaultDPIBypassSniChunksMin, DefaultDPIBypassSniChunksMax);
-                                keyValues.Add(Key.Programs.DpiBypass.Mode.Program.AntiPatternOffset, true, false, typeof(int), DefaultDPIBypassAntiPatternOffsetMin, DefaultDPIBypassAntiPatternOffsetMax);
-                                keyValues.Add(Key.Programs.DpiBypass.Mode.Program.FragmentDelay, true, false, typeof(int), DefaultDPIBypassFragmentDelayMin, DefaultDPIBypassFragmentDelayMax);
+                                keyValues.Add(Key.Programs.Fragment.Mode.Program.BeforeSniChunks, true, false, typeof(int), DefaultFragmentBeforeSniChunksMin, DefaultFragmentBeforeSniChunksMax);
+                                keyValues.Add(Key.Programs.Fragment.Mode.Program.ChunkMode.Name, true, false, typeof(string));
+                                keyValues.Add(Key.Programs.Fragment.Mode.Program.SniChunks, true, false, typeof(int), DefaultFragmentSniChunksMin, DefaultFragmentSniChunksMax);
+                                keyValues.Add(Key.Programs.Fragment.Mode.Program.AntiPatternOffset, true, false, typeof(int), DefaultFragmentAntiPatternOffsetMin, DefaultFragmentAntiPatternOffsetMax);
+                                keyValues.Add(Key.Programs.Fragment.Mode.Program.FragmentDelay, true, false, typeof(int), DefaultFragmentFragmentDelayMin, DefaultFragmentFragmentDelayMax);
 
                                 bool isListOk = keyValues.GetValuesByKeys(input, out List<KeyValue> list);
 
@@ -1401,23 +1011,23 @@ public static partial class Program
                                 for (int n = 0; n < list.Count; n++)
                                 {
                                     KeyValue kv = list[n];
-                                    if (kv.Key.Equals(Key.Programs.DpiBypass.Mode.Program.BeforeSniChunks)) beforeSniChunks = kv.ValueInt;
-                                    if (kv.Key.Equals(Key.Programs.DpiBypass.Mode.Program.ChunkMode.Name))
+                                    if (kv.Key.Equals(Key.Programs.Fragment.Mode.Program.BeforeSniChunks)) beforeSniChunks = kv.ValueInt;
+                                    if (kv.Key.Equals(Key.Programs.Fragment.Mode.Program.ChunkMode.Name))
                                     {
                                         chunkModeStr = kv.ValueString;
 
                                         KeyValues chunkModes = new();
-                                        chunkModes.Add(Key.Programs.DpiBypass.Mode.Program.ChunkMode.SNI, true, false, typeof(string));
-                                        chunkModes.Add(Key.Programs.DpiBypass.Mode.Program.ChunkMode.SniExtension, true, false, typeof(string));
-                                        chunkModes.Add(Key.Programs.DpiBypass.Mode.Program.ChunkMode.AllExtensions, true, false, typeof(string));
+                                        chunkModes.Add(Key.Programs.Fragment.Mode.Program.ChunkMode.SNI, true, false, typeof(string));
+                                        chunkModes.Add(Key.Programs.Fragment.Mode.Program.ChunkMode.SniExtension, true, false, typeof(string));
+                                        chunkModes.Add(Key.Programs.Fragment.Mode.Program.ChunkMode.AllExtensions, true, false, typeof(string));
 
-                                        string chunkKey = Key.Programs.DpiBypass.Mode.Program.ChunkMode.Name;
+                                        string chunkKey = Key.Programs.Fragment.Mode.Program.ChunkMode.Name;
                                         isChunkModeOk = ConsoleTools.GetString(chunkKey, chunkModeStr, true, chunkModes, out chunkModeStr);
                                         if (!isChunkModeOk) break;
                                     }
-                                    if (kv.Key.Equals(Key.Programs.DpiBypass.Mode.Program.SniChunks)) sniChunks = kv.ValueInt;
-                                    if (kv.Key.Equals(Key.Programs.DpiBypass.Mode.Program.AntiPatternOffset)) antiPatternOffset = kv.ValueInt;
-                                    if (kv.Key.Equals(Key.Programs.DpiBypass.Mode.Program.FragmentDelay)) fragmentDelay = kv.ValueInt;
+                                    if (kv.Key.Equals(Key.Programs.Fragment.Mode.Program.SniChunks)) sniChunks = kv.ValueInt;
+                                    if (kv.Key.Equals(Key.Programs.Fragment.Mode.Program.AntiPatternOffset)) antiPatternOffset = kv.ValueInt;
+                                    if (kv.Key.Equals(Key.Programs.Fragment.Mode.Program.FragmentDelay)) fragmentDelay = kv.ValueInt;
                                 }
 
                                 if (!isChunkModeOk) return;
@@ -1425,144 +1035,18 @@ public static partial class Program
                             }
 
                             // Get Chunk Mode
-                            ProxyProgram.DPIBypass.ChunkMode chunkMode = ProxyProgram.DPIBypass.ChunkMode.SNI;
-                            if (chunkModeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Program.ChunkMode.SNI.ToLower()))
-                                chunkMode = ProxyProgram.DPIBypass.ChunkMode.SNI;
-                            else if (chunkModeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Program.ChunkMode.SniExtension.ToLower()))
-                                chunkMode = ProxyProgram.DPIBypass.ChunkMode.SniExtension;
-                            else if (chunkModeStr.ToLower().Equals(Key.Programs.DpiBypass.Mode.Program.ChunkMode.AllExtensions.ToLower()))
-                                chunkMode = ProxyProgram.DPIBypass.ChunkMode.AllExtensions;
+                            ProxyProgram.Fragment.ChunkMode chunkMode = ProxyProgram.Fragment.ChunkMode.SNI;
+                            if (chunkModeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Program.ChunkMode.SNI.ToLower()))
+                                chunkMode = ProxyProgram.Fragment.ChunkMode.SNI;
+                            else if (chunkModeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Program.ChunkMode.SniExtension.ToLower()))
+                                chunkMode = ProxyProgram.Fragment.ChunkMode.SniExtension;
+                            else if (chunkModeStr.ToLower().Equals(Key.Programs.Fragment.Mode.Program.ChunkMode.AllExtensions.ToLower()))
+                                chunkMode = ProxyProgram.Fragment.ChunkMode.AllExtensions;
 
-                            DpiBypassStaticProgram.Set(mode, beforeSniChunks, chunkMode, sniChunks, antiPatternOffset, fragmentDelay);
-                            ProxyServer.EnableStaticDPIBypass(DpiBypassStaticProgram);
+                            FragmentStaticProgram.Set(mode, beforeSniChunks, chunkMode, sniChunks, antiPatternOffset, fragmentDelay);
+                            ProxyServer.EnableStaticFragment(FragmentStaticProgram);
 
-                            ShowDpiBypassMsg();
-                        }
-
-                        // FakeDns
-                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.FakeDns.Name.ToLower()}"))
-                        {
-                            // Programs FakeDns -Mode=m -PathOrText="m"
-
-                            // Get ModeStr
-                            string modeStr = Key.Programs.FakeDns.Mode.Disable;
-                            string key = Key.Programs.FakeDns.Mode.Name;
-                            isValueOk = ConsoleTools.GetValueByKey(input, key, true, false, out string value);
-                            if (!isValueOk) return;
-
-                            KeyValues modes = new();
-                            modes.Add(Key.Programs.FakeDns.Mode.File, true, false, typeof(string));
-                            modes.Add(Key.Programs.FakeDns.Mode.Text, true, false, typeof(string));
-                            modes.Add(Key.Programs.FakeDns.Mode.Disable, true, false, typeof(string));
-
-                            isValueOk = ConsoleTools.GetString(key, value, true, modes, out value);
-                            if (!isValueOk) return;
-                            modeStr = value;
-
-                            // Get -Mode
-                            ProxyProgram.FakeDns.Mode mode = ProxyProgram.FakeDns.Mode.Disable;
-                            if (modeStr.ToLower().Equals(Key.Programs.FakeDns.Mode.File.ToLower()))
-                                mode = ProxyProgram.FakeDns.Mode.File;
-                            else if (modeStr.ToLower().Equals(Key.Programs.FakeDns.Mode.Text.ToLower()))
-                                mode = ProxyProgram.FakeDns.Mode.Text;
-                            else if (modeStr.ToLower().Equals(Key.Programs.FakeDns.Mode.Disable.ToLower()))
-                                mode = ProxyProgram.FakeDns.Mode.Disable;
-
-                            // Get -PathOrText
-                            string pathOrText = string.Empty;
-                            key = Key.Programs.FakeDns.PathOrText;
-                            if (mode != ProxyProgram.FakeDns.Mode.Disable)
-                            {
-                                isValueOk = ConsoleTools.GetValueByKey(input, key, true, true, out value);
-                                if (!isValueOk) return;
-                                isValueOk = ConsoleTools.GetString(key, value, true, out value);
-                                if (!isValueOk) return;
-                                pathOrText = value;
-                            }
-
-                            if (mode == ProxyProgram.FakeDns.Mode.File)
-                            {
-                                pathOrText = Path.GetFullPath(pathOrText);
-                                if (!File.Exists(pathOrText))
-                                {
-                                    string msgNotExist = $"{pathOrText}\nFile Not Exist.";
-                                    WriteToStdout(msgNotExist, ConsoleColor.Red);
-                                    return;
-                                }
-                            }
-
-                            if (mode == ProxyProgram.FakeDns.Mode.Text)
-                            {
-                                pathOrText = pathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                            }
-
-                            FakeDnsProgram.Set(mode, pathOrText);
-                            ProxyServer.EnableFakeDNS(FakeDnsProgram);
-
-                            ShowFakeDnsMsg();
-                        }
-
-                        // FakeSni
-                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.FakeSni.Name.ToLower()}"))
-                        {
-                            // Programs FakeSni -Mode=m -PathOrText="m"
-
-                            // Get ModeStr
-                            string modeStr = Key.Programs.FakeSni.Mode.Disable;
-                            string key = Key.Programs.FakeSni.Mode.Name;
-                            isValueOk = ConsoleTools.GetValueByKey(input, key, true, false, out string value);
-                            if (!isValueOk) return;
-
-                            KeyValues modes = new();
-                            modes.Add(Key.Programs.FakeSni.Mode.File, true, false, typeof(string));
-                            modes.Add(Key.Programs.FakeSni.Mode.Text, true, false, typeof(string));
-                            modes.Add(Key.Programs.FakeSni.Mode.Disable, true, false, typeof(string));
-
-                            isValueOk = ConsoleTools.GetString(key, value, true, modes, out value);
-                            if (!isValueOk) return;
-                            modeStr = value;
-
-                            // Get -Mode
-                            ProxyProgram.FakeSni.Mode mode = ProxyProgram.FakeSni.Mode.Disable;
-                            if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.File.ToLower()))
-                                mode = ProxyProgram.FakeSni.Mode.File;
-                            else if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.Text.ToLower()))
-                                mode = ProxyProgram.FakeSni.Mode.Text;
-                            else if (modeStr.ToLower().Equals(Key.Programs.FakeSni.Mode.Disable.ToLower()))
-                                mode = ProxyProgram.FakeSni.Mode.Disable;
-
-                            // Get -PathOrText
-                            string pathOrText = string.Empty;
-                            key = Key.Programs.FakeSni.PathOrText;
-                            if (mode != ProxyProgram.FakeSni.Mode.Disable)
-                            {
-                                isValueOk = ConsoleTools.GetValueByKey(input, key, true, true, out value);
-                                if (!isValueOk) return;
-                                isValueOk = ConsoleTools.GetString(key, value, true, out value);
-                                if (!isValueOk) return;
-                                pathOrText = value;
-                            }
-
-                            if (mode == ProxyProgram.FakeSni.Mode.File)
-                            {
-                                pathOrText = Path.GetFullPath(pathOrText);
-                                if (!File.Exists(pathOrText))
-                                {
-                                    string msgNotExist = $"{pathOrText}\nFile Not Exist.";
-                                    WriteToStdout(msgNotExist, ConsoleColor.Red);
-                                    return;
-                                }
-                            }
-
-                            if (mode == ProxyProgram.FakeSni.Mode.Text)
-                            {
-                                pathOrText = pathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                            }
-
-                            FakeSniProgram.Set(mode, pathOrText);
-                            ProxyServer.EnableFakeSNI(FakeSniProgram);
-
-                            ShowFakeSniMsg();
+                            ShowFragmentMsg();
                         }
 
                         // UpStreamProxy
@@ -1622,6 +1106,70 @@ public static partial class Program
 
                             ShowUpStreamProxyMsg();
                         }
+
+                        // Proxy Rules
+                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.Rules.Name.ToLower()}"))
+                        {
+                            // Programs Rules -Mode=m -PathOrText="m"
+
+                            // Get ModeStr
+                            string modeStr = Key.Programs.Rules.Mode.Disable;
+                            string key = Key.Programs.Rules.Mode.Name;
+                            isValueOk = ConsoleTools.GetValueByKey(input, key, true, false, out string value);
+                            if (!isValueOk) return;
+
+                            KeyValues modes = new();
+                            modes.Add(Key.Programs.Rules.Mode.File, true, false, typeof(string));
+                            modes.Add(Key.Programs.Rules.Mode.Text, true, false, typeof(string));
+                            modes.Add(Key.Programs.Rules.Mode.Disable, true, false, typeof(string));
+
+                            isValueOk = ConsoleTools.GetString(key, value, true, modes, out value);
+                            if (!isValueOk) return;
+                            modeStr = value;
+
+                            // Get -Mode
+                            ProxyProgram.Rules.Mode mode = ProxyProgram.Rules.Mode.Disable;
+                            if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.File.ToLower()))
+                                mode = ProxyProgram.Rules.Mode.File;
+                            else if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.Text.ToLower()))
+                                mode = ProxyProgram.Rules.Mode.Text;
+                            else if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.Disable.ToLower()))
+                                mode = ProxyProgram.Rules.Mode.Disable;
+
+                            // Get -PathOrText
+                            string pathOrText = string.Empty;
+                            key = Key.Programs.Rules.PathOrText;
+                            if (mode != ProxyProgram.Rules.Mode.Disable)
+                            {
+                                isValueOk = ConsoleTools.GetValueByKey(input, key, true, true, out value);
+                                if (!isValueOk) return;
+                                isValueOk = ConsoleTools.GetString(key, value, true, out value);
+                                if (!isValueOk) return;
+                                pathOrText = value;
+                            }
+
+                            if (mode == ProxyProgram.Rules.Mode.File)
+                            {
+                                pathOrText = Path.GetFullPath(pathOrText);
+                                if (!File.Exists(pathOrText))
+                                {
+                                    string msgNotExist = $"{pathOrText}\nFile Not Exist.";
+                                    WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                    return;
+                                }
+                            }
+
+                            if (mode == ProxyProgram.Rules.Mode.Text)
+                            {
+                                pathOrText = pathOrText.ToLower().Replace(@"\n", Environment.NewLine);
+                            }
+
+                            RulesProgram.Set(mode, pathOrText);
+                            ProxyServer.EnableRules(RulesProgram);
+
+                            ShowRulesMsg();
+                        }
+
                     }
                 }
 
@@ -1696,6 +1244,9 @@ public static partial class Program
                     // Start
                     if (!ProxyServer.IsRunning)
                     {
+                        // Starting
+                        WriteToStdout("Starting...");
+
                         // Check Port
                         bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), Settings.ListenerPort, 3);
                         if (isPortOpen)
@@ -1703,6 +1254,9 @@ public static partial class Program
                             WriteToStdout($"Port {Settings.ListenerPort} is occupied.");
                             return;
                         }
+
+                        // Flush DNS
+                        await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
 
                         ProxyServer.Start(Settings);
                         Task.Delay(500).Wait();
@@ -1720,6 +1274,9 @@ public static partial class Program
                     // Stop
                     if (ProxyServer.IsRunning)
                     {
+                        // Stopping
+                        WriteToStdout("Stopping...");
+
                         ProxyServer.Stop();
                         Task.Delay(500).Wait();
                     }
@@ -1747,7 +1304,7 @@ public static partial class Program
                         WriteToStdout("Failed To Find The Path.", ConsoleColor.Red);
                 }
 
-                // load Commands
+                // Load Commands
                 else if (input.ToLower().Equals("load"))
                 {
                     string? p = ConsoleTools.GetCommandsPath();
@@ -1761,10 +1318,17 @@ public static partial class Program
                             if (LoadCommands.Any())
                             {
                                 for (int n = 0; n < LoadCommands.Count; n++)
-                                    await ExecuteCommands(LoadCommands[n]);
+                                {
+                                    string command = LoadCommands[n];
+                                    if (!command.StartsWith("//"))
+                                        await ExecuteCommands(command);
+                                }
                             }
 
-                            WriteToStdout("Loaded From:", ConsoleColor.Green);
+                            // Flush DNS
+                            await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
+
+                            WriteToStdout($"\nLoaded From:", ConsoleColor.Green);
                             WriteToStdout(p, ConsoleColor.Green);
                         }
                         else

@@ -5,7 +5,7 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    private async void SetProxy(bool unset = false)
+    private async void SetProxy(bool unset = false, bool limitLog = false)
     {
         if (IsAnotherProxySet)
         {
@@ -45,7 +45,7 @@ public partial class FormMain
                 }
 
                 // Write Enable Proxy first to log
-                if (!IsProxyRunning)
+                if (!IsProxyActivated)
                 {
                     string msg = "Enable Proxy first." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
@@ -58,8 +58,7 @@ public partial class FormMain
 
                 // Start Set Proxy
                 await SetProxyInternalAsync();
-
-                await Task.Delay(300); // Wait a moment
+                await Task.Delay(100); // Wait a moment
 
                 IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
                 IsAnotherProxySet = isAnotherProxySet;
@@ -67,12 +66,19 @@ public partial class FormMain
                 if (IsProxySet)
                 {
                     // Write Set Proxy message to log
-                    string msg1 = "Proxy Server ";
-                    string msg2 = $"{ip}:{port}";
-                    string msg3 = " set to system.";
-                    CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
-                    CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
-                    CustomRichTextBoxLog.AppendText(msg3 + NL, Color.LightGray);
+                    if (!limitLog)
+                    {
+                        string msg1 = "Proxy Server ";
+                        string msg2 = " set to system.";
+                        CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
+                        CustomRichTextBoxLog.AppendText(CurrentSystemProxy, Color.DodgerBlue);
+                        CustomRichTextBoxLog.AppendText(msg2 + NL, Color.LightGray);
+                    }
+                    else
+                    {
+                        string msg = $"Proxy Server ({CurrentSystemProxy}) set to system.";
+                        CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray);
+                    }
                 }
                 else
                 {
@@ -85,7 +91,7 @@ public partial class FormMain
             {
                 // Unset Proxy
                 NetworkTool.UnsetProxy(false, true);
-                await Task.Delay(300); // Wait a moment
+                await Task.Delay(100); // Wait a moment
 
                 IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
                 IsAnotherProxySet = isAnotherProxySet;

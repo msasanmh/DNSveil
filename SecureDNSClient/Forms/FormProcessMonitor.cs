@@ -20,8 +20,7 @@ public partial class FormProcessMonitor : Form
         Theme.LoadTheme(this, Theme.Themes.Dark);
 
         // Update PIDS
-        //FormMain.MonitorProcess.SetPID(FormMain.GetPids(false));
-        FormMain.MonitorProcess.SetPID(); // Measure Whole System
+        //FormMain.MonitorProcess.LimitNetPID(FormMain.GetPids(false));
 
         // Initialize Status Top
         InitializeStatus(CustomDataGridViewStatusTop);
@@ -34,16 +33,15 @@ public partial class FormProcessMonitor : Form
     {
         CustomRichTextBox logDown = CustomRichTextBoxDown;
 
-        ProcessMonitor.ProcessStatistics ps = new();
+        ProcessMonitor.NetStatistics ns = new();
 
         Task.Run(async () =>
         {
             while (!Exit)
             {
                 // Update PIDS
-                //FormMain.MonitorProcess.SetPID(FormMain.GetPids(false));
-                FormMain.MonitorProcess.SetPID(); // Measure Whole System
-                ps = FormMain.MonitorProcess.GetProcessStatistics();
+                //FormMain.MonitorProcess.LimitNetPID(FormMain.GetPids(false));
+                ns = FormMain.MonitorProcess.GetNetStatistics();
 
                 // Update Bar Color
                 if (!FormMain.IsInActionState)
@@ -51,22 +49,33 @@ public partial class FormProcessMonitor : Form
                 else
                     this.InvokeIt(() => SplitContainerMain.BackColor = Color.DodgerBlue);
 
-                string dataSent = $"{ConvertTool.ConvertByteToHumanRead(ps.BytesSent)}";
-                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
-                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[0].Cells[1].Value = dataSent);
+                if (CustomDataGridViewStatusTop.Rows.Count >= 6)
+                {
+                    string dataSent = $"{ConvertTool.ConvertByteToHumanRead(ns.BytesSent)}";
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[0].Cells[1].Value = dataSent);
 
-                string dataReceived = $"{ConvertTool.ConvertByteToHumanRead(ps.BytesReceived)}";
-                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[1].Cells[1].Style.ForeColor = Color.DodgerBlue);
-                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[1].Cells[1].Value = dataReceived);
+                    string dataReceived = $"{ConvertTool.ConvertByteToHumanRead(ns.BytesReceived)}";
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[1].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[1].Cells[1].Value = dataReceived);
 
-                string uploadSpeed = $"{ConvertTool.ConvertByteToHumanRead(ps.UploadSpeed)}/Sec";
-                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[2].Cells[1].Style.ForeColor = Color.DodgerBlue);
-                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[2].Cells[1].Value = uploadSpeed);
+                    string uploadSpeed = $"{ConvertTool.ConvertByteToHumanRead(ns.UploadSpeed)}/Sec";
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[2].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[2].Cells[1].Value = uploadSpeed);
 
-                string downloadSpeed = $"{ConvertTool.ConvertByteToHumanRead(ps.DownloadSpeed)}/Sec";
-                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[3].Cells[1].Style.ForeColor = Color.DodgerBlue);
-                this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[3].Cells[1].Value = downloadSpeed);
+                    string downloadSpeed = $"{ConvertTool.ConvertByteToHumanRead(ns.DownloadSpeed)}/Sec";
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[3].Cells[1].Style.ForeColor = Color.DodgerBlue);
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[3].Cells[1].Value = downloadSpeed);
 
+                    string maxUploadSpeed = $"{ConvertTool.ConvertByteToHumanRead(ns.MaxUploadSpeed)}/Sec";
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[4].Cells[1].Style.ForeColor = Color.MediumSeaGreen);
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[4].Cells[1].Value = maxUploadSpeed);
+
+                    string maxDownloadSpeed = $"{ConvertTool.ConvertByteToHumanRead(ns.MaxDownloadSpeed)}/Sec";
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[5].Cells[1].Style.ForeColor = Color.MediumSeaGreen);
+                    this.InvokeIt(() => CustomDataGridViewStatusTop.Rows[5].Cells[1].Value = maxDownloadSpeed);
+                }
+                
                 await Task.Delay(300);
             }
         });
@@ -120,26 +129,29 @@ public partial class FormProcessMonitor : Form
 
                 // Show Connected Devices
                 bool showConnectedDevices = false;
-                List<ProcessMonitor.ConnectedDevices> cdl = ps.ConnectedDevices;
-                if (cdl.Any() && showConnectedDevices)
+                if (showConnectedDevices)
                 {
-                    string cd0 = $"{NL} Connected Devices:{NL}";
-                    this.InvokeIt(() => logDown.AppendText(cd0, Color.LightGray));
-
-                    for (int n = 0; n < cdl.Count; n++)
+                    List<ProcessMonitor.ConnectedDevices> cdl = FormMain.MonitorProcess.GetConnectedDevices();
+                    if (cdl.Any())
                     {
-                        ProcessMonitor.ConnectedDevices cd = cdl[n];
+                        string cd0 = $"{NL} Connected Devices:{NL}";
+                        this.InvokeIt(() => logDown.AppendText(cd0, Color.LightGray));
 
-                        string cd1 = $" {cd.DeviceIP}";
-                        string cd2 = " Connected to ";
-                        string cd3 = $"{cd.ProcessName}{NL}";
+                        for (int n = 0; n < cdl.Count; n++)
+                        {
+                            ProcessMonitor.ConnectedDevices cd = cdl[n];
 
-                        this.InvokeIt(() => logDown.AppendText(cd1, Color.DodgerBlue));
-                        this.InvokeIt(() => logDown.AppendText(cd2, Color.LightGray));
-                        this.InvokeIt(() => logDown.AppendText(cd3, Color.DodgerBlue));
+                            string cd1 = $" {cd.DeviceIP}";
+                            string cd2 = " Connected to ";
+                            string cd3 = $"{cd.ProcessName}{NL}";
+
+                            this.InvokeIt(() => logDown.AppendText(cd1, Color.DodgerBlue));
+                            this.InvokeIt(() => logDown.AppendText(cd2, Color.LightGray));
+                            this.InvokeIt(() => logDown.AppendText(cd3, Color.DodgerBlue));
+                        }
                     }
                 }
-
+                
                 await Task.Delay(4000);
             }
         });
@@ -151,7 +163,7 @@ public partial class FormProcessMonitor : Form
         dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
         dgv.BorderStyle = BorderStyle.FixedSingle;
         List<DataGridViewRow> rList = new();
-        for (int n = 0; n < 4; n++)
+        for (int n = 0; n < 6; n++)
         {
             DataGridViewRow row = new();
             row.CreateCells(dgv, "cell0", "cell1");
@@ -163,6 +175,8 @@ public partial class FormProcessMonitor : Form
                 1 => "Data Received",
                 2 => "Upload Speed",
                 3 => "Download Speed",
+                4 => "Max Upload Speed",
+                5 => "Max Download Speed",
                 _ => string.Empty
             };
 

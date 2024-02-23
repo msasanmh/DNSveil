@@ -118,8 +118,8 @@ public partial class FormMain
                 if (CustomCheckBoxProxyEnableSSL.Tag == null)
                 {
                     CustomCheckBoxProxyEnableSSL.Checked = false;
-                    if (!CustomCheckBoxPDpiEnableDpiBypass.Enabled)
-                        CustomCheckBoxPDpiEnableDpiBypass.Enabled = true;
+                    if (!CustomCheckBoxPDpiEnableFragment.Enabled)
+                        CustomCheckBoxPDpiEnableFragment.Enabled = true;
                 }
                 CustomCheckBoxProxyEnableSSL.Tag = null;
             });

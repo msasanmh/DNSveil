@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MsmhToolsClass;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace MsmhToolsWinFormsClass;
@@ -9,9 +10,9 @@ public static class Controllers
     public static List<Control> GetAllControls(Control control)
     {
         List<Control> listC = new();
-        GetAllSubControlsByType(control);
+        getAllSubControlsByType(control);
 
-        void GetAllSubControlsByType(Control control)
+        void getAllSubControlsByType(Control control)
         {
             listC.Add(control);
 
@@ -20,7 +21,7 @@ public static class Controllers
                 for (int n = 0; n < control.Controls.Count; n++)
                 {
                     Control c = control.Controls[n];
-                    GetAllSubControlsByType(c);
+                    getAllSubControlsByType(c);
                 }
             }
         }
@@ -30,9 +31,9 @@ public static class Controllers
     public static List<Control> GetAllChildControls(Control control)
     {
         List<Control> listC = new();
-        GetAllSubControlsByType(control);
+        getAllSubControlsByType(control);
 
-        void GetAllSubControlsByType(Control control)
+        void getAllSubControlsByType(Control control)
         {
             if (control.HasChildren)
             {
@@ -40,7 +41,7 @@ public static class Controllers
                 {
                     Control c = control.Controls[n];
                     listC.Add(c);
-                    GetAllSubControlsByType(c);
+                    getAllSubControlsByType(c);
                 }
             }
         }
@@ -124,13 +125,67 @@ public static class Controllers
         return parent;
     }
     //-----------------------------------------------------------------------------------
+    public static void SetDarkControl(Form form)
+    {
+        form.InvokeIt(() =>
+        {
+            try
+            {
+                foreach (Control c in GetAllControls(form))
+                {
+                    if (c.IsHandleCreated)
+                        _ = Methods.SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Controllers_SetDarkControl: " + ex.Message);
+            }
+        });
+    }
+    //-----------------------------------------------------------------------------------
     public static void SetDarkControl(Control control)
     {
-        _ = Methods.SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
-        foreach (Control c in GetAllControls(control))
+        control.InvokeIt(() =>
         {
-            _ = Methods.SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
-        }
+            if (control.IsHandleCreated)
+                _ = Methods.SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
+            foreach (Control c in GetAllControls(control))
+            {
+                if (c.IsHandleCreated)
+                    _ = Methods.SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
+            }
+        });
+    }
+    //-----------------------------------------------------------------------------------
+    public static void InvalidateAll(Form form)
+    {
+        form.InvokeIt(() =>
+        {
+            try
+            {
+                foreach (Control c in GetAllControls(form)) c.Invalidate();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Controllers_InvalidateAll: " + ex.Message);
+            }
+        });
+    }
+    //-----------------------------------------------------------------------------------
+    public static void InvalidateAll(Control control)
+    {
+        control.InvokeIt(() =>
+        {
+            try
+            {
+                foreach (Control c in GetAllControls(control)) c.Invalidate();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Controllers_InvalidateAll: " + ex.Message);
+            }
+        });
     }
     //-----------------------------------------------------------------------------------
 }

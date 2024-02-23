@@ -183,13 +183,10 @@ public partial class FormMain
 
                 async Task<bool> bypassCFAsync(DPIBasicBypassMode bypassMode)
                 {
-                    // Get Bootsrap IP & Port
-                    string bootstrap = GetBootstrapSetting(out int bootstrapPort).ToString();
-
                     if (IsDisconnecting) return false;
 
                     // Start GoodbyeDPI
-                    DPIBasicBypass dpiBypass = new(bypassMode, CustomNumericUpDownSSLFragmentSize.Value, bootstrap, bootstrapPort);
+                    DPIBasicBypass dpiBypass = new(bypassMode, CustomNumericUpDownSSLFragmentSize.Value, loopback, camouflageDnsPort);
                     string args = $"{dpiBypass.Args} --blacklist \"{SecureDNS.DPIBlacklistFPPath}\"";
                     PIDGoodbyeDPIBypass = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
 

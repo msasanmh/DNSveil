@@ -128,7 +128,7 @@ internal class ProxyTunnel
         });
     }
 
-    public async void Open(ProxyProgram.UpStreamProxy upStreamProxyProgram)
+    public async void Open(ProxyProgram.Rules proxyRules, ProxyProgram.UpStreamProxy upStreamProxyProgram)
     {
         try
         {
@@ -159,7 +159,11 @@ internal class ProxyTunnel
                 bool applyUpStreamProxy = false;
                 if (Req.ApplyUpStreamProxy)
                 {
-                    ProxifiedTcpClient_ = await upStreamProxyProgram.Connect(Req.Address, Req.Port);
+                    if (!string.IsNullOrEmpty(Req.RulesResult.ProxyScheme))
+                        ProxifiedTcpClient_ = await proxyRules.ConnectToUpStream(Req);
+                    else
+                        ProxifiedTcpClient_ = await upStreamProxyProgram.Connect(Req.Address, Req.Port);
+
                     if (ProxifiedTcpClient_ != null)
                     {
                         applyUpStreamProxy = true;

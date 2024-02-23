@@ -31,21 +31,21 @@ public static partial class Program
     private const int DefaultDnsTimeoutSec = 3;
     private const int DefaultDnsTimeoutSecMin = 2;
     private const int DefaultDnsTimeoutSecMax = 10;
-    // Defaults DPIBypass
-    private const int DefaultDPIBypassBeforeSniChunks = 50;
-    private const int DefaultDPIBypassBeforeSniChunksMin = 1;
-    private const int DefaultDPIBypassBeforeSniChunksMax = 500;
-    private static readonly string DefaultDPIBypassChunkModeStr = Key.Programs.DpiBypass.Mode.Program.ChunkMode.SNI;
-    private const ProxyProgram.DPIBypass.ChunkMode DefaultDPIBypassChunkMode = ProxyProgram.DPIBypass.ChunkMode.SNI;
-    private const int DefaultDPIBypassSniChunks = 5;
-    private const int DefaultDPIBypassSniChunksMin = 1;
-    private const int DefaultDPIBypassSniChunksMax = 500;
-    private const int DefaultDPIBypassAntiPatternOffset = 2;
-    private const int DefaultDPIBypassAntiPatternOffsetMin = 0;
-    private const int DefaultDPIBypassAntiPatternOffsetMax = 50;
-    private const int DefaultDPIBypassFragmentDelay = 1;
-    private const int DefaultDPIBypassFragmentDelayMin = 0;
-    private const int DefaultDPIBypassFragmentDelayMax = 500;
+    // Defaults Fragment
+    private const int DefaultFragmentBeforeSniChunks = 50;
+    private const int DefaultFragmentBeforeSniChunksMin = 1;
+    private const int DefaultFragmentBeforeSniChunksMax = 500;
+    private static readonly string DefaultFragmentChunkModeStr = Key.Programs.Fragment.Mode.Program.ChunkMode.SNI;
+    private const ProxyProgram.Fragment.ChunkMode DefaultFragmentChunkMode = ProxyProgram.Fragment.ChunkMode.SNI;
+    private const int DefaultFragmentSniChunks = 5;
+    private const int DefaultFragmentSniChunksMin = 1;
+    private const int DefaultFragmentSniChunksMax = 500;
+    private const int DefaultFragmentAntiPatternOffset = 2;
+    private const int DefaultFragmentAntiPatternOffsetMin = 0;
+    private const int DefaultFragmentAntiPatternOffsetMax = 50;
+    private const int DefaultFragmentFragmentDelay = 1;
+    private const int DefaultFragmentFragmentDelayMin = 0;
+    private const int DefaultFragmentFragmentDelayMax = 500;
     // Defaults UpStreamProxy
     private const int DefaultUpStreamProxyPortMin = 1;
     private const int DefaultUpStreamProxyPortMax = 65535;
@@ -55,13 +55,10 @@ public static partial class Program
     private static readonly ProxySettings Settings = new();
     private static readonly SettingsSSL SettingsSSL_ = new(false);
     private static MsmhProxyServer ProxyServer { get; set; } = new();
-    private static ProxyProgram.DPIBypass DpiBypassStaticProgram { get; set; } = new();
-    private static ProxyProgram.UpStreamProxy UpStreamProxyProgram { get; set; } = new();
     private static ProxyProgram.Dns DnsProgram { get; set; } = new();
-    private static ProxyProgram.FakeDns FakeDnsProgram { get; set; } = new();
-    private static ProxyProgram.FakeSni FakeSniProgram { get; set; } = new();
-    private static ProxyProgram.BlackWhiteList BWListProgram { get; set; } = new();
-    private static ProxyProgram.DontBypass DontBypassProgram { get; set; } = new();
+    private static ProxyProgram.Fragment FragmentStaticProgram { get; set; } = new();
+    private static ProxyProgram.UpStreamProxy UpStreamProxyProgram { get; set; } = new();
+    private static ProxyProgram.Rules RulesProgram { get; set; } = new();
 
     private static readonly Stopwatch StopWatchShowRequests = new();
     private static readonly Stopwatch StopWatchShowChunkDetails = new();
@@ -112,11 +109,11 @@ public static partial class Program
         }
 
         // OnChunkDetailsReceived
-        DpiBypassStaticProgram.OnChunkDetailsReceived -= DpiBypassStaticProgram_OnChunkDetailsReceived;
-        DpiBypassStaticProgram.OnChunkDetailsReceived += DpiBypassStaticProgram_OnChunkDetailsReceived;
-        static void DpiBypassStaticProgram_OnChunkDetailsReceived(object? sender, EventArgs e)
+        FragmentStaticProgram.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
+        FragmentStaticProgram.OnChunkDetailsReceived += FragmentStaticProgram_OnChunkDetailsReceived;
+        static void FragmentStaticProgram_OnChunkDetailsReceived(object? sender, EventArgs e)
         {
-            if (WriteChunkDetailsToLog && ProxyServer.IsRunning && ProxyServer.IsDpiBypassActive)
+            if (WriteChunkDetailsToLog && ProxyServer.IsRunning && ProxyServer.IsFragmentActive)
                 if (sender is string msg)
                 {
                     if (!StopWatchShowChunkDetails.IsRunning) StopWatchShowChunkDetails.Start();
@@ -173,16 +170,14 @@ public static partial class Program
         mainDetails += $"{ProxyServer.ListeningPort}|"; // 2
         mainDetails += $"{ProxyServer.ActiveTunnels}|"; // 3
         mainDetails += $"{ProxyServer.MaxRequests}|"; // 4
-        mainDetails += $"{ProxyServer.IsDpiBypassActive}|"; // 5
-        mainDetails += $"{MsmhProxyServer.StaticDPIBypassProgram.DPIBypassMode}|"; // 6
-        mainDetails += $"{ProxyServer.DPIBypassProgram.DPIBypassMode}|"; // 7
-        mainDetails += $"{ProxyServer.UpStreamProxyProgram.UpStreamMode}|"; // 8
-        mainDetails += $"{ProxyServer.DNSProgram.DNSMode}|"; // 9
-        mainDetails += $"{ProxyServer.FakeDNSProgram.FakeDnsMode}|"; // 10
-        mainDetails += $"{ProxyServer.BWListProgram.ListMode}|"; // 11
-        mainDetails += $"{ProxyServer.DontBypassProgram.DontBypassMode}|"; // 12
-        mainDetails += $"{ProxyServer.SettingsSSL_.EnableSSL}|"; // 13
-        mainDetails += $"{ProxyServer.SettingsSSL_.ChangeSni}"; // 14
+        mainDetails += $"{ProxyServer.SettingsSSL_.EnableSSL}|"; // 5
+        mainDetails += $"{ProxyServer.SettingsSSL_.ChangeSni}|"; // 6
+        mainDetails += $"{ProxyServer.DNSProgram.DNSMode}|"; // 7
+        mainDetails += $"{ProxyServer.IsFragmentActive}|"; // 8
+        mainDetails += $"{MsmhProxyServer.StaticFragmentProgram.FragmentMode}|"; // 9
+        mainDetails += $"{ProxyServer.FragmentProgram.FragmentMode}|"; // 10
+        mainDetails += $"{ProxyServer.UpStreamProxyProgram.UpStreamMode}|"; // 11
+        mainDetails += $"{ProxyServer.RulesProgram.RulesMode}|"; // 12
 
         WriteToStdout(mainDetails);
     }
@@ -255,19 +250,6 @@ public static partial class Program
         LoadCommands.AddCommand(baseCmd, cmd);
     }
 
-    private static void ShowBwListMsg()
-    {
-        WriteToStdout($"\n{Key.Programs.BwList.Name} Mode: {BWListProgram.ListMode}", ConsoleColor.Green);
-        if (BWListProgram.ListMode != ProxyProgram.BlackWhiteList.Mode.Disable)
-            WriteToStdout($"Rules:\n{BWListProgram.PathOrText}", ConsoleColor.Green);
-
-        // Save Command To List
-        string baseCmd = $"{Key.Programs.Name} {Key.Programs.BwList.Name}";
-        string cmd = $"{baseCmd} -{Key.Programs.BwList.Mode.Name}={BWListProgram.ListMode}";
-        cmd += $" -{Key.Programs.BwList.PathOrText}=\"{BWListProgram.PathOrText.Replace(Environment.NewLine, "\\n")}\"";
-        LoadCommands.AddCommand(baseCmd, cmd);
-    }
-
     private static void ShowDnsMsg()
     {
         string result = $"\n{Key.Programs.Dns.Name} Mode: {DnsProgram.DNSMode}";
@@ -315,66 +297,40 @@ public static partial class Program
         LoadCommands.AddCommand(baseCmd, cmd);
     }
 
-    private static void ShowDontBypassMsg()
+    private static void ShowFragmentMsg()
     {
-        WriteToStdout($"\n{Key.Programs.DontBypass.Name} Mode: {DontBypassProgram.DontBypassMode}", ConsoleColor.Green);
-        if (DontBypassProgram.DontBypassMode != ProxyProgram.DontBypass.Mode.Disable)
-            WriteToStdout($"Rules:\n{DontBypassProgram.PathOrText}", ConsoleColor.Green);
-
-        // Save Command To List
-        string baseCmd = $"{Key.Programs.Name} {Key.Programs.DontBypass.Name}";
-        string cmd = $"{baseCmd} -{Key.Programs.DontBypass.Mode.Name}={DontBypassProgram.DontBypassMode}";
-        cmd += $" -{Key.Programs.DontBypass.PathOrText}=\"{DontBypassProgram.PathOrText.Replace(Environment.NewLine, "\\n")}\"";
-        LoadCommands.AddCommand(baseCmd, cmd);
-    }
-
-    private static void ShowDpiBypassMsg()
-    {
-        string result = $"\n{Key.Programs.DpiBypass.Name} Mode: {DpiBypassStaticProgram.DPIBypassMode}";
-        if (DpiBypassStaticProgram.DPIBypassMode == ProxyProgram.DPIBypass.Mode.Program)
+        string result = $"\n{Key.Programs.Fragment.Name} Mode: {FragmentStaticProgram.FragmentMode}";
+        if (FragmentStaticProgram.FragmentMode == ProxyProgram.Fragment.Mode.Program)
         {
-            result += $"\nBefore Sni Chunks: {DpiBypassStaticProgram.BeforeSniChunks}";
-            result += $"\nChunks Mode: {DpiBypassStaticProgram.DPIChunkMode}";
-            result += $"\n\"{DpiBypassStaticProgram.DPIChunkMode}\" Chunks: {DpiBypassStaticProgram.SniChunks}";
-            result += $"\nAnti-Pattern Offset: {DpiBypassStaticProgram.AntiPatternOffset} Chunks";
-            result += $"\nFragment Delay: {DpiBypassStaticProgram.FragmentDelay} ms";
+            result += $"\nBefore Sni Chunks: {FragmentStaticProgram.BeforeSniChunks}";
+            result += $"\nChunks Mode: {FragmentStaticProgram.DPIChunkMode}";
+            result += $"\n\"{FragmentStaticProgram.DPIChunkMode}\" Chunks: {FragmentStaticProgram.SniChunks}";
+            result += $"\nAnti-Pattern Offset: {FragmentStaticProgram.AntiPatternOffset} Chunks";
+            result += $"\nFragment Delay: {FragmentStaticProgram.FragmentDelay} ms";
         }
         WriteToStdout(result, ConsoleColor.Green);
 
         // Save Command To List
-        string baseCmd = $"{Key.Programs.Name} {Key.Programs.DpiBypass.Name}";
-        string cmd = $"{baseCmd} -{Key.Programs.DpiBypass.Mode.Name}={DpiBypassStaticProgram.DPIBypassMode}";
-        cmd += $" -{Key.Programs.DpiBypass.Mode.Program.BeforeSniChunks}={DpiBypassStaticProgram.BeforeSniChunks}";
-        cmd += $" -{Key.Programs.DpiBypass.Mode.Program.ChunkMode.Name}={DpiBypassStaticProgram.DPIChunkMode}";
-        cmd += $" -{Key.Programs.DpiBypass.Mode.Program.SniChunks}={DpiBypassStaticProgram.SniChunks}";
-        cmd += $" -{Key.Programs.DpiBypass.Mode.Program.AntiPatternOffset}={DpiBypassStaticProgram.AntiPatternOffset}";
-        cmd += $" -{Key.Programs.DpiBypass.Mode.Program.FragmentDelay}={DpiBypassStaticProgram.FragmentDelay}";
+        string baseCmd = $"{Key.Programs.Name} {Key.Programs.Fragment.Name}";
+        string cmd = $"{baseCmd} -{Key.Programs.Fragment.Mode.Name}={FragmentStaticProgram.FragmentMode}";
+        cmd += $" -{Key.Programs.Fragment.Mode.Program.BeforeSniChunks}={FragmentStaticProgram.BeforeSniChunks}";
+        cmd += $" -{Key.Programs.Fragment.Mode.Program.ChunkMode.Name}={FragmentStaticProgram.DPIChunkMode}";
+        cmd += $" -{Key.Programs.Fragment.Mode.Program.SniChunks}={FragmentStaticProgram.SniChunks}";
+        cmd += $" -{Key.Programs.Fragment.Mode.Program.AntiPatternOffset}={FragmentStaticProgram.AntiPatternOffset}";
+        cmd += $" -{Key.Programs.Fragment.Mode.Program.FragmentDelay}={FragmentStaticProgram.FragmentDelay}";
         LoadCommands.AddCommand(baseCmd, cmd);
     }
 
-    private static void ShowFakeDnsMsg()
+    private static void ShowRulesMsg()
     {
-        WriteToStdout($"\n{Key.Programs.FakeDns.Name} Mode: {FakeDnsProgram.FakeDnsMode}", ConsoleColor.Green);
-        if (FakeDnsProgram.FakeDnsMode != ProxyProgram.FakeDns.Mode.Disable)
-            WriteToStdout($"Rules:\n{FakeDnsProgram.PathOrText}", ConsoleColor.Green);
+        WriteToStdout($"\n{Key.Programs.Rules.Name} Mode: {RulesProgram.RulesMode}", ConsoleColor.Green);
+        if (RulesProgram.RulesMode != ProxyProgram.Rules.Mode.Disable)
+            WriteToStdout($"Rules:\n{RulesProgram.PathOrText}", ConsoleColor.Green);
 
         // Save Command To List
-        string baseCmd = $"{Key.Programs.Name} {Key.Programs.FakeDns.Name}";
-        string cmd = $"{baseCmd} -{Key.Programs.FakeDns.Mode.Name}={FakeDnsProgram.FakeDnsMode}";
-        cmd += $" -{Key.Programs.FakeDns.PathOrText}=\"{FakeDnsProgram.PathOrText.Replace(Environment.NewLine, "\\n")}\"";
-        LoadCommands.AddCommand(baseCmd, cmd);
-    }
-
-    private static void ShowFakeSniMsg()
-    {
-        WriteToStdout($"\n{Key.Programs.FakeSni.Name} Mode: {FakeSniProgram.FakeSniMode}", ConsoleColor.Green);
-        if (FakeSniProgram.FakeSniMode != ProxyProgram.FakeSni.Mode.Disable)
-            WriteToStdout($"Rules:\n{FakeSniProgram.PathOrText}", ConsoleColor.Green);
-
-        // Save Command To List
-        string baseCmd = $"{Key.Programs.Name} {Key.Programs.FakeSni.Name}";
-        string cmd = $"{baseCmd} -{Key.Programs.FakeSni.Mode.Name}={FakeSniProgram.FakeSniMode}";
-        cmd += $" -{Key.Programs.FakeSni.PathOrText}=\"{FakeSniProgram.PathOrText.Replace(Environment.NewLine, "\\n")}\"";
+        string baseCmd = $"{Key.Programs.Name} {Key.Programs.Rules.Name}";
+        string cmd = $"{baseCmd} -{Key.Programs.Rules.Mode.Name}={RulesProgram.RulesMode}";
+        cmd += $" -{Key.Programs.Rules.PathOrText}=\"{RulesProgram.PathOrText.Replace(Environment.NewLine, "\\n")}\"";
         LoadCommands.AddCommand(baseCmd, cmd);
     }
 
@@ -404,13 +360,10 @@ public static partial class Program
         ShowParentProcessMsg();
         ShowSettingsMsg();
         ShowSettingsSSLMsg();
-        ShowBwListMsg();
         ShowDnsMsg();
-        ShowDontBypassMsg();
-        ShowDpiBypassMsg();
-        ShowFakeDnsMsg();
-        ShowFakeSniMsg();
+        ShowFragmentMsg();
         ShowUpStreamProxyMsg();
+        ShowRulesMsg();
     }
 
     private static void WriteToStdout(string msg, ConsoleColor consoleColor = ConsoleColor.White)

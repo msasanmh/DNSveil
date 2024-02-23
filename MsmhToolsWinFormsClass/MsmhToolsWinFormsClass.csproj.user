@@ -26,6 +26,9 @@
     <Compile Update="CustomControls\CustomLabel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="CustomControls\CustomListBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Update="CustomControls\CustomMenuStrip.cs">
       <SubType>Component</SubType>
     </Compile>

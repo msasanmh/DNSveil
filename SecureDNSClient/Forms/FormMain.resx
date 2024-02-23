@@ -123,6 +123,22 @@
   <metadata name="ColumnNicStatusText.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>
+  <data name="CustomLabelSettingProxyRules.Text" xml:space="preserve">
+    <value>Syntax example:
+
+ // Fake DNS:
+ dns.google.com|8.8.8.8;
+ // DNS:
+ *.example.com|dns:udp://1.1.1.1;
+ // Fake SNI:
+ youtube.com|sni:google.com;
+ // Block a domain:
+ example.com|-;
+ // Don't Bypass
+ stackoverflow.com|--;
+ // Mix Rules:
+ *|dns:tcp://8.8.8.8:53; sni:speedtest.com;   </value>
+  </data>
   <metadata name="ColumnStatusName.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>

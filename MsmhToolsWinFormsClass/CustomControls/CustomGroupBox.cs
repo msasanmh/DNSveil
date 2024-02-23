@@ -1,4 +1,5 @@
 ﻿using MsmhToolsClass;
+using MsmhToolsWinFormsClass;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -100,6 +101,7 @@ namespace CustomControls
 
             Application.Idle += Application_Idle;
             HandleCreated += CustomGroupBox_HandleCreated;
+            Invalidated += CustomGroupBox_Invalidated;
             LocationChanged += CustomGroupBox_LocationChanged;
             Move += CustomGroupBox_Move;
             ControlAdded += CustomGroupBox_ControlAdded;
@@ -157,6 +159,12 @@ namespace CustomControls
         private void CustomGroupBox_HandleCreated(object? sender, EventArgs e)
         {
             Invalidate();
+        }
+
+        private void CustomGroupBox_Invalidated(object? sender, InvalidateEventArgs e)
+        {
+            if (BackColor.DarkOrLight() == "Dark")
+                this.SetDarkControl();
         }
 
         private void CustomGroupBox_LocationChanged(object? sender, EventArgs e)

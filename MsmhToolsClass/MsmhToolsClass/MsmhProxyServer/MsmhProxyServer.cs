@@ -9,18 +9,25 @@ namespace MsmhToolsClass.MsmhProxyServer;
 
 public partial class MsmhProxyServer
 {
-    //======================================= DPI Bypass Support: Static
-    public static ProxyProgram.DPIBypass StaticDPIBypassProgram { get; set; } = new();
-    public void EnableStaticDPIBypass(ProxyProgram.DPIBypass dpiBypassProgram)
+    //======================================= DNS Support
+    public ProxyProgram.Dns DNSProgram = new();
+    public void EnableDNS(ProxyProgram.Dns dnsProgram)
     {
-        StaticDPIBypassProgram = dpiBypassProgram;
+        DNSProgram = dnsProgram;
+    }
+
+    //======================================= Fragment Support: Static
+    public static ProxyProgram.Fragment StaticFragmentProgram { get; set; } = new();
+    public void EnableStaticFragment(ProxyProgram.Fragment fragmentProgram)
+    {
+        StaticFragmentProgram = fragmentProgram;
     }
 
     //--- Constant
-    public ProxyProgram.DPIBypass DPIBypassProgram = new();
-    public void EnableDPIBypass(ProxyProgram.DPIBypass dpiBypassProgram)
+    public ProxyProgram.Fragment FragmentProgram = new();
+    public void EnableFragment(ProxyProgram.Fragment fragmentProgram)
     {
-        DPIBypassProgram = dpiBypassProgram;
+        FragmentProgram = fragmentProgram;
     }
 
     //======================================= UpStream Proxy Support
@@ -30,39 +37,11 @@ public partial class MsmhProxyServer
         UpStreamProxyProgram = upStreamProxyProgram;
     }
 
-    //======================================= DNS Support
-    public ProxyProgram.Dns DNSProgram = new();
-    public void EnableDNS(ProxyProgram.Dns dnsProgram)
+    //======================================= Rules Support
+    public ProxyProgram.Rules RulesProgram = new();
+    public void EnableRules(ProxyProgram.Rules rules)
     {
-        DNSProgram = dnsProgram;
-    }
-
-    //======================================= Fake DNS Support
-    public ProxyProgram.FakeDns FakeDNSProgram = new();
-    public void EnableFakeDNS(ProxyProgram.FakeDns fakeDnsProgram)
-    {
-        FakeDNSProgram = fakeDnsProgram;
-    }
-
-    //======================================= Fake SNI Support
-    public ProxyProgram.FakeSni FakeSNIProgram = new();
-    public void EnableFakeSNI(ProxyProgram.FakeSni fakeSniProgram)
-    {
-        FakeSNIProgram = fakeSniProgram;
-    }
-
-    //======================================= Black White List Support
-    public ProxyProgram.BlackWhiteList BWListProgram = new();
-    public void EnableBlackWhiteList(ProxyProgram.BlackWhiteList blackWhiteListProgram)
-    {
-        BWListProgram = blackWhiteListProgram;
-    }
-
-    //======================================= DontBypass Support
-    public ProxyProgram.DontBypass DontBypassProgram = new();
-    public void EnableDontBypass(ProxyProgram.DontBypass dontBypassProgram)
-    {
-        DontBypassProgram = dontBypassProgram;
+        RulesProgram = rules;
     }
 
     //======================================= Start Proxy
@@ -204,6 +183,12 @@ public partial class MsmhProxyServer
         {
             KillAll();
         }
+
+        if (CpuUsage >= 95f)
+        {
+            try { Environment.Exit(0); } catch (Exception) { }
+            ProcessManager.KillProcessByPID(Environment.ProcessId);
+        }
     }
 
     /// <summary>
@@ -257,9 +242,9 @@ public partial class MsmhProxyServer
         get => ProxySettings_.ListenerPort;
     }
 
-    public bool IsDpiBypassActive
+    public bool IsFragmentActive
     {
-        get => DPIBypassProgram.DPIBypassMode != ProxyProgram.DPIBypass.Mode.Disable || StaticDPIBypassProgram.DPIBypassMode != ProxyProgram.DPIBypass.Mode.Disable;
+        get => FragmentProgram.FragmentMode != ProxyProgram.Fragment.Mode.Disable || StaticFragmentProgram.FragmentMode != ProxyProgram.Fragment.Mode.Disable;
     }
 
     public int ActiveTunnels
@@ -317,9 +302,7 @@ public partial class MsmhProxyServer
 
     private async void ClientConnected(TcpClient tcpClient)
     {
-        EndPoint? lep = tcpClient.Client.LocalEndPoint;
-        EndPoint? rep = tcpClient.Client.RemoteEndPoint;
-        if (lep == null || rep == null)
+        if (tcpClient.Client.LocalEndPoint is not IPEndPoint lep || tcpClient.Client.RemoteEndPoint is not IPEndPoint rep)
         {
             try { tcpClient.Dispose(); } catch (Exception) { }
             return;
@@ -385,8 +368,8 @@ public partial class MsmhProxyServer
             req = await ProxyRequest.RequestSocks4Remote(proxyClient, getFirstPacket.Packet, CTS.Token);
         else if (getFirstPacket.ProxyName == Proxy.Name.Socks5)
             req = await ProxyRequest.RequestSocks5Remote(proxyClient, getFirstPacket.Packet, CTS.Token);
-        
-        req = await ApplyPrograms(req);
+
+        req = await ApplyPrograms(lep.Address, req);
         
         if (req == null)
         {
@@ -396,7 +379,7 @@ public partial class MsmhProxyServer
 
         // Create Tunnel
         ProxyTunnel proxyTunnel = new(connectionId, proxyClient, req, ProxySettings_, SettingsSSL_);
-        proxyTunnel.Open(UpStreamProxyProgram);
+        proxyTunnel.Open(RulesProgram, UpStreamProxyProgram);
 
         proxyTunnel.OnTunnelDisconnected += ProxyTunnel_OnTunnelDisconnected;
         proxyTunnel.OnDataReceived += ProxyTunnel_OnDataReceived;
@@ -442,7 +425,7 @@ public partial class MsmhProxyServer
                 t.KillOnTimeout.Restart();
                 if (e.Buffer.Length > 0)
                 {
-                    if (t.Req.ApplyDpiBypass)
+                    if (t.Req.ApplyFragment)
                         Send(e.Buffer, t);
                     else
                         await t.RemoteClient.SendAsync(e.Buffer);
@@ -531,15 +514,15 @@ public partial class MsmhProxyServer
         {
             if (t.RemoteClient.Socket_ != null && t.RemoteClient.Socket_.Connected)
             {
-                if (DPIBypassProgram.DPIBypassMode == ProxyProgram.DPIBypass.Mode.Disable)
+                if (FragmentProgram.FragmentMode == ProxyProgram.Fragment.Mode.Disable)
                 {
                     // Static
-                    ProxyProgram.DPIBypass bp = StaticDPIBypassProgram;
+                    ProxyProgram.Fragment bp = StaticFragmentProgram;
                     bp.DestHostname = t.Req.Address;
                     bp.DestPort = t.Req.Port;
-                    if (bp.DPIBypassMode == ProxyProgram.DPIBypass.Mode.Program)
+                    if (bp.FragmentMode == ProxyProgram.Fragment.Mode.Program)
                     {
-                        ProxyProgram.DPIBypass.ProgramMode programMode = new(data, t.RemoteClient.Socket_);
+                        ProxyProgram.Fragment.ProgramMode programMode = new(data, t.RemoteClient.Socket_);
                         programMode.Send(bp);
                     }
                     else
@@ -548,10 +531,10 @@ public partial class MsmhProxyServer
                 else
                 {
                     // Const
-                    ProxyProgram.DPIBypass bp = DPIBypassProgram;
+                    ProxyProgram.Fragment bp = FragmentProgram;
                     bp.DestHostname = t.Req.Address;
                     bp.DestPort = t.Req.Port;
-                    ProxyProgram.DPIBypass.ProgramMode programMode = new(data, t.RemoteClient.Socket_);
+                    ProxyProgram.Fragment.ProgramMode programMode = new(data, t.RemoteClient.Socket_);
                     programMode.Send(bp);
                 }
             }

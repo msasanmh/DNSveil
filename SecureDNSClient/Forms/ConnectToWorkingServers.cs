@@ -10,7 +10,7 @@ public partial class FormMain
     private async Task<int> ConnectToWorkingServersAsync()
     {
         // Write Check first to log
-        if (NumberOfWorkingServers < 1 && SavedDnsList.Count < 1)
+        if (!WorkingDnsList.Any())
         {
             string msgCheck = "Check servers first." + NL;
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCheck, Color.IndianRed));
@@ -22,7 +22,7 @@ public partial class FormMain
 
         // Sort by latency
         if (WorkingDnsList.Count > 1)
-            WorkingDnsList = WorkingDnsList.OrderBy(t => t.Item1).ToList();
+            WorkingDnsList = WorkingDnsList.OrderBy(x => x.Latency).ToList();
 
         // Get number of max servers
         int maxServers = GetMaxServersToConnectSetting();
@@ -54,8 +54,8 @@ public partial class FormMain
         {
             if (IsDisconnecting) return -1;
 
-            Tuple<long, string> latencyHost = WorkingDnsList[n];
-            string host = latencyHost.Item2;
+            DnsInfo dnsInfo = WorkingDnsList[n];
+            string host = dnsInfo.DNS;
 
             // Add host to UsingDnsList
             savedDnsList.Add(host);
@@ -63,9 +63,8 @@ public partial class FormMain
             // Add encoded host to SavedEncodedDnsList
             savedEncodedDnsList.Add(EncodingTool.GetSHA512(host));
 
-            // Update Current Using Custom Servers
-            if (!IsBuiltinMode)
-                CurrentUsingCustomServersList.Add(host);
+            // Update Current Using DNS Servers
+            CurrentUsingCustomServersList.Add(dnsInfo);
 
             hosts += " -u " + host;
             theDll.WriteLine(host);

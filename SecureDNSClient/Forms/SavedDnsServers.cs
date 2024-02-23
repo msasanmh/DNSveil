@@ -95,45 +95,51 @@ public partial class FormMain
 
             List<string> savedEncodedDnsList = new();
             savedEncodedDnsList.LoadFromFile(SecureDNS.SavedEncodedDnsPath, true, true);
-            savedEncodedDnsList = savedEncodedDnsList.RemoveDuplicates();
+            savedEncodedDnsList = savedEncodedDnsList.Distinct().ToList();
 
             if (savedEncodedDnsList.Any())
             {
-                // Built-in or Custom
-                bool builtInMode = CustomRadioButtonBuiltIn.Checked;
+                List<ReadDnsResult> rdrList = new();
 
-                string? fileContent = string.Empty;
-                if (builtInMode)
-                    fileContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.txt", Assembly.GetExecutingAssembly());
-                else
+                // Get Built-In Servers
+                string xmlContentBuiltIn = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
+                if (XmlTool.IsValidXML(xmlContentBuiltIn))
                 {
-                    // Check if Custom Servers XML is NOT Valid
-                    if (!XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath)) return;
-
-                    fileContent = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, null);
+                    List<ReadDnsResult> rdrListBuiltIn = await ReadCustomServersXml(xmlContentBuiltIn, new CheckRequest { CheckMode = CheckMode.BuiltIn }, false);
+                    if (rdrListBuiltIn.Any()) rdrList = rdrList.Concat(rdrListBuiltIn).ToList();
+                }
+                
+                // Get Custom Servers
+                if (XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath))
+                {
+                    List<ReadDnsResult> rdrListCustom = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, new CheckRequest { CheckMode = CheckMode.CustomServers });
+                    if (rdrListCustom.Any()) rdrList = rdrList.Concat(rdrListCustom).ToList();
                 }
 
-                if (!string.IsNullOrEmpty(fileContent) && !string.IsNullOrWhiteSpace(fileContent))
+                if (rdrList.Any())
                 {
-                    List<string> dnsList = fileContent.SplitToLines();
+                    // DeDup Dns List
+                    rdrList = rdrList.DistinctBy(x => x.DNS).ToList();
 
                     for (int n = 0; n < savedEncodedDnsList.Count; n++)
                     {
                         string encodedDns = savedEncodedDnsList[n];
-                        for (int i = 0; i < dnsList.Count; i++)
+                        for (int i = 0; i < rdrList.Count; i++)
                         {
-                            string dns = dnsList[i];
-                            if (EncodingTool.GetSHA512(dns).Equals(encodedDns))
+                            ReadDnsResult rdr = rdrList[i];
+                            if (EncodingTool.GetSHA512(rdr.DNS).Equals(encodedDns))
                             {
-                                SavedDnsList.Add(dns);
-                                WorkingDnsList.Add(new Tuple<long, string>(100, dns));
+                                SavedDnsList.Add(rdr.DNS);
+                                WorkingDnsList.Add(new DnsInfo { DNS = rdr.DNS, Latency = 0, CheckMode = CheckMode.SavedServers});
                                 break;
                             }
                         }
                     }
 
-                    WorkingDnsList = WorkingDnsList.RemoveDuplicates(); // not important
-                    SavedDnsList = SavedDnsList.RemoveDuplicates();
+                    // Update Status Long
+                    await UpdateStatusLong();
+
+                    SavedDnsList = SavedDnsList.Distinct().ToList();
                 }
             }
 
@@ -192,7 +198,7 @@ public partial class FormMain
 
         List<string> newSavedDnsList = new();
         List<string> newSavedEncodedDnsList = new();
-        List<Tuple<long, string>> newWorkingDnsList = new();
+        List<DnsInfo> newWorkingDnsList = new();
 
         // Check saved dns servers can work
         if (SavedDnsList.Any())
@@ -214,12 +220,12 @@ public partial class FormMain
                     await Parallel.ForEachAsync(list, async (dns, cancellationToken) =>
                     {
                         await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS + 500);
-                        if (checkDns.DnsLatency != -1)
+                        if (checkDns.IsDnsOnline)
                         {
                             newSavedDnsList.Add(dns);
                             newSavedEncodedDnsList.Add(EncodingTool.GetSHA512(dns));
                             if (updateWorkingServers)
-                                newWorkingDnsList.Add(new Tuple<long, string>(checkDns.DnsLatency, dns));
+                                newWorkingDnsList.Add(new DnsInfo { DNS = dns, Latency = checkDns.DnsLatency, CheckMode = CheckMode.SavedServers });
                         }
                     });
                 }
@@ -241,7 +247,7 @@ public partial class FormMain
                 WorkingDnsList = new(WorkingDnsList.Concat(newWorkingDnsList));
 
                 // Remove Duplicates
-                WorkingDnsList = new(WorkingDnsList.DistinctBy(x => x.Item2));
+                WorkingDnsList = new(WorkingDnsList.DistinctBy(x => x.DNS));
             }
         }
         
@@ -251,30 +257,50 @@ public partial class FormMain
         // Built-in or Custom
         bool builtInMode = CustomRadioButtonBuiltIn.Checked;
 
-        string? fileContent = string.Empty;
+        List<ReadDnsResult> rdrList = new();
+
         if (builtInMode)
         {
-            string? xmlContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
-            fileContent = await ReadCustomServersXml(xmlContent, null, false); // Built-In based on custom
+            // Get Built-In Servers
+            string xmlContentBuiltIn = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
+            if (XmlTool.IsValidXML(xmlContentBuiltIn))
+            {
+                List<ReadDnsResult> rdrListBuiltIn = await ReadCustomServersXml(xmlContentBuiltIn, new CheckRequest { CheckMode = CheckMode.BuiltIn }, false);
+                if (rdrListBuiltIn.Any()) rdrList = rdrListBuiltIn;
+            }
         }
         else
         {
-            FileDirectory.CreateEmptyFile(SecureDNS.CustomServersPath);
-            fileContent = await File.ReadAllTextAsync(SecureDNS.CustomServersPath);
+            // Get Custom Servers
+            if (XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath))
+            {
+                List<ReadDnsResult> rdrListCustom = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, new CheckRequest { CheckMode = CheckMode.CustomServers });
+                if (rdrListCustom.Any()) rdrList = rdrListCustom;
+            }
+
+            // If There is no Custom Servers Get Built-In
+            if (!rdrList.Any())
+            {
+                // Get Built-In Servers
+                string xmlContentBuiltIn = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
+                if (XmlTool.IsValidXML(xmlContentBuiltIn))
+                {
+                    List<ReadDnsResult> rdrListBuiltIn = await ReadCustomServersXml(xmlContentBuiltIn, new CheckRequest { CheckMode = CheckMode.BuiltIn }, false);
+                    if (rdrListBuiltIn.Any()) rdrList = rdrListBuiltIn;
+                }
+            }
         }
 
-        if (string.IsNullOrEmpty(fileContent) || string.IsNullOrWhiteSpace(fileContent)) return;
-
-        List<string> dnsList = fileContent.SplitToLines();
+        if (!rdrList.Any()) return;
 
         int currentServers = newSavedDnsList.Count;
-        for (int n = 0; n < dnsList.Count; n++)
+        for (int n = 0; n < rdrList.Count; n++)
         {
             if (!IsInternetOnline) break;
             if (IsCheckingStarted) break;
 
-            string dns = dnsList[n].Trim();
-            if (!string.IsNullOrEmpty(dns) && !string.IsNullOrWhiteSpace(dns))
+            string dns = rdrList[n].DNS.Trim();
+            if (!string.IsNullOrEmpty(dns))
             {
                 if (IsDnsProtocolSupported(dns))
                 {
@@ -296,7 +322,7 @@ public partial class FormMain
                             newSavedEncodedDnsList.Add(EncodingTool.GetSHA512(dns));
 
                             if (updateWorkingServers)
-                                newWorkingDnsList.Add(new Tuple<long, string>(checkDns.DnsLatency, dns));
+                                newWorkingDnsList.Add(new DnsInfo { DNS = dns, Latency = checkDns.DnsLatency, CheckMode = CheckMode.SavedServers });
 
                             currentServers++;
                             if (currentServers >= maxServers) break;
@@ -321,7 +347,10 @@ public partial class FormMain
                 WorkingDnsList = WorkingDnsList.Concat(newWorkingDnsList).ToList();
 
                 // Remove Duplicates
-                WorkingDnsList = WorkingDnsList.DistinctBy(x => x.Item2).ToList();
+                WorkingDnsList = WorkingDnsList.DistinctBy(x => x.DNS).ToList();
+
+                // Update Status Long
+                await UpdateStatusLong();
             }
 
             return;

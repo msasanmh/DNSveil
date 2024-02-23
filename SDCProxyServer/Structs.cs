@@ -31,21 +31,6 @@ public struct Key
     {
         public static readonly string Name = "Programs";
 
-        public readonly struct BwList
-        {
-            public static readonly string Name = "BwList";
-            public readonly struct Mode
-            {
-                public static readonly string Name = "Mode";
-                public static readonly string BlackListFile = "BlackListFile";
-                public static readonly string BlackListText = "BlackListText";
-                public static readonly string WhiteListFile = "WhiteListFile";
-                public static readonly string WhiteListText = "WhiteListText";
-                public static readonly string Disable = "Disable";
-            }
-            public static readonly string PathOrText = "PathOrText";
-        }
-
         public readonly struct Dns
         {
             public static readonly string Name = "Dns";
@@ -65,22 +50,9 @@ public struct Key
             public static readonly string CfIpRange = "CfIpRange";
         }
 
-        public readonly struct DontBypass
+        public readonly struct Fragment
         {
-            public static readonly string Name = "DontBypass";
-            public readonly struct Mode
-            {
-                public static readonly string Name = "Mode";
-                public static readonly string File = "File";
-                public static readonly string Text = "Text";
-                public static readonly string Disable = "Disable";
-            }
-            public static readonly string PathOrText = "PathOrText";
-        }
-
-        public readonly struct DpiBypass
-        {
-            public static readonly string Name = "DpiBypass";
+            public static readonly string Name = "Fragment";
             public readonly struct Mode
             {
                 public static readonly string Name = "Mode";
@@ -103,32 +75,6 @@ public struct Key
             }
         }
 
-        public readonly struct FakeDns
-        {
-            public static readonly string Name = "FakeDns";
-            public readonly struct Mode
-            {
-                public static readonly string Name = "Mode";
-                public static readonly string File = "File";
-                public static readonly string Text = "Text";
-                public static readonly string Disable = "Disable";
-            }
-            public static readonly string PathOrText = "PathOrText";
-        }
-
-        public readonly struct FakeSni
-        {
-            public static readonly string Name = "FakeSni";
-            public readonly struct Mode
-            {
-                public static readonly string Name = "Mode";
-                public static readonly string File = "File";
-                public static readonly string Text = "Text";
-                public static readonly string Disable = "Disable";
-            }
-            public static readonly string PathOrText = "PathOrText";
-        }
-
         public readonly struct UpStreamProxy
         {
             public static readonly string Name = "UpStreamProxy";
@@ -143,5 +89,19 @@ public struct Key
             public static readonly string Port = "Port";
             public static readonly string OnlyApplyToBlockedIPs = "OnlyApplyToBlockedIPs";
         }
+
+        public readonly struct Rules
+        {
+            public static readonly string Name = "Rules";
+            public readonly struct Mode
+            {
+                public static readonly string Name = "Mode";
+                public static readonly string File = "File";
+                public static readonly string Text = "Text";
+                public static readonly string Disable = "Disable";
+            }
+            public static readonly string PathOrText = "PathOrText";
+        }
+
     }
 }

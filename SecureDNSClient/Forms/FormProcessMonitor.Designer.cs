@@ -60,7 +60,7 @@
             SplitContainerMain.Panel2.Controls.Add(CustomRichTextBoxDown);
             SplitContainerMain.Panel2MinSize = 100;
             SplitContainerMain.Size = new Size(284, 361);
-            SplitContainerMain.SplitterDistance = 120;
+            SplitContainerMain.SplitterDistance = 150;
             SplitContainerMain.TabIndex = 1;
             // 
             // CustomDataGridViewStatusTop
@@ -74,7 +74,7 @@
             CustomDataGridViewStatusTop.ColumnHeadersBorder = true;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F);
             dataGridViewCellStyle1.ForeColor = Color.White;
             dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(73, 73, 73);
             dataGridViewCellStyle1.SelectionForeColor = Color.White;
@@ -85,7 +85,7 @@
             CustomDataGridViewStatusTop.Columns.AddRange(new DataGridViewColumn[] { ColumnStatusName, ColumnStatusText });
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = Color.DimGray;
-            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
             dataGridViewCellStyle2.ForeColor = Color.White;
             dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(97, 177, 255);
             dataGridViewCellStyle2.SelectionForeColor = Color.White;
@@ -107,7 +107,7 @@
             CustomDataGridViewStatusTop.ShowCellToolTips = false;
             CustomDataGridViewStatusTop.ShowEditingIcon = false;
             CustomDataGridViewStatusTop.ShowRowErrors = false;
-            CustomDataGridViewStatusTop.Size = new Size(284, 120);
+            CustomDataGridViewStatusTop.Size = new Size(284, 150);
             CustomDataGridViewStatusTop.TabIndex = 19;
             // 
             // ColumnStatusName
@@ -141,7 +141,7 @@
             CustomRichTextBoxDown.DetectUrls = false;
             CustomRichTextBoxDown.Dock = DockStyle.Fill;
             CustomRichTextBoxDown.EnableAutoDragDrop = false;
-            CustomRichTextBoxDown.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomRichTextBoxDown.Font = new Font("Segoe UI", 9F);
             CustomRichTextBoxDown.ForeColor = Color.White;
             CustomRichTextBoxDown.HideSelection = false;
             CustomRichTextBoxDown.Location = new Point(0, 0);
@@ -158,7 +158,7 @@
             CustomRichTextBoxDown.SelectionLength = 0;
             CustomRichTextBoxDown.SelectionStart = 0;
             CustomRichTextBoxDown.ShortcutsEnabled = true;
-            CustomRichTextBoxDown.Size = new Size(284, 237);
+            CustomRichTextBoxDown.Size = new Size(284, 207);
             CustomRichTextBoxDown.TabIndex = 0;
             CustomRichTextBoxDown.Texts = "";
             CustomRichTextBoxDown.UnderlinedStyle = false;

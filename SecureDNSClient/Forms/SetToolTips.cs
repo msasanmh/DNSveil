@@ -13,6 +13,9 @@ public partial class FormMain : Form
         string msgCS = "Manage Custom Servers.";
         CustomButtonEditCustomServers.SetToolTip(MainToolTip, "Info", msgCS);
 
+        string msgCH = "Right click to access more options.";
+        CustomButtonCheck.SetToolTip(MainToolTip, "Info", msgCH);
+
         string msgQC = "Right click to access more options.";
         CustomButtonQuickConnect.SetToolTip(MainToolTip, "Info", msgQC);
 

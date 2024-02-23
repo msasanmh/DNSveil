@@ -14,16 +14,16 @@ public partial class FormMain
     private bool IsQuickDisconnecting = false;
     private bool StopQuickConnect = false;
 
-    private async Task StartQuickConnect(string? groupName = null, bool reconnect = false)
+    private async Task StartQuickConnect(QuickConnectRequest qcRequest, bool reconnect = false)
     {
-        if (IsInAction(true, false, false, false, false, false, false, false, false, false, true)) return;
+        if (IsInAction(true, false, false, false, false, false, false, false, false, false, true, out _)) return;
 
         if (!IsQuickConnecting)
         {
             // Quick Connect
             IsQuickConnectWorking = true;
 
-            await QuickConnect(groupName);
+            await QuickConnect(qcRequest);
 
             // Benchmark Stop
             QuickConnectBenchmark.Stop();
@@ -31,7 +31,6 @@ public partial class FormMain
         }
         else
         {
-            // Cancel Quick Connect
             IsQuickConnectWorking = true;
 
             // Skip Check
@@ -42,6 +41,7 @@ public partial class FormMain
                 return;
             }
 
+            // Stop Quick Connect
             if (StopQuickConnect) return;
             StopQuickConnect = true;
             IsDisconnecting = true;
@@ -63,65 +63,35 @@ public partial class FormMain
 
             IsDisconnecting = false;
 
-            if (!reconnect)
-            {
-                Debug.WriteLine("It's Not Reconnect 1");
-                await DisconnectAll();
-
-                // Wait for full disconnect
-                QuickConnectTimeout.Restart();
-                Task wait2 = Task.Run(async () =>
-                {
-                    while (true)
-                    {
-                        if (IsExiting) break;
-                        if (!IsQuickConnecting && !IsCheckingStarted && !IsConnected && !IsConnecting && !IsDNSSet && !IsDNSSetting) break;
-                        if (QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
-                        await Task.Delay(100);
-                        IsQuickConnectWorking = true;
-                    }
-                });
-                await wait2.WaitAsync(CancellationToken.None);
-            }
+            if (!reconnect) await DisconnectAll();
 
             StopQuickConnect = false;
 
-            if (!reconnect)
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Quick Connect Stopped.{NL}", Color.MediumSeaGreen));
-
-            if (reconnect)
-                await QuickConnect(groupName);
+            if (reconnect) await QuickConnect(qcRequest);
 
             IsQuickConnectWorking = false;
         }
     }
 
-    private async Task QuickConnect(string? groupName = null)
+    private async Task QuickConnect(QuickConnectRequest qcRequest)
     {
         if (IsQuickConnecting) return;
         IsQuickConnecting = true;
         StopQuickConnect = false;
 
         // Delay Between tasks
-        int delay = 200;
+        int delay = 100;
 
         // Benchmark Start
         QuickConnectBenchmark.Restart();
 
-        // Get Connect Mode Settings
-        ConnectMode connectMode = ConnectMode.ConnectToWorkingServers;
-        if (CustomComboBoxSettingQcConnectMode.SelectedItem != null)
-            connectMode = GetConnectModeByName(CustomComboBoxSettingQcConnectMode.SelectedItem.ToString());
-        if (!string.IsNullOrEmpty(groupName)) connectMode = ConnectMode.ConnectToWorkingServers;
         bool useSavedServers = false;
-        this.InvokeIt(() => useSavedServers = CustomCheckBoxSettingQcUseSavedServers.Checked && SavedDnsList.Any() && WorkingDnsList.Any() && groupName == null);
+        this.InvokeIt(() => useSavedServers = CustomCheckBoxSettingQcUseSavedServers.Checked && SavedDnsList.Any() && WorkingDnsList.Any() && qcRequest.CanUseSavedServers);
         bool checkAllServers = false;
         this.InvokeIt(() => checkAllServers = CustomCheckBoxSettingQcCheckAllServers.Checked && CustomCheckBoxSettingQcCheckAllServers.Enabled);
         bool setDns = true;
         this.InvokeIt(() => setDns = CustomCheckBoxSettingQcSetDnsTo.Checked);
-        string? nicName = string.Empty;
-        if (CustomComboBoxSettingQcNics.SelectedItem != null)
-            this.InvokeIt(() => nicName = CustomComboBoxSettingQcNics.SelectedItem.ToString());
+        List<string> nicNameList = GetNicNameSetting(CustomComboBoxSettingQcNics).NICs;
         bool startProxy = false;
         this.InvokeIt(() => startProxy = CustomCheckBoxSettingQcStartProxyServer.Checked);
         bool setProxy = false;
@@ -143,17 +113,24 @@ public partial class FormMain
         // Cancel
         if (await cancelOnCondition()) return;
 
-        // Disconnect
-        await QuickDisconnect(IsCheckingStarted, IsConnecting, !setDns, !startProxy, true, true);
+        // Disconnect 1
+        if (setDns) await QuickDisconnect(true, false, false, true, true, true);
+        else await QuickDisconnect(true, true, true, true, true, true);
 
         // Cancel
         if (await cancelOnCondition()) return;
 
-        //== Check Servers
-        if (connectMode == ConnectMode.ConnectToWorkingServers && !useSavedServers)
+        // === Check Servers
+        if (qcRequest.ConnectMode == ConnectMode.ConnectToWorkingServers && !useSavedServers)
         {
-            WorkingDnsList.Clear();
-            StartCheck(groupName);
+            // Disconnect 2
+            if ((IsDNSSet && !IsDNSConnected) || (!IsDNSSet && IsDNSConnected))
+            {
+                if (setDns) await QuickDisconnect(true, true, true, true, true, true);
+            }
+            
+            WorkingDnsList.Clear(); // Clear Working Servers If User Is Not Using Saved Servers
+            StartCheck(qcRequest.CheckRequest, false, false);
 
             // Wait until Check starts
             QuickConnectTimeout.Restart();
@@ -195,7 +172,7 @@ public partial class FormMain
             // Stop Checking
             if (IsCheckingStarted)
             {
-                StartCheck(null, true);
+                StartCheck(qcRequest.CheckRequest, true, false);
 
                 // Cancel
                 if (await cancelOnCondition()) return;
@@ -214,345 +191,388 @@ public partial class FormMain
             }
         }
 
-        //== Connect
+        // Disconnect 3
+        if (setDns) await QuickDisconnect(true, true, !setDns, true, true, true);
+
+        // === Connect
         // Cancel
         if (await cancelOnCondition()) return;
 
         // Return if Connecting to WorkingServers but there is no server
-        if (connectMode == ConnectMode.ConnectToWorkingServers && WorkingDnsList.Count < 1)
+        bool canConnect = true;
+        if (qcRequest.ConnectMode == ConnectMode.ConnectToWorkingServers && WorkingDnsList.Count < 1)
         {
-            endOfQuickConnect();
-            return;
+            canConnect = false;
         }
 
-        IsConnected = await runStartConnect(); // 1
-        await Task.Delay(delay); // 2
-        await UpdateBools();
-        if (!IsConnected)
+        if (canConnect)
         {
-            if (await cancelOnCondition()) return;
-            await runStartConnect();
-            await Task.Delay(delay); // 3
+            IsConnected = await runStartConnect(); // 1
+            await Task.Delay(delay); // 2
             await UpdateBools();
             if (!IsConnected)
             {
                 if (await cancelOnCondition()) return;
                 await runStartConnect();
-            }
-        }
-
-        async Task<bool> runStartConnect()
-        {
-            // Connect to new checked servers
-            bool isConnectSuccess = await StartConnect(connectMode, true);
-
-            // Wait for connect
-            QuickConnectTimeout.Restart();
-            Task wait7 = Task.Run(async () =>
-            {
-                while (true)
+                await Task.Delay(delay); // 3
+                await UpdateBools();
+                if (!IsConnected)
                 {
-                    if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                    if (!isConnectSuccess) break;
-                    await UpdateBools();
-                    if (IsConnected || QuickConnectTimeout.ElapsedMilliseconds > 30000) break;
-                    await Task.Delay(100);
-                }
-            });
-            await wait7.WaitAsync(CancellationToken.None);
-            return IsConnected;
-        }
-
-        if (IsConnected)
-        {
-            // Wait until DNS gets online
-            QuickConnectTimeout.Restart();
-            Task wait8 = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    if (!IsConnected) break;
-                    if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                    if (IsDNSConnected || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
-                    await Task.Delay(200);
-                }
-            });
-            await wait8.WaitAsync(CancellationToken.None);
-
-            //== Set Dns
-            if (setDns && IsDNSConnected)
-            {
-                // Cancel
-                if (await cancelOnCondition()) return;
-
-                // Check if NIC is Ok
-                bool isNicOk1 = IsNicOk(nicName, out _);
-                if (!isNicOk1)
-                {
-                    // Update NICs
-                    SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
-                    await Task.Delay(200);
-                    this.InvokeIt(() => nicName = CustomComboBoxNICs.SelectedItem as string);
-                }
-
-                bool isNicOk2 = IsNicOk(nicName, out _);
-                if (!isNicOk2)
-                {
-                    endOfQuickConnect();
-                    return;
-                }
-
-                // Set DNS
-                bool isDnsSetOn = SetDnsOnNic_.IsDnsSet(LastNicName);
-                if (!isDnsSetOn && !IsDNSSetting)
-                {
-                    // Cancel
                     if (await cancelOnCondition()) return;
-
-                    if (!isNicOk1 && isNicOk2)
-                    {
-                        string msgNicNotAvailable = $"Trying to Set DNS on \"{nicName}\"...{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNicNotAvailable, Color.Orange));
-                    }
-
-                    isDnsSetOn = await runSetDns(); // 1
-                    await Task.Delay(delay); // 2
-                    isDnsSetOn = SetDnsOnNic_.IsDnsSet(LastNicName);
-                    if (!isDnsSetOn)
-                    {
-                        if (await cancelOnCondition()) return;
-                        await runSetDns();
-                        await Task.Delay(delay); // 3
-                        isDnsSetOn = SetDnsOnNic_.IsDnsSet(LastNicName);
-                        if (!isDnsSetOn)
-                        {
-                            if (await cancelOnCondition()) return;
-                            await runSetDns();
-                        }
-                    }
-
-                    async Task<bool> runSetDns()
-                    {
-                        await SetDNS(nicName);
-
-                        // Wait until DNS is set
-                        QuickConnectTimeout.Restart();
-                        Task wait9 = Task.Run(async () =>
-                        {
-                            while (true)
-                            {
-                                if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                                isDnsSetOn = SetDnsOnNic_.IsDnsSet(LastNicName);
-                                if (isDnsSetOn || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
-                                await Task.Delay(100);
-                            }
-                        });
-                        await wait9.WaitAsync(CancellationToken.None);
-                        return isDnsSetOn;
-                    }
+                    await runStartConnect();
                 }
             }
 
-            //== Start Proxy
-            if (startProxy && !IsProxyActivated && !IsProxyActivating)
+            async Task<bool> runStartConnect()
             {
-                // If Proxy is Deactivating wait for it
+                // Connect to new checked servers
+                bool isConnectSuccess = await StartConnect(qcRequest.ConnectMode, false, false);
+
+                // Wait for connect
                 QuickConnectTimeout.Restart();
-                Task waitStopProxy = Task.Run(async () =>
+                Task wait7 = Task.Run(async () =>
                 {
                     while (true)
                     {
                         if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                        if (!IsProxyDeactivating || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
+                        if (!isConnectSuccess) break;
+                        await UpdateBools();
+                        if (IsConnected || QuickConnectTimeout.ElapsedMilliseconds > 30000) break;
                         await Task.Delay(100);
                     }
                 });
-                await waitStopProxy.WaitAsync(CancellationToken.None);
+                await wait7.WaitAsync(CancellationToken.None);
+                return IsConnected;
+            }
 
-                // Cancel
+            if (IsConnected)
+            {
+                // Wait until DNS gets online
+                QuickConnectTimeout.Restart();
+                Task wait8 = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        if (!IsConnected) break;
+                        if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                        if (IsDNSConnected || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
+                        await Task.Delay(200);
+                    }
+                });
+                await wait8.WaitAsync(CancellationToken.None);
+
+                // === Set Dns
+                if (setDns && IsDNSConnected)
+                {
+                    // Cancel
+                    if (await cancelOnCondition()) return;
+
+                    // Check if NIC is Ok
+                    bool canSetDns = true;
+
+                    int count1 = 0;
+                    foreach (string nicName in nicNameList)
+                    {
+                        bool isNicOk = IsNicOk(nicName, out _);
+                        if (isNicOk) count1++;
+                    }
+                    bool isNicOk1 = nicNameList.Any() && count1 == nicNameList.Count;
+
+                    if (!isNicOk1)
+                    {
+                        // MSG
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Trying \"Set DNS\" Tab Adapters...{NL}", Color.DarkOrange));
+
+                        nicNameList = GetNicNameSetting(CustomComboBoxNICs).NICs;
+
+                        int count2 = 0;
+                        foreach (string nicName in nicNameList)
+                        {
+                            bool isNicOk = IsNicOk(nicName, out _);
+                            if (isNicOk) count2++;
+                        }
+                        bool isNicOk2 = nicNameList.Any() && count2 == nicNameList.Count;
+
+                        if (!isNicOk2)
+                        {
+                            // MSG
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Finding Available Adapters...{NL}", Color.DarkOrange));
+
+                            // Update NICs
+                            nicNameList = await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port, false, true);
+
+                            int count3 = 0;
+                            foreach (string nicName in nicNameList)
+                            {
+                                bool isNicOk = IsNicOk(nicName, out _);
+                                if (isNicOk) count3++;
+                            }
+                            bool isNicOk3 = nicNameList.Any() && count3 == nicNameList.Count;
+
+                            if (!isNicOk3)
+                            {
+                                canSetDns = false;
+                            }
+                        }
+                    }
+
+                    if (canSetDns)
+                    {
+                        // Set DNS
+                        bool isDnsSetOn = SetDnsOnNic_.IsDnsSet(nicNameList);
+                        if (!isDnsSetOn && !IsDNSSetting)
+                        {
+                            // Cancel
+                            if (await cancelOnCondition()) return;
+
+                            isDnsSetOn = await runSetDns(); // 1
+                            await Task.Delay(delay); // 2
+                            isDnsSetOn = SetDnsOnNic_.IsDnsSet(nicNameList);
+                            if (!isDnsSetOn)
+                            {
+                                if (await cancelOnCondition()) return;
+                                await runSetDns();
+                                await Task.Delay(delay); // 3
+                                isDnsSetOn = SetDnsOnNic_.IsDnsSet(nicNameList);
+                                if (!isDnsSetOn)
+                                {
+                                    if (await cancelOnCondition()) return;
+                                    await runSetDns();
+                                }
+                            }
+
+                            async Task<bool> runSetDns()
+                            {
+                                await SetDNS(nicNameList);
+
+                                // Wait until DNS is set
+                                QuickConnectTimeout.Restart();
+                                Task wait9 = Task.Run(async () =>
+                                {
+                                    while (true)
+                                    {
+                                        if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                                        isDnsSetOn = SetDnsOnNic_.IsDnsSet(nicNameList);
+                                        if (isDnsSetOn || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
+                                        await Task.Delay(100);
+                                    }
+                                });
+                                await wait9.WaitAsync(CancellationToken.None);
+                                return isDnsSetOn;
+                            }
+                        }
+                        else
+                        {
+                            // MSG
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"DNS is already set.{NL}", Color.MediumSeaGreen));
+                        }
+                    }
+                }
+            }
+        }
+
+        // === Start Proxy
+        if (startProxy && !IsProxyActivated && !IsProxyActivating)
+        {
+            // If Proxy is Deactivating wait for it
+            QuickConnectTimeout.Restart();
+            Task waitStopProxy = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                    if (!IsProxyDeactivating || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
+                    await Task.Delay(100);
+                }
+            });
+            await waitStopProxy.WaitAsync(CancellationToken.None);
+
+            // Cancel
+            if (await cancelOnCondition()) return;
+
+            IsProxyActivated = await runStartProxy(); // 1
+            await Task.Delay(delay); // 2
+            IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
+            if (!IsProxyActivated)
+            {
                 if (await cancelOnCondition()) return;
-
-                IsProxyActivated = await runStartProxy(); // 1
-                await Task.Delay(delay); // 2
+                await runStartProxy();
+                await Task.Delay(delay); // 3
                 IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
                 if (!IsProxyActivated)
                 {
                     if (await cancelOnCondition()) return;
                     await runStartProxy();
-                    await Task.Delay(delay); // 3
-                    IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
-                    if (!IsProxyActivated)
-                    {
-                        if (await cancelOnCondition()) return;
-                        await runStartProxy();
-                    }
-                }
-
-                async Task<bool> runStartProxy()
-                {
-                    // Start Proxy
-                    await StartProxy();
-
-                    // Wait for Proxy
-                    QuickConnectTimeout.Restart();
-                    Task waitProxy = Task.Run(async () =>
-                    {
-                        while (true)
-                        {
-                            if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                            IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
-                            if (IsProxyActivated || QuickConnectTimeout.ElapsedMilliseconds > 30000) break;
-                            await Task.Delay(100);
-                        }
-                    });
-                    await waitProxy.WaitAsync(CancellationToken.None);
-                    return IsProxyActivated;
                 }
             }
 
-            //== Set Proxy
-            if (setProxy && !IsProxySet && IsProxyActivated)
+            async Task<bool> runStartProxy()
             {
-                // Cancel
-                if (await cancelOnCondition()) return;
+                // Start Proxy
+                await StartProxy(false, false);
 
-                IsProxySet = await runSetProxy(); // 1
-                await Task.Delay(delay); // 2
-                IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+                // Wait for Proxy
+                QuickConnectTimeout.Restart();
+                Task waitProxy = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                        IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
+                        if (IsProxyActivated || QuickConnectTimeout.ElapsedMilliseconds > 30000) break;
+                        await Task.Delay(100);
+                    }
+                });
+                await waitProxy.WaitAsync(CancellationToken.None);
+                return IsProxyActivated;
+            }
+        }
+
+        // === Set Proxy
+        if (setProxy && !IsProxySet && IsProxyActivated)
+        {
+            // Cancel
+            if (await cancelOnCondition()) return;
+
+            IsProxySet = await runSetProxy(); // 1
+            await Task.Delay(delay); // 2
+            IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+            IsAnotherProxySet = isAnotherProxySet;
+            CurrentSystemProxy = currentSystemProxy;
+            if (!IsProxySet)
+            {
+                if (await cancelOnCondition()) return;
+                await runSetProxy();
+                await Task.Delay(delay); // 3
+                IsProxySet = UpdateBoolIsProxySet(out isAnotherProxySet, out currentSystemProxy);
                 IsAnotherProxySet = isAnotherProxySet;
                 CurrentSystemProxy = currentSystemProxy;
                 if (!IsProxySet)
                 {
                     if (await cancelOnCondition()) return;
                     await runSetProxy();
-                    await Task.Delay(delay); // 3
-                    IsProxySet = UpdateBoolIsProxySet(out isAnotherProxySet, out currentSystemProxy);
-                    IsAnotherProxySet = isAnotherProxySet;
-                    CurrentSystemProxy = currentSystemProxy;
-                    if (!IsProxySet)
-                    {
-                        if (await cancelOnCondition()) return;
-                        await runSetProxy();
-                    }
-                }
-
-                async Task<bool> runSetProxy()
-                {
-                    SetProxy();
-
-                    // Wait for Proxy to get Set
-                    QuickConnectTimeout.Restart();
-                    Task waitProxySet = Task.Run(async () =>
-                    {
-                        while (true)
-                        {
-                            if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                            IsProxySet = UpdateBoolIsProxySet(out isAnotherProxySet, out currentSystemProxy);
-                            IsAnotherProxySet = isAnotherProxySet;
-                            CurrentSystemProxy = currentSystemProxy;
-                            if (IsProxySet || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
-                            await Task.Delay(100);
-                        }
-                    });
-                    await waitProxySet.WaitAsync(CancellationToken.None);
-                    return IsProxySet;
                 }
             }
 
-            //== Start GoodbyeDPI
-            if (startGoodbyeDpiBasic)
+            async Task<bool> runSetProxy()
             {
-                // Cancel
-                if (await cancelOnCondition()) return;
+                SetProxy(false, false);
 
-                IsGoodbyeDPIBasicActive = await runGoodbyeDpiBasic(); // 1
-                await Task.Delay(delay); // 2
+                // Wait for Proxy to get Set
+                QuickConnectTimeout.Restart();
+                Task waitProxySet = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                        IsProxySet = UpdateBoolIsProxySet(out isAnotherProxySet, out currentSystemProxy);
+                        IsAnotherProxySet = isAnotherProxySet;
+                        CurrentSystemProxy = currentSystemProxy;
+                        if (IsProxySet || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
+                        await Task.Delay(100);
+                    }
+                });
+                await waitProxySet.WaitAsync(CancellationToken.None);
+                return IsProxySet;
+            }
+        }
+
+        // === Start GoodbyeDpi Basic
+        if (startGoodbyeDpiBasic)
+        {
+            // Cancel
+            if (await cancelOnCondition()) return;
+
+            IsGoodbyeDPIBasicActive = await runGoodbyeDpiBasic(); // 1
+            await Task.Delay(delay); // 2
+            IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
+            if (!IsGoodbyeDPIBasicActive)
+            {
+                if (await cancelOnCondition()) return;
+                await runGoodbyeDpiBasic();
+                await Task.Delay(delay); // 3
                 IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
                 if (!IsGoodbyeDPIBasicActive)
                 {
                     if (await cancelOnCondition()) return;
                     await runGoodbyeDpiBasic();
-                    await Task.Delay(delay); // 3
-                    IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
-                    if (!IsGoodbyeDPIBasicActive)
-                    {
-                        if (await cancelOnCondition()) return;
-                        await runGoodbyeDpiBasic();
-                    }
-                }
-
-                async Task<bool> runGoodbyeDpiBasic()
-                {
-                    GoodbyeDPIBasic(goodbyeDpiBasicMode);
-
-                    // Wait for GoodbyeDpi Basic
-                    QuickConnectTimeout.Restart();
-                    Task waitGoodbyeDpiBasic = Task.Run(async () =>
-                    {
-                        while (true)
-                        {
-                            if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                            IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
-                            if (IsGoodbyeDPIBasicActive || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
-                            await Task.Delay(100);
-                        }
-                    });
-                    await waitGoodbyeDpiBasic.WaitAsync(CancellationToken.None);
-                    return IsGoodbyeDPIBasicActive;
                 }
             }
 
-            if (startGoodbyeDpiAdvanced)
+            async Task<bool> runGoodbyeDpiBasic()
             {
-                // Cancel
-                if (await cancelOnCondition()) return;
+                GoodbyeDPIBasic(goodbyeDpiBasicMode, false);
 
-                IsGoodbyeDPIAdvancedActive = await runGoodbyeDpiAdv(); // 1
-                await Task.Delay(delay); // 2
+                // Wait for GoodbyeDpi Basic
+                QuickConnectTimeout.Restart();
+                Task waitGoodbyeDpiBasic = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                        IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
+                        if (IsGoodbyeDPIBasicActive || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
+                        await Task.Delay(100);
+                    }
+                });
+                await waitGoodbyeDpiBasic.WaitAsync(CancellationToken.None);
+                return IsGoodbyeDPIBasicActive;
+            }
+        }
+
+        // === Start GoodbyeDpi Advanced
+        if (startGoodbyeDpiAdvanced)
+        {
+            // Cancel
+            if (await cancelOnCondition()) return;
+
+            IsGoodbyeDPIAdvancedActive = await runGoodbyeDpiAdv(); // 1
+            await Task.Delay(delay); // 2
+            IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
+            if (!IsGoodbyeDPIAdvancedActive)
+            {
+                if (await cancelOnCondition()) return;
+                await runGoodbyeDpiAdv();
+                await Task.Delay(delay); // 3
                 IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
                 if (!IsGoodbyeDPIAdvancedActive)
                 {
                     if (await cancelOnCondition()) return;
                     await runGoodbyeDpiAdv();
-                    await Task.Delay(delay); // 3
-                    IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
-                    if (!IsGoodbyeDPIAdvancedActive)
-                    {
-                        if (await cancelOnCondition()) return;
-                        await runGoodbyeDpiAdv();
-                    }
                 }
+            }
 
-                async Task<bool> runGoodbyeDpiAdv()
+            async Task<bool> runGoodbyeDpiAdv()
+            {
+                GoodbyeDPIAdvanced(false);
+
+                // Wait for GoodbyeDpi Advanced
+                QuickConnectTimeout.Restart();
+                Task waitGoodbyeDpiAdvanced = Task.Run(async () =>
                 {
-                    GoodbyeDPIAdvanced();
-
-                    // Wait for GoodbyeDpi Advanced
-                    QuickConnectTimeout.Restart();
-                    Task waitGoodbyeDpiAdvanced = Task.Run(async () =>
+                    while (true)
                     {
-                        while (true)
-                        {
-                            if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                            IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
-                            if (IsGoodbyeDPIAdvancedActive || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
-                            await Task.Delay(100);
-                        }
-                    });
-                    await waitGoodbyeDpiAdvanced.WaitAsync(CancellationToken.None);
-                    return IsGoodbyeDPIAdvancedActive;
-                }
+                        if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
+                        IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
+                        if (IsGoodbyeDPIAdvancedActive || QuickConnectTimeout.ElapsedMilliseconds > 10000) break;
+                        await Task.Delay(100);
+                    }
+                });
+                await waitGoodbyeDpiAdvanced.WaitAsync(CancellationToken.None);
+                return IsGoodbyeDPIAdvancedActive;
             }
         }
 
         // Benchmark Stop
         string msg = $"Quick Connect finished";
-        if (!string.IsNullOrEmpty(groupName))
+        if (qcRequest.ConnectMode == ConnectMode.ConnectToWorkingServers)
         {
-            msg += $" (using {groupName})";
-            if (groupName.Equals("builtin"))
-                msg = msg.Replace(groupName, "Built-In");
+            if (useSavedServers && CurrentUsingCustomServersList.Any())
+                msg += $" (using \"{CurrentUsingCustomServersList[0].GroupName}\")";
+            else
+                msg += $" (using \"{qcRequest.CheckRequest.GroupName}\")";
         }
+        else msg += $" (using \"{GetConnectModeNameByConnectMode(qcRequest.ConnectMode)}\")";
 
         TimeSpan eTime = QuickConnectBenchmark.Elapsed;
         string eTimeStr = ConvertTool.TimeSpanToHumanRead(eTime, true);
@@ -579,15 +599,17 @@ public partial class FormMain
         async Task<bool> cancelOnCondition()
         {
             // Cancel
-            if (IsExiting || StopQuickConnect)
+            if (IsExiting || StopQuickConnect || IsDisconnectingAll)
             {
-                endOfQuickConnect(); return true;
+                endOfQuickConnect(); // Only In Series
+                return true;
             }
             if (!IsInternetOnline)
             {
                 if (!Program.IsStartup)
                 {
-                    endOfQuickConnect(); return true;
+                    endOfQuickConnect(); // Only In Series
+                    return true;
                 }
                 else
                 {
@@ -614,7 +636,8 @@ public partial class FormMain
                     if (go) return false;
                     else
                     {
-                        endOfQuickConnect(); return true;
+                        endOfQuickConnect(); // Only In Series
+                        return true;
                     }
                 }
             }
@@ -626,8 +649,7 @@ public partial class FormMain
         async void endOfQuickConnect(bool showWarning = true)
         {
             QuickConnectTimeout.Reset();
-            IsQuickConnecting = false;
-
+            
             if (showWarning && !IsExiting && !StopQuickConnect)
             {
                 // Update Bools
@@ -660,6 +682,9 @@ public partial class FormMain
                     CustomMessageBox.Show(this, msgNotifyUser, "Quick Connect Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
+
+            IsQuickConnecting = false;
+            await UpdateStatusShortOnBoolsChanged();
         }
     }
 
@@ -678,7 +703,7 @@ public partial class FormMain
         // Stop Checking
         if (stopCheck && IsCheckingStarted)
         {
-            StartCheck(null, true);
+            StartCheck(new CheckRequest(), true);
 
             // Wait until check stops
             QuickConnectTimeout.Restart();

@@ -10,6 +10,7 @@ namespace SecureDNSClient;
 
 public partial class FormMain : Form
 {
+    public static bool IsThemeApplied { get; set; } = false;
     public static bool IsScreenHighDpiScaleApplied { get; set; } = false;
     public static bool IsAppReady { get; set; } = false;
     public static readonly Stopwatch AppUpTime = new();
@@ -26,12 +27,11 @@ public partial class FormMain : Form
     private static float BaseScreenDpi = 96f; // 100%
     private readonly Stopwatch LabelMainStopWatch = new();
     private static readonly CustomLabel LabelMain = new();
-    public List<Tuple<long, string>> WorkingDnsList = new();
-    public List<string> SavedDnsList = new();
-    public List<string> SavedEncodedDnsList = new();
-    public List<string> CurrentUsingCustomServersList = new();
-    private List<string> WorkingDnsListToFile = new();
-    private List<Tuple<long, string>> WorkingDnsAndLatencyListToFile = new();
+    public List<DnsInfo> WorkingDnsList { get; set; } = new();
+    private List<DnsInfo> WorkingDnsListToFile { get; set; } = new();
+    public List<DnsInfo> CurrentUsingCustomServersList { get; set; } = new();
+    public List<string> SavedDnsList { get; set; } = new();
+    public List<string> SavedEncodedDnsList { get; set; } = new();
     public static ProcessMonitor MonitorProcess { get; set; } = new();
     private bool InternetOnline = false;
     private bool InternetOffline = true;
@@ -41,14 +41,15 @@ public partial class FormMain : Form
     public static bool IsInActionState { get; set; } = false;
     private bool IsOnStartup { get; set; } = false;
     private bool IsStartupPathOk { get; set; } = false;
+    private bool StartupTaskExecuted { get; set; } = false;
     private bool IsCheckingForUpdate { get; set; } = false;
     private int NumberOfWorkingServers { get; set; } = 0;
     public static bool IsCheckingStarted { get; set; } = false;
-    public static bool IsBuiltinMode { get; set; } = true;
     private static bool StopChecking { get; set; } = false;
     private bool IsConnecting { get; set; } = false;
     private bool IsDisconnecting { get; set; } = false;
     private bool IsDisconnectingAll { get; set; } = false;
+    private bool IsReconnecting { get; set; } = false;
     private bool IsConnected { get; set; } = false;
     private ConnectMode LastConnectMode { get; set; } = ConnectMode.ConnectToWorkingServers;
     public static bool IsDNSConnected { get; set; } = false;
@@ -59,7 +60,8 @@ public partial class FormMain : Form
     private bool IsDNSSetting { get; set; } = false;
     private bool IsDNSUnsetting { get; set; } = false;
     private bool IsDNSSet { get; set; } = false;
-    private string LastNicName { get; set; } = string.Empty;
+    private bool IsDNSSetOn { get; set; } = false;
+    private List<string> LastNicNameList { get; set; } = new();
     private SetDnsOnNic SetDnsOnNic_ { get; set; } = new();
     private bool DoesDNSSetOnce { get; set; } = false;
     private bool IsFlushingDns { get; set; } = false;
@@ -111,21 +113,23 @@ public partial class FormMain : Form
     private int ProxyRequests { get; set; } = 0;
     private int ProxyMaxRequests { get; set; } = 250;
     private bool IsProxyDpiBypassActive { get; set; } = false;
-    private ProxyProgram.DPIBypass.Mode ProxyStaticDPIBypassMode { get; set; } = ProxyProgram.DPIBypass.Mode.Disable;
-    private ProxyProgram.DPIBypass.Mode ProxyDPIBypassMode { get; set; } = ProxyProgram.DPIBypass.Mode.Disable;
-    private ProxyProgram.UpStreamProxy.Mode ProxyUpStreamMode { get; set; } = ProxyProgram.UpStreamProxy.Mode.Disable;
+    private bool IsProxyFragmentActive { get; set; } = false;
     private ProxyProgram.Dns.Mode ProxyDNSMode { get; set; } = ProxyProgram.Dns.Mode.Disable;
-    private ProxyProgram.FakeDns.Mode ProxyFakeDnsMode { get; set; } = ProxyProgram.FakeDns.Mode.Disable;
-    private ProxyProgram.BlackWhiteList.Mode ProxyBWListMode { get; set; } = ProxyProgram.BlackWhiteList.Mode.Disable;
-    private ProxyProgram.DontBypass.Mode DontBypassMode { get; set; } = ProxyProgram.DontBypass.Mode.Disable;
+    private ProxyProgram.Fragment.Mode ProxyStaticFragmentMode { get; set; } = ProxyProgram.Fragment.Mode.Disable;
+    private ProxyProgram.Fragment.Mode ProxyFragmentMode { get; set; } = ProxyProgram.Fragment.Mode.Disable;
+    private ProxyProgram.UpStreamProxy.Mode ProxyUpStreamMode { get; set; } = ProxyProgram.UpStreamProxy.Mode.Disable;
+    private ProxyProgram.Rules.Mode ProxyRulesMode { get; set; } = ProxyProgram.Rules.Mode.Disable;
     private bool IsProxySSLDecryptionActive { get; set; } = false;
     private bool IsProxySSLChangeSniActive { get; set; } = false;
     private bool IsProxySet { get; set; } = false;
     private bool IsAnotherProxySet { get; set; } = false;
     private string CurrentSystemProxy { get; set; } = string.Empty;
     private static bool UpdateProxyBools { get; set; } = true;
-    private string LastDpiBypassProgramCommand { get; set; } = string.Empty;
+    private string LastFragmentProgramCommand { get; set; } = string.Empty;
     private string LastDefaultSni { get; set; } = string.Empty;
+    private ProxyProgram.Rules CheckProxyRules { get; set; } = new();
+    private string LastProxyRulesPath { get; set; } = string.Empty;
+    private string LastProxyRulesContent { get; set; } = string.Empty;
 
     // Fake Proxy
     private ProcessConsole FakeProxyConsole { get; set; } = new();
@@ -145,6 +149,8 @@ public partial class FormMain : Form
     private readonly ToolStripMenuItem TsiClearWorkingServers = new("Clear working servers");
 
     // Menu: Scan
+    private readonly ToolStripMenuItem TsiClearCheckedServers = new("Clear Checked Servers");
+    private readonly ToolStripMenuItem TsiRescanCheckedServers = new("Rescan Checked Servers");
     private readonly ToolStripMenuItem TsiScanBuiltIn = new("Built-In Servers");
 
     // Menu: Main Context Menu & Quick Connect Button

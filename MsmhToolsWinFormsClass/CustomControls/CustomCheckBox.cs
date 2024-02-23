@@ -220,22 +220,23 @@ namespace CustomControls
 
                     try
                     {
+                        string text = checkBox.Text;
+                        if (text.Contains(Environment.NewLine)) // Handle Multiline
+                        {
+                            List<string> lines = text.SplitToLines();
+                            lineCount = lines.Count;
+                            text = lines[0];
+                            for (int i = 0; i < lines.Count; i++)
+                            {
+                                string line = lines[i];
+                                if (line.Length > text.Length) text = line;
+                            }
+                        }
+                        rectSizeF = e.Graphics.MeasureString(text, checkBox.Font);
+                        rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
+
                         if (checkBox.AutoSize)
                         {
-                            string text = checkBox.Text;
-                            if (text.Contains(Environment.NewLine)) // Handle Multiline
-                            {
-                                List<string> lines = text.SplitToLines();
-                                lineCount = lines.Count;
-                                text = lines[0];
-                                for (int i = 0; i < lines.Count; i++)
-                                {
-                                    string line = lines[i];
-                                    if (line.Length > text.Length) text = line;
-                                }
-                            }
-                            rectSizeF = e.Graphics.MeasureString(text, checkBox.Font);
-                            rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
                             checkBox.Height = Convert.ToInt32(Math.Round(sizeF.Height * 1.1));
                             checkBox.Width = Convert.ToInt32(Math.Round(sizeF.Width) + rectSize);
                         }
@@ -291,7 +292,7 @@ namespace CustomControls
                             using Pen p = new(checkColor, 2);
                             rectCheck.Inflate(-2, -2);
                             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                            e.Graphics.DrawLines(p, new Point[] { new Point(rectCheck.Left, rectCheck.Bottom - rectCheck.Height / 2), new Point(rectCheck.Left + rectCheck.Width / 3, rectCheck.Bottom), new Point(rectCheck.Right, rectCheck.Top) });
+                            e.Graphics.DrawLines(p, new Point[] { new(rectCheck.Left, rectCheck.Bottom - rectCheck.Height / 2), new(rectCheck.Left + rectCheck.Width / 3, rectCheck.Bottom), new(rectCheck.Right, rectCheck.Top) });
                             e.Graphics.SmoothingMode = SmoothingMode.Default;
                             rectCheck.Inflate(+2, +2);
                         }

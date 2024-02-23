@@ -39,16 +39,14 @@ public partial class FormMain : Form
         Resize += FormMain_Resize;
         LocationChanged += FormMain_LocationChanged;
         SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+        SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
+        SystemEvents.SessionEnding += SystemEvents_SessionEnding;
     }
 
     private async void Start()
     {
-        // Load Theme
-        Theme.LoadTheme(this, Theme.Themes.Dark);
-        Theme.SetColors(LabelMain);
-        CustomMessageBox.FormIcon = Properties.Resources.SecureDNSClient_Icon_Multi;
-
-        string msgStartup = $"Initializing...{NL}";
+        // Startup MSG
+        string msgStartup = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss} Initializing...{NL}";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStartup, Color.Gray));
 
         // Invariant Culture
@@ -72,7 +70,7 @@ public partial class FormMain : Form
         LabelScreen.Font = Font;
 
         // Fill ComboBoxes
-        FillComboBoxes();
+        await FillComboBoxes();
 
         // App Startup Defaults
         string productName = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName ?? "SDC - Secure DNS Client";
@@ -91,10 +89,11 @@ public partial class FormMain : Form
         }
 
         Text = $"{productName} {archText} v{productVersion}";
+        if (Program.IsPortable) Text += " Portable";
         CustomButtonSetDNS.Enabled = false;
         CustomButtonSetProxy.Enabled = false;
         CustomTextBoxHTTPProxy.Enabled = false;
-        LinkLabelCheckUpdate.Text = string.Empty;
+        CustomTabControlSettings.HideTabHeader = true;
 
         // Set NotifyIcon Text
         NotifyIconMain.Text = Text;
@@ -120,6 +119,9 @@ public partial class FormMain : Form
         CustomTextBoxHTTPProxy.Enabled = CustomRadioButtonConnectDNSCrypt.Checked; // Connect -> Method 4
         CustomCheckBoxSettingQcSetProxy.Enabled = CustomCheckBoxSettingQcStartProxyServer.Checked; // Setting -> Qc -> Set Proxy
         CustomTextBoxSettingProxyCfCleanIP.Enabled = CustomCheckBoxSettingProxyCfCleanIP.Checked; // Setting -> Share -> Advanced -> Cf Clean IP
+
+        // Convert Old Proxy Rules To New
+        OldProxyRulesToNew();
 
         // Initialize Status
         InitializeStatus(CustomDataGridViewStatus);
@@ -151,40 +153,43 @@ public partial class FormMain : Form
         // Load Saved Servers
         SavedDnsLoad();
 
+        // Update IsDNSSet
+        IsDNSSet = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs, out bool isDnsSetOn, out _);
+        IsDNSSetOn = isDnsSetOn;
+
         // In case application closed unexpectedly Kill processes and Unset DNS and Proxy
         bool closedNormally = await DoesAppClosedNormallyAsync();
         if (!closedNormally)
         {
             string msg = $"Last time App didn't close normally!{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
-
-            msg = $"Killing Leftovers...{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
-            await KillAll(true);
-
-            bool isDnsSet = NetworkTool.IsDnsSetToLocal(out _, out _);
-            IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
-            IsAnotherProxySet = isAnotherProxySet;
-            CurrentSystemProxy = currentSystemProxy;
-            if (isDnsSet || IsProxySet)
-            {
-                if (isDnsSet)
-                {
-                    msg = $"Unsetting Saved DNS...{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
-                    await UnsetSavedDNS();
-                    await Task.Run(() => UpdateStatusNic());
-                }
-
-                if (IsProxySet)
-                {
-                    msg = $"Unsetting Proxy...{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
-                    NetworkTool.UnsetProxy(false, true);
-                }
-            }
         }
         AppClosedNormally(false);
+
+        if (IsThereAnyLeftovers())
+        {
+            string msg = $"Killing Leftovers...{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
+            await KillAll(true);
+        }
+
+        if (IsDNSSet)
+        {
+            string msg = $"Unsetting DNS...{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
+            await UnsetAllDNSs();
+            await UpdateStatusNic();
+        }
+
+        IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+        IsAnotherProxySet = isAnotherProxySet;
+        CurrentSystemProxy = currentSystemProxy;
+        if (IsProxySet)
+        {
+            string msg = $"Unsetting Proxy...{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
+            NetworkTool.UnsetProxy(false, true);
+        }
 
         // Get Ready
         GetAppReady();
@@ -206,16 +211,7 @@ public partial class FormMain : Form
         IsSSLDecryptionEnable();
 
         // Start Trace Event Session
-        MonitorProcess.SetPID(); // Measure Whole System
         MonitorProcess.Start(true);
-
-        // Fix Microsoft bugs. Like always!
-        if (!Program.IsStartup)
-            if (!IsScreenHighDpiScaleApplied)
-            {
-                await ScreenHighDpiScaleStartup(this);
-                FillComboBoxes();
-            }
     }
 
     private void CustomRichTextBoxLog_TextAppended(object? sender, EventArgs e)
@@ -239,6 +235,7 @@ public partial class FormMain : Form
     {
         this.InvokeIt(() =>
         {
+            if (!IsAppReady) text = "Getting Ready...";
             SplitContainerMain.Visible = false;
             LabelMain.Text = text;
             LabelMain.Visible = true;
@@ -249,14 +246,15 @@ public partial class FormMain : Form
 
     private void HideLabelMain()
     {
+        if (!IsThemeApplied || !IsScreenHighDpiScaleApplied) return;
+
         bool isStatusEmpty = false;
         this.InvokeIt(() =>
         {
             try
             {
-                object status = CustomDataGridViewStatus.Rows[11].Cells[1].Value;
-                if (status is null) isStatusEmpty = true;
-                else if (status.Equals("")) isStatusEmpty = true;
+                string? status = CustomDataGridViewStatus.Rows[11].Cells[1].Value.ToString();
+                if (string.IsNullOrEmpty(status)) isStatusEmpty = true;
             }
             catch (Exception) { }
         });
@@ -291,27 +289,11 @@ public partial class FormMain : Form
                 return;
             }
 
-            // Update Connect Modes (Quick Connect Settings)
-            UpdateConnectModes(CustomComboBoxSettingQcConnectMode);
-
-            // Update GoodbyeDPI Basic Modes (Quick Connect Settings)
-            DPIBasicBypass.UpdateGoodbyeDpiBasicModes(CustomComboBoxSettingQcGdBasic);
-
-            // Add colors and texts to About page
-            CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
-            string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({ArchProcess.ToString().ToLower()})";
-            CustomLabelAboutVersion.Text = aboutVer;
-            CustomLabelAboutThis2.ForeColor = Color.IndianRed;
+            // Load Theme
+            await LoadTheme();
 
             // Delete Log File on > 500KB
             DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
-
-            // Fix Microsoft bugs. Like always!
-            if (!IsScreenHighDpiScaleApplied)
-            {
-                await ScreenHighDpiScaleStartup(this);
-                FillComboBoxes();
-            }
 
             if (Once)
             {
@@ -320,7 +302,7 @@ public partial class FormMain : Form
                 if (IsAnotherProxySet)
                 {
                     string url = "https://www.google.com";
-                    bool canOpenUrl = await NetworkTool.IsWebsiteOnlineAsync(url, 5000, true);
+                    bool canOpenUrl = await NetworkTool.IsWebsiteOnlineAsync(url, null, 5000, true);
                     if (!canOpenUrl)
                     {
                         string msg = $"Another Proxy ({NetworkTool.GetSystemProxy()}) is set to your System and cannot open {url}";
@@ -369,24 +351,55 @@ public partial class FormMain : Form
 
     private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
     {
-        if (ScreenDPI.GetSystemDpi() != 96)
+        bool alertChanges = false;
+        this.InvokeIt(() => alertChanges = CustomCheckBoxSettingAlertDisplayChanges.Checked);
+
+        if (alertChanges)
         {
-            using Graphics g = CreateGraphics();
-            PaintEventArgs args = new(g, DisplayRectangle);
-            OnPaint(args);
-            string msg = "Display Settings Changed.\n";
-            msg += "You may need restart the app to fix display blurriness.";
-            CustomMessageBox.Show(this, msg);
+            if (ScreenDPI.GetSystemDpi() != 96)
+            {
+                using Graphics g = CreateGraphics();
+                PaintEventArgs args = new(g, DisplayRectangle);
+                OnPaint(args);
+                string msg = "Display Settings Changed.\n";
+                msg += "You may need restart the app to fix display blurriness.";
+                CustomMessageBox.Show(this, msg);
+            }
         }
 
         if (LabelMainStopWatch.IsRunning) HideLabelMain();
     }
 
+    private async void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        // Reconnect After System Awake From Sleep
+        if (e.Mode == PowerModes.Resume)
+        {
+            Debug.WriteLine(e.Mode);
+            if (LastConnectMode == ConnectMode.ConnectToWorkingServers || LastConnectMode == ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI)
+            {
+                await UpdateBoolInternetAccess();
+                await UpdateBools(200);
+                if (!IsConnecting && !IsDisconnecting && !IsDisconnectingAll && !IsQuickConnectWorking &&
+                    IsInternetOnline && IsConnected && !IsDNSConnected)
+                {
+                    IsReconnecting = true;
+                    this.InvokeIt(() => CustomButtonReconnect.Enabled = false);
+                    await StartConnect(LastConnectMode, true);
+                    IsReconnecting = false;
+                }
+            }
+        }
+    }
+
+    private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
+    {
+        UnsetDnsOnShutdown(e);
+    }
+
     //============================== Events (Controls)
     private void CustomRichTextBoxLog_SizeChanged(object sender, EventArgs e)
     {
-        // Two Times: To Get VScrollbar Of CustomDataGridViewStatus Updated
-        UpdateMinSizeOfStatus();
         UpdateMinSizeOfStatus();
     }
 
@@ -461,29 +474,35 @@ public partial class FormMain : Form
     // Secure DNS (Tab)
     private void CustomTabControlSecureDNS_SelectedIndexChanged(object sender, EventArgs e)
     {
-        if (sender is not TabControl tc) return;
-        if (tc.SelectedIndex == 3) // Share + Bypass DPI
+        if (sender is not CustomTabControl ctc) return;
+
+        if (ctc.SelectedIndex == 3) // Share + Bypass DPI
         {
             UpdateApplyDpiBypassChangesButton();
         }
     }
 
     // Secure DNS -> Connect
-    private void CustomRadioButtonConnectDNSCrypt_CheckedChanged(object sender, EventArgs e)
+    private async void CustomRadioButtonConnectMode_CheckedChanged(object sender, EventArgs e)
     {
         // Connect to popular servers using proxy Textbox
         this.InvokeIt(() => CustomTextBoxHTTPProxy.Enabled = CustomRadioButtonConnectDNSCrypt.Checked);
+        await UpdateStatusShortOnBoolsChanged();
     }
 
     // Secure DNS -> Set DNS
-    private async void CustomComboBoxNICs_SelectedIndexChanged(object sender, EventArgs e)
+    private void CustomComboBoxNICs_SelectedIndexChanged(object sender, EventArgs e)
     {
-        await UpdateStatusShortOnBoolsChanged();
-        await Task.Run(() => UpdateStatusNic());
+        if (!Visible) return;
+        Task.Run(async () =>
+        {
+            await UpdateStatusShortOnBoolsChanged();
+            await UpdateStatusNic();
+        });
     }
 
     // Secure DNS -> Share
-    private void CustomCheckBoxPDpiEnableDpiBypass_TextChanged(object sender, EventArgs e)
+    private void CustomCheckBoxPDpiEnableFragment_TextChanged(object sender, EventArgs e)
     {
         if (sender is not CustomCheckBox ccb) return;
         string pad = "MSI";
@@ -491,7 +510,7 @@ public partial class FormMain : Form
         ccb.Width = size.Width;
     }
 
-    private void CustomCheckBoxPDpiEnableDpiBypass_CheckedChanged(object sender, EventArgs e)
+    private void CustomCheckBoxPDpiEnableFragment_CheckedChanged(object sender, EventArgs e)
     {
         UpdateApplyDpiBypassChangesButton();
     }
@@ -515,7 +534,7 @@ public partial class FormMain : Form
         this.InvokeIt(() => cb.Tag = "fired");
         UpdateApplyDpiBypassChangesButton();
         if (!cb.Checked) return;
-        if (IsInAction(true, true, true, true, true, false, true, true, true, false, true))
+        if (IsInAction(true, true, true, true, true, false, true, true, true, false, true, out _))
         {
             this.InvokeIt(() => cb.Checked = !cb.Checked);
             return;
@@ -528,7 +547,7 @@ public partial class FormMain : Form
         UpdateApplyDpiBypassChangesButton();
     }
 
-    private void CustomCheckBoxProxySSLChangeSniToIP_CheckedChanged(object sender, EventArgs e)
+    private void CustomCheckBoxProxySSLChangeSni_CheckedChanged(object sender, EventArgs e)
     {
         UpdateApplyDpiBypassChangesButton();
     }
@@ -536,6 +555,33 @@ public partial class FormMain : Form
     private void CustomTextBoxProxySSLDefaultSni_KeyUp(object sender, KeyEventArgs e)
     {
         UpdateApplyDpiBypassChangesButton();
+    }
+
+    // Settings ListBox Menu
+    private void CustomListBoxSettingsMenu_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (sender is not CustomListBox clb) return;
+        try
+        {
+            if (clb.SelectedIndex < CustomTabControlSettings.TabPages.Count)
+            {
+                this.InvokeIt(() => CustomTabControlSettings.SelectedIndex = clb.SelectedIndex);
+                this.InvokeIt(() => CustomTabControlSettings.TabPages[clb.SelectedIndex].Focus());
+            }
+        }
+        catch (Exception) { }
+    }
+
+    private void CustomTabControlSettings_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        if (sender is not CustomTabControl ctb) return;
+        try
+        {
+            if (ctb.SelectedIndex < CustomListBoxSettingsMenu.Items.Count)
+                if (ctb.SelectedIndex != CustomListBoxSettingsMenu.SelectedIndex)
+                    CustomListBoxSettingsMenu.SelectedIndex = ctb.SelectedIndex;
+        }
+        catch (Exception) { }
     }
 
     // Settings -> Check
@@ -612,27 +658,7 @@ public partial class FormMain : Form
         }
         else
         {
-            if (!string.IsNullOrEmpty(LastNicName))
-            {
-                e.Cancel = true; // We Have Zero Time To Unset DNS On Shutdown
-                string processName = "netsh";
-                string processArgs1 = $"interface ipv4 delete dnsservers \"{LastNicName}\" all";
-                ProcessManager.ExecuteOnly(processName, processArgs1, true, true);
-                bool unsetToDHCP = CustomRadioButtonSettingUnsetDnsToDhcp.Checked;
-                if (unsetToDHCP)
-                {
-                    // DHCP
-                    string processArgs2 = $"interface ipv4 set dnsservers \"{LastNicName}\" source=dhcp";
-                    ProcessManager.ExecuteOnly(processName, processArgs2, true, true);
-                }
-                else
-                {
-                    // STATIC
-                    string dns1 = CustomTextBoxSettingUnsetDns1.Text;
-                    string processArgs2 = $"interface ipv4 set dnsservers \"{LastNicName}\" static {dns1} primary";
-                    ProcessManager.ExecuteOnly(processName, processArgs2, true, true);
-                }
-            }
+            UnsetDnsOnShutdown(e);
         }
     }
 
@@ -643,8 +669,19 @@ public partial class FormMain : Form
             if (Program.IsStartup)
             {
                 Program.IsStartup = false;
+                string msgStartUpExited = $"Startup Mode Exited.{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStartUpExited, Color.MediumSeaGreen));
+
+                bool exeOnStartup = false;
+                this.InvokeIt(() => exeOnStartup = CustomCheckBoxSettingQcOnStartup.Checked);
+                if (exeOnStartup && !StartupTaskExecuted)
+                {
+                    string msgQcCanceled = $"Startup Task Canceled.{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgQcCanceled, Color.MediumSeaGreen));
+                }
+
                 Task.Run(async () => await UpdateStatusLong());
-                Task.Run(() => UpdateStatusNic());
+                Task.Run(async () => await UpdateStatusNic());
                 Task.Run(async () => await CheckUpdate());
             }
 

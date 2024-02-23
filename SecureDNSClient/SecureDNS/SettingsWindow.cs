@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
+using CustomControls;
 using MsmhToolsClass;
 
 namespace SecureDNSClient;
@@ -8,6 +8,32 @@ namespace SecureDNSClient;
 public partial class FormMain
 {
     //============================== Get Settings Vars
+    public SetDnsOnNic.ActiveNICs GetNicNameSetting(CustomComboBox ccb)
+    {
+        SetDnsOnNic.ActiveNICs nicsList = new();
+        ccb.InvokeIt(() =>
+        {
+            if (ccb != null && ccb.SelectedItem != null)
+            {
+                string? nicName = ccb.SelectedItem as string;
+                if (!string.IsNullOrEmpty(nicName))
+                {
+                    if (nicName.Equals(SetDnsOnNic.DefaultNicName.Auto))
+                    {
+                        IsDNSSet = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs, out bool isDnsSetOn, out SetDnsOnNic.ActiveNICs activeNICs);
+                        IsDNSSetOn = isDnsSetOn;
+                        nicsList = activeNICs;
+                    }
+                    else
+                    {
+                        nicsList.NICs.Add(nicName);
+                    }
+                }
+            }
+        });
+        return nicsList;
+    }
+
     public string GetDefaultSniSetting()
     {
         string defaultSni = string.Empty;
@@ -213,8 +239,7 @@ public partial class FormMain
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, color));
             return false;
         }
-        else
-            return true;
+        else return true;
     }
 
 }

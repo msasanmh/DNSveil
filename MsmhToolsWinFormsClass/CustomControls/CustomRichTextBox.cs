@@ -1,5 +1,5 @@
 ﻿using MsmhToolsClass;
-using System;
+using MsmhToolsWinFormsClass;
 using System.ComponentModel;
 using System.Drawing.Design;
 using System.Runtime.InteropServices;
@@ -15,17 +15,6 @@ namespace CustomControls
     {
         private static class Methods
         {
-            [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string? idList);
-            internal static void SetDarkControl(Control control)
-            {
-                _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
-                foreach (Control c in control.Controls)
-                {
-                    _ = SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
-                }
-            }
-
             [DllImport("user32.dll", EntryPoint = "ShowCaret")]
             internal static extern long ShowCaret(IntPtr hwnd);
             [DllImport("user32.dll", EntryPoint = "HideCaret")]
@@ -403,32 +392,32 @@ namespace CustomControls
         {
             try
             {
-                richTextBox.AppendText(text);
-                richTextBox.Refresh();
-                TextAppended?.Invoke(text, EventArgs.Empty);
+                richTextBox.InvokeIt(() =>
+                {
+                    richTextBox.AppendText(text);
+                    richTextBox.Refresh();
+                    TextAppended?.Invoke(text, EventArgs.Empty);
+                });
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
+            catch (Exception) { }
         }
 
         public void AppendText(string text, Color color)
         {
             try
             {
-                richTextBox.SelectionStart = richTextBox.TextLength;
-                richTextBox.SelectionLength = 0;
-                richTextBox.SelectionColor = color;
-                richTextBox.AppendText(text);
-                richTextBox.SelectionColor = richTextBox.ForeColor;
-                richTextBox.Refresh();
-                TextAppended?.Invoke(text, EventArgs.Empty);
+                richTextBox.InvokeIt(() =>
+                {
+                    richTextBox.SelectionStart = richTextBox.TextLength;
+                    richTextBox.SelectionLength = 0;
+                    richTextBox.SelectionColor = color;
+                    richTextBox.AppendText(text);
+                    richTextBox.SelectionColor = richTextBox.ForeColor;
+                    richTextBox.Refresh();
+                    TextAppended?.Invoke(text, EventArgs.Empty);
+                });
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
+            catch (Exception) { }
         }
 
         public CustomRichTextBox() : base()
@@ -704,7 +693,7 @@ namespace CustomControls
         private void RichTextBox_Invalidated(object? sender, InvalidateEventArgs e)
         {
             if (BackColor.DarkOrLight() == "Dark")
-                Methods.SetDarkControl(richTextBox);
+                richTextBox.SetDarkControl();
             richTextBox.Enabled = Enabled;
             richTextBox.BackColor = GetBackColor();
             richTextBox.ForeColor = GetForeColor();

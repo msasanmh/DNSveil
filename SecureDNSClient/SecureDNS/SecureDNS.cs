@@ -5,7 +5,9 @@ using System.Reflection;
 using MsmhToolsClass;
 using MsmhToolsClass.DnsTool;
 using System.Runtime.InteropServices;
-using static MsmhToolsClass.NetworkInterfaces;
+using System.Net.NetworkInformation;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SecureDNSClient;
 
@@ -29,10 +31,7 @@ public class SecureDNS
                 DirectoryInfo info = new(CurrentPath);
                 if (info.Parent != null) parent = info.Parent.FullName;
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
+            catch (Exception) { }
             return parent;
         }
     }
@@ -92,18 +91,21 @@ public class SecureDNS
     public static readonly string SettingsXmlDnsScanner = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsScannerSettings.xml"));
     public static readonly string SettingsXmlDnsScannerExport = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsScannerExportSettings.xml"));
     public static readonly string UserIdPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "uid.txt"));
-    public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeDnsRules.txt"));
-    public static readonly string FakeSniRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeSniRules.txt"));
-    public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "BlackWhiteList.txt"));
-    public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DontBypassList.txt"));
+    public static readonly string ProxyRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "ProxyRules.txt"));
     public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers.txt"));
     public static readonly string CustomServersXmlPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers.xml"));
     public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers_Working.txt"));
-    public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DPIBlacklist.txt"));
+    public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DPIBlacklist.txt")); // GoodbyeDPI Black List
     public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(UserDataDirPath, "NicName.txt"));
     public static readonly string SavedEncodedDnsPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "SavedEncodedDns.txt"));
     public static readonly string LogWindowPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "LogWindow.txt"));
     public static readonly string CloseStatusPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CloseStatus.txt"));
+
+    // Old Proxy Rules
+    public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "BlackWhiteList.txt"));
+    public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeDnsRules.txt"));
+    public static readonly string FakeSniRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeSniRules.txt"));
+    public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DontBypassList.txt"));
 
     // User Data Old Path
     private const string OldUDN = "user";
@@ -157,6 +159,10 @@ public class SecureDNS
         {
             try
             {
+                // Disable Cert Check
+                static bool ValidateServerCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) => true;
+                ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(ValidateServerCertificate);
+                
                 string uid;
                 if (File.Exists(UserIdPath))
                     uid = File.ReadAllText(UserIdPath);
@@ -175,6 +181,7 @@ public class SecureDNS
                 control.InvokeIt(() =>
                 {
                     WebBrowser webBrowser = new();
+                    webBrowser.ScriptErrorsSuppressed = true; // Disable Dialog Boxes
                     webBrowser.Navigate(new Uri(args));
                     webBrowser.Refresh(WebBrowserRefreshOption.Completely);
                     webBrowser.DocumentCompleted -= WebBrowser_DocumentCompleted;
@@ -183,12 +190,19 @@ public class SecureDNS
                     {
                         // To make sure page is fully loaded
                         webBrowser.Dispose();
+
+                        // Enable Cert Check
+                        ServicePointManager.ServerCertificateValidationCallback = null;
+
                         Debug.WriteLine("Counter Success.");
                     }
                 });
             }
             catch (Exception ex)
             {
+                // Enable Cert Check
+                ServicePointManager.ServerCertificateValidationCallback = null;
+
                 Debug.WriteLine("GenerateUid: " + ex.Message);
             }
         });
@@ -361,58 +375,6 @@ public class SecureDNS
         }
 
         return company;
-    }
-
-    public static void UpdateNICs(CustomComboBox ccb, out List<string> availableNICs)
-    {
-        ccb.InvokeIt(() => ccb.Text = "Select a Network Adapter");
-        object? item = null;
-        ccb.InvokeIt(() => item = ccb.SelectedItem);
-        ccb.InvokeIt(() => ccb.Items.Clear());
-        List<NICResult> nics = GetAllNetworkInterfaces();
-        availableNICs = new();
-        if (nics == null || nics.Count < 1)
-        {
-            Debug.WriteLine("There is no Network Interface.");
-            ccb.InvokeIt(() => ccb.SelectedIndex = -1);
-            return;
-        }
-        string upAndRunningNic = string.Empty;
-        for (int n = 0; n < nics.Count; n++)
-        {
-            NICResult nicResult = nics[n];
-            ccb.InvokeIt(() => ccb.Items.Add(nicResult.NIC));
-            availableNICs.Add(nicResult.NIC);
-            if (string.IsNullOrEmpty(upAndRunningNic) && nicResult.IsUpAndRunning)
-                upAndRunningNic = nicResult.NIC;
-        }
-        if (ccb.Items.Count > 0)
-        {
-            bool exist = false;
-            for (int i = 0; i < ccb.Items.Count; i++)
-            {
-                object selectedItem = ccb.Items[i];
-                if (item != null && item.Equals(selectedItem))
-                {
-                    exist = true;
-                    break;
-                }
-            }
-            ccb.InvokeIt(() =>
-            {
-                if (exist)
-                    ccb.SelectedItem = item;
-                else
-                {
-                    if (!string.IsNullOrEmpty(upAndRunningNic))
-                        ccb.SelectedItem = upAndRunningNic;
-                    else
-                        ccb.SelectedIndex = 0;
-                }
-                ccb.DropDownHeight = nics.Count * ccb.Height;
-            });
-        }
-        else ccb.InvokeIt(() => ccb.SelectedIndex = -1);
     }
 
     // HostToCompany file Generator

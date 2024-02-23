@@ -18,6 +18,7 @@ internal static class Program
     const int SW_SHOW = 5;
 
     private static readonly string CertIssuerSubjectName = "SecureDNSClient Authority";
+    private static readonly string CertSubjectName = "SecureDNSClient";
     private static readonly string PublisherName = "MSasanMH";
     private static readonly string AppDirName = "Secure DNS Client";
     public static readonly Architecture ArchProcess = RuntimeInformation.ProcessArchitecture;
@@ -46,9 +47,57 @@ internal static class Program
             ActivateWindowsStartup(false);
 
             // Uninstall Certificate
-            bool isCertInstalled = CertificateTool.IsCertificateInstalled(CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
-            if (isCertInstalled)
-                CertificateTool.UninstallCertificate(CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+            List<Tuple<string, StoreName, StoreLocation>> stores = new()
+            {
+                // Add Root Cert
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.AddressBook, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.AddressBook, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.AuthRoot, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.AuthRoot, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.CertificateAuthority, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.CertificateAuthority, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.Disallowed, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.Disallowed, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.My, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.My, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.Root, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.TrustedPeople, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.TrustedPeople, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.TrustedPublisher, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertIssuerSubjectName, StoreName.TrustedPublisher, StoreLocation.LocalMachine),
+
+                // Add Cert
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.AddressBook, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.AddressBook, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.AuthRoot, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.AuthRoot, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.CertificateAuthority, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.CertificateAuthority, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.Disallowed, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.Disallowed, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.My, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.My, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.Root, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.Root, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.TrustedPeople, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.TrustedPeople, StoreLocation.LocalMachine),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.TrustedPublisher, StoreLocation.CurrentUser),
+                new Tuple<string, StoreName, StoreLocation>(CertSubjectName, StoreName.TrustedPublisher, StoreLocation.LocalMachine),
+            };
+
+            foreach (Tuple<string, StoreName, StoreLocation> store in stores)
+            {
+                try
+                {
+                    bool isCertInstalled = CertificateTool.IsCertificateInstalled(store.Item1, store.Item2, store.Item3);
+                    if (isCertInstalled)
+                    {
+                        CertificateTool.UninstallCertificate(store.Item1, store.Item2, store.Item3);
+                    }
+                }
+                catch (Exception) { }
+            }
 
             // Remove Install Dir
             try

@@ -202,13 +202,13 @@ public class IpScanner
 
                     Uri uri = new(url, UriKind.Absolute);
 
-                    ProxyProgram.BlackWhiteList wList = new();
-                    wList.Set(ProxyProgram.BlackWhiteList.Mode.WhiteListText, host);
-                    ProxyServer.EnableBlackWhiteList(wList);
-
-                    ProxyProgram.FakeDns fakeDns = new();
-                    fakeDns.Set(ProxyProgram.FakeDns.Mode.Text, $"{host}|{ipOut}");
-                    ProxyServer.EnableFakeDNS(fakeDns);
+                    // Create Rules
+                    ProxyProgram.Rules rules = new();
+                    string rulesContent = $"{host}|{ipOut};";
+                    rulesContent += $"{ipOut}|+;";
+                    rulesContent += $"*|-;"; // Block Other Requests
+                    rules.Set(ProxyProgram.Rules.Mode.Text, rulesContent);
+                    ProxyServer.EnableRules(rules);
 
                     ProxyServer.KillAll();
                     await Task.Delay(100);
@@ -234,7 +234,7 @@ public class IpScanner
                     realDelayOut = -1;
                 }
 
-                Debug.WriteLine(realDelayOut);
+                Debug.WriteLine("Real Delay: " + realDelayOut);
 
                 if (realDelayOut != -1)
                 {
@@ -244,10 +244,10 @@ public class IpScanner
                     {
                         Stopwatch pingDelay = new();
                         pingDelay.Start();
-                        await NetworkTool.CanPing(ipOut, Timeout);
+                        bool canPing = await NetworkTool.CanPing(ipOut, Timeout);
                         pingDelay.Stop();
 
-                        pingDelayOut = Convert.ToInt32(pingDelay.ElapsedMilliseconds);
+                        if (canPing) pingDelayOut = Convert.ToInt32(pingDelay.ElapsedMilliseconds);
                         pingDelay.Reset();
                     }
                     catch (Exception)
@@ -261,10 +261,10 @@ public class IpScanner
                     {
                         Stopwatch tcpDelay = new();
                         tcpDelay.Start();
-                        await NetworkTool.CanTcpConnect(ipOut, CheckPort, Timeout);
+                        bool canTcpConnect = await NetworkTool.CanTcpConnect(ipOut, CheckPort, Timeout);
                         tcpDelay.Stop();
 
-                        tcpDelayOut = Convert.ToInt32(tcpDelay.ElapsedMilliseconds);
+                        if (canTcpConnect) tcpDelayOut = Convert.ToInt32(tcpDelay.ElapsedMilliseconds);
                         tcpDelay.Reset();
                     }
                     catch (Exception)

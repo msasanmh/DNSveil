@@ -1,4 +1,5 @@
 ﻿using MsmhToolsClass;
+using MsmhToolsWinFormsClass;
 using System.ComponentModel;
 using System.Windows.Forms.Design;
 /*
@@ -149,6 +150,8 @@ namespace CustomControls
 
         private void CustomComboBox_HandleCreated(object? sender, EventArgs e)
         {
+            if (BackColor.DarkOrLight() == "Dark")
+                this.SetDarkControl();
             Invalidate();
         }
 
@@ -340,7 +343,8 @@ namespace CustomControls
             };
 
             // Paint Text
-            string? text = SelectedItem != null ? SelectedItem.ToString() : Text;
+            string? text = Text;
+            try { text = SelectedItem != null ? SelectedItem.ToString() : Text; } catch (Exception) { }
             using SolidBrush textBrush = new(foreColor);
             e.Graphics.DrawString(text, Font, textBrush, rectText, stringFormat);
 

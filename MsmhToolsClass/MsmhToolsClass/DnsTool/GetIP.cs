@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
@@ -55,23 +54,24 @@ public static class GetIP
     /// <returns>Returns Empty List if fail</returns>
     public static List<string> GetIpsFromSystem(string host, bool getIPv6 = false)
     {
-        List<string> result = new();
+        List<string> ips = new();
 
         try
         {
             //IPAddress[] ipAddresses = System.Net.Dns.GetHostAddresses(host);
             IPAddress[] ipAddresses = System.Net.Dns.GetHostEntry(host).AddressList;
 
-            if (ipAddresses == null || ipAddresses.Length == 0)
-                return result;
+            if (ipAddresses == null || ipAddresses.Length == 0) return ips;
 
             if (!getIPv6)
             {
                 for (int n = 0; n < ipAddresses.Length; n++)
                 {
                     AddressFamily addressFamily = ipAddresses[n].AddressFamily;
-                    string isStr = ipAddresses[n].ToString();
-                    if (addressFamily != AddressFamily.InterNetworkV6) result.Add(isStr);
+                    string ip = ipAddresses[n].ToString();
+                    if (addressFamily != AddressFamily.InterNetworkV6)
+                        if (!string.IsNullOrEmpty(ip) && !NetworkTool.IsLocalIP(ip))
+                            ips.Add(ip);
                 }
             }
             else
@@ -79,8 +79,10 @@ public static class GetIP
                 for (int n = 0; n < ipAddresses.Length; n++)
                 {
                     AddressFamily addressFamily = ipAddresses[n].AddressFamily;
-                    string isStr = ipAddresses[n].ToString();
-                    if (addressFamily == AddressFamily.InterNetworkV6) result.Add(isStr);
+                    string ip = ipAddresses[n].ToString();
+                    if (addressFamily == AddressFamily.InterNetworkV6)
+                        if (!string.IsNullOrEmpty(ip) && !NetworkTool.IsLocalIP(ip))
+                            ips.Add(ip);
                 }
             }
         }
@@ -88,7 +90,7 @@ public static class GetIP
         {
             Debug.WriteLine(ex.Message);
         }
-        return result;
+        return ips;
     }
 
     //================================================= Get From DoH Using Wire Format
@@ -101,9 +103,9 @@ public static class GetIP
     /// <param name="timeoutSec">Timeout (Sec)</param>
     /// <param name="proxyScheme">Use Proxy to Get IP</param>
     /// <returns>Returns string.Empty if fail</returns>
-    public static async Task<string> GetIpFromDohUsingWireFormat(string host, string doh, int timeoutSec, string? proxyScheme = null)
+    public static async Task<string> GetIpFromDohUsingWireFormat(string host, string doh, int timeoutSec, string? proxyScheme = null, string? proxyUsername = null, string? proxyPassword = null)
     {
-        List<string> ips = await GetIpsFromDohUsingWireFormat(host, doh, timeoutSec, proxyScheme);
+        List<string> ips = await GetIpsFromDohUsingWireFormat(host, doh, timeoutSec, proxyScheme, proxyUsername, proxyPassword);
         if (ips.Any()) return ips[0];
         return string.Empty;
     }
@@ -116,12 +118,12 @@ public static class GetIP
     /// <param name="timeoutSec">Timeout (Sec)</param>
     /// <param name="proxyScheme">Use Proxy to Get IPs</param>
     /// <returns>Returns an Empty List if fail</returns>
-    public static async Task<List<string>> GetIpsFromDohUsingWireFormat(string host, string doh, int timeoutSec, string? proxyScheme = null)
+    public static async Task<List<string>> GetIpsFromDohUsingWireFormat(string host, string doh, int timeoutSec, string? proxyScheme = null, string? proxyUsername = null, string? proxyPassword = null)
     {
         if (string.IsNullOrEmpty(proxyScheme))
             return await GetIpsFromDohUsingWireFormatNoProxy(host, doh, timeoutSec);
         else
-            return await GetIpsFromDohUsingWireFormatProxy(host, doh, timeoutSec, proxyScheme);
+            return await GetIpsFromDohUsingWireFormatProxy(host, doh, timeoutSec, proxyScheme, proxyUsername, proxyPassword);
     }
 
     private static async Task<List<string>> GetIpsFromDohUsingWireFormatNoProxy(string host, string doh, int timeoutSec)
@@ -162,20 +164,17 @@ public static class GetIP
                 {
                     DnsResourceRecord drr = answer.Answers[n];
                     string? ip = drr.Resource?.ToString();
-                    if (!string.IsNullOrEmpty(ip) && IPAddress.TryParse(ip, out IPAddress? _))
+                    if (!string.IsNullOrEmpty(ip) && !NetworkTool.IsLocalIP(ip) && IPAddress.TryParse(ip, out IPAddress? _))
                         ips.Add(ip);
                 }
             }
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         return ips;
     }
 
-    private static async Task<List<string>> GetIpsFromDohUsingWireFormatProxy(string host, string doh, int timeoutSec, string? proxyScheme = null)
+    private static async Task<List<string>> GetIpsFromDohUsingWireFormatProxy(string host, string doh, int timeoutSec, string? proxyScheme = null, string? proxyUsername = null, string? proxyPassword = null)
     {
         List<string> ips = new();
 
@@ -189,7 +188,7 @@ public static class GetIP
             Uri uri = new(doh);
 
             using SocketsHttpHandler socketsHttpHandler = new();
-            socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true);
+            socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true, null, new NetworkCredential(proxyUsername, proxyPassword));
 
             using HttpClient httpClient = new(socketsHttpHandler);
             httpClient.Timeout = new TimeSpan(0, 0, timeoutSec);
@@ -216,15 +215,12 @@ public static class GetIP
                 {
                     DnsResourceRecord drr = answer.Answers[n];
                     string? ip = drr.Resource?.ToString();
-                    if (!string.IsNullOrEmpty(ip) && IPAddress.TryParse(ip, out IPAddress? _))
+                    if (!string.IsNullOrEmpty(ip) && !NetworkTool.IsLocalIP(ip) && IPAddress.TryParse(ip, out IPAddress? _))
                         ips.Add(ip);
                 }
             }
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         return ips;
     }
@@ -239,9 +235,9 @@ public static class GetIP
     /// <param name="timeoutSec">Timeout (Sec)</param>
     /// <param name="proxyScheme">Use Proxy to Get IP</param>
     /// <returns>Returns Empty List if fail</returns>
-    public static async Task<string> GetIpFromDohUsingJsonFormat(string host, string doh, int timeoutSec, string? proxyScheme = null)
+    public static async Task<string> GetIpFromDohUsingJsonFormat(string host, string doh, int timeoutSec, string? proxyScheme = null, string? proxyUsername = null, string? proxyPassword = null)
     {
-        List<string> ips = await GetIpsFromDohUsingJsonFormat(host, doh, timeoutSec, proxyScheme);
+        List<string> ips = await GetIpsFromDohUsingJsonFormat(host, doh, timeoutSec, proxyScheme, proxyUsername, proxyPassword);
         if (ips.Any()) return ips[0];
         return string.Empty;
     }
@@ -254,12 +250,12 @@ public static class GetIP
     /// <param name="timeoutSec">Timeout (Sec)</param>
     /// <param name="proxyScheme">Use Proxy to Get IP</param>
     /// <returns>Returns Empty List if fail</returns>
-    public static async Task<List<string>> GetIpsFromDohUsingJsonFormat(string host, string doh, int timeoutSec, string? proxyScheme = null)
+    public static async Task<List<string>> GetIpsFromDohUsingJsonFormat(string host, string doh, int timeoutSec, string? proxyScheme = null, string? proxyUsername = null, string? proxyPassword = null)
     {
         if (string.IsNullOrEmpty(proxyScheme))
             return await GetIpFromDohUsingJsonFormatNoProxy(host, doh, timeoutSec);
         else
-            return await GetIpFromDohUsingJsonFormatProxy(host, doh, timeoutSec, proxyScheme);
+            return await GetIpFromDohUsingJsonFormatProxy(host, doh, timeoutSec, proxyScheme, proxyUsername, proxyPassword);
     }
 
     private static async Task<List<string>> GetIpFromDohUsingJsonFormatNoProxy(string host, string doh, int timeoutSec)
@@ -301,7 +297,7 @@ public static class GetIP
         return ips;
     }
 
-    private static async Task<List<string>> GetIpFromDohUsingJsonFormatProxy(string host, string doh, int timeoutSec, string? proxyScheme = null)
+    private static async Task<List<string>> GetIpFromDohUsingJsonFormatProxy(string host, string doh, int timeoutSec, string? proxyScheme = null, string? proxyUsername = null, string? proxyPassword = null)
     {
         List<string> ips = new();
 
@@ -315,7 +311,7 @@ public static class GetIP
             Uri uri = new(doh + path);
 
             using SocketsHttpHandler socketsHttpHandler = new();
-            socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true);
+            socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true, null, new NetworkCredential(proxyUsername, proxyPassword));
 
             using HttpClient httpClient = new(socketsHttpHandler);
             httpClient.Timeout = new TimeSpan(0, 0, timeoutSec);
@@ -371,7 +367,7 @@ public static class GetIP
                                     if (answerProperty.Name == "data")
                                     {
                                         string ip = answerProperty.Value.ToString();
-                                        if (IPAddress.TryParse(ip, out IPAddress? _))
+                                        if (!string.IsNullOrEmpty(ip) && !NetworkTool.IsLocalIP(ip) && IPAddress.TryParse(ip, out IPAddress? _))
                                             ips.Add(ip);
                                     }
                                 }
@@ -390,6 +386,11 @@ public static class GetIP
 
     //================================================= Get From Plain DNS
 
+    public enum PlainDnsProtocol
+    {
+        UDP, TCP, Both
+    }
+
     /// <summary>
     /// Get First IP in Answer Section
     /// </summary>
@@ -398,9 +399,9 @@ public static class GetIP
     /// <param name="dnsPort">Plain DNS Port</param>
     /// <param name="timeoutMS">Timeout (ms)</param>
     /// <returns>Returns string.Empty if fail</returns>
-    public static async Task<string> GetIpFromPlainDNS(string host, string dnsIP, int dnsPort, int timeoutSec)
+    public static async Task<string> GetIpFromPlainDNS(string host, string dnsIP, int dnsPort, int timeoutSec, PlainDnsProtocol protocol = PlainDnsProtocol.Both)
     {
-        List<string> ips = await GetIpsFromPlainDNS(host, dnsIP, dnsPort, timeoutSec);
+        List<string> ips = await GetIpsFromPlainDNS(host, dnsIP, dnsPort, timeoutSec, protocol);
         if (ips.Any()) return ips[0];
         return string.Empty;
     }
@@ -413,13 +414,20 @@ public static class GetIP
     /// <param name="dnsPort">Plain DNS Port</param>
     /// <param name="timeoutMS">Timeout (ms)</param>
     /// <returns>Returns an Empty List if fail</returns>
-    public async static Task<List<string>> GetIpsFromPlainDNS(string host, string dnsIP, int dnsPort, int timeoutSec)
+    public async static Task<List<string>> GetIpsFromPlainDNS(string host, string dnsIP, int dnsPort, int timeoutSec, PlainDnsProtocol protocol = PlainDnsProtocol.Both)
     {
         List<string> ips;
 
-        ips = await GetIpsFromPlainDnsUdp(host, dnsIP, dnsPort, timeoutSec);
-        if (!ips.Any())
+        if (protocol == PlainDnsProtocol.UDP)
+            ips = await GetIpsFromPlainDnsUdp(host, dnsIP, dnsPort, timeoutSec);
+        else if (protocol == PlainDnsProtocol.TCP)
             ips = await GetIpsFromPlainDnsTcp(host, dnsIP, dnsPort, timeoutSec);
+        else
+        {
+            ips = await GetIpsFromPlainDnsUdp(host, dnsIP, dnsPort, timeoutSec);
+            if (!ips.Any())
+                ips = await GetIpsFromPlainDnsTcp(host, dnsIP, dnsPort, timeoutSec);
+        }
 
         return ips;
     }
@@ -465,7 +473,7 @@ public static class GetIP
                 {
                     DnsResourceRecord drr = answer.Answers[n];
                     string? ip = drr.Resource?.ToString();
-                    if (!string.IsNullOrEmpty(ip) && IPAddress.TryParse(ip, out IPAddress? _))
+                    if (!string.IsNullOrEmpty(ip) && !NetworkTool.IsLocalIP(ip) && IPAddress.TryParse(ip, out IPAddress? _))
                         ips.Add(ip);
                 }
             }
@@ -532,7 +540,7 @@ public static class GetIP
                 {
                     DnsResourceRecord drr = answer.Answers[n];
                     string? ip = drr.Resource?.ToString();
-                    if (!string.IsNullOrEmpty(ip) && IPAddress.TryParse(ip, out IPAddress? _))
+                    if (!string.IsNullOrEmpty(ip) && !NetworkTool.IsLocalIP(ip) && IPAddress.TryParse(ip, out IPAddress? _))
                         ips.Add(ip);
                 }
             }

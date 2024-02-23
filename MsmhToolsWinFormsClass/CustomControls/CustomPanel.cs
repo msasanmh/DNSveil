@@ -1,6 +1,6 @@
 ﻿using MsmhToolsClass;
+using MsmhToolsWinFormsClass;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Windows.Forms.Design;
 /*
 * Copyright MSasanMH, May 16, 2022.
@@ -10,20 +10,6 @@ namespace CustomControls
 {
     public class CustomPanel : Panel
     {
-        private static class Methods
-        {
-            [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string? idList);
-            internal static void SetDarkControl(Control control)
-            {
-                _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
-                foreach (Control c in control.Controls)
-                {
-                    _ = SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
-                }
-            }
-        }
-
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new BorderStyle BorderStyle { get; set; }
@@ -369,7 +355,7 @@ namespace CustomControls
             }
 
             if (BackColor.DarkOrLight() == "Dark")
-                Methods.SetDarkControl(innerPanel);
+                innerPanel.SetDarkControl();
 
             foreach (Control c in p.Controls)
                 c.Invalidate();

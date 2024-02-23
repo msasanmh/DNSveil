@@ -6,14 +6,15 @@ namespace MsmhToolsClass.MsmhProxyServer;
 
 public partial class MsmhProxyServer
 {
-    public async Task<ProxyRequest?> ApplyPrograms(ProxyRequest? req)
+    public async Task<ProxyRequest?> ApplyPrograms(IPAddress clientIP, ProxyRequest? req)
     {
         if (Cancel) return null;
         if (req == null) return null;
         if (string.IsNullOrEmpty(req.Address)) return null;
         if (req.Address.Equals("0.0.0.0")) return null;
         if (req.Address.StartsWith("10.")) return null;
-
+        req.ClientIP = clientIP;
+        
         // Count Max Requests
         MaxRequestsQueue2.Enqueue(DateTime.UtcNow);
         if (ProxySettings_.MaxRequests >= MaxRequestsDivide)
@@ -38,57 +39,48 @@ public partial class MsmhProxyServer
             return null;
         }
 
-        //// Black White List Program
-        if (BWListProgram.ListMode != ProxyProgram.BlackWhiteList.Mode.Disable)
+        //// Proxy Rules Program
+        ProxyProgram.Rules.RulesResult rr = new();
+        if (RulesProgram.RulesMode != ProxyProgram.Rules.Mode.Disable)
         {
-            bool isMatch = BWListProgram.IsMatch(req.Address);
-            if (isMatch)
+            rr = await RulesProgram.GetAsync(req.ClientIP.ToString(), req.Address, req.Port);
+        }
+
+        if (rr.IsMatch)
+        {
+            // Black List
+            if (rr.IsBlackList)
             {
                 // Event
-                string msgEvent = string.Empty;
-
-                if (BWListProgram.ListMode == ProxyProgram.BlackWhiteList.Mode.BlackListFile || BWListProgram.ListMode == ProxyProgram.BlackWhiteList.Mode.BlackListText)
-                msgEvent = $"Black List: {req.Address}:{req.Port}, Request Denied.";
-
-                if (BWListProgram.ListMode == ProxyProgram.BlackWhiteList.Mode.WhiteListFile || BWListProgram.ListMode == ProxyProgram.BlackWhiteList.Mode.WhiteListText)
-                    msgEvent = $"White List: {req.Address}:{req.Port}, Request Allowed.";
-
-                if (!string.IsNullOrEmpty(msgEvent))
-                    OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+                string msgEvent = $"Black List: {req.Address}:{req.Port}, Request Denied.";
+                OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
                 return null;
             }
-        }
 
-        //// DontBypass Program
-        req.ApplyDpiBypass = true;
-        if (DontBypassProgram.DontBypassMode != ProxyProgram.DontBypass.Mode.Disable)
-        {
-            bool isMatch = DontBypassProgram.IsMatch(req.Address);
-            if (isMatch) req.ApplyDpiBypass = false;
-        }
-
-        //// FakeDNS Program
-        if (FakeDNSProgram.FakeDnsMode != ProxyProgram.FakeDns.Mode.Disable)
-        {
-            string ipOut = FakeDNSProgram.Get(req.Address);
-            if (!ipOut.Equals(req.Address))
+            // Block Port
+            if (rr.IsPortBlock)
             {
-                bool isIP = NetworkTool.IsIp(ipOut, out _);
-                if (isIP) req.Address = ipOut;
+                // Event
+                string msgEvent = $"Block Port {req.Port}: {req.Address}:{req.Port}, Request Denied.";
+                OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+                return null;
             }
+
+            // Apply DPI Bypass
+            req.ApplyFragment = rr.ApplyDpiBypass;
+            req.ApplyChangeSNI = rr.ApplyDpiBypass;
+
+            // Fake DNS Or DNS
+            bool isDnsIp = NetworkTool.IsIp(rr.Dns, out _);
+            if (isDnsIp) req.Address = rr.Dns;
         }
 
         //// FakeSNI Program
-        if (SettingsSSL_.EnableSSL && SettingsSSL_.ChangeSni)
+        if (req.ApplyChangeSNI && SettingsSSL_.EnableSSL && SettingsSSL_.ChangeSni)
         {
-            if (FakeSNIProgram.FakeSniMode != ProxyProgram.FakeSni.Mode.Disable)
-            {
-                string sni = FakeSNIProgram.Get(req.AddressOrig);
-                if (!sni.Equals(req.AddressOrig))
-                {
-                    req.AddressSNI = sni;
-                }
-            }
+            if (rr.IsMatch)
+                if (!string.IsNullOrEmpty(rr.Sni) && !rr.Sni.Equals(req.AddressOrig))
+                    req.AddressSNI = rr.Sni;
 
             if (req.AddressSNI.Equals(req.AddressOrig))
             {
@@ -99,7 +91,7 @@ public partial class MsmhProxyServer
                 }
             }
         }
-
+        
         // Check If Address Is An IP
         bool isIp = NetworkTool.IsIp(req.Address, out _);
 
@@ -115,7 +107,7 @@ public partial class MsmhProxyServer
         }
 
         // Event
-        string msgReqEvent = $"[{req.ProxyName}] ";
+        string msgReqEvent = $"[{req.ClientIP}] [{req.ProxyName}] ";
 
         if (req.ProxyName == Proxy.Name.HTTP || req.ProxyName == Proxy.Name.HTTPS)
             msgReqEvent += $"[{req.HttpMethod}] ";
@@ -126,13 +118,15 @@ public partial class MsmhProxyServer
         if (req.AddressOrig.Equals(req.Address))
             msgReqEvent += $"{req.AddressOrig}:{req.Port}";
         else
-            msgReqEvent += $"{req.AddressOrig}:{req.Port} => {req.Address}:{req.Port}";
+        {
+            if (!string.IsNullOrEmpty(rr.DnsCustomDomain) && !req.AddressOrig.Equals(rr.DnsCustomDomain))
+                msgReqEvent += $"{req.AddressOrig}:{req.Port} => {rr.DnsCustomDomain} => {req.Address}:{req.Port}";
+            else
+                msgReqEvent += $"{req.AddressOrig}:{req.Port} => {req.Address}:{req.Port}";
+        }
 
-        if (!req.AddressOrig.Equals(req.AddressSNI) && req.ApplyDpiBypass && SettingsSSL_.EnableSSL && SettingsSSL_.ChangeSni)
+        if (!req.AddressOrig.Equals(req.AddressSNI) && req.ApplyChangeSNI && SettingsSSL_.EnableSSL && SettingsSSL_.ChangeSni)
             msgReqEvent += $" => {req.AddressSNI}:{req.Port}";
-
-        // Is Upstream Active
-        bool isUpStreamProgramActive = UpStreamProxyProgram.UpStreamMode != ProxyProgram.UpStreamProxy.Mode.Disable;
 
         // Check if Dest Host or IP is blocked
         isIp = NetworkTool.IsIp(req.Address, out IPAddress? ip);
@@ -166,14 +160,25 @@ public partial class MsmhProxyServer
         if (req.IsDestBlocked && !isIp)
             msgReqEvent += " (Host is blocked)";
 
-        // Apply upstream?
-        if ((isUpStreamProgramActive && !UpStreamProxyProgram.OnlyApplyToBlockedIps) ||
-            (isUpStreamProgramActive && UpStreamProxyProgram.OnlyApplyToBlockedIps && req.IsDestBlocked))
+        // Apply Upstream?
+        if ((rr.IsMatch && rr.ApplyUpStreamProxy && !rr.ApplyUpStreamProxyToBlockedIPs) ||
+            (rr.IsMatch && rr.ApplyUpStreamProxy && rr.ApplyUpStreamProxyToBlockedIPs && req.IsDestBlocked))
+        {
             req.ApplyUpStreamProxy = true;
+            msgReqEvent += $" (Bypassing through Upstream Proxy: {rr.ProxyScheme})";
+        }
 
-        if (req.ApplyUpStreamProxy)
-            msgReqEvent += " (Bypassing through Upstream Proxy)";
-
+        if (!req.ApplyUpStreamProxy)
+        {
+            bool isUpStreamProgramActive = UpStreamProxyProgram.UpStreamMode != ProxyProgram.UpStreamProxy.Mode.Disable;
+            if ((isUpStreamProgramActive && !UpStreamProxyProgram.OnlyApplyToBlockedIps) ||
+                (isUpStreamProgramActive && UpStreamProxyProgram.OnlyApplyToBlockedIps && req.IsDestBlocked))
+            {
+                req.ApplyUpStreamProxy = true;
+                msgReqEvent += $" (Bypassing through Upstream Proxy: {UpStreamProxyProgram.UpStreamMode.ToString().ToLower()}://{UpStreamProxyProgram.ProxyHost}:{UpStreamProxyProgram.ProxyPort})";
+            }
+        }
+        
         // Block Blocked Hosts Without DNS IP
         bool blockReq = req.IsDestBlocked && !req.AddressIsIp && req.AddressOrig.Equals(req.Address) && !req.ApplyUpStreamProxy;
         if (blockReq)
@@ -200,7 +205,7 @@ public partial class MsmhProxyServer
 
         // UDP Does Not Support Fragmentation
         if (req.ProxyName == Proxy.Name.Socks5 && req.Command == Socks.Commands.UDP)
-            req.ApplyDpiBypass = false;
+            req.ApplyFragment = false;
 
         return req;
     }

@@ -1,10 +1,60 @@
-﻿using System.Diagnostics;
-using System.DirectoryServices.AccountManagement;
+﻿using Microsoft.Win32;
+using System.Diagnostics;
+using System.Security.Principal;
 
 namespace MsmhToolsClass;
 
 public class OsTool
 {
+    public static bool IsAdministrator()
+    {
+        try
+        {
+            if (!OperatingSystem.IsWindows()) return false;
+            WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal windowsPrincipal = new(currentIdentity);
+            return windowsPrincipal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("IsAdministrator: " + ex.Message);
+            return false;
+        }
+    }
+
+    public static bool IsWin7()
+    {
+        bool result = false;
+        OperatingSystem os = Environment.OSVersion;
+        Version vs = os.Version;
+
+        if (os.Platform == PlatformID.Win32NT)
+        {
+            if (vs.Minor == 1 && vs.Major == 6) result = true;
+        }
+
+        return result;
+    }
+
+    public static bool IsLightTheme()
+    {
+        if (!OperatingSystem.IsWindows()) return false;
+        bool result = false;
+
+        try
+        {
+            using RegistryKey? registry = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize");
+            object? value = registry?.GetValue("AppsUseLightTheme");
+            result = value is int i && i > 0;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("IsLightTheme: " + ex.Message);
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Get Last Reboot Time (Windows Only)
     /// </summary>
@@ -13,7 +63,7 @@ public class OsTool
     {
         if (!OperatingSystem.IsWindows()) return TimeSpan.MaxValue;
         if (typeof(PerformanceCounter) == null) return TimeSpan.MaxValue;
-        
+
         return await Task.Run(async () =>
         {
             try
@@ -35,18 +85,4 @@ public class OsTool
         });
     }
 
-    public static bool IsWin7()
-    {
-        bool result = false;
-        OperatingSystem os = Environment.OSVersion;
-        Version vs = os.Version;
-
-        if (os.Platform == PlatformID.Win32NT)
-        {
-            if (vs.Minor == 1 && vs.Major == 6)
-                result = true;
-        }
-
-        return result;
-    }
 }

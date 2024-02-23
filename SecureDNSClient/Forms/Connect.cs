@@ -1,13 +1,12 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
-using MsmhToolsWinFormsClass;
 using System.Net;
 
 namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    private async Task<bool> StartConnect(ConnectMode connectMode, bool reconnect = false)
+    private async Task<bool> StartConnect(ConnectMode connectMode, bool reconnect = false, bool limitLog = false)
     {
         this.InvokeIt(() => CustomButtonConnect.Enabled = false);
 
@@ -40,22 +39,12 @@ public partial class FormMain
                 SecureDNS.GenerateUid(this);
 
                 // Update NICs
-                SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+                await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
 
                 Task taskConnect = Task.Run(async () =>
                 {
-                    // Stop Check
-                    if (IsCheckingStarted)
-                    {
-                        StartCheck(null, true);
-
-                        // Wait until check is done
-                        while (IsCheckingStarted)
-                            Task.Delay(100).Wait();
-                    }
-
                     if (connectMode != ConnectMode.Unknown)
-                        isConnectSuccess = await Connect(connectMode);
+                        isConnectSuccess = await Connect(connectMode, limitLog);
                 });
 
                 await taskConnect.ContinueWith(async _ =>
@@ -101,14 +90,15 @@ public partial class FormMain
                 {
                     while (true)
                     {
-                        if (!IsConnecting && !IsConnected) break;
                         disconnect();
-                        await Task.Delay(500);
+                        await Task.Delay(200);
+                        await UpdateBools();
+                        if (!IsConnecting && !IsConnected) break;
                     }
                 });
                 try { await wait1.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
 
-                async void disconnect()
+                void disconnect()
                 {
                     // Kill processes (DNSProxy, DNSCrypt)
                     ProcessManager.KillProcessByPID(PIDDNSProxy);
@@ -118,46 +108,33 @@ public partial class FormMain
 
                     // Stop Cloudflare Bypass
                     BypassFakeProxyDohStop(true, true, true, false);
-
-                    // Unset Proxy if Proxy is Not Running
-                    if (IsProxySet && !IsProxyRunning)
-                        NetworkTool.UnsetProxy(false, true);
-
-                    // Unset DNS
-                    if (IsDNSSet && !reconnect)
-                        await UnsetAllDNSs();
-
-                    // Update Bools
-                    await UpdateBools();
                 }
 
                 // To See Status Immediately
-                LocalDnsLatency = -1;
-                IsDNSConnected = LocalDnsLatency != -1;
-                LocalDohLatency = -1;
-                IsDoHConnected = LocalDohLatency != -1;
-
-                // Update Groupbox Status
-                await UpdateStatusLong();
-
-                // Write Disconnected message to log
-                string msgDisconnected = "Disconnected." + NL;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDisconnected, Color.MediumSeaGreen));
-
-                // Remove Connect ToolTip
-                this.InvokeIt(() => CustomButtonConnect.SetToolTip(MainToolTip, string.Empty, string.Empty));
-
                 PIDDNSProxy = -1;
                 PIDDNSProxyBypass = -1;
                 PIDDNSCrypt = -1;
                 PIDDNSCryptBypass = -1;
-
+                LocalDnsLatency = -1;
+                IsDNSConnected = LocalDnsLatency != -1;
+                LocalDohLatency = -1;
+                IsDoHConnected = LocalDohLatency != -1;
+                
                 IsDisconnecting = false;
                 await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusLong();
+
+                // Write Disconnected message to log
+                string msgDisconnected = $"Disconnected.{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDisconnected, Color.MediumSeaGreen));
+
+                // Write Connect Status
+                this.InvokeIt(() => CustomRichTextBoxConnectStatus.ResetText());
+                this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText(msgDisconnected));
 
                 // Reconnect
                 if (!StopQuickConnect) // Make Quick Connect Cancel faster
-                    if (reconnect) isConnectSuccess = await StartConnect(connectMode);
+                    if (reconnect) isConnectSuccess = await StartConnect(connectMode, false, limitLog);
             }
             catch (Exception ex)
             {
@@ -168,7 +145,7 @@ public partial class FormMain
         return isConnectSuccess;
     }
 
-    private async Task<bool> Connect(ConnectMode connectMode)
+    private async Task<bool> Connect(ConnectMode connectMode, bool limitLog = false)
     {
         // Write Connecting message to log
         string msgConnecting = "Connecting... Please wait..." + NL + NL;
@@ -299,13 +276,8 @@ public partial class FormMain
                 // Connected with DNSCrypt
                 internalConnect();
 
-                // Copy Local DoH to Clipboard
-                string localDoH;
-                if (ConnectedDohPort == 443)
-                    localDoH = $"https://{IPAddress.Loopback}/dns-query";
-                else
-                    localDoH = $"https://{IPAddress.Loopback}:{ConnectedDohPort}/dns-query";
-                this.InvokeIt(() => Clipboard.SetText(localDoH));
+                // Write Connected message to Status
+                connectMessage(false);
 
                 return true;
             }
@@ -330,22 +302,44 @@ public partial class FormMain
             Task.Run(() => UpdateStatusLong());
         }
 
-        void connectMessage()
+        void connectMessage(bool writeToLog = true)
         {
             // Set LastConnectMode
             LastConnectMode = connectMode;
 
-            // Update Current Using Custom Servers Tooltip
-            if (LastConnectMode == ConnectMode.ConnectToWorkingServers && !IsBuiltinMode)
+            // Connect Status - Clear
+            this.InvokeIt(() => CustomRichTextBoxConnectStatus.ResetText());
+
+            // Connect Status - Connect Mode
+            string connectModeName = GetConnectModeNameByConnectMode(LastConnectMode);
+            this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"Connect Mode:{NL}"));
+            this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{connectModeName}{NL}", Color.DodgerBlue));
+
+            // Connect Status - Group Name
+            if (LastConnectMode == ConnectMode.ConnectToWorkingServers && CurrentUsingCustomServersList.Any())
             {
-                string tooltip = string.Empty;
-                for (int n = 0; n < CurrentUsingCustomServersList.Count; n++)
-                    tooltip += CurrentUsingCustomServersList[n] + NL;
-                if (tooltip.EndsWith(tooltip)) tooltip = tooltip.TrimEnd(NL.ToCharArray());
-                this.InvokeIt(() => CustomButtonConnect.SetToolTip(MainToolTip, "Using Servers", tooltip));
+                List<DnsInfo> current = CurrentUsingCustomServersList.ToList();
+                this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{NL}Using Servers:{NL}"));
+                for (int n = 0; n < current.Count; n++)
+                {
+                    DnsInfo dnsInfo = current[n];
+                    this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{n + 1}. "));
+                    this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText(dnsInfo.GroupName + NL, Color.DodgerBlue));
+
+                    if (dnsInfo.Latency > 0)
+                    {
+                        this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText("Latency: "));
+                        this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{dnsInfo.Latency}", Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($" ms{NL}"));
+                    }
+                    
+                    string reducted = "Reducted";
+                    string dns = dnsInfo.CheckMode == CheckMode.BuiltIn || dnsInfo.CheckMode == CheckMode.SavedServers ? reducted : dnsInfo.DNS;
+                    string msgDnsAddress = dns.Equals(reducted) ? "DNS Address: " : $"DNS Address:{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText(msgDnsAddress));
+                    this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{dns}{NL}{NL}", Color.DarkGray));
+                }
             }
-            else
-                this.InvokeIt(() => CustomButtonConnect.SetToolTip(MainToolTip, string.Empty, string.Empty));
 
             // Update Local IP
             LocalIP = NetworkTool.GetLocalIPv4();
@@ -354,19 +348,26 @@ public partial class FormMain
             IPAddress loopbackIP = IPAddress.Loopback;
 
             // Write local DNS addresses to log
-            string msgLocalDNS1 = "Local DNS Proxy:";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDNS1, Color.LightGray));
+            string msgLocalDNS1 = "Local DNS:";
+            if (!limitLog)
+                if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDNS1, Color.LightGray));
             string msgLocalDNS2 = NL + loopbackIP;
             if (LocalIP != null)
                 msgLocalDNS2 += NL + LocalIP.ToString();
             msgLocalDNS2 += NL;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDNS2, Color.DodgerBlue));
+            if (!limitLog)
+                if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDNS2, Color.DodgerBlue));
+
+            // Connect Status - Local DNS
+            this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{NL}{msgLocalDNS1}"));
+            this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{msgLocalDNS2}", Color.DodgerBlue));
 
             // Write local DoH addresses to log
             if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
             {
                 string msgLocalDoH1 = "Local DNS Over HTTPS:";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH1, Color.LightGray));
+                if (!limitLog)
+                    if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH1, Color.LightGray));
 
                 string msgLocalDoH2;
                 if (ConnectedDohPort == 443)
@@ -374,7 +375,12 @@ public partial class FormMain
                 else
                     msgLocalDoH2 = $"{NL}https://{loopbackIP}:{ConnectedDohPort}/dns-query";
                 msgLocalDoH2 += NL;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH2, Color.DodgerBlue));
+                if (!limitLog)
+                    if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH2, Color.DodgerBlue));
+
+                // Connect Status - Local DoH Loopback IP
+                this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{NL}{msgLocalDoH1}"));
+                this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{msgLocalDoH2}", Color.DodgerBlue));
 
                 if (LocalIP != null)
                 {
@@ -384,7 +390,11 @@ public partial class FormMain
                     else
                         msgLocalDoH3 = $"https://{LocalIP}:{ConnectedDohPort}/dns-query";
                     msgLocalDoH3 += NL;
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH3, Color.DodgerBlue));
+                    if (!limitLog)
+                        if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH3, Color.DodgerBlue));
+
+                    // Connect Status - Local DoH Local IP
+                    this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{msgLocalDoH3}", Color.DodgerBlue));
                 }
 
                 // Copy Local DoH to Clipboard

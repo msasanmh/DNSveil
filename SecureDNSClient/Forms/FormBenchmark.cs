@@ -1,4 +1,5 @@
 ﻿using MsmhToolsClass;
+using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
 using System.Globalization;
@@ -42,7 +43,7 @@ public partial class FormBenchmark : Form
     private async void FixScreenDpi()
     {
         // Setting Width Of Controls
-        await FormMain.SettingWidthOfControls(this);
+        await ScreenDPI.SettingWidthOfControls(this);
 
         // Fix Controls Location
         int spaceBottom = 20, spaceRight = 20, spaceV = 10;

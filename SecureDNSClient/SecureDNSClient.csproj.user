@@ -34,6 +34,9 @@
     <Compile Update="Forms\DefaultSettings.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\EnumsAndStructs.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\Firewall.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -95,6 +98,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\ShareViaProxy.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\ShareViaProxy_RulesReader.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\ShareViaProxy_SSLDecryption.cs">

@@ -4,14 +4,13 @@ namespace SecureDNSClient;
 
 public partial class FormMain : Form
 {
-    private void DefaultSettings()
+    private async void DefaultSettings()
     {
         // Check
         CustomRadioButtonBuiltIn.Checked = true;
         CustomRadioButtonCustom.Checked = false;
         CustomNumericUpDownCheckInParallel.Value = (decimal)5;
         CustomCheckBoxInsecure.Checked = false;
-        LinkLabelCheckUpdate.Text = string.Empty;
 
         // Connect
         CustomRadioButtonConnectCheckedServers.Checked = true;
@@ -22,12 +21,12 @@ public partial class FormMain : Form
 
         // Set DNS
         // Update NICs
-        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+        await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, SecureDNS.BootstrapDnsIPv4, SecureDNS.BootstrapDnsPort, false, true);
 
         // Share
         CustomCheckBoxProxyEventShowRequest.Checked = false;
         CustomCheckBoxProxyEventShowChunkDetails.Checked = false;
-        CustomCheckBoxPDpiEnableDpiBypass.Checked = true;
+        CustomCheckBoxPDpiEnableFragment.Checked = true;
         CustomNumericUpDownPDpiBeforeSniChunks.Value = (decimal)50;
         CustomComboBoxPDpiSniChunkMode.SelectedIndex = 0;
         CustomNumericUpDownPDpiSniChunks.Value = (decimal)5;
@@ -89,6 +88,7 @@ public partial class FormMain : Form
 
         // Settings Check
         CustomNumericUpDownSettingCheckTimeout.Value = (decimal)5;
+        CustomCheckBoxSettingCheckClearWorkingServers.Checked = true;
         CustomTextBoxSettingCheckDPIHost.Text = "www.youtube.com";
         CustomCheckBoxSettingProtocolDoH.Checked = true;
         CustomCheckBoxSettingProtocolTLS.Checked = true;
@@ -106,7 +106,7 @@ public partial class FormMain : Form
         CustomCheckBoxSettingQcCheckAllServers.Checked = false;
         CustomCheckBoxSettingQcSetDnsTo.Checked = true;
         // Update NICs (Quick Connect Settings)
-        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, out _);
+        await SetDnsOnNic_.UpdateNICs(CustomComboBoxSettingQcNics, SecureDNS.BootstrapDnsIPv4, SecureDNS.BootstrapDnsPort, false, true);
         CustomCheckBoxSettingQcStartProxyServer.Checked = false;
         CustomCheckBoxSettingQcSetProxy.Checked = false;
         CustomCheckBoxSettingQcStartGoodbyeDpi.Checked = false;
@@ -125,7 +125,6 @@ public partial class FormMain : Form
         CustomRadioButtonSettingUnsetDnsToStatic.Checked = true;
         CustomTextBoxSettingUnsetDns1.Text = "8.8.8.8";
         CustomTextBoxSettingUnsetDns2.Text = "8.8.4.4";
-        CustomCheckBoxSettingDnsDetectUnset.Checked = false;
 
         // Settings Share Basic
         CustomNumericUpDownSettingProxyPort.Value = (decimal)8080;
@@ -142,12 +141,7 @@ public partial class FormMain : Form
         CustomCheckBoxSettingProxyEnableFakeProxy.Checked = false;
         CustomCheckBoxSettingProxyCfCleanIP.Checked = false;
         CustomTextBoxSettingProxyCfCleanIP.Text = string.Empty;
-        CustomCheckBoxSettingProxyEnableFakeDNS.Checked = false;
-        CustomCheckBoxSettingProxyEnableBlackWhiteList.Checked = false;
-        CustomCheckBoxSettingProxyEnableDontBypass.Checked = false;
-
-        // Settings Share SSL Decryption
-        CustomCheckBoxSettingProxyEnableFakeSNI.Checked = false;
+        CustomCheckBoxSettingProxyEnableRules.Checked = false;
 
         // Settings Fake Proxy
         CustomNumericUpDownSettingFakeProxyPort.Value = (decimal)8070;
@@ -164,12 +158,13 @@ public partial class FormMain : Form
         CustomNumericUpDownSettingCpuKillProxyRequests.Value = (decimal)40;
 
         // Settings Others
-        CustomTextBoxSettingBootstrapDnsIP.Text = "8.8.8.8";
-        CustomNumericUpDownSettingBootstrapDnsPort.Value = (decimal)53;
+        CustomTextBoxSettingBootstrapDnsIP.Text = SecureDNS.BootstrapDnsIPv4.ToString();
+        CustomNumericUpDownSettingBootstrapDnsPort.Value = (decimal)SecureDNS.BootstrapDnsPort;
         CustomTextBoxSettingFallbackDnsIP.Text = "8.8.8.8";
         CustomNumericUpDownSettingFallbackDnsPort.Value = (decimal)53;
         CustomCheckBoxSettingDontAskCertificate.Checked = false;
         CustomCheckBoxSettingDisableAudioAlert.Checked = false;
         CustomCheckBoxSettingWriteLogWindowToFile.Checked = false;
+        CustomCheckBoxSettingAlertDisplayChanges.Checked = false;
     }
 }

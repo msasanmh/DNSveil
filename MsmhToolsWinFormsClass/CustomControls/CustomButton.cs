@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -229,7 +228,7 @@ namespace CustomControls
 
         private void CustomButton_Paint(object? sender, PaintEventArgs e)
         {
-            if (ApplicationIdle == false) return;
+            if (!ApplicationIdle) return;
             if (!Visible) return;
 
             try
@@ -300,9 +299,6 @@ namespace CustomControls
                     {
                         rect.Inflate(-2, -2);
                         using Pen pen = new(SelectionColor) { DashStyle = DashStyle.Dash };
-                        //if (RoundedCorners == 0)
-                        //    e.Graphics.DrawRectangle(pen, rect);
-                        //else
                         e.Graphics.DrawRoundedRectangle(pen, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
                         rect.Inflate(+2, +2);
                     }

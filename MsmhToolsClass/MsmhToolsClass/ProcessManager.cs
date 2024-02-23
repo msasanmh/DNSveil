@@ -57,10 +57,8 @@ public static class ProcessManager
                 if (OperatingSystem.IsWindows())
                 {
                     using PerformanceCounter performanceCounter = new("Process", "% Processor Time", processName, true);
-                    performanceCounter.NextSample(); // Returns 0
-                    await Task.Delay(delay / 2); // Needs time to calculate
                     CounterSample first = performanceCounter.NextSample();
-                    await Task.Delay(delay / 2); // Needs time to calculate
+                    await Task.Delay(delay); // Needs time to calculate
                     CounterSample second = performanceCounter.NextSample();
                     float final = CounterSample.Calculate(first, second);
                     result = final / Environment.ProcessorCount;
@@ -543,7 +541,63 @@ public static class ProcessManager
         return result;
     }
     //-----------------------------------------------------------------------------------
+    public static int GetParentPID(int pid)
+    {
+        int parentPid = -1;
+        if (!OperatingSystem.IsWindows()) return parentPid;
 
+        try
+        {
+            using ManagementObject mo = new($"win32_process.handle='{pid}'");
+            mo.Get();
+            parentPid = Convert.ToInt32(mo["ParentProcessId"]);
+        }
+        catch (Exception) { }
+        
+        return parentPid;
+    }
+    //-----------------------------------------------------------------------------------
+    private static List<int> GetAllChildProcesses(int parentPID)
+    {
+        List<int> pids = new();
+        if (!OperatingSystem.IsWindows()) return pids;
+
+        try
+        {
+            using ManagementObjectSearcher searcher = new(
+                "SELECT * " +
+                "FROM Win32_Process " +
+                "WHERE ParentProcessId=" + parentPID);
+            using ManagementObjectCollection collection = searcher.Get();
+
+            if (collection.Count > 0)
+            {
+                foreach (ManagementBaseObject item in collection)
+                {
+                    int childPID = Convert.ToInt32(item["ProcessId"]);
+                    if (childPID != Environment.ProcessId && childPID != parentPID)
+                    {
+                        if (!pids.IsContain(childPID)) pids.Add(childPID);
+
+                        List<int> grandChildPIDs = GetAllChildProcesses(childPID);
+                        for (int n = 0; n < grandChildPIDs.Count; n++)
+                        {
+                            int grandChildPID = grandChildPIDs[n];
+                            if (grandChildPID != Environment.ProcessId && grandChildPID != parentPID && grandChildPID != childPID)
+                                if (!pids.IsContain(grandChildPID)) pids.Add(grandChildPID);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("GetAllChildProcesses: " + ex.Message);
+        }
+
+        return pids;
+    }
+    //-----------------------------------------------------------------------------------
     /// <summary>
     /// Windows Only
     /// </summary>

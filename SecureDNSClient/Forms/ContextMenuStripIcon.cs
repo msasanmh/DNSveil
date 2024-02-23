@@ -2,6 +2,7 @@
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass.Themes;
 using SecureDNSClient.DPIBasic;
+using System.Diagnostics;
 
 namespace SecureDNSClient;
 
@@ -9,8 +10,14 @@ public partial class FormMain
 {
     private async void ShowMainContextMenu()
     {
-        // Update bool IsGoodbyeDPIBasicActive
+        // Update bool GoodbyeDPI
         IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
+        IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
+
+        // Update bool IsProxySet
+        IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+        IsAnotherProxySet = isAnotherProxySet;
+        CurrentSystemProxy = currentSystemProxy;
 
         // Clear Items
         CustomContextMenuStripIcon.Items.Clear();
@@ -67,8 +74,8 @@ public partial class FormMain
 
         // Set Proxy to System
         TsiProxySet.Font = Font;
-        TsiProxySet.Text = IsProxySet ? "Unset Proxy from System" : "Set Proxy to System";
-        TsiProxySet.Enabled = IsProxyActivated && !IsProxyActivating && !IsProxyDeactivating;
+        TsiProxySet.Text = IsProxySet ? "Unset Proxy from System" : IsAnotherProxySet ? "Unset unknown Proxy from System" : "Set Proxy to System";
+        TsiProxySet.Enabled = (IsProxyActivated && !IsProxyActivating) || IsProxySet || IsAnotherProxySet;
         TsiProxySet.Click -= ProxySet_Click;
         TsiProxySet.Click += ProxySet_Click;
         CustomContextMenuStripIcon.Items.Add(TsiProxySet);
@@ -172,20 +179,53 @@ public partial class FormMain
     private async void QcToUserSetting_Click(object? sender, EventArgs e)
     {
         if (IsExiting) return;
-        await StartQuickConnect(null, true);
+        CheckRequest cr = new() { CheckMode = GetCheckMode() };
+        QuickConnectRequest qcr = new()
+        {
+            CheckRequest = cr,
+            CanUseSavedServers = true,
+            ConnectMode = GetConnectModeForQuickConnect()
+        };
+        await StartQuickConnect(qcr, true);
     }
 
     private async void QcToBuiltIn_Click(object? sender, EventArgs e)
     {
         if (IsExiting) return;
-        await StartQuickConnect("builtin", true);
+        CheckRequest cr = new()
+        {
+            CheckMode = CheckMode.BuiltIn,
+            ClearWorkingServers = true
+        };
+        QuickConnectRequest qcr = new()
+        {
+            CheckRequest = cr,
+            CanUseSavedServers = false,
+            ConnectMode = ConnectMode.ConnectToWorkingServers
+        };
+        await StartQuickConnect(qcr, true);
     }
 
     private async void QcToCustomGroups_Click(object? sender, EventArgs e)
     {
         if (IsExiting) return;
         if (sender is ToolStripMenuItem tsmi)
-            await StartQuickConnect(tsmi.Name, true);
+        {
+            CheckRequest cr = new()
+            {
+                CheckMode = CheckMode.CustomServers,
+                ClearWorkingServers = true,
+                HasUserGroupName = true,
+                GroupName = tsmi.Name
+            };
+            QuickConnectRequest qcr = new()
+            {
+                CheckRequest = cr,
+                CanUseSavedServers = false,
+                ConnectMode = ConnectMode.ConnectToWorkingServers
+            };
+            await StartQuickConnect(qcr, true);
+        }
     }
 
     private async void DisconnectAll_Click(object? sender, EventArgs e)
@@ -202,29 +242,29 @@ public partial class FormMain
         // New Line
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(NL, Color.LightGray));
 
-        // Stop Checking Servers
-        if (IsCheckingStarted)
-        {
-            StopChecking = true;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Canceling Check Operation...{NL}", Color.LightGray));
-
-            // Wait
-            Task wait = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    if (!IsCheckingStarted) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
-
-            StopChecking = false;
-            this.InvokeIt(() => CustomProgressBarCheck.StopTimer = true);
-        }
-
         async Task dc()
         {
+            // Stop Checking Servers
+            if (IsCheckingStarted)
+            {
+                StopChecking = true;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Canceling Check Operation...{NL}", Color.LightGray));
+
+                // Wait
+                Task wait = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        if (!IsCheckingStarted) break;
+                        await Task.Delay(100);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+
+                StopChecking = false;
+                this.InvokeIt(() => CustomProgressBarCheck.StopTimer = true);
+            }
+
             // Stop Quick Connect
             if (IsQuickConnecting)
             {
@@ -378,7 +418,13 @@ public partial class FormMain
             }
         }
 
-        await Task.WhenAll(dc(), dcDns());
+        while (true)
+        {
+            await Task.WhenAll(dc(), dcDns());
+            await UpdateBools();
+            await UpdateBoolProxy();
+            if (IsEverythingDisconnected()) break;
+        }
 
         // Flush DNS On Exit
         if (DoesDNSSetOnce)
@@ -471,7 +517,14 @@ public partial class FormMain
 
         // Exit
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Goodbye.{NL}", Color.LightGray));
-        Environment.Exit(0);
-        Application.Exit();
+        try
+        {
+            Environment.Exit(0);
+            Application.Exit();
+        }
+        catch (Exception ex)
+        {
+            CustomMessageBox.Show(this, ex.Message, "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 }

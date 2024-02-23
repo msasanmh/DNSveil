@@ -6,37 +6,30 @@ namespace MsmhToolsClass;
 public sealed class ProcessMonitor : IDisposable
 {
     private TraceEventSession? EtwSession;
-    private List<int> PidList = new();
-    private bool AllPIDs { get; set; } = false;
-    private readonly Counters MCounters = new();
+    private bool AllNetPIDs = true;
+    private List<int> NetPidList = new();
+    private readonly NetStatistics PNetStatistics = new();
     private readonly List<ConnectedDevices> ConnectedDevicesList = new();
     private readonly System.Timers.Timer ClearTimer = new(30000);
     private bool BypassLocal = false;
     private bool Stop = false;
+
+    public class NetStatistics
+    {
+        public long BytesSent { get; set; }
+        public long BytesReceived { get; set; }
+        public long TotalBytes => BytesSent + BytesReceived;
+        public long UploadSpeed { get; set; }
+        public long MaxUploadSpeed { get; set; }
+        public long DownloadSpeed { get; set; }
+        public long MaxDownloadSpeed { get; set; }
+    }
 
     public class ConnectedDevices
     {
         public string DeviceIP { get; set; } = string.Empty;
         public int ProcessID { get; set; }
         public string ProcessName { get; set; } = string.Empty;
-    }
-
-    private class Counters
-    {
-        public long BytesSent;
-        public long BytesReceived;
-        public long UploadSpeed;
-        public long DownloadSpeed;
-    }
-
-    public class ProcessStatistics
-    {
-        public long BytesSent { get; set; }
-        public long BytesReceived { get; set; }
-        public long TotalBytes => BytesSent + BytesReceived;
-        public long UploadSpeed { get; set; }
-        public long DownloadSpeed { get; set; }
-        public List<ConnectedDevices> ConnectedDevices { get; set; } = new();
     }
 
     public ProcessMonitor()
@@ -58,13 +51,13 @@ public sealed class ProcessMonitor : IDisposable
     /// Measure One PID
     /// </summary>
     /// <param name="pid">PID</param>
-    public void SetPID(int pid)
+    public void LimitNetPID(int pid)
     {
-        AllPIDs = false;
-        lock (PidList)
+        AllNetPIDs = false;
+        lock (NetPidList)
         {
-            PidList.Clear();
-            PidList.Add(pid);
+            NetPidList.Clear();
+            NetPidList.Add(pid);
         }
     }
 
@@ -72,25 +65,25 @@ public sealed class ProcessMonitor : IDisposable
     /// Measure A List Of PIDs
     /// </summary>
     /// <param name="pids">PIDs</param>
-    public void SetPID(List<int> pids)
+    public void LimitNetPID(List<int> pids)
     {
-        AllPIDs = false;
-        lock (PidList)
+        AllNetPIDs = false;
+        lock (NetPidList)
         {
-            PidList.Clear();
-            PidList = new(pids);
+            NetPidList.Clear();
+            NetPidList = new(pids);
         }
     }
 
     /// <summary>
     /// Measure Whole System
     /// </summary>
-    public void SetPID()
+    public void LimitNetPID()
     {
-        AllPIDs = true;
-        lock (PidList)
+        AllNetPIDs = true;
+        lock (NetPidList)
         {
-            PidList.Clear();
+            NetPidList.Clear();
         }
     }
 
@@ -104,7 +97,7 @@ public sealed class ProcessMonitor : IDisposable
         {
             try
             {
-                ResetCounters();
+                ResetNetCounters();
 
                 EtwSession = new TraceEventSession("MyKernelAndClrEventsSession");
                 EtwSession.EnableKernelProvider(KernelTraceEventParser.Keywords.NetworkTCPIP);
@@ -128,9 +121,9 @@ public sealed class ProcessMonitor : IDisposable
                 EtwSession.StopOnDispose = false;
                 EtwSession.Source.Process();
             }
-            catch
+            catch (Exception)
             {
-                ResetCounters();
+                ResetNetCounters();
             }
         });
     }
@@ -138,7 +131,7 @@ public sealed class ProcessMonitor : IDisposable
     private void Kernel_TcpIpSend(Microsoft.Diagnostics.Tracing.Parsers.Kernel.TcpIpSendTraceData obj)
     {
         if (obj == null) return;
-        if (!AllPIDs && !IsMatch(obj.ProcessID)) return;
+        if (!AllNetPIDs && !IsNetPidMatch(obj.ProcessID)) return;
 
         Task task = Task.Run(() =>
         {
@@ -147,10 +140,7 @@ public sealed class ProcessMonitor : IDisposable
 
             if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr.ToString())) return;
 
-            lock (MCounters)
-            {
-                MCounters.BytesSent += obj.size;
-            }
+            PNetStatistics.BytesSent += obj.size;
         });
         task.Wait();
     }
@@ -158,7 +148,7 @@ public sealed class ProcessMonitor : IDisposable
     private void Kernel_UdpIpSend(Microsoft.Diagnostics.Tracing.Parsers.Kernel.UdpIpTraceData obj)
     {
         if (obj == null) return;
-        if (!AllPIDs && !IsMatch(obj.ProcessID)) return;
+        if (!AllNetPIDs && !IsNetPidMatch(obj.ProcessID)) return;
 
         Task task = Task.Run(() =>
         {
@@ -167,10 +157,7 @@ public sealed class ProcessMonitor : IDisposable
 
             if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr.ToString())) return;
 
-            lock (MCounters)
-            {
-                MCounters.BytesSent += obj.size;
-            }
+            PNetStatistics.BytesSent += obj.size;
         });
         task.Wait();
     }
@@ -178,7 +165,7 @@ public sealed class ProcessMonitor : IDisposable
     private void Kernel_TcpIpRecv(Microsoft.Diagnostics.Tracing.Parsers.Kernel.TcpIpTraceData obj)
     {
         if (obj == null) return;
-        if (!AllPIDs && !IsMatch(obj.ProcessID)) return;
+        if (!AllNetPIDs && !IsNetPidMatch(obj.ProcessID)) return;
 
         Task task = Task.Run(() =>
         {
@@ -187,10 +174,7 @@ public sealed class ProcessMonitor : IDisposable
 
             if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr.ToString())) return;
 
-            lock (MCounters)
-            {
-                MCounters.BytesReceived += obj.size;
-            }
+            PNetStatistics.BytesReceived += obj.size;
         });
         task.Wait();
     }
@@ -198,7 +182,7 @@ public sealed class ProcessMonitor : IDisposable
     private void Kernel_UdpIpRecv(Microsoft.Diagnostics.Tracing.Parsers.Kernel.UdpIpTraceData obj)
     {
         if (obj == null) return;
-        if (!AllPIDs && !IsMatch(obj.ProcessID)) return;
+        if (!AllNetPIDs && !IsNetPidMatch(obj.ProcessID)) return;
 
         Task task = Task.Run(() =>
         {
@@ -207,10 +191,7 @@ public sealed class ProcessMonitor : IDisposable
 
             if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr.ToString())) return;
 
-            lock (MCounters)
-            {
-                MCounters.BytesReceived += obj.size;
-            }
+            PNetStatistics.BytesReceived += obj.size;
         });
         task.Wait();
     }
@@ -221,65 +202,47 @@ public sealed class ProcessMonitor : IDisposable
         {
             while (!Stop)
             {
-                long u1 = MCounters.BytesSent;
-                long d1 = MCounters.BytesReceived;
-                await Task.Delay(1000);
-                long u2 = MCounters.BytesSent;
-                long d2 = MCounters.BytesReceived;
+                long us = 0, ds = 0;
 
-                lock (MCounters)
+                try
                 {
-                    MCounters.UploadSpeed = u2 - u1;
-                    MCounters.DownloadSpeed = d2 - d1;
+                    long u1 = PNetStatistics.BytesSent;
+                    long d1 = PNetStatistics.BytesReceived;
+                    await Task.Delay(500);
+                    long u2 = PNetStatistics.BytesSent;
+                    long d2 = PNetStatistics.BytesReceived;
+                    await Task.Delay(500);
+                    long u3 = PNetStatistics.BytesSent;
+                    long d3 = PNetStatistics.BytesReceived;
+
+                    long us1 = (u2 - u1) * 2;
+                    long us2 = (u3 - u2) * 2;
+                    long us3 = u3 - u1;
+
+                    long ds1 = (d2 - d1) * 2;
+                    long ds2 = (d3 - d2) * 2;
+                    long ds3 = d3 - d1;
+
+                    long[] usArray = new long[] { us1, us2, us3 };
+                    us = Convert.ToInt64(usArray.Average());
+
+                    long[] dsArray = new long[] { ds1, ds2, ds3 };
+                    ds = Convert.ToInt64(dsArray.Average());
                 }
+                catch (Exception) { }
+
+                PNetStatistics.UploadSpeed = us;
+                if (us > PNetStatistics.MaxUploadSpeed) PNetStatistics.MaxUploadSpeed = us;
+                PNetStatistics.DownloadSpeed = ds;
+                if (ds > PNetStatistics.MaxDownloadSpeed) PNetStatistics.MaxDownloadSpeed = ds;
             }
         });
     }
 
-    public ProcessStatistics GetProcessStatistics()
+    private bool IsNetPidMatch(int pid)
     {
-        ProcessStatistics ps = new();
-        Task task = Task.Run(() =>
-        {
-            try
-            {
-                lock (MCounters)
-                {
-                    ps.BytesSent = MCounters.BytesSent;
-                    ps.BytesReceived = MCounters.BytesReceived;
-                    ps.UploadSpeed = MCounters.UploadSpeed;
-                    ps.DownloadSpeed = MCounters.DownloadSpeed;
-                }
-
-                lock (ConnectedDevicesList)
-                {
-                    ps.ConnectedDevices = new(ConnectedDevicesList);
-                }
-            }
-            catch (Exception)
-            {
-                // do nothing
-            }
-        });
-        task.Wait();
-        return ps;
-    }
-
-    public void ResetCounters()
-    {
-        lock (MCounters)
-        {
-            MCounters.BytesSent = 0;
-            MCounters.BytesReceived = 0;
-            MCounters.UploadSpeed = 0;
-            MCounters.DownloadSpeed = 0;
-        }
-    }
-
-    private bool IsMatch(int pid)
-    {
-        for (int n = 0; n < PidList.Count; n++)
-            if (PidList[n] == pid) return true;
+        for (int n = 0; n < NetPidList.Count; n++)
+            if (NetPidList[n] == pid) return true;
         return false;
     }
 
@@ -287,10 +250,12 @@ public sealed class ProcessMonitor : IDisposable
     {
         if (!NetworkTool.IsLocalIP(ipStr)) return;
 
-        ConnectedDevices cd = new();
-        cd.DeviceIP = ipStr;
-        cd.ProcessID = pid;
-        cd.ProcessName = processName;
+        ConnectedDevices cd = new()
+        {
+            DeviceIP = ipStr,
+            ProcessID = pid,
+            ProcessName = processName
+        };
 
         if (!IsConnectedDeviceExist(cd))
         {
@@ -309,6 +274,34 @@ public sealed class ProcessMonitor : IDisposable
                 if (ConnectedDevicesList[n].DeviceIP.Equals(cd.DeviceIP) && ConnectedDevicesList[n].ProcessID == cd.ProcessID)
                     return true;
             return false;
+        }
+    }
+
+    // ========== Public Methods
+
+    public NetStatistics GetNetStatistics()
+    {
+        return PNetStatistics;
+    }
+
+    public List<ConnectedDevices> GetConnectedDevices()
+    {
+        List<ConnectedDevices> connectedDevices = new(ConnectedDevicesList);
+        return connectedDevices;
+    }
+
+    public void ResetNetCounters()
+    {
+        PNetStatistics.BytesSent = 0;
+        PNetStatistics.BytesReceived = 0;
+        PNetStatistics.UploadSpeed = 0;
+        PNetStatistics.MaxUploadSpeed = 0;
+        PNetStatistics.DownloadSpeed = 0;
+        PNetStatistics.MaxDownloadSpeed = 0;
+
+        lock (ConnectedDevicesList)
+        {
+            ConnectedDevicesList.Clear();
         }
     }
 

@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows.Forms.Design;
 /*
 * Copyright MSasanMH, June 20, 2022.

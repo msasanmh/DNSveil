@@ -17,12 +17,10 @@
 //  You should have received a copy of the GNU Lesser General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-using System;
 using System.Text;
 using System.Net.Sockets;
 using System.Net;
 using System.Globalization;
-using System.ComponentModel;
 using System.Diagnostics;
 
 namespace MsmhToolsClass.ProxifiedTcpClient;
@@ -128,7 +126,7 @@ public class HttpProxyClient
     /// <param name="tcpClient">A TcpClient connection object.</param>
     public HttpProxyClient(TcpClient tcpClient)
     {
-        _tcpClientCached = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
+        _tcpClientCached = tcpClient;
     }
 
     /// <summary>
@@ -139,9 +137,9 @@ public class HttpProxyClient
     public HttpProxyClient(string proxyHost, int proxyPort)
     {
         if (proxyPort <= 0 || proxyPort > 65535)
-            throw new ArgumentOutOfRangeException(nameof(proxyPort), "port must be greater than zero and less than 65535");
+            return; // "port must be greater than zero and less than 65535"
 
-        _proxyHost = proxyHost ?? throw new ArgumentNullException(nameof(proxyHost));
+        _proxyHost = proxyHost;
         _proxyPort = proxyPort;
     }
 
@@ -155,9 +153,9 @@ public class HttpProxyClient
     public HttpProxyClient(string proxyHost, int proxyPort, string? proxyUsername, string? proxyPassword)
     {
         if (proxyPort <= 0 || proxyPort > 65535)
-            throw new ArgumentOutOfRangeException(nameof(proxyPort), "port must be greater than zero and less than 65535");
+            return; // "port must be greater than zero and less than 65535"
 
-        _proxyHost = proxyHost ?? throw new ArgumentNullException(nameof(proxyHost));
+        _proxyHost = proxyHost;
         _proxyPort = proxyPort;
 
         if (!string.IsNullOrEmpty(proxyUsername))
@@ -236,11 +234,9 @@ public class HttpProxyClient
             // if we have no cached tcpip connection then create one
             if (_tcpClientCached == null)
             {
-                if (string.IsNullOrEmpty(_proxyHost))
-                    throw new Exception("ProxyHost property must contain a value.");
+                if (string.IsNullOrEmpty(_proxyHost)) return null;
 
-                if (_proxyPort <= 0 || _proxyPort > 65535)
-                    throw new Exception("ProxyPort value must be greater than zero and less than 65535");
+                if (_proxyPort <= 0 || _proxyPort > 65535) return null;
 
                 //  create new tcp client object to the proxy server
                 _tcpClient = new();
@@ -282,7 +278,8 @@ public class HttpProxyClient
 
         NetworkStream stream = _tcpClient.GetStream();
 
-        string connectCmd = CreateCommandString(host, port);
+        string? connectCmd = CreateCommandString(host, port);
+        if (string.IsNullOrEmpty(connectCmd)) return;
 
         byte[] request = Encoding.ASCII.GetBytes(connectCmd);
 
@@ -320,37 +317,41 @@ public class HttpProxyClient
             HandleProxyCommandError(host, port);
     }
 
-    private string CreateCommandString(string host, int port)
+    private string? CreateCommandString(string host, int port)
     {
-        string connectCmd;
-        if (!string.IsNullOrEmpty(_proxyUsername))
+        string? connectCmd = null;
+        try
         {
-            //  gets the user/pass into base64 encoded string in the form of [username]:[password]
-            string auth = Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", _proxyUsername, _proxyPassword)));
+            if (!string.IsNullOrEmpty(_proxyUsername))
+            {
+                //  gets the user/pass into base64 encoded string in the form of [username]:[password]
+                string auth = Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", _proxyUsername, _proxyPassword)));
 
-            // PROXY SERVER REQUEST
-            // =======================================================================
-            //CONNECT starksoft.com:443 HTTP/1.0<CR><LF>
-            //HOST starksoft.com:443<CR><LF>
-            //Proxy-Authorization: username:password<CR><LF>
-            //              NOTE: username:password string will be base64 encoded as one 
-            //                        concatenated string
-            //[... other HTTP header lines ending with <CR><LF> if required]>
-            //<CR><LF>    // Last Empty Line
-            connectCmd = string.Format(CultureInfo.InvariantCulture, HTTP_PROXY_AUTHENTICATE_CMD,
-                host, port.ToString(CultureInfo.InvariantCulture), auth, GetHttpVersionString());
+                // PROXY SERVER REQUEST
+                // =======================================================================
+                //CONNECT starksoft.com:443 HTTP/1.0<CR><LF>
+                //HOST starksoft.com:443<CR><LF>
+                //Proxy-Authorization: username:password<CR><LF>
+                //              NOTE: username:password string will be base64 encoded as one 
+                //                        concatenated string
+                //[... other HTTP header lines ending with <CR><LF> if required]>
+                //<CR><LF>    // Last Empty Line
+                connectCmd = string.Format(CultureInfo.InvariantCulture, HTTP_PROXY_AUTHENTICATE_CMD,
+                    host, port.ToString(CultureInfo.InvariantCulture), auth, GetHttpVersionString());
+            }
+            else
+            {
+                // PROXY SERVER REQUEST
+                // =======================================================================
+                //CONNECT starksoft.com:443 HTTP/1.0 <CR><LF>
+                //HOST starksoft.com:443<CR><LF>
+                //[... other HTTP header lines ending with <CR><LF> if required]>
+                //<CR><LF>    // Last Empty Line
+                connectCmd = string.Format(CultureInfo.InvariantCulture, HTTP_PROXY_CONNECT_CMD,
+                    host, port.ToString(CultureInfo.InvariantCulture), GetHttpVersionString());
+            }
         }
-        else
-        {
-            // PROXY SERVER REQUEST
-            // =======================================================================
-            //CONNECT starksoft.com:443 HTTP/1.0 <CR><LF>
-            //HOST starksoft.com:443<CR><LF>
-            //[... other HTTP header lines ending with <CR><LF> if required]>
-            //<CR><LF>    // Last Empty Line
-            connectCmd = string.Format(CultureInfo.InvariantCulture, HTTP_PROXY_CONNECT_CMD,
-                host, port.ToString(CultureInfo.InvariantCulture), GetHttpVersionString());
-        }
+        catch (Exception) { }
         return connectCmd;
     }
 
@@ -420,120 +421,14 @@ public class HttpProxyClient
         _respText = line[(end + 1)..].Trim();
     }
 
-    private string GetHttpVersionString()
+    private string? GetHttpVersionString()
     {
         return _httpVersion switch
         {
             HttpVersions.Version1_0 => "1.0",
             HttpVersions.Version1_1 => "1.1",
-            _ => throw new Exception($"Unexpect HTTP version {_httpVersion} specified."),
+            _ => null,
         };
-    }
-
-    //Async Methods
-    private BackgroundWorker? _asyncWorker;
-    private Exception? _asyncException;
-    bool _asyncCancelled;
-
-    /// <summary>
-    /// Gets a value indicating whether an asynchronous operation is running.
-    /// </summary>
-    /// <remarks>Returns true if an asynchronous operation is running; otherwise, false.
-    /// </remarks>
-    public bool IsBusy
-    {
-        get { return _asyncWorker != null && _asyncWorker.IsBusy; }
-    }
-
-    /// <summary>
-    /// Gets a value indicating whether an asynchronous operation is cancelled.
-    /// </summary>
-    /// <remarks>Returns true if an asynchronous operation is cancelled; otherwise, false.
-    /// </remarks>
-    public bool IsAsyncCancelled
-    {
-        get { return _asyncCancelled; }
-    }
-
-    /// <summary>
-    /// Cancels any asychronous operation that is currently active.
-    /// </summary>
-    public void CancelAsync()
-    {
-        if (_asyncWorker != null && !_asyncWorker.CancellationPending && _asyncWorker.IsBusy)
-        {
-            _asyncCancelled = true;
-            _asyncWorker.CancelAsync();
-        }
-    }
-
-    private void CreateAsyncWorker()
-    {
-        if (_asyncWorker != null)
-            _asyncWorker.Dispose();
-        _asyncException = null;
-        _asyncWorker = null;
-        _asyncCancelled = false;
-        _asyncWorker = new();
-    }
-
-    /// <summary>
-    /// Event handler for CreateConnectionAsync method completed.
-    /// </summary>
-    public event EventHandler<CreateConnectionAsyncCompletedEventArgs>? CreateConnectionAsyncCompleted;
-
-    /// <summary>
-    /// Asynchronously creates a remote TCP connection through a proxy server to the destination host on the destination port.
-    /// </summary>
-    /// <param name="destinationHost">Destination host name or IP address.</param>
-    /// <param name="destinationPort">Port number to connect to on the destination host.</param>
-    /// <returns>
-    /// Returns an open TcpClient object that can be used normally to communicate
-    /// with the destination server
-    /// </returns>
-    /// <remarks>
-    /// This method creates a connection to the proxy server and instructs the proxy server
-    /// to make a pass through connection to the specified destination host on the specified
-    /// port.  
-    /// </remarks>
-    public void CreateConnectionAsync(string destinationHost, int destinationPort)
-    {
-        if (_asyncWorker != null)
-        {
-            if (_asyncWorker.IsBusy)
-                throw new InvalidOperationException("The HttpProxy object is already busy executing another asynchronous operation. You can only execute one asychronous method at a time.");
-
-            CreateAsyncWorker();
-            _asyncWorker.WorkerSupportsCancellation = true;
-            _asyncWorker.DoWork += new DoWorkEventHandler(CreateConnectionAsync_DoWork);
-            _asyncWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(CreateConnectionAsync_RunWorkerCompleted);
-            object[] args = new object[2];
-            args[0] = destinationHost;
-            args[1] = destinationPort;
-            _asyncWorker.RunWorkerAsync(args);
-        }
-    }
-
-    private void CreateConnectionAsync_DoWork(object? sender, DoWorkEventArgs e)
-    {
-        try
-        {
-            if (e.Argument != null)
-            {
-                object[] args = (object[])e.Argument;
-                e.Result = CreateConnection((string)args[0], (int)args[1]);
-            }
-        }
-        catch (Exception ex)
-        {
-            _asyncException = ex;
-        }
-    }
-
-    private void CreateConnectionAsync_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
-    {
-        if (e.Result != null)
-            CreateConnectionAsyncCompleted?.Invoke(this, new CreateConnectionAsyncCompletedEventArgs(_asyncException, _asyncCancelled, (TcpClient)e.Result));
     }
 
 }

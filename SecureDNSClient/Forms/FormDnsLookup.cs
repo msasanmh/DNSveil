@@ -55,7 +55,7 @@ public partial class FormDnsLookup : Form
     private async void FixScreenDpi()
     {
         // Setting Width Of Controls
-        await FormMain.SettingWidthOfControls(this);
+        await ScreenDPI.SettingWidthOfControls(this);
 
         // Fix Controls Location
         int shw = TextRenderer.MeasureText("I", Font).Width;

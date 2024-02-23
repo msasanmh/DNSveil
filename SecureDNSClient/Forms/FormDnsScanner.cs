@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using static SecureDNSClient.FormMain;
 
 namespace SecureDNSClient;
 
@@ -72,7 +73,7 @@ public partial class FormDnsScanner : Form
     private async void FixScreenDpi()
     {
         // Setting Width Of Controls
-        await FormMain.SettingWidthOfControls(this);
+        await ScreenDPI.SettingWidthOfControls(this);
 
         // Fix Controls Location
         int shw = TextRenderer.MeasureText("I", Font).Width;
@@ -208,6 +209,20 @@ public partial class FormDnsScanner : Form
         CustomLabelDnsBrowse.Text = $"{selectedFiles.Count} file{s} selected.";
     }
 
+    private void ReadRdrList(List<ReadDnsResult> rdrList)
+    {
+        string allContent = string.Empty;
+
+        for (int n = 0; n < rdrList.Count; n++)
+        {
+            ReadDnsResult rdr = rdrList[n];
+            allContent += rdr.DNS;
+            allContent += NL;
+        }
+
+        ScanContent = allContent;
+    }
+
     private void CustomButtonSmartDnsSelect_Click(object sender, EventArgs e)
     {
         string domains = string.Empty;
@@ -332,7 +347,9 @@ public partial class FormDnsScanner : Form
             string msg = $"Reading Custom Servers...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
 
-            ScanContent = await FormMain.ReadCustomServersXml(SecureDNS.CustomServersXmlPath);
+            CheckRequest cr = new() { CheckMode = CheckMode.CustomServers };
+            List<ReadDnsResult> rdrList = await FormMain.ReadCustomServersXml(SecureDNS.CustomServersXmlPath, cr);
+            ReadRdrList(rdrList);
         }
 
         string localDns = $"{IPAddress.Loopback}";
@@ -370,7 +387,7 @@ public partial class FormDnsScanner : Form
             {
                 if (Exit) return false;
 
-                string dns = lines[n];
+                string dns = lines[n].Trim();
 
                 if (FormMain.IsDnsProtocolSupported(dns))
                 {
@@ -657,7 +674,9 @@ public partial class FormDnsScanner : Form
                         string website = DomainsToCheckForSmartDNS[n].Trim();
                         if (!string.IsNullOrEmpty(website))
                         {
-                            bool isSmart = await checkFilters.CheckAsSmartDns(IPAddress.Loopback.ToString(), website);
+                            bool isSmart = await checkFilters.CheckAsSmartDns($"tcp://{SecureDNS.BootstrapDnsIPv4}:{SecureDNS.BootstrapDnsPort}", website);
+                            if (!isSmart)
+                                isSmart = await checkFilters.CheckAsSmartDns(IPAddress.Loopback.ToString(), website);
                             Color color = isSmart ? Color.MediumSeaGreen : Color.DodgerBlue;
                             r1 = "Act as SmartDNS for \"";
                             r2 = "\": ";

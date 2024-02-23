@@ -17,28 +17,28 @@ public partial class FormMain
         string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text;
         NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string dohHost, out _, out _, out int _, out string _, out bool _);
 
-        // It's blocked message
+        // It's Blocked Message
         string msgBlocked = $"It's blocked.{NL}";
         msgBlocked += $"Trying to bypass {dohHost}{NL}";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgBlocked, Color.Orange));
 
-        // Get fragment settings
+        // Get Fragment Settings
         int beforSniChunks = Convert.ToInt32(CustomNumericUpDownPDpiBeforeSniChunks.Value);
         int chunkModeInt = -1;
         this.InvokeIt(() => chunkModeInt = CustomComboBoxPDpiSniChunkMode.SelectedIndex);
-        ProxyProgram.DPIBypass.ChunkMode chunkMode = chunkModeInt switch
+        ProxyProgram.Fragment.ChunkMode chunkMode = chunkModeInt switch
         {
-            0 => ProxyProgram.DPIBypass.ChunkMode.SNI,
-            1 => ProxyProgram.DPIBypass.ChunkMode.SniExtension,
-            2 => ProxyProgram.DPIBypass.ChunkMode.AllExtensions,
-            _ => ProxyProgram.DPIBypass.ChunkMode.AllExtensions,
+            0 => ProxyProgram.Fragment.ChunkMode.SNI,
+            1 => ProxyProgram.Fragment.ChunkMode.SniExtension,
+            2 => ProxyProgram.Fragment.ChunkMode.AllExtensions,
+            _ => ProxyProgram.Fragment.ChunkMode.AllExtensions,
         };
 
         int sniChunks = Convert.ToInt32(CustomNumericUpDownPDpiSniChunks.Value);
         int antiPatternOffset = Convert.ToInt32(CustomNumericUpDownPDpiAntiPatternOffset.Value);
         int fragmentDelay = Convert.ToInt32(CustomNumericUpDownPDpiFragDelay.Value);
 
-        // Get killOnCpuUsage Setting
+        // Get KillOnCpuUsage Setting
         int killOnCpuUsage = GetKillOnCpuUsageSetting();
 
         string command;
@@ -63,7 +63,7 @@ public partial class FormMain
         if (!ProcessManager.FindProcessByPID(PIDCamouflageProxy)) return false;
         
         // Apply DPI Bypass Program
-        command = $"Programs DpiBypass -Mode=Program -BeforeSniChunks={beforSniChunks} -ChunkMode={chunkMode} -SniChunks={sniChunks} -AntiPatternOffset={antiPatternOffset} -FragmentDelay={fragmentDelay}";
+        command = $"Programs Fragment -Mode=Program -BeforeSniChunks={beforSniChunks} -ChunkMode={chunkMode} -SniChunks={sniChunks} -AntiPatternOffset={antiPatternOffset} -FragmentDelay={fragmentDelay}";
         isCmdSent = await CamouflageProxyConsole.SendCommandAsync(command);
         if (!isCmdSent) return false;
         
@@ -259,7 +259,7 @@ public partial class FormMain
                     if (IsConnected)
                     {
                         string msgFailure1 = $"{NL}Failure: ";
-                        string msgFailure2 = $"Change DPI bypass settings on Share tab and try again.{NL}";
+                        string msgFailure2 = $"Change Fragment settings on Share tab and try again.{NL}";
                         if (IsDisconnecting) msgFailure2 = $"Task Canceled.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailure1, Color.IndianRed));
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailure2, Color.LightGray));

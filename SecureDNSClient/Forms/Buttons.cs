@@ -1,8 +1,15 @@
 ﻿using CustomControls;
+using Microsoft.VisualBasic;
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass.Themes;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace SecureDNSClient;
 
@@ -11,6 +18,7 @@ public partial class FormMain
     // Status
     private void CustomButtonProcessMonitor_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Check if it's already open
         Form f = Application.OpenForms[nameof(FormProcessMonitor)];
         if (f != null)
@@ -25,27 +33,16 @@ public partial class FormMain
         formProcessMonitor.Show();
     }
 
-    private void CustomButtonBenchmark_Click(object sender, EventArgs e)
+    private void CustomButtonExit_Click(object sender, EventArgs e)
     {
-        // Check if it's already open
-        Form f = Application.OpenForms[nameof(FormBenchmark)];
-        if (f != null)
-        {
-            f.BringToFront();
-            return;
-        }
-
-        string bootstrapIp = GetBootstrapSetting(out int bootstrapPort).ToString();
-
-        FormBenchmark formBenchmark = new(bootstrapIp, bootstrapPort);
-        formBenchmark.StartPosition = FormStartPosition.Manual;
-        formBenchmark.Location = new Point(MousePosition.X - formBenchmark.Width, MousePosition.Y - formBenchmark.Height);
-        formBenchmark.Show();
+        if (IsExiting) return;
+        Exit_Click(null, null);
     }
 
     // Secure DNS -> Check
     private void CustomButtonEditCustomServers_MouseUp(object sender, MouseEventArgs e)
     {
+        if (IsExiting) return;
         if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right)
         {
             TsiEdit.Font = Font;
@@ -74,7 +71,7 @@ public partial class FormMain
 
             void edit()
             {
-                if (IsInAction(true, true, true, true, true, true, true, true, false, false, true)) return;
+                if (IsInAction(true, true, true, true, true, true, true, true, false, false, true, out _)) return;
 
                 FormCustomServers formCustomServers = new();
                 formCustomServers.StartPosition = FormStartPosition.CenterParent;
@@ -97,7 +94,7 @@ public partial class FormMain
                 try
                 {
                     File.Delete(SecureDNS.WorkingServersPath);
-                    string msg = $"{NL}Working Servers Cleared.{NL}{NL}";
+                    string msg = $"{NL}Custom Working Servers Cleared.{NL}{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
                 }
                 catch (Exception ex)
@@ -110,16 +107,27 @@ public partial class FormMain
 
     private async void CustomButtonCheck_MouseUp(object sender, MouseEventArgs e)
     {
+        if (IsExiting) return;
         if (e.Button == MouseButtons.Left)
         {
-            if (IsInAction(true, true, true, false, true, true, true, true, true, false, true)) return;
-            StartCheck(null);
+            if (IsInAction(true, true, true, false, true, true, true, true, true, false, true, out _)) return;
+            StartCheck(new CheckRequest { CheckMode = GetCheckMode() });
         }
         else if (e.Button == MouseButtons.Right)
         {
-            if (IsInAction(true, true, true, true, true, true, true, true, true, false, true)) return;
+            if (IsInAction(true, true, true, true, true, true, true, true, true, false, true, out _)) return;
             List<string> groupList = await ReadCustomServersXmlGroups(SecureDNS.CustomServersXmlPath);
             ToolStripItem[] subMenuItems = new ToolStripItem[groupList.Count];
+
+            // Add Clear Checked Servers to DropDown Items
+            TsiClearCheckedServers.Font = Font;
+            TsiClearCheckedServers.Click -= tsiClearCheckedServers_Click;
+            TsiClearCheckedServers.Click += tsiClearCheckedServers_Click;
+
+            // Add Rescan Checked Servers to DropDown Items
+            TsiRescanCheckedServers.Font = Font;
+            TsiRescanCheckedServers.Click -= tsiRescanCheckedServers_Click;
+            TsiRescanCheckedServers.Click += tsiRescanCheckedServers_Click;
 
             // Add Built-In to DropDown Items
             TsiScanBuiltIn.Font = Font;
@@ -137,33 +145,69 @@ public partial class FormMain
                 subMenuItems[n].Click += scanCustomGroup_Click;
             }
 
+            bool clearOnNewCheck = true;
+            this.InvokeIt(() => clearOnNewCheck = CustomCheckBoxSettingCheckClearWorkingServers.Checked);
+
             CMS.Font = Font;
             CMS.Items.Clear();
+            if (!clearOnNewCheck && WorkingDnsList.Any()) CMS.Items.Add(TsiClearCheckedServers);
+            if (WorkingDnsList.Any()) CMS.Items.Add(TsiRescanCheckedServers);
             CMS.Items.Add(TsiScanBuiltIn);
+            if (groupList.Any()) CMS.Items.Add("-"); // Add Separator
             CMS.Items.AddRange(subMenuItems);
             Theme.SetColors(CMS);
             CMS.RoundedCorners = 5;
             CMS.Show(CustomButtonCheck, 0, 0);
         }
 
+        async void tsiClearCheckedServers_Click(object? sender, EventArgs e)
+        {
+            if (IsExiting) return;
+            if (!IsCheckingForUpdate && !IsConnecting)
+            {
+                try
+                {
+                    WorkingDnsList.Clear();
+                    await UpdateStatusLong();
+                }
+                catch (Exception) { }
+            }
+        }
+
+        void tsiRescanCheckedServers_Click(object? sender, EventArgs e)
+        {
+            if (IsExiting) return;
+            StartCheck(new CheckRequest { CheckMode = CheckMode.MixedServers });
+        }
+
         void scanBuiltIn_Click(object? sender, EventArgs e)
         {
             if (IsExiting) return;
-            StartCheck("builtin");
+            StartCheck(new CheckRequest { CheckMode = CheckMode.BuiltIn });
         }
 
         void scanCustomGroup_Click(object? sender, EventArgs e)
         {
             if (IsExiting) return;
-            if (sender is ToolStripMenuItem tsmi) StartCheck(tsmi.Name);
+            if (sender is ToolStripMenuItem tsmi)
+                StartCheck(new CheckRequest { CheckMode = CheckMode.CustomServers, HasUserGroupName = true, GroupName = tsmi.Name });
         }
     }
 
     private async void CustomButtonQuickConnect_MouseUp(object sender, MouseEventArgs e)
     {
+        if (IsExiting) return;
         if (e.Button == MouseButtons.Left)
         {
-            await StartQuickConnect(null);
+            // QC To User Settings
+            CheckRequest cr = new() { CheckMode = GetCheckMode() };
+            QuickConnectRequest qcr = new()
+            {
+                CheckRequest = cr,
+                CanUseSavedServers = true,
+                ConnectMode = GetConnectModeForQuickConnect()
+            };
+            await StartQuickConnect(qcr, false);
         }
         else if (e.Button == MouseButtons.Right)
         {
@@ -198,37 +242,61 @@ public partial class FormMain
 
     private async void CustomButtonDisconnectAll_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         await DisconnectAll();
     }
 
     private async void CustomButtonCheckUpdate_Click(object sender, EventArgs e)
     {
-        if (IsInAction(true, true, false, false, false, false, false, false, false, false, true)) return;
+        if (IsExiting) return;
+        if (IsInAction(true, true, false, false, false, false, false, false, false, false, true, out _)) return;
         await CheckUpdate(true);
     }
 
     // Secure DNS -> Connect
     private async void CustomButtonWriteSavedServersDelay_Click(object sender, EventArgs e)
     {
-        if (IsInAction(true, true, true, true, true, true, true, true, true, false, true)) return;
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, true, true, true, true, true, false, true, out _)) return;
         await WriteSavedServersDelayToLog();
     }
 
     private async void CustomButtonConnect_Click(object? sender, EventArgs? e)
     {
-        if (IsInAction(true, true, true, true, false, false, true, true, true, true, true)) return;
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, false, false, true, true, true, true, true, out _)) return;
         await StartConnect(GetConnectMode());
     }
 
-    // Secure DNS -> Set DNS
-    private void CustomButtonUpdateNICs_Click(object sender, EventArgs e)
+    private async void CustomButtonReconnect_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, false, true, true, true, true, true, true, out _)) return;
+        if (sender is not CustomButton cb) return;
+        IsReconnecting = true;
+        this.InvokeIt(() => cb.Enabled = false);
+        await StartConnect(GetConnectMode(), true);
+        IsReconnecting = false;
+    }
+
+    // Secure DNS -> Set DNS
+    private async void CustomButtonUpdateNICs_Click(object sender, EventArgs e)
+    {
+        if (IsExiting) return;
         // Update NICs
-        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+        await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port, false);
+    }
+
+    private async void CustomButtonFindActiveNic_Click(object sender, EventArgs e)
+    {
+        if (IsExiting) return;
+        // Find Active NIC
+        await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port, true);
     }
 
     private async void CustomButtonEnableDisableNic_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         if (CustomComboBoxNICs.SelectedItem == null) return;
         string? nicName = CustomComboBoxNICs.SelectedItem.ToString();
         if (string.IsNullOrEmpty(nicName)) return;
@@ -248,7 +316,7 @@ public partial class FormMain
         }
 
         // Update NIC Status
-        await Task.Run(() => UpdateStatusNic());
+        await UpdateStatusNic();
 
         // Enable Button
         CustomButtonEnableDisableNic.Enabled = true;
@@ -256,16 +324,45 @@ public partial class FormMain
 
     private async void CustomButtonSetDNS_Click(object sender, EventArgs e)
     {
-        if (IsInAction(true, true, true, true, true, true, true, true, true, false, true)) return;
-        await SetDNS();
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, true, true, true, true, true, false, true, out _)) return;
+        await SetDNS(GetNicNameSetting(CustomComboBoxNICs).NICs);
 
         // Update NIC Status
-        await Task.Run(() => UpdateStatusNic());
+        await UpdateStatusNic();
+    }
+
+    private async void CustomButtonUnsetAllDNSs_Click(object sender, EventArgs e)
+    {
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, true, true, true, true, true, false, true, out _)) return;
+
+        IsDNSSet = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs, out bool isDnsSetOn, out _);
+        IsDNSSetOn = isDnsSetOn;
+
+        if (!IsDNSSet)
+        {
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"There is nothing to unset.{NL}", Color.DodgerBlue));
+            return;
+        }
+
+        IsDNSUnsetting = true;
+        this.InvokeIt(() => CustomButtonUnsetAllDNSs.Enabled = false);
+        this.InvokeIt(() => CustomButtonUnsetAllDNSs.Text = "Unsetting...");
+        await UnsetAllDNSs(true);
+        await FlushDNS(true, true);
+        this.InvokeIt(() => CustomButtonUnsetAllDNSs.Text = "Unset All DNSs");
+        this.InvokeIt(() => CustomButtonUnsetAllDNSs.Enabled = true);
+        IsDNSUnsetting = false;
+
+        // Update NIC Status
+        await UpdateStatusNic();
     }
 
     // Secure DNS -> Share + DPI Bypass
     private void CustomButtonPDpiPresetDefault_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         CustomNumericUpDownPDpiBeforeSniChunks.Value = (decimal)50;
         CustomComboBoxPDpiSniChunkMode.SelectedIndex = 0;
         CustomNumericUpDownPDpiSniChunks.Value = (decimal)5;
@@ -279,20 +376,29 @@ public partial class FormMain
         CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
     }
 
+    private void CustomButtonShareRulesStatusRead_Click(object sender, EventArgs e)
+    {
+        if (IsExiting) return;
+        ReadProxyRules();
+    }
+
     private async void CustomButtonShare_Click(object sender, EventArgs e)
     {
-        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true)) return;
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true, out _)) return;
         await StartProxy();
     }
 
     private void CustomButtonSetProxy_Click(object sender, EventArgs e)
     {
-        if (IsInAction(true, false, false, false, false, false, false, false, true, true, true)) return;
+        if (IsExiting) return;
+        if (IsInAction(true, false, false, false, false, false, false, false, true, true, true, out _)) return;
         SetProxy();
     }
 
     private async void CustomButtonPDpiApplyChanges_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         this.InvokeIt(() => CustomButtonPDpiApplyChanges.Text = "Applying");
         UpdateProxyBools = false;
         if (ProcessManager.FindProcessByPID(PIDFakeProxy))
@@ -314,7 +420,8 @@ public partial class FormMain
 
     private async void CustomButtonPDpiCheck_Click(object sender, EventArgs e)
     {
-        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true)) return;
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true, out _)) return;
         // Get blocked domain
         string blockedDomain = GetBlockedDomainSetting(out _);
         await CheckDPIWorks(blockedDomain);
@@ -323,13 +430,15 @@ public partial class FormMain
     // Secure DNS -> GoodbyeDPI -> Basic
     private void CustomButtonDPIBasic_Click(object sender, EventArgs e)
     {
-        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true)) return;
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true, out _)) return;
         // Activate/Reactivate GoodbyeDPI Basic
         GoodbyeDPIBasic();
     }
 
     private void CustomButtonDPIBasicDeactivate_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Deactivate GoodbyeDPI Basic
         GoodbyeDPIDeactive(true, false);
     }
@@ -337,6 +446,7 @@ public partial class FormMain
     // Secure DNS -> GoodbyeDPI -> Advanced
     private void CustomButtonDPIAdvBlacklist_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Edit GoodbyeDPI Advanced Blacklist
         FileDirectory.CreateEmptyFile(SecureDNS.DPIBlacklistPath);
         int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.DPIBlacklistPath, false, false, SecureDNS.CurrentPath);
@@ -349,13 +459,15 @@ public partial class FormMain
 
     private void CustomButtonDPIAdvActivate_Click(object sender, EventArgs e)
     {
-        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true)) return;
+        if (IsExiting) return;
+        if (IsInAction(true, true, true, true, true, true, true, true, true, true, true, out _)) return;
         // Activate/Reactivate GoodbyeDPI Advanced
         GoodbyeDPIAdvanced();
     }
 
     private void CustomButtonDPIAdvDeactivate_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Deactivate GoodbyeDPI Advanced
         GoodbyeDPIDeactive(false, true);
     }
@@ -363,6 +475,7 @@ public partial class FormMain
     // Tools
     private void CustomButtonToolsDnsScanner_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Check if it's already open
         Form f = Application.OpenForms[nameof(FormDnsScanner)];
         if (f != null)
@@ -378,6 +491,7 @@ public partial class FormMain
 
     private void CustomButtonToolsDnsLookup_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         FormDnsLookup formDnsLookup = new();
         formDnsLookup.StartPosition = FormStartPosition.Manual;
         formDnsLookup.Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsDnsLookup.Top);
@@ -386,6 +500,7 @@ public partial class FormMain
 
     private void CustomButtonToolsStampReader_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Check if it's already open
         Form f = Application.OpenForms[nameof(FormStampReader)];
         if (f != null)
@@ -402,6 +517,7 @@ public partial class FormMain
 
     private void CustomButtonToolsStampGenerator_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Check if it's already open
         Form f = Application.OpenForms[nameof(FormStampGenerator)];
         if (f != null)
@@ -418,6 +534,7 @@ public partial class FormMain
 
     private void CustomButtonToolsIpScanner_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Check if it's already open
         Form f = Application.OpenForms[nameof(FormIpScanner)];
         if (f != null)
@@ -434,8 +551,9 @@ public partial class FormMain
 
     private async void CustomButtonToolsFlushDns_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Flush Dns
-        if (IsInAction(true, false, true, true, true, true, true, true, true, false, true)) return;
+        if (IsInAction(true, false, true, true, true, true, true, true, true, false, true, out _)) return;
         CustomButtonToolsFlushDns.Enabled = false;
         CustomButtonToolsFlushDns.Text = "Flushing...";
         await FlushDnsOnExit(true);
@@ -444,21 +562,43 @@ public partial class FormMain
         CustomButtonToolsFlushDns.Enabled = true;
     }
 
+    private void CustomButtonBenchmark_Click(object sender, EventArgs e)
+    {
+        if (IsExiting) return;
+        // Check if it's already open
+        Form f = Application.OpenForms[nameof(FormBenchmark)];
+        if (f != null)
+        {
+            f.BringToFront();
+            return;
+        }
+
+        string bootstrapIp = GetBootstrapSetting(out int bootstrapPort).ToString();
+
+        FormBenchmark formBenchmark = new(bootstrapIp, bootstrapPort);
+        formBenchmark.StartPosition = FormStartPosition.Manual;
+        formBenchmark.Location = new Point(MousePosition.X - CustomButtonBenchmark.Width, MousePosition.Y - CustomButtonBenchmark.Top);
+        formBenchmark.Show();
+    }
+
     // Settings -> Working Mode
     private void CustomButtonSettingUninstallCertificate_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         UninstallCertificate();
     }
 
     // Settings -> Quick Connect
-    private void CustomButtonSettingQcUpdateNics_Click(object sender, EventArgs e)
+    private async void CustomButtonSettingQcUpdateNics_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         // Update NICs (Quick Connect Settings)
-        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, out _);
+        await SetDnsOnNic_.UpdateNICs(CustomComboBoxSettingQcNics, GetBootstrapSetting(out int port), port);
     }
 
     private void CustomButtonSettingQcStartup_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         if (IsOnStartup)
         {
             if (IsStartupPathOk)
@@ -498,44 +638,11 @@ public partial class FormMain
     }
 
     // Settings -> Share -> Advanced
-    private void CustomButtonSettingProxyFakeDNS_Click(object sender, EventArgs e)
+    private void CustomButtonSettingProxyRules_Click(object sender, EventArgs e)
     {
-        FileDirectory.CreateEmptyFile(SecureDNS.FakeDnsRulesPath);
-        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.FakeDnsRulesPath, false, false, SecureDNS.CurrentPath);
-        if (notepad == -1)
-        {
-            string msg = "Notepad is not installed on your system.";
-            CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
-        }
-    }
-
-    private void CustomButtonSettingProxyBlackWhiteList_Click(object sender, EventArgs e)
-    {
-        FileDirectory.CreateEmptyFile(SecureDNS.BlackWhiteListPath);
-        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.BlackWhiteListPath, false, false, SecureDNS.CurrentPath);
-        if (notepad == -1)
-        {
-            string msg = "Notepad is not installed on your system.";
-            CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
-        }
-    }
-
-    private void CustomButtonSettingProxyDontBypass_Click(object sender, EventArgs e)
-    {
-        FileDirectory.CreateEmptyFile(SecureDNS.DontBypassListPath);
-        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.DontBypassListPath, false, false, SecureDNS.CurrentPath);
-        if (notepad == -1)
-        {
-            string msg = "Notepad is not installed on your system.";
-            CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
-        }
-    }
-
-    // Settings -> Share -> SSL Decryption
-    private void CustomButtonSettingProxyFakeSNI_Click(object sender, EventArgs e)
-    {
-        FileDirectory.CreateEmptyFile(SecureDNS.FakeSniRulesPath);
-        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.FakeSniRulesPath, false, false, SecureDNS.CurrentPath);
+        if (IsExiting) return;
+        FileDirectory.CreateEmptyFile(SecureDNS.ProxyRulesPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.ProxyRulesPath, false, false, SecureDNS.CurrentPath);
         if (notepad == -1)
         {
             string msg = "Notepad is not installed on your system.";
@@ -546,6 +653,7 @@ public partial class FormMain
     // Settings -> Others
     private void CustomButtonSettingRestoreDefault_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         if (IsCheckingStarted)
         {
             string msgChecking = "Stop check operation first." + NL;
@@ -575,6 +683,7 @@ public partial class FormMain
 
     private async void CustomButtonExportUserData_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         using SaveFileDialog sfd = new();
         sfd.Filter = "SDC User Data (*.sdcud)|*.sdcud";
         sfd.DefaultExt = ".sdcud";
@@ -601,6 +710,7 @@ public partial class FormMain
 
     private async void CustomButtonImportUserData_Click(object sender, EventArgs e)
     {
+        if (IsExiting) return;
         using OpenFileDialog ofd = new();
         ofd.Filter = "SDC User Data (*.sdcud)|*.sdcud";
         ofd.DefaultExt = ".sdcud";

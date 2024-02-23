@@ -80,19 +80,19 @@ public partial class FormMain
 
     private void UninstallCertificate()
     {
-        bool isCertInstalled = CertificateTool.IsCertificateInstalled(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
-        if (isCertInstalled)
+        bool isRootCertInstalled = CertificateTool.IsCertificateInstalled(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
+        if (isRootCertInstalled)
         {
             if (IsDoHConnected)
             {
-                string msg = "You cannot uninstall certificate while DoH Server is active.";
+                string msg = "You cannot uninstall Root Certificate while DoH Server is active.";
                 CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             if (IsProxySSLDecryptionActive)
             {
-                string msg = "You cannot uninstall certificate while Proxy Server is active and using SSL Decryption.";
+                string msg = "You cannot uninstall Root Certificate while Proxy Server is active and using SSL Decryption.";
                 CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -105,14 +105,67 @@ public partial class FormMain
             {
                 Directory.Delete(SecureDNS.CertificateDirPath, true);
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
+            catch (Exception) { }
         }
-        else
+
+        // Fix Users Mistakes
+        List<Tuple<string, StoreName, StoreLocation>> stores = new()
         {
-            string msg = "Certificate is already uninstalled.";
+            // Add Root Cert
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.AddressBook, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.AddressBook, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.AuthRoot, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.AuthRoot, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.CertificateAuthority, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.CertificateAuthority, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.Disallowed, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.Disallowed, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.My, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.My, StoreLocation.LocalMachine),
+            //new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.TrustedPeople, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.TrustedPeople, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.TrustedPublisher, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertIssuerSubjectName, StoreName.TrustedPublisher, StoreLocation.LocalMachine),
+
+            // Add Cert
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.AddressBook, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.AddressBook, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.AuthRoot, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.AuthRoot, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.CertificateAuthority, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.CertificateAuthority, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.Disallowed, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.Disallowed, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.My, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.My, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.Root, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.Root, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.TrustedPeople, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.TrustedPeople, StoreLocation.LocalMachine),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.TrustedPublisher, StoreLocation.CurrentUser),
+            new Tuple<string, StoreName, StoreLocation>(SecureDNS.CertSubjectName, StoreName.TrustedPublisher, StoreLocation.LocalMachine),
+        };
+
+        bool isAnyCertInstalledByMistake = false;
+        foreach (Tuple<string, StoreName, StoreLocation> store in stores)
+        {
+            try
+            {
+                bool isCertInstalled = CertificateTool.IsCertificateInstalled(store.Item1, store.Item2, store.Item3);
+                if (isCertInstalled)
+                {
+                    isAnyCertInstalledByMistake = true;
+                    CertificateTool.UninstallCertificate(store.Item1, store.Item2, store.Item3);
+                }
+            }
+            catch (Exception) { }
+        }
+
+        if (!isRootCertInstalled && !isAnyCertInstalledByMistake)
+        {
+            string msg = "Root Certificate is already uninstalled.";
             CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }

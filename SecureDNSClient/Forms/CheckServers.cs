@@ -7,7 +7,7 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    private async void StartCheck(string? groupName = null, bool stop = false)
+    private async void StartCheck(CheckRequest checkRequest, bool stop = false, bool limitLog = false)
     {
         // Return if binary files are missing
         if (!CheckNecessaryFiles()) return;
@@ -27,29 +27,23 @@ public partial class FormMain
                 return;
             }
 
-            // Unset DNS if it's not connected before checking.
-            if (!IsDNSConnected && IsDNSSet)
-            {
-                await SetDNS(null, true); // Unset DNS
-            }
-
             try
             {
-                Task taskCheck = Task.Run(async () => await CheckServers(groupName));
+                Task taskCheck = Task.Run(async () => await CheckServers(checkRequest, limitLog));
 
                 await taskCheck.ContinueWith(async _ =>
                 {
                     // Save working servers to file
-                    if (!CustomRadioButtonBuiltIn.Checked && WorkingDnsAndLatencyListToFile.Any())
+                    if (WorkingDnsListToFile.Any())
                     {
                         // Sort By Latency
-                        WorkingDnsAndLatencyListToFile = WorkingDnsAndLatencyListToFile.OrderBy(t => t.Item1).ToList();
-                        // Add Servers to WorkingDnsListToFile
-                        WorkingDnsListToFile = WorkingDnsListToFile.Concat(WorkingDnsAndLatencyListToFile.Select(t => t.Item2).ToList()).ToList();
-                        // Remove Duplicates
-                        WorkingDnsListToFile = WorkingDnsListToFile.RemoveDuplicates();
+                        WorkingDnsListToFile = WorkingDnsListToFile.OrderBy(x => x.Latency).ToList();
+                        // Get Only Servers & Remove Duplicates
+                        List<string> exportList = WorkingDnsListToFile
+                                                  .Where(x => x.CheckMode != CheckMode.BuiltIn || x.CheckMode != CheckMode.SavedServers)
+                                                  .Select(x => x.DNS).Distinct().ToList();
                         // Save to File
-                        WorkingDnsListToFile.SaveToFile(SecureDNS.WorkingServersPath);
+                        if (exportList.Any()) exportList.SaveToFile(SecureDNS.WorkingServersPath);
                     }
 
                     string msg = $"{NL}Check Task: {taskCheck.Status}{NL}";
@@ -59,6 +53,7 @@ public partial class FormMain
                     IsCheckingStarted = false;
                     StopChecking = false;
                     await UpdateStatusShortOnBoolsChanged();
+                    await UpdateStatusLong();
                 }, TaskScheduler.FromCurrentSynchronizationContext());
             }
             catch (Exception ex)
@@ -115,21 +110,19 @@ public partial class FormMain
     /// <summary>
     /// Check DNS Servers
     /// </summary>
-    /// <param name="groupName">Custom Servers Group Name To Check</param>
     /// <returns>Returns True if find any working server</returns>
-    private async Task<bool> CheckServers(string? groupName = null)
+    private async Task<bool> CheckServers(CheckRequest checkRequest, bool limitLog = false)
     {
+        // Get Clear Working Servers on new check
+        bool clearOnNewCheck = true;
+        this.InvokeIt(() => clearOnNewCheck = CustomCheckBoxSettingCheckClearWorkingServers.Checked);
+
         // Clear Log on new Check
         if (!Program.IsStartup)
             this.InvokeIt(() => CustomRichTextBoxLog.ResetText());
 
-        // MsgGroupName
-        string msgGroupName = groupName ?? string.Empty;
-        if (msgGroupName.Equals("builtin")) msgGroupName = "Built-In";
-        if (!string.IsNullOrEmpty(msgGroupName)) msgGroupName = $" (Group: {msgGroupName})";
-        
         // Check servers comment
-        string checkingServers = $"Checking servers{msgGroupName}:{NL}{NL}";
+        string checkingServers = $"Checking servers (Group: {checkRequest.GroupName}):{NL}{NL}";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(checkingServers, Color.MediumSeaGreen));
 
         // Get blocked domain
@@ -146,22 +139,15 @@ public partial class FormMain
         // Get insecure state
         bool insecure = CustomCheckBoxInsecure.Checked;
 
-        // Built-in or Custom
-        IsBuiltinMode = CustomRadioButtonBuiltIn.Checked;
-
-        // Override Built-in or Custom
-        if (!string.IsNullOrEmpty(groupName))
-        {
-            IsBuiltinMode = groupName.Equals("builtin");
-        }
-
-        string? fileContent = string.Empty;
-        if (IsBuiltinMode)
+        List<ReadDnsResult> rdrList = new();
+        
+        if (checkRequest.CheckMode == CheckMode.BuiltIn)
         {
             string? xmlContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
-            fileContent = await ReadCustomServersXml(xmlContent, null, false); // Built-In based on custom
+            rdrList = await ReadCustomServersXml(xmlContent, checkRequest, false); // Built-In based on custom
         }
-        else
+
+        if (checkRequest.CheckMode == CheckMode.CustomServers)
         {
             // Check if Custom Servers XML is NOT Valid
             if (!XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath))
@@ -174,39 +160,78 @@ public partial class FormMain
             string msg = $"Reading Custom Servers...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
 
-            fileContent = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, groupName);
+            rdrList = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, checkRequest);
 
-            // Load saved working servers
+            // Load saved custom working servers
             WorkingDnsListToFile.Clear();
-            WorkingDnsListToFile.LoadFromFile(SecureDNS.WorkingServersPath, true, true);
+            List<string> import = new();
+            import.LoadFromFile(SecureDNS.WorkingServersPath, true, true);
+            for (int n = 0; n < import.Count; n++)
+            {
+                string workingCustomServer = import[n];
+                WorkingDnsListToFile.Add(new DnsInfo { DNS = workingCustomServer, Latency = n, CheckMode = CheckMode.CustomServers });
+            }
         }
 
-        // Clear working list to file on new check
-        WorkingDnsAndLatencyListToFile.Clear();
+        if (checkRequest.CheckMode == CheckMode.MixedServers)
+        {
+            if (WorkingDnsList.Any())
+            {
+                List<DnsInfo> workingDnsList = WorkingDnsList.ToList();
+                if (workingDnsList.Any())
+                {
+                    // Msg Adding Saved Servers With No Latency
+                    string msg = $"Reading current Working Servers...{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+
+                    for (int n = 0; n < workingDnsList.Count; n++)
+                    {
+                        DnsInfo di = workingDnsList[n];
+                        rdrList.Add(new ReadDnsResult { DNS = di.DNS, CheckMode = di.CheckMode, GroupName = di.GroupName });
+                    }
+
+                    WorkingDnsList.Clear();
+                }
+            }
+        }
 
         // Check if servers exist 1
-        string custom = IsBuiltinMode ? "built-in" : "custom";
-        string msgNoServers = $"There is no {custom} server.{NL}";
-        if (string.IsNullOrEmpty(fileContent) || string.IsNullOrWhiteSpace(fileContent))
+        string msgNoServers = $"There is no server.{NL}";
+        if (!rdrList.Any())
         {
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNoServers, Color.IndianRed));
             return false;
         }
 
-        // Add Servers to list
-        List<string> dnsList = fileContent.SplitToLines();
+        if (!clearOnNewCheck && checkRequest.CheckMode != CheckMode.MixedServers && WorkingDnsList.Any())
+        {
+            List<DnsInfo> savedList = WorkingDnsList.Where(x => x.Latency < 1).ToList();
+            if (savedList.Any())
+            {
+                // Msg Adding Saved Servers With No Latency
+                string msg = $"Adding Saved Servers with no latency...{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
 
-        if (!IsBuiltinMode && dnsList.Any())
+                for (int n = 0; n < savedList.Count; n++)
+                {
+                    DnsInfo di = savedList[n];
+                    rdrList.Add(new ReadDnsResult { DNS = di.DNS, CheckMode = CheckMode.SavedServers, GroupName = di.GroupName });
+                }
+            }
+        }
+
+        if (rdrList.Any())
         {
             // Msg Remove Duplicates
             string dedupMsg = $"Removing duplicates...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(dedupMsg, Color.DodgerBlue));
 
             // DeDup Dns List
-            dnsList = dnsList.Distinct().ToList();
+            rdrList = rdrList.DistinctBy(x => x.DNS).ToList();
+            WorkingDnsList = WorkingDnsList.DistinctBy(x => x.DNS).ToList();
         }
         
-        int dnsCount = dnsList.Count;
+        int dnsCount = rdrList.Count;
 
         // Check if servers exist 2
         if (dnsCount < 1)
@@ -220,8 +245,11 @@ public partial class FormMain
 
         // FlushDNS(); // Flush DNS makes first line always return failed
 
-        // Clear temp working list on new check
-        WorkingDnsList.Clear();
+        // Clear Working Servers on new check
+        if (clearOnNewCheck || checkRequest.ClearWorkingServers) WorkingDnsList.Clear();
+
+        // Create A New List
+        List<DnsInfo> newWorkingDnsList = new();
 
         // Get Company Data Content
         string? companyDataContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load from Embedded Resource
@@ -232,12 +260,12 @@ public partial class FormMain
         int numberOfCheckedServers = 0;
 
         // Dummy check to fix first run
-        if (dnsList.Count > 0)
-            await checkDns.CheckDnsAsync(blockedDomainNoWww, dnsList[0], 500);
-        if (dnsList.Count > 1)
-            await checkDns.CheckDnsAsync(blockedDomainNoWww, dnsList[1], 500);
-        if (dnsList.Count > 2)
-            await checkDns.CheckDnsAsync(blockedDomainNoWww, dnsList[2], 500);
+        if (rdrList.Count > 0)
+            await checkDns.CheckDnsAsync(blockedDomainNoWww, rdrList[0].DNS, 500);
+        if (rdrList.Count > 1)
+            await checkDns.CheckDnsAsync(blockedDomainNoWww, rdrList[1].DNS, 500);
+        if (rdrList.Count > 2)
+            await checkDns.CheckDnsAsync(blockedDomainNoWww, rdrList[2].DNS, 500);
 
         if (checkInParallel)
             await checkParallel();
@@ -263,8 +291,8 @@ public partial class FormMain
                 this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
                 this.InvokeIt(() => CustomProgressBarCheck.Value = n);
 
-                string dns = dnsList[n].Trim();
-                await checkOne(dns, n + 1);
+                ReadDnsResult rdr = rdrList[n];
+                await checkOne(rdr, n + 1);
 
                 // Percentage (100%)
                 if (n == dnsCount - 1)
@@ -281,7 +309,7 @@ public partial class FormMain
             await Task.Run(async () =>
             {
                 int splitSize = parallelSize;
-                var lists = dnsList.SplitToLists(splitSize);
+                var lists = rdrList.SplitToLists(splitSize);
                 int count = 0;
 
                 this.InvokeIt(() => CustomProgressBarCheck.StopTimer = false);
@@ -298,18 +326,18 @@ public partial class FormMain
                         break;
                     }
 
-                    List<string> list = lists[n];
+                    List<ReadDnsResult> list = lists[n];
 
                     // Percentage
                     count += list.Count;
                     string checkDetail = $"{count} of {dnsCount}";
                     this.InvokeIt(() => CustomProgressBarCheck.CustomText = checkDetail);
 
-                    await Parallel.ForEachAsync(list, async (dns, cancellationToken) =>
+                    await Parallel.ForEachAsync(list, async (rdr, cancellationToken) =>
                     {
                         if (StopChecking) return;
                         this.InvokeIt(() => CustomProgressBarCheck.Value += 1);
-                        await checkOne(dns, -1);
+                        await checkOne(rdr, -1);
                     });
                     
                     // Percentage (100%)
@@ -323,20 +351,22 @@ public partial class FormMain
             });
         }
 
-        async Task checkOne(string dns, int lineNumber)
+        async Task checkOne(ReadDnsResult rdr, int lineNumber)
         {
-            if (!string.IsNullOrEmpty(dns) && !string.IsNullOrWhiteSpace(dns))
+            bool isPrivate = rdr.CheckMode == CheckMode.BuiltIn || rdr.CheckMode == CheckMode.SavedServers;
+            
+            if (!string.IsNullOrEmpty(rdr.DNS))
             {
                 // All servers ++
                 numberOfAllServers++;
 
-                if (IsDnsProtocolSupported(dns))
+                if (IsDnsProtocolSupported(rdr.DNS))
                 {
                     // All supported servers ++
                     numberOfAllSupportedServers++;
 
                     // Get DNS Details
-                    DnsReader dnsReader = new(dns, companyDataContent);
+                    DnsReader dnsReader = new(rdr.DNS, companyDataContent);
 
                     //// Get Unknown Companies (Debug Only)
                     //if (dnsReader.CompanyName.ToLower().Contains("couldn't retrieve"))
@@ -356,11 +386,12 @@ public partial class FormMain
 
                     // Get Check timeout Setting
                     int timeoutMS = GetCheckTimeoutSetting();
+                    if (checkRequest.CheckMode == CheckMode.MixedServers) timeoutMS += 300;
 
                     // Is this being called by parallel?
                     bool isParallel = lineNumber == -1;
 
-                    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
+                    await checkDns.CheckDnsAsync(blockedDomainNoWww, rdr.DNS, timeoutMS);
 
                     // Get Status and Latency
                     bool dnsOK = checkDns.IsDnsOnline;
@@ -369,11 +400,20 @@ public partial class FormMain
                     // Add working DNS to list
                     if (dnsOK)
                     {
-                        WorkingDnsList.Add(new Tuple<long, string>(latency, dns));
+                        DnsInfo dnsInfo = new()
+                        {
+                            DNS = rdr.DNS, Latency = latency, CheckMode = rdr.CheckMode, GroupName = rdr.GroupName
+                        };
+
+                        int index = WorkingDnsList.FindIndex(x => x.DNS == rdr.DNS);
+                        if (index != -1) WorkingDnsList[index] = dnsInfo; // Update If Exist
+                        else WorkingDnsList.Add(dnsInfo); // Add If Not Exist
+
+                        newWorkingDnsList.Add(dnsInfo);
 
                         // Add working DNS to list to export
-                        if (!IsBuiltinMode)
-                            WorkingDnsAndLatencyListToFile.Add(new Tuple<long, string>(latency, dns));
+                        if (!isPrivate)
+                            WorkingDnsListToFile.Add(dnsInfo);
                     }
 
                     // Checked servers ++
@@ -384,6 +424,8 @@ public partial class FormMain
 
                     void writeStatusToLogParallel()
                     {
+                        if (limitLog) return;
+
                         // Write short status to log
                         string status = dnsOK ? "OK" : "Failed";
                         Color color = dnsOK ? Color.MediumSeaGreen : Color.IndianRed;
@@ -408,9 +450,9 @@ public partial class FormMain
                         else
                         {
                             // Write host to log
-                            if (!IsBuiltinMode)
+                            if (!isPrivate)
                             {
-                                host = $" [Host: {dns}]";
+                                host = $" [Host: {rdr.DNS}]";
                             }
 
                             // Write protocol name to log
@@ -426,6 +468,8 @@ public partial class FormMain
 
                     void writeStatusToLogSeries()
                     {
+                        if (limitLog) return;
+
                         // Write line number to log
                         if (lineNumber != -1)
                         {
@@ -463,10 +507,10 @@ public partial class FormMain
                         else
                         {
                             // Write host to log
-                            if (!IsBuiltinMode)
+                            if (!isPrivate)
                             {
                                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(" [Host: ", Color.LightGray));
-                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(dns, Color.DodgerBlue));
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(rdr.DNS, Color.DodgerBlue));
                                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText("]", Color.LightGray));
                             }
 
@@ -486,7 +530,7 @@ public partial class FormMain
         }
 
         // Return if there is no working server
-        if (!WorkingDnsList.Any())
+        if (!WorkingDnsList.Any() && !newWorkingDnsList.Any())
         {
             string noWorkingServer = NL + "There is no working server." + NL;
             if (StopChecking || IsDisconnecting) noWorkingServer = NL + "Task Canceled." + NL;
@@ -494,174 +538,220 @@ public partial class FormMain
             return false;
         }
 
-        // Sort by latency comment
-        string allWorkingServers = NL + "Working servers sorted by latency:" + NL + NL;
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(allWorkingServers, Color.MediumSeaGreen));
+        // Get number of max servers
+        int maxServers = GetMaxServersToConnectSetting();
 
         // Sort by latency
         if (WorkingDnsList.Count > 1)
-            WorkingDnsList = WorkingDnsList.OrderByDescending(t => t.Item1).ToList();
+            WorkingDnsList = WorkingDnsList.OrderByDescending(x => x.Latency).ToList();
+        if (newWorkingDnsList.Count > 1)
+            newWorkingDnsList = newWorkingDnsList.OrderByDescending(x => x.Latency).ToList();
 
-        // All Latencies (to get average delay)
-        long allLatencies = 0;
-        bool once = true;
-        string fastest = $"Fastest Servers:{NL}";
+        // Check Status - List
+        List<DnsInfo> checkStatusList = newWorkingDnsList.OrderBy(x => x.Latency).ToList();
+        
+        // Check Status - Clear
+        this.InvokeIt(() => CustomRichTextBoxCheckStatus.ResetText());
+        this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText($"Last Scan: ({DateTime.Now:yyyy/MM/dd HH:mm:ss}){NL}{NL}"));
 
-        for (int n = 0; n < WorkingDnsList.Count; n++)
+        for (int i = 0; i < checkStatusList.Count; i++)
         {
-            var latencyHost = WorkingDnsList[n];
-            long latency = latencyHost.Item1;
-            string host = latencyHost.Item2;
-            string dns = host;
+            DnsInfo dnsInfo = checkStatusList[i];
+            // Check Status - Group Name
+            this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText($"{i + 1}. "));
+            this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText(dnsInfo.GroupName + NL, Color.DodgerBlue));
 
-            allLatencies += latency;
-
-            // Write slowest server to log
-            if (n == 0 && WorkingDnsList.Count >= 2)
+            if (dnsInfo.Latency > 0)
             {
-                string slowest = $"Slowest Server:{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(slowest, Color.MediumSeaGreen));
-
-                // Get DNS Details
-                DnsReader dnsReader = new(dns, companyDataContent);
-
-                // write sorted result to log
-                writeSortedStatusToLog(dnsReader);
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(NL));
-            }
-            else if (WorkingDnsList.Count <= 11)
-            {
-                if (once)
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(fastest, Color.MediumSeaGreen));
-                once = false;
-
-                // Get DNS Details
-                DnsReader dnsReader = new(dns, companyDataContent);
-
-                // write sorted result to log
-                writeSortedStatusToLog(dnsReader);
-            }
-            else if (WorkingDnsList.Count - n <= 10)
-            {
-                if (once)
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(fastest, Color.MediumSeaGreen));
-                once = false;
-
-                // Get DNS Details
-                DnsReader dnsReader = new(dns, companyDataContent);
-
-                // write sorted result to log
-                writeSortedStatusToLog(dnsReader);
+                this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText("Latency: "));
+                this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText($"{dnsInfo.Latency}", Color.DodgerBlue));
+                this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText($" ms{NL}"));
             }
 
-            void writeSortedStatusToLog(DnsReader dnsReader)
-            {
-                // Write latency to log
-                string resultLatency1 = "[Latency:";
-                string resultLatency2 = $" {latency}";
-                string resultLatency3 = " ms]";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultLatency1, Color.LightGray));
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultLatency2, Color.DodgerBlue));
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultLatency3, Color.LightGray));
+            string reducted = "Reducted";
+            string dns = dnsInfo.CheckMode == CheckMode.BuiltIn || dnsInfo.CheckMode == CheckMode.SavedServers ? reducted : dnsInfo.DNS;
+            string msgDnsAddress = dns.Equals(reducted) ? "DNS Address: " : $"DNS Address:{NL}";
+            this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText(msgDnsAddress));
+            this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText($"{dns}{NL}{NL}", Color.DarkGray));
 
-                // Write host to log
-                if (dnsReader.IsDnsCryptStamp)
+            if (i + 1 >= maxServers) break;
+        }
+
+        // Sort by latency comment
+        if (!limitLog)
+        {
+            string allWorkingServers = NL + "Working servers sorted by latency:" + NL + NL;
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(allWorkingServers, Color.MediumSeaGreen));
+
+            // All Latencies (to get average delay)
+            long allLatencies = 0;
+            bool once = true;
+            string fastest = $"Fastest Servers:{NL}";
+
+            int workingDnsCount = newWorkingDnsList.Count;
+
+            for (int n = 0; n < newWorkingDnsList.Count; n++)
+            {
+                DnsInfo dnsInfo = newWorkingDnsList[n];
+
+                bool isPrivate = dnsInfo.CheckMode == CheckMode.BuiltIn || dnsInfo.CheckMode == CheckMode.SavedServers;
+
+                long latency = dnsInfo.Latency;
+                string host = dnsInfo.DNS;
+                string dns = host;
+
+                allLatencies += latency;
+
+                // Write slowest server to log
+                if (n == 0 && workingDnsCount >= 2)
                 {
-                    string sdnsHostMsg1 = $" [SDNS: ";
-                    string sdnsHostMsg2 = $"{dnsReader.ProtocolName}";
-                    string sdnsHostMsg3 = "]";
-                    if (dnsReader.StampProperties.IsDnsSec)
-                        sdnsHostMsg2 += $", DNSSec";
-                    if (dnsReader.StampProperties.IsNoLog)
-                        sdnsHostMsg2 += $", No Log";
-                    if (dnsReader.StampProperties.IsNoFilter)
-                        sdnsHostMsg2 += $", No Filter";
+                    string slowest = $"Slowest Server:{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(slowest, Color.MediumSeaGreen));
 
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg1, Color.LightGray));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg2, Color.Orange));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg3, Color.LightGray));
+                    // Get DNS Details
+                    DnsReader dnsReader = new(dns, companyDataContent);
+
+                    // write sorted result to log
+                    writeSortedStatusToLog(dnsReader);
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(NL));
                 }
-                else
+                else if (workingDnsCount <= maxServers + 1)
                 {
-                    // Write host to log
-                    if (!IsBuiltinMode)
+                    if (once)
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(fastest, Color.MediumSeaGreen));
+                    once = false;
+
+                    // Get DNS Details
+                    DnsReader dnsReader = new(dns, companyDataContent);
+
+                    // write sorted result to log
+                    writeSortedStatusToLog(dnsReader);
+                }
+                else if (workingDnsCount - n <= maxServers)
+                {
+                    if (once)
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(fastest, Color.MediumSeaGreen));
+                    once = false;
+
+                    // Get DNS Details
+                    DnsReader dnsReader = new(dns, companyDataContent);
+
+                    // write sorted result to log
+                    writeSortedStatusToLog(dnsReader);
+                }
+
+                void writeSortedStatusToLog(DnsReader dnsReader)
+                {
+                    // Write latency to log
+                    if (latency > 0)
                     {
-                        string resultHost1 = " [Host:";
-                        string resultHost2 = $" {host}";
-                        string resultHost3 = "]";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost1, Color.LightGray));
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost2, Color.DodgerBlue));
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost3, Color.LightGray));
+                        string resultLatency1 = "[Latency:";
+                        string resultLatency2 = $" {latency}";
+                        string resultLatency3 = " ms]";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultLatency1, Color.LightGray));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultLatency2, Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultLatency3, Color.LightGray));
                     }
 
-                    // Write protocol to log
-                    string resultProtocol1 = " [Protocol:";
-                    string resultProtocol2 = $" {dnsReader.ProtocolName}";
-                    string resultProtocol3 = "]";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol1, Color.LightGray));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol2, Color.Orange));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol3, Color.LightGray));
-                }
+                    // Write host to log
+                    if (dnsReader.IsDnsCryptStamp)
+                    {
+                        string sdnsHostMsg1 = $" [SDNS: ";
+                        string sdnsHostMsg2 = $"{dnsReader.ProtocolName}";
+                        string sdnsHostMsg3 = "]";
+                        if (dnsReader.StampProperties.IsDnsSec)
+                            sdnsHostMsg2 += $", DNSSec";
+                        if (dnsReader.StampProperties.IsNoLog)
+                            sdnsHostMsg2 += $", No Log";
+                        if (dnsReader.StampProperties.IsNoFilter)
+                            sdnsHostMsg2 += $", No Filter";
 
-                // Write company name to log
-                string resultCompany1 = " [Company:";
-                string resultCompany2 = $" {dnsReader.CompanyName}";
-                string resultCompany3 = "]";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany1, Color.LightGray));
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany2, Color.DodgerBlue));
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany3, Color.LightGray));
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(NL));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg1, Color.LightGray));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg2, Color.Orange));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(sdnsHostMsg3, Color.LightGray));
+                    }
+                    else
+                    {
+                        // Write host to log
+                        if (!isPrivate)
+                        {
+                            string resultHost1 = " [Host:";
+                            string resultHost2 = $" {host}";
+                            string resultHost3 = "]";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost1, Color.LightGray));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost2, Color.DodgerBlue));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultHost3, Color.LightGray));
+                        }
+
+                        // Write protocol to log
+                        string resultProtocol1 = " [Protocol:";
+                        string resultProtocol2 = $" {dnsReader.ProtocolName}";
+                        string resultProtocol3 = "]";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol1, Color.LightGray));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol2, Color.Orange));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultProtocol3, Color.LightGray));
+                    }
+
+                    // Write company name to log
+                    string resultCompany1 = " [Company:";
+                    string resultCompany2 = $" {dnsReader.CompanyName}";
+                    string resultCompany3 = "]";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany1, Color.LightGray));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany2, Color.DodgerBlue));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(resultCompany3, Color.LightGray));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(NL));
+                }
+            }
+
+            // Write Count to log
+            string msgCount1 = "Found "; // workingServers
+            string msgCount2 = " working server"; if (workingDnsCount > 1) msgCount2 += "s";
+            string msgCount3 = " out of "; // numberOfAllSupportedServers
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCount1, Color.LightGray));
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(workingDnsCount.ToString(), Color.MediumSeaGreen));
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCount2, Color.LightGray));
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCount3, Color.LightGray));
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfAllSupportedServers.ToString() + NL, Color.MediumSeaGreen));
+
+            // Number of failed servers
+            int numberOfFailedServers = numberOfCheckedServers - workingDnsCount;
+            if (numberOfFailedServers > 0)
+            {
+                string msgFailed = "Failed servers: ";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailed, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfFailedServers.ToString() + NL, Color.IndianRed));
+            }
+
+            // Ignored by settings
+            int numberOfIgnoredBySettings = numberOfAllSupportedServers - numberOfCheckedServers;
+            if (numberOfIgnoredBySettings > 0)
+            {
+                string msgIgnoredBySettings = "Ignored by settings: ";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgIgnoredBySettings, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfIgnoredBySettings.ToString() + NL, Color.MediumSeaGreen));
+            }
+
+            // Ignored by not supported protocol
+            int numberOfNotSupported = numberOfAllServers - numberOfAllSupportedServers;
+            if (numberOfNotSupported > 0)
+            {
+                string msgIgnoredByWrongProtocol = "Not supported protocol: ";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgIgnoredByWrongProtocol, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfNotSupported.ToString() + NL, Color.MediumSeaGreen));
+            }
+
+            // Wite average delay to log
+            if (workingDnsCount > 1)
+            {
+                string msgAL1 = "Average Latency: ";
+                string msgAL2 = " ms.";
+                long averageLatency = allLatencies / workingDnsCount;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAL1, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{averageLatency}", Color.DodgerBlue));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAL2 + NL, Color.LightGray));
             }
         }
-
-        // Write Count to log
-        string msgCount1 = "Found "; // workingServers
-        string msgCount2 = " working server"; if (WorkingDnsList.Count > 1) msgCount2 += "s";
-        string msgCount3 = " out of "; // numberOfAllSupportedServers
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCount1, Color.LightGray));
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(WorkingDnsList.Count.ToString(), Color.MediumSeaGreen));
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCount2, Color.LightGray));
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCount3, Color.LightGray));
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfAllSupportedServers.ToString() + NL, Color.MediumSeaGreen));
-
-        // Number of failed servers
-        int numberOfFailedServers = numberOfCheckedServers - WorkingDnsList.Count;
-        if (numberOfFailedServers > 0)
-        {
-            string msgFailed = "Failed servers: ";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailed, Color.LightGray));
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfFailedServers.ToString() + NL, Color.IndianRed));
-        }
-
-        // Ignored by settings
-        int numberOfIgnoredBySettings = numberOfAllSupportedServers - numberOfCheckedServers;
-        if (numberOfIgnoredBySettings > 0)
-        {
-            string msgIgnoredBySettings = "Ignored by settings: ";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgIgnoredBySettings, Color.LightGray));
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfIgnoredBySettings.ToString() + NL, Color.MediumSeaGreen));
-        }
-
-        // Ignored by not supported protocol
-        int numberOfNotSupported = numberOfAllServers - numberOfAllSupportedServers;
-        if (numberOfNotSupported > 0)
-        {
-            string msgIgnoredByWrongProtocol = "Not supported protocol: ";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgIgnoredByWrongProtocol, Color.LightGray));
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(numberOfNotSupported.ToString() + NL, Color.MediumSeaGreen));
-        }
-
-        // Wite average delay to log
-        if (WorkingDnsList.Count > 1)
-        {
-            string msgAL1 = "Average Latency: ";
-            string msgAL2 = " ms.";
-            long averageLatency = allLatencies / WorkingDnsList.Count;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAL1, Color.LightGray));
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{averageLatency}", Color.DodgerBlue));
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgAL2 + NL, Color.LightGray));
-        }
-
+        
         return true;
     }
 }

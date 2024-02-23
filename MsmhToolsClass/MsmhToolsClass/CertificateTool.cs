@@ -379,42 +379,56 @@ public static class CertificateTool
 
     public static bool IsCertificateInstalled(string subjectName, StoreName storeName, StoreLocation storeLocation)
     {
-        string cn = "CN=";
-        if (subjectName.StartsWith(cn)) subjectName = subjectName.TrimStart(cn);
-
-        X509Store store = new(storeName, storeLocation);
-        store.Open(OpenFlags.ReadOnly);
-
-        X509Certificate2Collection certificates = store.Certificates.Find(X509FindType.FindBySubjectName, subjectName, false);
-
-        if (certificates != null && certificates.Count > 0)
+        try
         {
-            //Debug.WriteLine("Certificate is already installed.");
-            return true;
+            string cn = "CN=";
+            if (subjectName.StartsWith(cn)) subjectName = subjectName.TrimStart(cn);
+
+            X509Store store = new(storeName, storeLocation);
+            store.Open(OpenFlags.ReadOnly);
+
+            X509Certificate2Collection certificates = store.Certificates.Find(X509FindType.FindBySubjectName, subjectName, false);
+
+            if (certificates != null && certificates.Count > 0)
+            {
+                //Debug.WriteLine("Certificate is already installed.");
+                return true;
+            }
+            else return false;
         }
-        else
+        catch (Exception ex)
+        {
+            Debug.WriteLine("IsCertificateInstalled: " + ex.Message);
             return false;
+        }
     }
 
     public static bool IsCertificateInstalled(X509Certificate2 cert, StoreName storeName, StoreLocation storeLocation)
     {
-        string subjectName = cert.Subject;
-        string cn = "CN=";
-        if (subjectName.StartsWith(cn)) subjectName = subjectName.TrimStart(cn);
-
-        X509Store store = new(storeName, storeLocation);
-        store.Open(OpenFlags.ReadOnly);
-
-        X509Certificate2Collection certsBySubject = store.Certificates.Find(X509FindType.FindBySubjectName, subjectName, false);
-        X509Certificate2Collection certsBySN = store.Certificates.Find(X509FindType.FindBySerialNumber, cert.SerialNumber, false);
-
-        if (certsBySubject != null && certsBySubject.Any() && certsBySN != null && certsBySN.Any())
+        try
         {
-            Debug.WriteLine("Certificate is already installed.");
-            return true;
+            string subjectName = cert.Subject;
+            string cn = "CN=";
+            if (subjectName.StartsWith(cn)) subjectName = subjectName.TrimStart(cn);
+
+            X509Store store = new(storeName, storeLocation);
+            store.Open(OpenFlags.ReadOnly);
+
+            X509Certificate2Collection certsBySubject = store.Certificates.Find(X509FindType.FindBySubjectName, subjectName, false);
+            X509Certificate2Collection certsBySN = store.Certificates.Find(X509FindType.FindBySerialNumber, cert.SerialNumber, false);
+
+            if (certsBySubject != null && certsBySubject.Any() && certsBySN != null && certsBySN.Any())
+            {
+                Debug.WriteLine("Certificate is already installed.");
+                return true;
+            }
+            else return false;
         }
-        else
+        catch (Exception ex)
+        {
+            Debug.WriteLine("IsCertificateInstalled: " + ex.Message);
             return false;
+        }
     }
 
     /// <summary>
@@ -461,4 +475,5 @@ public static class CertificateTool
             return false;
         }
     }
+
 }

@@ -5,7 +5,6 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
-using System;
 
 namespace MsmhToolsClass.MsmhProxyServer;
 
@@ -295,7 +294,7 @@ public class ProxyClientSSL
             SslClientAuthenticationOptions optionsClient = new();
 
             // Apply DontBypass Program
-            if (!req.ApplyDpiBypass)
+            if (!req.ApplyChangeSNI)
                 optionsClient.TargetHost = req.AddressOrig;
             else
             {

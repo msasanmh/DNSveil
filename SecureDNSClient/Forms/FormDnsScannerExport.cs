@@ -48,7 +48,7 @@ public partial class FormDnsScannerExport : Form
     private async void FixScreenDpi()
     {
         // Setting Width Of Controls
-        await FormMain.SettingWidthOfControls(this);
+        await ScreenDPI.SettingWidthOfControls(this);
 
         // Fix Controls Location
         int spaceBottom = 10, spaceRight = 12, spaceV = 12, spaceH = 16;

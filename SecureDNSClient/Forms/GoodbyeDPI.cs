@@ -21,7 +21,7 @@ public partial class FormMain
         else return DPIBasicBypassMode.Light;
     }
 
-    private async void GoodbyeDPIBasic(DPIBasicBypassMode? mode = null)
+    private async void GoodbyeDPIBasic(DPIBasicBypassMode? mode = null, bool limitLog = false)
     {
         if (IsExiting) return;
 
@@ -40,7 +40,7 @@ public partial class FormMain
         ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
 
         string args = string.Empty;
-        string text = string.Empty;
+        string modeStr = string.Empty;
         string fallbackDNS = SecureDNS.BootstrapDnsIPv4.ToString();
         int fallbackDnsPort = SecureDNS.BootstrapDnsPort;
         bool isfallBackDNS = NetworkTool.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? fallBackDNSIP);
@@ -55,7 +55,7 @@ public partial class FormMain
 
         DPIBasicBypass dpiBypass = new(mode, CustomNumericUpDownSSLFragmentSize.Value, fallbackDNS, fallbackDnsPort);
         args = dpiBypass.Args;
-        text = dpiBypass.Text;
+        modeStr = dpiBypass.Text;
 
         // Execute GoodByeDPI
         PIDGoodbyeDPIBasic = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
@@ -74,9 +74,17 @@ public partial class FormMain
         if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic))
         {
             // Write DPI Mode to log
-            string msg = "GoodbyeDPI is active, mode: ";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(text + NL, Color.DodgerBlue));
+            if (!limitLog)
+            {
+                string msg = "GoodbyeDPI is active, mode: ";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(modeStr + NL, Color.DodgerBlue));
+            }
+            else
+            {
+                string msg = $"GoodbyeDPI is active, mode: {modeStr}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray));
+            }
 
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIBasicActive = true;
@@ -95,7 +103,7 @@ public partial class FormMain
         }
     }
 
-    private async void GoodbyeDPIAdvanced()
+    private async void GoodbyeDPIAdvanced(bool limitLog = false)
     {
         if (IsExiting) return;
 
@@ -265,7 +273,7 @@ public partial class FormMain
         ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
         await Task.Delay(100);
 
-        string text = "Advanced";
+        string modeStr = "Advanced";
 
         // Execute GoodByeDPI
         PIDGoodbyeDPIAdvanced = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
@@ -274,9 +282,17 @@ public partial class FormMain
         if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced))
         {
             // Write DPI Mode to log
-            string msg = "GoodbyeDPI is active, mode: ";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(text + NL, Color.DodgerBlue));
+            if (!limitLog)
+            {
+                string msg = "GoodbyeDPI is active, mode: ";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(modeStr + NL, Color.DodgerBlue));
+            }
+            else
+            {
+                string msg = $"GoodbyeDPI is active, mode: {modeStr}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray));
+            }
 
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIAdvancedActive = true;

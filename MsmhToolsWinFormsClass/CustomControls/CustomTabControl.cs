@@ -1,6 +1,6 @@
 ﻿using MsmhToolsClass;
+using MsmhToolsWinFormsClass;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Windows.Forms.Design;
 /*
 * Copyright MSasanMH, June 01, 2022.
@@ -10,20 +10,6 @@ namespace CustomControls
 {
     public class CustomTabControl : TabControl
     {
-        private static class Methods
-        {
-            [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string? idList);
-            internal static void SetDarkControl(Control control)
-            {
-                _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
-                foreach (Control c in control.Controls)
-                {
-                    _ = SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
-                }
-            }
-        }
-
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new TabAppearance Appearance { get; set; }
@@ -78,6 +64,7 @@ namespace CustomControls
                 }
             }
         }
+
         private int mRoundedCorners = 0;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Category("Appearance"), Description("Rounded Corners")]
@@ -93,6 +80,7 @@ namespace CustomControls
                 }
             }
         }
+
         private bool mHideTabHeader = false;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Category("Appearance"), Description("Hide Tab Header")]
@@ -114,6 +102,12 @@ namespace CustomControls
         [Category("Property Changed"), Description("HideTabHeader Changed Event")]
         public event EventHandler? HideTabHeaderChanged;
 
+        private TabAlignment LastAlignment = TabAlignment.Top;
+        private TabAppearance LastAppearance = TabAppearance.Normal;
+        private Size LastItemSize = Size.Empty;
+        private TabSizeMode LastSizeMode = TabSizeMode.Normal;
+
+        private int HoverTabHeaderInvalidated = -1;
         private bool ControlEnabled = true;
         private bool once = true;
 
@@ -148,15 +142,22 @@ namespace CustomControls
         {
             if (mHideTabHeader)
             {
-                Appearance = TabAppearance.Buttons;
+                LastAlignment = Alignment;
+                LastAppearance = Appearance;
+                LastItemSize = ItemSize;
+                LastSizeMode = SizeMode;
+
+                Alignment = TabAlignment.Top;
+                Appearance = TabAppearance.FlatButtons;
                 ItemSize = new(0, 1);
                 SizeMode = TabSizeMode.Fixed;
             }
             else
             {
-                Appearance = TabAppearance.Normal;
-                ItemSize = Size.Empty;
-                SizeMode = TabSizeMode.FillToRight;
+                Alignment = LastAlignment;
+                Appearance = LastAppearance;
+                ItemSize = LastItemSize;
+                SizeMode = LastSizeMode;
             }
         }
 
@@ -203,7 +204,7 @@ namespace CustomControls
                 }
             }
         }
-        
+
         private void TabPage_Paint(object? sender, PaintEventArgs e)
         {
             if (sender is not TabPage tabPage) return;
@@ -220,18 +221,10 @@ namespace CustomControls
                     tabPageColor = tabPage.BackColor.ChangeBrightness(-0.3f);
             }
 
+            if (tabPageColor.Equals(Color.Transparent)) tabPageColor = BackColor;
+
             using SolidBrush sb = new(tabPageColor);
             e.Graphics.FillRectangle(sb, e.ClipRectangle);
-
-            Control tabControl = tabPage.Parent;
-            tabControl.Tag = tabPage.Tag;
-            tabControl.Paint -= TabControl_Paint;
-            tabControl.Paint += TabControl_Paint;
-        }
-
-        private void TabControl_Paint(object? sender, PaintEventArgs e)
-        {
-            // Selected Tab Can Be Paint Also Here
         }
 
         private void TopParent_Move(object? sender, EventArgs e)
@@ -275,17 +268,37 @@ namespace CustomControls
         private void CustomTabControl_Invalidated(object? sender, InvalidateEventArgs e)
         {
             if (BackColor.DarkOrLight() == "Dark")
-                Methods.SetDarkControl(this);
+                this.SetDarkControl();
         }
 
         private void CustomTabControl_MouseMove(object? sender, MouseEventArgs e)
         {
-            Invalidate();
+            InvalidateHoverTabHeader();
         }
 
         private void CustomTabControl_MouseLeave(object? sender, EventArgs e)
         {
-            Invalidate();
+            if (HoverTabHeaderInvalidated >= 0 && HoverTabHeaderInvalidated < TabPages.Count)
+            {
+                Invalidate(GetTabRect(HoverTabHeaderInvalidated));
+                HoverTabHeaderInvalidated = -1;
+            }
+        }
+
+        private void InvalidateHoverTabHeader()
+        {
+            for (int n = 0; n < TabPages.Count; n++)
+            {
+                Rectangle rectTab = GetTabRect(n);
+                if (!DesignMode && Enabled && rectTab.Contains(PointToClient(MousePosition)))
+                {
+                    if (n != HoverTabHeaderInvalidated)
+                    {
+                        Invalidate(rectTab);
+                        HoverTabHeaderInvalidated = n;
+                    }
+                }
+            }
         }
 
         private void CustomTabControl_Paint(object? sender, PaintEventArgs e)
@@ -309,114 +322,106 @@ namespace CustomControls
             for (int n = 0; n < TabPages.Count; n++)
             {
                 TabPage tabPage = TabPages[n];
-                TabPage selectedTabPage = TabPages[tc.SelectedIndex];
+                int selectedIndex = tc.SelectedIndex == -1 ? 0 : tc.SelectedIndex;
+                TabPage selectedTabPage = TabPages[selectedIndex];
                 int index = n;
                 Rectangle rectTab = GetTabRect(index);
-                Rectangle rectSTab = GetTabRect(tc.SelectedIndex);
-                Rectangle cr = ClientRectangle;
-                Rectangle rectPage = ClientRectangle;
-                using Pen pen = new(borderColor);
-                using SolidBrush brush = new(backColor);
+                Rectangle rectSTab = GetTabRect(selectedIndex);
+                Rectangle cr = tc.ClientRectangle;
+                Rectangle rectPage = cr; // tabPage.ClientRectangle
 
                 // Paint Main Control Border
                 if (Alignment == TabAlignment.Top)
                 {
-                    rectTab = Rectangle.FromLTRB(rectTab.Left, rectSTab.Top + 2, rectTab.Right, rectSTab.Bottom);
                     if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
                     {
-                        //rectSTab = Rectangle.FromLTRB(rectSTab.Left, rectSTab.Top - 2, rectSTab.Right, rectSTab.Bottom - 3);
-                        //rectTab = Rectangle.FromLTRB(rectTab.Left, rectSTab.Top + 2, rectTab.Right, rectSTab.Bottom);
                         if (!HideTabHeader)
-                            rectPage = Rectangle.FromLTRB(cr.Left + 1, cr.Top + rectSTab.Height + 2, cr.Right, cr.Bottom);
+                            rectPage = new Rectangle(rectPage.X + 1, rectSTab.Bottom, Width - 2, Height - rectSTab.Bottom);
                         else
                             rectPage = Rectangle.FromLTRB(cr.Left + 1, cr.Top, cr.Right, cr.Bottom);
                     }
                     else
                     {
-                        //rectSTab = Rectangle.FromLTRB(rectSTab.Left, rectSTab.Top - 2, rectSTab.Right, rectSTab.Bottom - 3);
-                        //rectTab = Rectangle.FromLTRB(rectTab.Left, rectSTab.Top + 2, rectTab.Right, rectSTab.Bottom);
                         if (!HideTabHeader)
-                            rectPage = Rectangle.FromLTRB(cr.Left, cr.Top + rectSTab.Height + 2, cr.Right, cr.Bottom);
+                            rectPage = new Rectangle(rectPage.X, rectSTab.Bottom, Width, Height - rectSTab.Bottom);
                         else
-                            rectPage = Rectangle.FromLTRB(cr.Left, cr.Top, cr.Right, cr.Bottom);
+                            rectPage = cr;
                     }
                 }
                 else if (Alignment == TabAlignment.Bottom)
                 {
-                    rectTab = Rectangle.FromLTRB(rectTab.Left, rectSTab.Top, rectTab.Right, rectSTab.Bottom - 2);
                     if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
                     {
-                        //rectSTab = Rectangle.FromLTRB(rectSTab.Left, rectSTab.Top + 1, rectSTab.Right, rectSTab.Bottom + 1);
-                        //rectTab = Rectangle.FromLTRB(rectTab.Left, rectSTab.Top, rectTab.Right, rectSTab.Bottom - 2);
                         if (!HideTabHeader)
-                            rectPage = Rectangle.FromLTRB(cr.Left + 1, cr.Top, cr.Right, cr.Bottom - rectSTab.Height - 1);
+                            rectPage = new Rectangle(rectPage.X + 1, rectPage.Y, Width - 2, Height - (Height - rectSTab.Top - 1));
                         else
                             rectPage = Rectangle.FromLTRB(cr.Left + 1, cr.Top, cr.Right, cr.Bottom);
                     }
                     else
                     {
-                        //rectSTab = Rectangle.FromLTRB(rectSTab.Left, rectSTab.Top + 1, rectSTab.Right, rectSTab.Bottom + 1);
-                        //rectTab = Rectangle.FromLTRB(rectTab.Left, rectSTab.Top, rectTab.Right, rectSTab.Bottom - 2);
                         if (!HideTabHeader)
-                            rectPage = Rectangle.FromLTRB(cr.Left, cr.Top, cr.Right, cr.Bottom - rectSTab.Height - 1);
+                            rectPage = new Rectangle(rectPage.X, rectPage.Y, Width, Height - (Height - rectSTab.Top - 1));
                         else
-                            rectPage = Rectangle.FromLTRB(cr.Left, cr.Top, cr.Right, cr.Bottom);
+                            rectPage = cr;
                     }
                 }
                 else if (Alignment == TabAlignment.Left)
                 {
-                    rectTab = Rectangle.FromLTRB(rectSTab.Left + 2, rectTab.Top, rectSTab.Right, rectTab.Bottom);
                     if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
                     {
-                        //rectSTab = Rectangle.FromLTRB(rectSTab.Left - 1, rectSTab.Top, rectSTab.Right - 3, rectSTab.Bottom);
-                        //rectTab = Rectangle.FromLTRB(rectSTab.Left + 2, rectTab.Top, rectSTab.Right, rectTab.Bottom);
                         if (!HideTabHeader)
-                            rectPage = Rectangle.FromLTRB(cr.Left + 1 + rectSTab.Width + 1, cr.Top, cr.Right, cr.Bottom);
+                            rectPage = new Rectangle(rectSTab.Right, rectPage.Y, Width - rectSTab.Right, Height);
                         else
                             rectPage = Rectangle.FromLTRB(cr.Left + 1, cr.Top, cr.Right, cr.Bottom);
                     }
                     else
                     {
-                        //rectSTab = Rectangle.FromLTRB(rectSTab.Left - 2, rectSTab.Top, rectSTab.Right - 2, rectSTab.Bottom);
-                        //rectTab = Rectangle.FromLTRB(rectSTab.Left + 2, rectTab.Top, rectSTab.Right, rectTab.Bottom);
                         if (!HideTabHeader)
-                            rectPage = Rectangle.FromLTRB(cr.Left + rectSTab.Width + 2, cr.Top, cr.Right, cr.Bottom);
+                            rectPage = new Rectangle(rectSTab.Right, rectPage.Y, Width - rectSTab.Right, Height);
                         else
-                            rectPage = Rectangle.FromLTRB(cr.Left, cr.Top, cr.Right, cr.Bottom);
+                            rectPage = cr;
                     }
                 }
                 else if (Alignment == TabAlignment.Right)
                 {
-                    rectTab = Rectangle.FromLTRB(rectSTab.Left, rectTab.Top, rectSTab.Right - 2, rectTab.Bottom);
                     if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
                     {
-                        //rectSTab = Rectangle.FromLTRB(rectSTab.Left + 1, rectSTab.Top, rectSTab.Right + 1, rectSTab.Bottom);
-                        //rectTab = Rectangle.FromLTRB(rectSTab.Left, rectTab.Top, rectSTab.Right - 2, rectTab.Bottom);
                         if (!HideTabHeader)
-                            rectPage = Rectangle.FromLTRB(cr.Left + 1, cr.Top, cr.Right - rectSTab.Width - 1, cr.Bottom);
+                            rectPage = new Rectangle(rectPage.X, rectPage.Y, Width - (Width - rectSTab.Left - 1), Height);
                         else
                             rectPage = Rectangle.FromLTRB(cr.Left + 1, cr.Top, cr.Right, cr.Bottom);
                     }
                     else
                     {
-                        //rectSTab = Rectangle.FromLTRB(rectSTab.Left + 1, rectSTab.Top, rectSTab.Right + 1, rectSTab.Bottom);
-                        //rectTab = Rectangle.FromLTRB(rectSTab.Left, rectTab.Top, rectSTab.Right - 2, rectTab.Bottom);
                         if (!HideTabHeader)
-                            rectPage = Rectangle.FromLTRB(cr.Left, cr.Top, cr.Right - rectSTab.Width - 1, cr.Bottom);
+                            rectPage = new Rectangle(rectPage.X, rectPage.Y, Width - (Width - rectSTab.Left - 1), Height);
                         else
-                            rectPage = Rectangle.FromLTRB(cr.Left, cr.Top, cr.Right, cr.Bottom);
+                            rectPage = cr;
                     }
                 }
 
-                //ControlPaint.DrawBorder(e.Graphics, rectPage, borderColor, ButtonBorderStyle.Solid);
-                Rectangle borderRect = new(rectPage.X, rectPage.Y, rectPage.Width - 1, rectPage.Height - 1);
+                Rectangle borderRectPage = new(rectPage.X, rectPage.Y, rectPage.Width - 1, rectPage.Height - 1);
 
                 if (!mHideTabHeader)
                 {
-                    // Paint Non-Selected Tab
-                    if (tc.SelectedIndex != n)
+                    // Paint Non-Selected Tab Headers
+                    if (selectedIndex != n)
                     {
-                        //e.Graphics.FillRectangle(brush, rectTab);
+                        // Paint Non-Selected Tab Headers Background
+                        Color tabHeaderColor = backColor;
+
+                        if (!DesignMode && Enabled && rectTab.Contains(tc.PointToClient(MousePosition)))
+                        {
+                            Color colorHover;
+                            if (backColor.DarkOrLight() == "Dark")
+                                colorHover = backColor.ChangeBrightness(0.2f);
+                            else
+                                colorHover = backColor.ChangeBrightness(-0.2f);
+                            tabHeaderColor = colorHover;
+                        }
+
+                        using SolidBrush brush = new(tabHeaderColor);
+
                         if (Alignment == TabAlignment.Top)
                             g.FillRoundedRectangle(brush, rectTab, r, r, 0, 0);
                         else if (Alignment == TabAlignment.Bottom)
@@ -426,29 +431,10 @@ namespace CustomControls
                         else if (Alignment == TabAlignment.Right)
                             g.FillRoundedRectangle(brush, rectTab, 0, r, r, 0);
 
-                        if (!DesignMode && Enabled && rectTab.Contains(tc.PointToClient(MousePosition)))
-                        {
-                            Color colorHover;
-                            if (backColor.DarkOrLight() == "Dark")
-                                colorHover = backColor.ChangeBrightness(0.2f);
-                            else
-                                colorHover = backColor.ChangeBrightness(-0.2f);
-                            using SolidBrush brushHover = new(colorHover);
-                            //g.FillRectangle(brushHover, rectTab);
-                            if (Alignment == TabAlignment.Top)
-                                g.FillRoundedRectangle(brushHover, rectTab, r, r, 0, 0);
-                            else if (Alignment == TabAlignment.Bottom)
-                                g.FillRoundedRectangle(brushHover, rectTab, 0, 0, r, r);
-                            else if (Alignment == TabAlignment.Left)
-                                g.FillRoundedRectangle(brushHover, rectTab, r, 0, 0, r);
-                            else if (Alignment == TabAlignment.Right)
-                                g.FillRoundedRectangle(brushHover, rectTab, 0, r, r, 0);
-                        }
-
+                        // Paint Non-Selected Tab Headers Text & Image
                         int tabImageIndex = tabPage.ImageIndex;
                         string tabImageKey = tabPage.ImageKey;
 
-                        // Draw Text and Image inside non selected Tab headers
                         if (tabImageIndex != -1 && tc.ImageList != null)
                         {
                             Image tabImage = tc.ImageList.Images[tabImageIndex];
@@ -464,22 +450,41 @@ namespace CustomControls
                             TextRenderer.DrawText(g, tabPage.Text, Font, rectTab, foreColor);
                         }
 
-                        // Draw Border of non selected Tab headers
-                        //e.Graphics.DrawRectangle(pen, rectTab);
+                        // Paint Non-Selected Tab Headers Border
                         using Pen borderPenRt = new(borderColor);
                         if (Alignment == TabAlignment.Top)
-                            g.DrawRoundedRectangle(borderPenRt, rectTab, r, r, 0, 0);
+                        {
+                            if (rectTab.Bottom + 1 < rectPage.Y)
+                                g.DrawRoundedRectangle(borderPenRt, rectTab, r, r, r, r);
+                            else
+                                g.DrawRoundedRectangle(borderPenRt, rectTab, r, r, 0, 0);
+                        }
                         else if (Alignment == TabAlignment.Bottom)
-                            g.DrawRoundedRectangle(borderPenRt, rectTab, 0, 0, r, r);
+                        {
+                            if (rectTab.Top + 1 > rectPage.Bottom)
+                                g.DrawRoundedRectangle(borderPenRt, rectTab, r, r, r, r);
+                            else
+                                g.DrawRoundedRectangle(borderPenRt, rectTab, 0, 0, r, r);
+                        }
                         else if (Alignment == TabAlignment.Left)
-                            g.DrawRoundedRectangle(borderPenRt, rectTab, r, 0, 0, r);
+                        {
+                            if (rectTab.Right + 1 < rectPage.X)
+                                g.DrawRoundedRectangle(borderPenRt, rectTab, r, r, r, r);
+                            else
+                                g.DrawRoundedRectangle(borderPenRt, rectTab, r, 0, 0, r);
+                        }
                         else if (Alignment == TabAlignment.Right)
-                            g.DrawRoundedRectangle(borderPenRt, rectTab, 0, r, r, 0);
+                        {
+                            if (rectTab.Left + 1 > rectPage.Right)
+                                g.DrawRoundedRectangle(borderPenRt, rectTab, r, r, r, r);
+                            else
+                                g.DrawRoundedRectangle(borderPenRt, rectTab, 0, r, r, 0);
+                        }
                     }
 
-                    // Paint Selected Tab
+                    // Paint Selected Tab Header Background
                     using SolidBrush brushST = new(backColor.ChangeBrightness(-0.3f));
-                    //e.Graphics.FillRectangle(brushST, rectSTab);
+
                     if (Alignment == TabAlignment.Top)
                         g.FillRoundedRectangle(brushST, rectSTab, r, r, 0, 0);
                     else if (Alignment == TabAlignment.Bottom)
@@ -489,6 +494,7 @@ namespace CustomControls
                     else if (Alignment == TabAlignment.Right)
                         g.FillRoundedRectangle(brushST, rectSTab, 0, r, r, 0);
 
+                    // Paint Selected Tab Header Text & Image
                     int selectedTabImageIndex = selectedTabPage.ImageIndex;
                     string selectedTabImageKey = selectedTabPage.ImageKey;
 
@@ -507,7 +513,7 @@ namespace CustomControls
                         TextRenderer.DrawText(g, selectedTabPage.Text, Font, rectSTab, foreColor);
                     }
 
-                    //e.Graphics.DrawRectangle(pen, rectSTab);
+                    // Paint Selected Tab Header Border
                     using Pen borderPenSt = new(borderColor);
                     if (Alignment == TabAlignment.Top)
                         g.DrawRoundedRectangle(borderPenSt, rectSTab, r, r, 0, 0);
@@ -518,17 +524,18 @@ namespace CustomControls
                     else if (Alignment == TabAlignment.Right)
                         g.DrawRoundedRectangle(borderPenSt, rectSTab, 0, r, r, 0);
 
-                    // Draw Border of TabPages
+                    // Paint TabPage Border
                     using Pen borderPen = new(borderColor);
                     if (Alignment == TabAlignment.Top)
-                        g.DrawRoundedRectangle(borderPen, borderRect, 0, r, r, r);
+                        g.DrawRoundedRectangle(borderPen, borderRectPage, 0, r, r, r);
                     else if (Alignment == TabAlignment.Bottom)
-                        g.DrawRoundedRectangle(borderPen, borderRect, r, r, r, 0);
+                        g.DrawRoundedRectangle(borderPen, borderRectPage, r, r, r, 0);
                     else if (Alignment == TabAlignment.Left)
-                        g.DrawRoundedRectangle(borderPen, borderRect, 0, r, r, r);
+                        g.DrawRoundedRectangle(borderPen, borderRectPage, 0, r, r, r);
                     else if (Alignment == TabAlignment.Right)
-                        g.DrawRoundedRectangle(borderPen, borderRect, r, 0, r, r);
+                        g.DrawRoundedRectangle(borderPen, borderRectPage, r, 0, r, r);
 
+                    // Paint Overlap Between Selected Tab Header and TabPage
                     if (Alignment == TabAlignment.Top)
                     {
                         // to overlap selected tab bottom line
@@ -557,9 +564,8 @@ namespace CustomControls
                 else
                 {
                     // Paint Main Control Border
-                    //ControlPaint.DrawBorder(g, ClientRectangle, borderColor, ButtonBorderStyle.Solid);
                     using Pen borderPen = new(borderColor);
-                    g.DrawRoundedRectangle(borderPen, borderRect, r, r, r, r);
+                    g.DrawRoundedRectangle(borderPen, borderRectPage, r, r, r, r);
                 }
             }
         }

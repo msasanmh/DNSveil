@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using CustomControls;
@@ -52,10 +53,19 @@ public static class ExtensionsMethods
     //-----------------------------------------------------------------------------------
     public static void SetDarkControl(this Control control)
     {
-        _ = Methods.SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
-        foreach (Control c in Controllers.GetAllControls(control))
+        try
         {
-            _ = Methods.SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
+            if (!control.IsHandleCreated) return;
+            _ = Methods.SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
+            foreach (Control c in Controllers.GetAllControls(control))
+            {
+                if (!c.IsHandleCreated) continue;
+                _ = Methods.SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SetDarkControl: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
@@ -247,58 +257,57 @@ public static class ExtensionsMethods
         string truncatedText, returnText;
         int charIndex = 0;
         bool truncated = false;
-        //When the user is typing and the truncation happens in a TextChanged event, already typed text could get lost.
-        //Example: Imagine that the string "Hello Worl" would truncate if we add 'd'. Depending on the font the output 
-        //could be: "Hello Wor…" (notice the 'l' is missing). This is an undesired effect.
-        //To prevent this from happening the ellipsis is included in the initial sizecheck.
-        //At this point, the direction is not important so we place ellipsis behind the text.
+        // When the user is typing and the truncation happens in a TextChanged event, already typed text could get lost.
+        // Example: Imagine that the string "Hello Worl" would truncate if we add 'd'. Depending on the font the output 
+        // could be: "Hello Wor…" (notice the 'l' is missing). This is an undesired effect.
+        // To prevent this from happening the ellipsis is included in the initial sizecheck.
+        // At this point, the direction is not important so we place ellipsis behind the text.
         truncatedText = text + "…";
 
-        //Get the size of the string in pixels.
+        // Get the size of the string in pixels.
         SizeF size = MeasureString(truncatedText, font);
 
-        //Do while the string is bigger than the desired width.
+        // Do while the string is bigger than the desired width.
         while (size.Width > width)
         {
-            //Go to next char
+            // Go to next char
             charIndex++;
-            //If the character index is larger than or equal to the length of the text, the truncation is unachievable.
+            // If the character index is larger than or equal to the length of the text, the truncation is unachievable.
             if (charIndex >= text.Length)
             {
-                //Truncation is unachievable!
+                // Truncation is unachievable!
                 truncated = true;
                 truncatedText = string.Empty;
-                //Throw exception so the user knows what's going on.
+                // Throw exception so the user knows what's going on.
                 string msg = "The desired width of the string is too small to truncate to.";
                 Console.WriteLine(msg);
                 break;
-                //throw new IndexOutOfRangeException(msg);
             }
             else
             {
-                //Truncation is still applicable!
-                //Raise the flag, indicating that text is truncated.
+                // Truncation is still applicable!
+                // Raise the flag, indicating that text is truncated.
                 truncated = true;
-                //Check which way to text should be truncated to, then remove one char and add an ellipsis.
+                // Check which way to text should be truncated to, then remove one char and add an ellipsis.
                 if (direction)
                 {
-                    //Truncate to the left. Add ellipsis and remove from the left.
+                    // Truncate to the left. Add ellipsis and remove from the left.
                     truncatedText = string.Concat("…", text.AsSpan(charIndex));
                 }
                 else
                 {
-                    //Truncate to the right. Remove from the right and add the ellipsis.
+                    // Truncate to the right. Remove from the right and add the ellipsis.
                     truncatedText = string.Concat(text.AsSpan(0, text.Length - charIndex), "…");
                 }
 
-                //Measure the string again.
+                // Measure the string again.
                 size = MeasureString(truncatedText, font);
             }
         }
-        //If the text got truncated, change the return value to the truncated text.
+        // If the text got truncated, change the return value to the truncated text.
         if (truncated) returnText = truncatedText;
         else returnText = text;
-        //Return the desired text.
+        // Return the desired text.
         return returnText;
     }
 

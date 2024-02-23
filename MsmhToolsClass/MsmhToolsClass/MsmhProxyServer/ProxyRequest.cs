@@ -1,4 +1,5 @@
 using MsmhToolsClass.DnsTool;
+using MsmhToolsClass.ProxyServerPrograms;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net;
@@ -393,6 +394,7 @@ public class ProxyRequest
     public Socks.Version Version { get; set; }
     public Socks.AddressType AddressType { get; set; }
     public Socks.Commands Command { get; private set; }
+    public IPAddress ClientIP { get; set; } = IPAddress.None;
     public string Address { get; set; }
     public string AddressOrig { get; set; }
     public string AddressSNI { get; set; }
@@ -418,13 +420,19 @@ public class ProxyRequest
     public int TimeoutSec { get; set; } = 0;
 
     /// <summary>
-    /// Apply DPI Bypass to this Request if DPI Bypass Program is available.
+    /// Apply Fragment to this Request if Fragment Program is available.
     /// </summary>
-    public bool ApplyDpiBypass { get; set; } = false;
+    public bool ApplyFragment { get; set; } = false;
+
+    /// <summary>
+    /// Apply ChangeSNI to this Request if ChangeSNI is available.
+    /// </summary>
+    public bool ApplyChangeSNI { get; set; } = false;
 
     public bool IsDestBlocked { get; set; } = false;
 
     public bool ApplyUpStreamProxy { get; set; } = false;
+    public ProxyProgram.Rules.RulesResult RulesResult { get; set; } = new();
 
     public IPAddress? Ip
     {

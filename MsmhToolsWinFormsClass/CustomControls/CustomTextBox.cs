@@ -1,7 +1,7 @@
 ﻿using MsmhToolsClass;
+using MsmhToolsWinFormsClass;
 using System.ComponentModel;
 using System.Drawing.Design;
-using System.Runtime.InteropServices;
 using System.Windows.Forms.Design;
 /*
 * Copyright MSasanMH, May 10, 2022.
@@ -12,20 +12,6 @@ namespace CustomControls
     [DefaultEvent("TextChanged")]
     public class CustomTextBox : UserControl
     {
-        private static class Methods
-        {
-            [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string? idList);
-            internal static void SetDarkControl(Control control)
-            {
-                _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
-                foreach (Control c in control.Controls)
-                {
-                    _ = SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
-                }
-            }
-        }
-
         // Disable
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -612,7 +598,7 @@ namespace CustomControls
         {
             OnInvalidated(e);
             if (BackColor.DarkOrLight() == "Dark")
-                Methods.SetDarkControl(textBox);
+                textBox.SetDarkControl();
             textBox.Enabled = Enabled;
             textBox.BackColor = GetBackColor();
             textBox.ForeColor = GetForeColor();

@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Management;
 using System.Net.NetworkInformation;
+using System.Text.RegularExpressions;
 
 namespace MsmhToolsClass;
 
@@ -13,13 +14,13 @@ public class NetworkInterfaces
     /// Network medium in use.
     /// </summary>
     public string AdapterType { get; private set; } = string.Empty;
-    
+
     // AdapterTypeID // uint16
     /// <summary>
     /// Network medium in use. Returns the same information as the AdapterType property,
     /// except that the information is in the form of an integer.
     /// </summary>
-    public ushort AdapterTypeID { get; private set; }
+    public ushort AdapterTypeID { get; private set; } = 1000;
     public string AdapterTypeIDMessage => GetAdapterType(AdapterTypeID);
     private static string GetAdapterType(ushort n)
     {
@@ -92,7 +93,7 @@ public class NetworkInterfaces
     /// <summary>
     /// Windows Configuration Manager error code.
     /// </summary>
-    public uint ConfigManagerErrorCode { get; private set; }
+    public uint ConfigManagerErrorCode { get; private set; } = 1000;
     public string ConfigManagerErrorCodeMessage => GetConfigManagerErrorCode(ConfigManagerErrorCode);
     private static string GetConfigManagerErrorCode(uint n)
     {
@@ -249,7 +250,7 @@ public class NetworkInterfaces
     /// <summary>
     /// State of the network adapter connection to the network. (0 - 65535)
     /// </summary>
-    public ushort NetConnectionStatus { get; private set; }
+    public ushort NetConnectionStatus { get; private set; } = 1000;
     public string NetConnectionStatusMessage => GetNetConnectionStatus(NetConnectionStatus);
     private static string GetNetConnectionStatus(ushort n)
     {
@@ -418,8 +419,8 @@ public class NetworkInterfaces
     /// <summary>
     /// Get NIC Information
     /// </summary>
-    /// <param name="nicName">NIC Name (NetConnectionID)</param>
-    public NetworkInterfaces(string nicName)
+    /// <param name="id">NIC ID (DeviceID)</param>
+    public NetworkInterfaces(int id)
     {
         try
         {
@@ -427,432 +428,23 @@ public class NetworkInterfaces
             ObjectQuery? query = new("SELECT * FROM Win32_NetworkAdapter");
 
             using ManagementObjectSearcher searcher = new(query);
-            ManagementObjectCollection queryCollection = searcher.Get();
+            using ManagementObjectCollection queryCollection = searcher.Get();
 
             foreach (ManagementBaseObject m in queryCollection)
             {
-                object nnObj = m[nameof(NetConnectionID)];
-                if (nnObj == null) continue;
-                string nn = nnObj.ToString() ?? string.Empty;
-                if (!string.IsNullOrEmpty(nn) && nn.Trim().Equals(nicName.Trim()))
+                // DeviceID
+                object idObj0 = m[nameof(DeviceID)];
+                if (idObj0 == null) continue;
+                string id0 = idObj0.ToString() ?? string.Empty;
+                id0 = id0.Trim();
+                if (string.IsNullOrEmpty(id0)) continue;
+
+                int deviceId = -1;
+                try { deviceId = Convert.ToInt32(id0); } catch (Exception) { }
+
+                if (deviceId != -1 && deviceId == id)
                 {
-                    try
-                    {
-                        object adapterTypeObj = m[nameof(AdapterType)];
-                        if (adapterTypeObj != null)
-                            AdapterType = adapterTypeObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(AdapterType)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        AdapterTypeID = Convert.ToUInt16(m[nameof(AdapterTypeID)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(AdapterTypeID)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        Availability = Convert.ToUInt16(m[nameof(Availability)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(Availability)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object captionObj = m[nameof(Caption)];
-                        if (captionObj != null)
-                            Caption = captionObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(Caption)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        ConfigManagerErrorCode = Convert.ToUInt32(m[nameof(ConfigManagerErrorCode)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(ConfigManagerErrorCode)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        ConfigManagerUserConfig = Convert.ToBoolean(m[nameof(ConfigManagerUserConfig)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(ConfigManagerUserConfig)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object creationClassNameObj = m[nameof(CreationClassName)];
-                        if (creationClassNameObj != null)
-                            CreationClassName = creationClassNameObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(CreationClassName)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object descriptionObj = m[nameof(Description)];
-                        if (descriptionObj != null)
-                            Description = descriptionObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-
-                        Debug.WriteLine($"{nameof(Description)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object deviceIDObj = m[nameof(DeviceID)];
-                        if (deviceIDObj != null)
-                            DeviceID = deviceIDObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(DeviceID)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        ErrorCleared = Convert.ToBoolean(m[nameof(ErrorCleared)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(ErrorCleared)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object errorDescriptionObj = m[nameof(ErrorDescription)];
-                        if (errorDescriptionObj != null)
-                            ErrorDescription = errorDescriptionObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(ErrorDescription)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object guidObj = m[nameof(GUID)];
-                        if (guidObj != null)
-                            GUID = guidObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(GUID)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        Index = Convert.ToUInt32(m[nameof(Index)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(Index)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object obj = m[nameof(InstallDate)];
-                        if (obj != null)
-                        {
-                            string dt = obj.ToString() ?? string.Empty;
-                            if (!string.IsNullOrEmpty(dt))
-                            {
-                                if (dt.Contains('.')) dt = dt.Split('.')[0];
-                                bool ok = DateTime.TryParseExact(dt, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime);
-                                if (ok)
-                                    InstallDate = dateTime;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(InstallDate)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        Installed = Convert.ToBoolean(m[nameof(Installed)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(Installed)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        InterfaceIndex = Convert.ToUInt32(m[nameof(InterfaceIndex)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(InterfaceIndex)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        LastErrorCode = Convert.ToUInt32(m[nameof(LastErrorCode)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(LastErrorCode)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object macAddressObj = m[nameof(MACAddress)];
-                        if (macAddressObj != null)
-                            MACAddress = macAddressObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(MACAddress)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object manufacturerObj = m[nameof(Manufacturer)];
-                        if (manufacturerObj != null)
-                            Manufacturer = manufacturerObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(Manufacturer)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        MaxNumberControlled = Convert.ToUInt32(m[nameof(MaxNumberControlled)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(MaxNumberControlled)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object nameObj = m[nameof(Name)];
-                        if (nameObj != null)
-                            Name = nameObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(Name)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object netConnectionIDObj = m[nameof(NetConnectionID)];
-                        if (netConnectionIDObj != null)
-                            NetConnectionID = netConnectionIDObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(NetConnectionID)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        NetConnectionStatus = Convert.ToUInt16(m[nameof(NetConnectionStatus)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(NetConnectionStatus)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        NetEnabled = Convert.ToBoolean(m[nameof(NetEnabled)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(NetEnabled)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object permanentAddressObj = m[nameof(PermanentAddress)];
-                        if (permanentAddressObj != null)
-                            PermanentAddress = permanentAddressObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(PermanentAddress)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        PhysicalAdapter = Convert.ToBoolean(m[nameof(PhysicalAdapter)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(PhysicalAdapter)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object pnpDeviceIDObj = m[nameof(PNPDeviceID)];
-                        if (pnpDeviceIDObj != null)
-                            PNPDeviceID = pnpDeviceIDObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(PNPDeviceID)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object pmcObj = m[nameof(PowerManagementCapabilities)];
-                        if (pmcObj != null)
-                        {
-                            string pmc = pmcObj.ToString() ?? string.Empty;
-                            if (!string.IsNullOrEmpty(pmc))
-                            {
-                                char[] nums = pmc.ToArray();
-                                ushort[] ushorts = new ushort[nums.Length];
-                                for (int n = 0; n < nums.Length; n++)
-                                {
-                                    try { ushorts[n] = Convert.ToUInt16(nums[n]); } catch (Exception) { }
-                                }
-                                PowerManagementCapabilities = ushorts;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(PowerManagementCapabilities)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        PowerManagementSupported = Convert.ToBoolean(m[nameof(PowerManagementSupported)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(PowerManagementSupported)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object productNameObj = m[nameof(ProductName)];
-                        if (productNameObj != null)
-                            ProductName = productNameObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(ProductName)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object serviceNameObj = m[nameof(ServiceName)];
-                        if (serviceNameObj != null)
-                            ServiceName = serviceNameObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(ServiceName)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        Speed = Convert.ToUInt64(m[nameof(Speed)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(Speed)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object statusObj = m[nameof(Status)];
-                        if (statusObj != null)
-                            Status = statusObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(Status)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        StatusInfo = Convert.ToUInt16(m[nameof(StatusInfo)]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(StatusInfo)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object systemCreationClassNameObj = m[nameof(SystemCreationClassName)];
-                        if (systemCreationClassNameObj != null)
-                            SystemCreationClassName = systemCreationClassNameObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(SystemCreationClassName)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object systemNameObj = m[nameof(SystemName)];
-                        if (systemNameObj != null)
-                            SystemName = systemNameObj.ToString() ?? string.Empty;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(SystemName)}: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        object obj = m[nameof(TimeOfLastReset)];
-                        if (obj != null)
-                        {
-                            string dt = obj.ToString() ?? string.Empty;
-                            if (!string.IsNullOrEmpty(dt))
-                            {
-                                if (dt.Contains('.')) dt = dt.Split('.')[0];
-                                bool ok = DateTime.TryParseExact(dt, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime);
-                                if (ok)
-                                    TimeOfLastReset = dateTime;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"{nameof(TimeOfLastReset)}: {ex.Message}");
-                    }
-
-                    // Get NetworkInterface Format
-                    NIC = NetworkTool.GetNICByName(nicName);
-
-                    // Get DNS Addresses
-                    if (NIC != null)
-                    {
-                        IPAddressCollection dnss = NIC.GetIPProperties().DnsAddresses;
-                        for (int n = 0; n < dnss.Count; n++)
-                            DnsAddresses.Add(dnss[n].ToString());
-                    }
-
+                    Read(m, null);
                     break;
                 }
             }
@@ -863,64 +455,548 @@ public class NetworkInterfaces
         }
     }
 
-    public class NICResult
-    {
-        public string NIC { get; set; } = string.Empty;
-        public bool IsUpAndRunning { get; set; } = false;
-    }
-
     /// <summary>
-    /// Get All Network Interfaces
+    /// Get NIC Information
     /// </summary>
-    /// <returns>A List of NIC Names (NetConnectionID)</returns>
-    public static List<NICResult> GetAllNetworkInterfaces()
+    /// <param name="nicName">NIC Name (NetConnectionID)</param>
+    public NetworkInterfaces(string nicName)
     {
-        List<NICResult> nicsList = new();
-        if (!OperatingSystem.IsWindows()) return nicsList;
-
         try
         {
+            if (!OperatingSystem.IsWindows()) return;
             ObjectQuery? query = new("SELECT * FROM Win32_NetworkAdapter");
 
             using ManagementObjectSearcher searcher = new(query);
-            ManagementObjectCollection queryCollection = searcher.Get();
+            using ManagementObjectCollection queryCollection = searcher.Get();
 
+            NetworkInterface? nic = NetworkTool.GetNICByName(nicName);
+
+            bool found = false;
             foreach (ManagementBaseObject m in queryCollection)
             {
-                object nnObj = m[nameof(NetConnectionID)];
-                if (nnObj == null) continue;
-                string nn = nnObj.ToString() ?? string.Empty;
-                nn = nn.Trim(); // NetConnectionStatus
-                if (!string.IsNullOrEmpty(nn) && !string.IsNullOrWhiteSpace(nn))
+                // NetConnectionID
+                object netIdObj0 = m[nameof(NetConnectionID)];
+                if (netIdObj0 == null) continue;
+                string netId0 = netIdObj0.ToString() ?? string.Empty;
+                netId0 = netId0.Trim();
+                if (string.IsNullOrEmpty(netId0)) continue;
+
+                if (netId0.Equals(nicName.Trim()))
                 {
-                    ushort up = 0;
-                    try { up = Convert.ToUInt16(m[nameof(NetConnectionStatus)]); } catch (Exception) { }
-                    bool isUpAndRunning = up == 2; // Connected
-                    NICResult nic = new()
-                    {
-                        NIC = nn,
-                        IsUpAndRunning = isUpAndRunning
-                    };
-                    nicsList.Add(nic);
+                    found = true;
+                    Read(m, nic);
+                    break;
+                }
+            }
+
+            if (!found) Read(nic);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"NetworkInterfaces: {ex.Message}");
+        }
+    }
+
+    private void Read(ManagementBaseObject m, NetworkInterface? nic)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        try
+        {
+            object adapterTypeObj = m[nameof(AdapterType)];
+            if (adapterTypeObj != null)
+                AdapterType = adapterTypeObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(AdapterType)}: {ex.Message}");
+        }
+
+        try
+        {
+            AdapterTypeID = Convert.ToUInt16(m[nameof(AdapterTypeID)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(AdapterTypeID)}: {ex.Message}");
+        }
+
+        try
+        {
+            Availability = Convert.ToUInt16(m[nameof(Availability)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(Availability)}: {ex.Message}");
+        }
+
+        try
+        {
+            object captionObj = m[nameof(Caption)];
+            if (captionObj != null)
+                Caption = captionObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(Caption)}: {ex.Message}");
+        }
+
+        try
+        {
+            ConfigManagerErrorCode = Convert.ToUInt32(m[nameof(ConfigManagerErrorCode)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(ConfigManagerErrorCode)}: {ex.Message}");
+        }
+
+        try
+        {
+            ConfigManagerUserConfig = Convert.ToBoolean(m[nameof(ConfigManagerUserConfig)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(ConfigManagerUserConfig)}: {ex.Message}");
+        }
+
+        try
+        {
+            object creationClassNameObj = m[nameof(CreationClassName)];
+            if (creationClassNameObj != null)
+                CreationClassName = creationClassNameObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(CreationClassName)}: {ex.Message}");
+        }
+
+        try
+        {
+            object descriptionObj = m[nameof(Description)];
+            if (descriptionObj != null)
+                Description = descriptionObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+
+            Debug.WriteLine($"{nameof(Description)}: {ex.Message}");
+        }
+
+        try
+        {
+            object deviceIDObj = m[nameof(DeviceID)];
+            if (deviceIDObj != null)
+                DeviceID = deviceIDObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(DeviceID)}: {ex.Message}");
+        }
+
+        try
+        {
+            ErrorCleared = Convert.ToBoolean(m[nameof(ErrorCleared)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(ErrorCleared)}: {ex.Message}");
+        }
+
+        try
+        {
+            object errorDescriptionObj = m[nameof(ErrorDescription)];
+            if (errorDescriptionObj != null)
+                ErrorDescription = errorDescriptionObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(ErrorDescription)}: {ex.Message}");
+        }
+
+        try
+        {
+            object guidObj = m[nameof(GUID)];
+            if (guidObj != null)
+                GUID = guidObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(GUID)}: {ex.Message}");
+        }
+
+        try
+        {
+            Index = Convert.ToUInt32(m[nameof(Index)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(Index)}: {ex.Message}");
+        }
+
+        try
+        {
+            object obj = m[nameof(InstallDate)];
+            if (obj != null)
+            {
+                string dt = obj.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(dt))
+                {
+                    if (dt.Contains('.')) dt = dt.Split('.')[0];
+                    bool ok = DateTime.TryParseExact(dt, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime);
+                    if (ok)
+                        InstallDate = dateTime;
                 }
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"GetAllNetworkInterfaces: {ex.Message}");
+            Debug.WriteLine($"{nameof(InstallDate)}: {ex.Message}");
         }
 
-        return nicsList;
+        try
+        {
+            Installed = Convert.ToBoolean(m[nameof(Installed)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(Installed)}: {ex.Message}");
+        }
+
+        try
+        {
+            InterfaceIndex = Convert.ToUInt32(m[nameof(InterfaceIndex)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(InterfaceIndex)}: {ex.Message}");
+        }
+
+        try
+        {
+            LastErrorCode = Convert.ToUInt32(m[nameof(LastErrorCode)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(LastErrorCode)}: {ex.Message}");
+        }
+
+        try
+        {
+            object macAddressObj = m[nameof(MACAddress)];
+            if (macAddressObj != null)
+                MACAddress = macAddressObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(MACAddress)}: {ex.Message}");
+        }
+
+        try
+        {
+            object manufacturerObj = m[nameof(Manufacturer)];
+            if (manufacturerObj != null)
+                Manufacturer = manufacturerObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(Manufacturer)}: {ex.Message}");
+        }
+
+        try
+        {
+            MaxNumberControlled = Convert.ToUInt32(m[nameof(MaxNumberControlled)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(MaxNumberControlled)}: {ex.Message}");
+        }
+
+        try
+        {
+            object nameObj = m[nameof(Name)];
+            if (nameObj != null)
+                Name = nameObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(Name)}: {ex.Message}");
+        }
+
+        try
+        {
+            object netConnectionIDObj = m[nameof(NetConnectionID)];
+            if (netConnectionIDObj != null)
+                NetConnectionID = netConnectionIDObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(NetConnectionID)}: {ex.Message}");
+        }
+
+        try
+        {
+            NetConnectionStatus = Convert.ToUInt16(m[nameof(NetConnectionStatus)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(NetConnectionStatus)}: {ex.Message}");
+        }
+
+        try
+        {
+            NetEnabled = Convert.ToBoolean(m[nameof(NetEnabled)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(NetEnabled)}: {ex.Message}");
+        }
+
+        try
+        {
+            object permanentAddressObj = m[nameof(PermanentAddress)];
+            if (permanentAddressObj != null)
+                PermanentAddress = permanentAddressObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(PermanentAddress)}: {ex.Message}");
+        }
+
+        try
+        {
+            PhysicalAdapter = Convert.ToBoolean(m[nameof(PhysicalAdapter)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(PhysicalAdapter)}: {ex.Message}");
+        }
+
+        try
+        {
+            object pnpDeviceIDObj = m[nameof(PNPDeviceID)];
+            if (pnpDeviceIDObj != null)
+                PNPDeviceID = pnpDeviceIDObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(PNPDeviceID)}: {ex.Message}");
+        }
+
+        try
+        {
+            object pmcObj = m[nameof(PowerManagementCapabilities)];
+            if (pmcObj != null)
+            {
+                string pmc = pmcObj.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(pmc))
+                {
+                    char[] nums = pmc.ToArray();
+                    ushort[] ushorts = new ushort[nums.Length];
+                    for (int n = 0; n < nums.Length; n++)
+                    {
+                        try { ushorts[n] = Convert.ToUInt16(nums[n]); } catch (Exception) { }
+                    }
+                    PowerManagementCapabilities = ushorts;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(PowerManagementCapabilities)}: {ex.Message}");
+        }
+
+        try
+        {
+            PowerManagementSupported = Convert.ToBoolean(m[nameof(PowerManagementSupported)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(PowerManagementSupported)}: {ex.Message}");
+        }
+
+        try
+        {
+            object productNameObj = m[nameof(ProductName)];
+            if (productNameObj != null)
+                ProductName = productNameObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(ProductName)}: {ex.Message}");
+        }
+
+        try
+        {
+            object serviceNameObj = m[nameof(ServiceName)];
+            if (serviceNameObj != null)
+                ServiceName = serviceNameObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(ServiceName)}: {ex.Message}");
+        }
+
+        try
+        {
+            Speed = Convert.ToUInt64(m[nameof(Speed)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(Speed)}: {ex.Message}");
+        }
+
+        try
+        {
+            object statusObj = m[nameof(Status)];
+            if (statusObj != null)
+                Status = statusObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(Status)}: {ex.Message}");
+        }
+
+        try
+        {
+            StatusInfo = Convert.ToUInt16(m[nameof(StatusInfo)]);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(StatusInfo)}: {ex.Message}");
+        }
+
+        try
+        {
+            object systemCreationClassNameObj = m[nameof(SystemCreationClassName)];
+            if (systemCreationClassNameObj != null)
+                SystemCreationClassName = systemCreationClassNameObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(SystemCreationClassName)}: {ex.Message}");
+        }
+
+        try
+        {
+            object systemNameObj = m[nameof(SystemName)];
+            if (systemNameObj != null)
+                SystemName = systemNameObj.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(SystemName)}: {ex.Message}");
+        }
+
+        try
+        {
+            object obj = m[nameof(TimeOfLastReset)];
+            if (obj != null)
+            {
+                string dt = obj.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(dt))
+                {
+                    if (dt.Contains('.')) dt = dt.Split('.')[0];
+                    bool ok = DateTime.TryParseExact(dt, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime);
+                    if (ok) TimeOfLastReset = dateTime;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"{nameof(TimeOfLastReset)}: {ex.Message}");
+        }
+
+        // Get NetworkInterface Format
+        NIC = nic;
+        NIC ??= NetworkTool.GetNICByName(NetConnectionID);
+
+        // Get DNS Addresses
+        if (NIC != null)
+        {
+            try
+            {
+                IPAddressCollection dnss = NIC.GetIPProperties().DnsAddresses;
+                for (int n = 0; n < dnss.Count; n++)
+                    DnsAddresses.Add(dnss[n].ToString());
+
+                if (string.IsNullOrEmpty(MACAddress))
+                {
+                    string macAddress = NIC.GetPhysicalAddress().ToString();
+                    if (!string.IsNullOrEmpty(macAddress))
+                    {
+                        try
+                        {
+                            string regex = "(.{2})(.{2})(.{2})(.{2})(.{2})(.{2})";
+                            string replace = "$1:$2:$3:$4:$5:$6";
+                            MACAddress = Regex.Replace(macAddress, regex, replace);
+                        }
+                        catch (Exception) { }
+                    }
+                }
+            }
+            catch (Exception) { }
+        }
     }
+
+    private void Read(NetworkInterface? nic)
+    {
+        if (nic == null)
+        {
+            ConfigManagerErrorCode = 22;
+            return;
+        }
+
+        try
+        {
+            NIC = nic;
+            NetConnectionID = nic.Name;
+            Description = nic.Description;
+
+            if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet) AdapterTypeID = 0;
+            else if (nic.NetworkInterfaceType == NetworkInterfaceType.TokenRing) AdapterTypeID = 1;
+            else if (nic.NetworkInterfaceType == NetworkInterfaceType.Fddi) AdapterTypeID = 2;
+            else if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback) AdapterTypeID = 4;
+            else if (nic.NetworkInterfaceType == NetworkInterfaceType.Atm) AdapterTypeID = 8;
+            else if (nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211) AdapterTypeID = 9;
+
+            Availability = (ushort)(nic.OperationalStatus == OperationalStatus.Up ? 3 : 2);
+
+            if (nic.OperationalStatus == OperationalStatus.Down) NetConnectionStatus = 0;
+            else if (nic.OperationalStatus == OperationalStatus.Up) NetConnectionStatus = 2;
+            else if (nic.OperationalStatus == OperationalStatus.NotPresent) NetConnectionStatus = 4;
+
+            IPAddressCollection dnss = nic.GetIPProperties().DnsAddresses;
+            for (int n = 0; n < dnss.Count; n++)
+                DnsAddresses.Add(dnss[n].ToString());
+
+            GUID = nic.Id;
+
+            string macAddress = nic.GetPhysicalAddress().ToString();
+            if (!string.IsNullOrEmpty(macAddress))
+            {
+                try
+                {
+                    string regex = "(.{2})(.{2})(.{2})(.{2})(.{2})(.{2})";
+                    string replace = "$1:$2:$3:$4:$5:$6";
+                    MACAddress = Regex.Replace(macAddress, regex, replace);
+                }
+                catch (Exception) { }
+            }
+
+            if (nic.Speed > 0) Speed = Convert.ToUInt64(nic.Speed);
+        }
+        catch (Exception) { }
+    }
+
     //== TEST
-    private static void GetAllNetworkInterfaces22()
+    private static void GetAllNetworkInterfacesTEST()
     {
         
         if (!OperatingSystem.IsWindows()) return;
         ObjectQuery? query = new("SELECT * FROM Win32_NetworkAdapter");
 
         using ManagementObjectSearcher searcher = new(query);
-        ManagementObjectCollection queryCollection = searcher.Get();
+        using ManagementObjectCollection queryCollection = searcher.Get();
 
         foreach (ManagementBaseObject m in queryCollection)
         {

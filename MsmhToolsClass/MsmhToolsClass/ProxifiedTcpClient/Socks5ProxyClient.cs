@@ -17,11 +17,9 @@
 //  You should have received a copy of the GNU Lesser General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-using System;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
-using System.ComponentModel;
 using System.Diagnostics;
 
 namespace MsmhToolsClass.ProxifiedTcpClient;
@@ -94,7 +92,7 @@ public class Socks5ProxyClient
     /// <param name="tcpClient">A TcpClient connection object.</param>
     public Socks5ProxyClient(TcpClient tcpClient)
     {
-        _tcpClientCached = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
+        _tcpClientCached = tcpClient;
     }
 
     /// <summary>
@@ -105,9 +103,9 @@ public class Socks5ProxyClient
     public Socks5ProxyClient(string proxyHost, int proxyPort)
     {
         if (proxyPort <= 0 || proxyPort > 65535)
-            throw new ArgumentOutOfRangeException(nameof(proxyPort), "port must be greater than zero and less than 65535");
+            return; // "port must be greater than zero and less than 65535"
 
-        _proxyHost = proxyHost ?? throw new ArgumentNullException(nameof(proxyHost));
+        _proxyHost = proxyHost;
         _proxyPort = proxyPort;
     }
 
@@ -116,13 +114,14 @@ public class Socks5ProxyClient
     /// </summary>
     /// <param name="proxyHost">Host name or IP address of the proxy server.</param>
     /// <param name="proxyPort">Port used to connect to proxy server.</param>
-    /// <param name="proxyUsername">Proxy authentication user name.</param>
+    /// <param name="proxyUsername">Proxy authentication username.</param>
     /// <param name="proxyPassword">Proxy authentication password.</param>
     public Socks5ProxyClient(string proxyHost, int proxyPort, string? proxyUsername, string? proxyPassword)
     {
         if (proxyPort <= 0 || proxyPort > 65535)
-            throw new ArgumentOutOfRangeException(nameof(proxyPort), "port must be greater than zero and less than 65535");
-        _proxyHost = proxyHost ?? throw new ArgumentNullException(nameof(proxyHost));
+            return; // "port must be greater than zero and less than 65535"
+
+        _proxyHost = proxyHost;
         _proxyPort = proxyPort;
 
         if (!string.IsNullOrEmpty(proxyUsername))
@@ -181,10 +180,10 @@ public class Socks5ProxyClient
     public async Task<TcpClient?> CreateConnection(string destinationHost, int destinationPort)
     {
         if (string.IsNullOrEmpty(destinationHost))
-            throw new ArgumentNullException(nameof(destinationHost));
+            return null;
 
         if (destinationPort <= 0 || destinationPort > 65535)
-            throw new ArgumentOutOfRangeException(nameof(destinationPort), "port must be greater than zero and less than 65535");
+            return null; // "port must be greater than zero and less than 65535"
 
         try
         {
@@ -192,10 +191,10 @@ public class Socks5ProxyClient
             if (_tcpClientCached == null)
             {
                 if (string.IsNullOrEmpty(_proxyHost))
-                    throw new Exception("ProxyHost property must contain a value.");
+                    return null;
 
                 if (_proxyPort <= 0 || _proxyPort > 65535)
-                    throw new Exception("ProxyPort value must be greater than zero and less than 65535");
+                    return null;
 
                 //  create new tcp client object to the proxy server
                 _tcpClient = new TcpClient();
@@ -233,7 +232,6 @@ public class Socks5ProxyClient
             Debug.WriteLine($"{msg}{Environment.NewLine}{ex.Message}");
 
             return null;
-            //throw new ProxyException(msg, ex);
         }
     }
 
@@ -308,7 +306,6 @@ public class Socks5ProxyClient
             string msg = "The proxy destination does not accept the supported proxy client authentication methods.";
             Debug.WriteLine(msg);
             return;
-            //throw new ProxyException(msg);
         }
 
         // if the server accepts a username and password authentication and none is provided by the user then throw an error
@@ -318,7 +315,6 @@ public class Socks5ProxyClient
             string msg = "The proxy destination requires a username and password for authentication. If you received this error attempting to connect to the Tor network provide an string empty value for ProxyUserName and ProxyPassword.";
             Debug.WriteLine(msg);
             return;
-            //throw new ProxyException(msg);
         }
 
         if (acceptedAuthMethod == SOCKS5_AUTH_METHOD_USERNAME_PASSWORD)
@@ -377,7 +373,6 @@ public class Socks5ProxyClient
                 string msg = "Proxy authentification failure! The proxy server has reported that the userid and/or password is not valid.";
                 Debug.WriteLine(msg);
                 return;
-                //throw new ProxyException(msg);
             }
         }
     }
@@ -568,112 +563,6 @@ public class Socks5ProxyClient
 
         Debug.WriteLine(exceptionMsg);
         return;
-        // throw new ProxyException(exceptionMsg);
-    }
-
-    // Async Methods
-    private BackgroundWorker? _asyncWorker;
-    private Exception? _asyncException;
-    bool _asyncCancelled;
-
-    /// <summary>
-    /// Gets a value indicating whether an asynchronous operation is running.
-    /// </summary>
-    /// <remarks>Returns true if an asynchronous operation is running; otherwise, false.
-    /// </remarks>
-    public bool IsBusy
-    {
-        get { return _asyncWorker != null && _asyncWorker.IsBusy; }
-    }
-
-    /// <summary>
-    /// Gets a value indicating whether an asynchronous operation is cancelled.
-    /// </summary>
-    /// <remarks>Returns true if an asynchronous operation is cancelled; otherwise, false.
-    /// </remarks>
-    public bool IsAsyncCancelled
-    {
-        get { return _asyncCancelled; }
-    }
-
-    /// <summary>
-    /// Cancels any asychronous operation that is currently active.
-    /// </summary>
-    public void CancelAsync()
-    {
-        if (_asyncWorker != null && !_asyncWorker.CancellationPending && _asyncWorker.IsBusy)
-        {
-            _asyncCancelled = true;
-            _asyncWorker.CancelAsync();
-        }
-    }
-
-    private void CreateAsyncWorker()
-    {
-        _asyncWorker?.Dispose();
-        _asyncException = null;
-        _asyncWorker = null;
-        _asyncCancelled = false;
-        _asyncWorker = new();
-    }
-
-    /// <summary>
-    /// Event handler for CreateConnectionAsync method completed.
-    /// </summary>
-    public event EventHandler<CreateConnectionAsyncCompletedEventArgs>? CreateConnectionAsyncCompleted;
-
-    /// <summary>
-    /// Asynchronously creates a remote TCP connection through a proxy server to the destination host on the destination port.
-    /// </summary>
-    /// <param name="destinationHost">Destination host name or IP address.</param>
-    /// <param name="destinationPort">Port number to connect to on the destination host.</param>
-    /// <returns>
-    /// Returns TcpClient object that can be used normally to communicate
-    /// with the destination server.
-    /// </returns>
-    /// <remarks>
-    /// This method instructs the proxy server
-    /// to make a pass through connection to the specified destination host on the specified
-    /// port.  
-    /// </remarks>
-    public void CreateConnectionAsync(string destinationHost, int destinationPort)
-    {
-        if (_asyncWorker != null)
-        {
-            if (_asyncWorker.IsBusy)
-                throw new InvalidOperationException("The Socks4 object is already busy executing another asynchronous operation. You can only execute one asychronous method at a time.");
-
-            CreateAsyncWorker();
-            _asyncWorker.WorkerSupportsCancellation = true;
-            _asyncWorker.DoWork += new DoWorkEventHandler(CreateConnectionAsync_DoWork);
-            _asyncWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(CreateConnectionAsync_RunWorkerCompleted);
-            object[] args = new object[2];
-            args[0] = destinationHost;
-            args[1] = destinationPort;
-            _asyncWorker.RunWorkerAsync(args);
-        }
-    }
-
-    private void CreateConnectionAsync_DoWork(object? sender, DoWorkEventArgs e)
-    {
-        try
-        {
-            if (e.Argument != null)
-            {
-                object[] args = (object[])e.Argument;
-                e.Result = CreateConnection((string)args[0], (int)args[1]);
-            }
-        }
-        catch (Exception ex)
-        {
-            _asyncException = ex;
-        }
-    }
-
-    private void CreateConnectionAsync_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
-    {
-        if (e.Result != null)
-            CreateConnectionAsyncCompleted?.Invoke(this, new CreateConnectionAsyncCompletedEventArgs(_asyncException, _asyncCancelled, (TcpClient)e.Result));
     }
 
 }

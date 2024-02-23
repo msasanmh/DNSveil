@@ -419,6 +419,9 @@ public static class ExtensionsMethods
             green = (255 - green) * correctionFactor + green;
             blue = (255 - blue) * correctionFactor + blue;
         }
+        if (red < 0) red = 0; if (red > 255) red = 255;
+        if (green < 0) green = 0; if (green > 255) green = 255;
+        if (blue < 0) blue = 0; if (blue > 255) blue = 255;
         return Color.FromArgb(color.A, (int)red, (int)green, (int)blue);
     }
     //-----------------------------------------------------------------------------------
@@ -492,15 +495,25 @@ public static class ExtensionsMethods
     //-----------------------------------------------------------------------------------
     public static void LoadFromFile(this List<string> list, string filePath, bool ignoreEmptyLines, bool trimLines)
     {
-        if (!File.Exists(filePath)) return;
-        string content = File.ReadAllText(filePath);
-        List<string> lines = content.SplitToLines();
-        for (int n = 0; n < lines.Count; n++)
+        try
         {
-            string line = lines[n];
-            if (ignoreEmptyLines)
+            if (!File.Exists(filePath)) return;
+            string content = File.ReadAllText(filePath);
+            List<string> lines = content.SplitToLines();
+            for (int n = 0; n < lines.Count; n++)
             {
-                if (!string.IsNullOrWhiteSpace(line))
+                string line = lines[n];
+                if (ignoreEmptyLines)
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        if (trimLines)
+                            list.Add(line.Trim());
+                        else
+                            list.Add(line);
+                    }
+                }
+                else
                 {
                     if (trimLines)
                         list.Add(line.Trim());
@@ -508,13 +521,10 @@ public static class ExtensionsMethods
                         list.Add(line);
                 }
             }
-            else
-            {
-                if (trimLines)
-                    list.Add(line.Trim());
-                else
-                    list.Add(line);
-            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("LoadFromFile: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------

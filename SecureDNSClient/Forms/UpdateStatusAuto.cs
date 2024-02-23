@@ -23,20 +23,20 @@ public partial class FormMain
                 {
                     UpdateAllAutoBenchmark = AppUpTime.Elapsed;
                     int delay = UpdateAutoDelayMS;
-
+                    
                     if (IsAppReady)
                     {
                         await UpdateBoolInternetAccess();
                         await Task.Delay(delay);
                     }
 
-                    await UpdateBools();
+                    await UpdateBools(90);
                     await Task.Delay(delay);
 
                     await UpdateBoolProxy();
                     await Task.Delay(delay);
 
-                    await UpdateStatusLong();
+                    await UpdateStatusLong(50);
                     await Task.Delay(delay);
 
                     if (Visible)
@@ -48,6 +48,8 @@ public partial class FormMain
                     TimeSpan eTime = AppUpTime.Elapsed - UpdateAllAutoBenchmark;
                     UpdateDnsDohDelayMS = Convert.ToInt32(eTime.TotalMilliseconds);
                     //Debug.WriteLine("UpdateAllAuto: " + ConvertTool.TimeSpanToHumanRead(eTime, true));
+
+                    await Task.Delay(delay / 2);
                 }
                 catch (Exception) { }
             }
@@ -68,65 +70,88 @@ public partial class FormMain
 
     private async Task UpdateNotifyIconIcon()
     {
-        if (!IsAppReady)
+        try
         {
-            NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_R_Multi;
-            NotifyIconMain.Text = "Waiting For Network...";
-            return;
-        }
-
-        if (IsInActionState)
-        {
-            await Task.Run(async () =>
+            if (!IsAppReady)
             {
-                while (true)
-                {
-                    if (!IsInActionState) break;
-
-                    NotifyIconMain.Text = "In Action...";
-
-                    // Loading
-                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_B_Multi;
-                    await Task.Delay(200);
-                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_BR_Multi;
-                    await Task.Delay(200);
-                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_R_Multi;
-                    await Task.Delay(200);
-                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-                    await Task.Delay(200);
-                }
-            });
-        }
-        else
-        {
-            if (!IsDNSConnected & !IsDNSSet & !IsProxyRunning & !IsProxySet & !IsDPIActive)
                 NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_R_Multi;
-            else if (IsDNSConnected & IsDNSSet & IsProxyRunning & IsProxySet & IsDPIActive)
-                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_B_Multi;
-            else if (!IsDNSConnected & !IsDNSSet & IsProxyRunning & IsProxySet & IsDPIActive)
-                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-            else if (!IsDNSConnected & !IsDNSSet & IsProxyRunning & IsDPIActive)
-                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-            else if (IsDNSConnected & IsDNSSet & !IsProxyRunning & !IsProxySet & !IsDPIActive)
-                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
-            else if (IsDNSConnected & IsDNSSet & !IsProxyRunning & !IsDPIActive)
-                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+                NotifyIconMain.Text = "Waiting For Network...";
+                return;
+            }
+
+            if (IsInActionState)
+            {
+                await Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        // Update Is In Action
+                        IsInActionState = IsInAction(false, true, true, true, true, true, true, true, true, true, true, out string reason);
+
+                        if (!IsInActionState) break;
+
+                        try { NotifyIconMain.Text = reason; } catch (Exception) { }
+
+                        // Loading
+                        NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_B_Multi;
+                        await Task.Delay(200);
+                        NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_BR_Multi;
+                        await Task.Delay(200);
+                        NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_R_Multi;
+                        await Task.Delay(200);
+                        NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+                        await Task.Delay(200);
+                    }
+                });
+            }
             else
-                NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_BR_Multi;
+            {
+                if (!IsDNSConnected & !IsDNSSet & !IsProxyRunning & !IsProxySet & !IsDPIActive)
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_R_Multi;
+                else if (IsDNSConnected & IsDNSSet & IsProxyRunning & IsProxySet & IsDPIActive)
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_B_Multi;
+                else if (!IsDNSConnected & !IsDNSSet & IsProxyRunning & IsProxySet & IsDPIActive)
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+                else if (!IsDNSConnected & !IsDNSSet & IsProxyRunning & IsDPIActive)
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+                else if (IsDNSConnected & IsDNSSet & !IsProxyRunning & !IsProxySet & !IsDPIActive)
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+                else if (IsDNSConnected & IsDNSSet & !IsProxyRunning & !IsDPIActive)
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_RB_Multi;
+                else
+                    NotifyIconMain.Icon = Properties.Resources.SecureDNSClient_BR_Multi;
 
-            // Message (Max 128 chars)
-            string msg = string.Empty;
-            if (IsDNSConnected & !IsDNSSet) msg += $"DNS: Online{NL}";
-            else if (IsDNSConnected & IsDNSSet) msg += $"DNS: Online & Set{NL}";
-            if (IsDoHConnected) msg += $"DoH: Online{NL}";
-            if (IsProxyRunning & !IsProxySet) msg += $"Proxy Server: Online{NL}";
-            else if (IsProxyRunning & IsProxySet) msg += $"Proxy Server: Online & Set{NL}";
-            if (IsDPIActive) msg += $"DPI Bypass: Active{NL}";
+                // Message (Max 128 chars)
+                string msg = string.Empty;
+                if (IsDNSConnected & !IsDNSSet) msg += $"DNS: Online{NL}";
+                else if (IsDNSConnected & IsDNSSet) msg += $"DNS: Online & Set{NL}";
+                if (IsDoHConnected) msg += $"DoH: Online{NL}";
+                if (IsDNSConnected)
+                {
+                    string firstGroup;
+                    if (LastConnectMode == ConnectMode.ConnectToWorkingServers && CurrentUsingCustomServersList.Any())
+                        firstGroup = CurrentUsingCustomServersList[0].GroupName;
+                    else
+                        firstGroup = GetConnectModeNameByConnectMode(LastConnectMode);
+                    int charN = 25;
+                    string group = firstGroup.Length <= charN ? firstGroup : $"{firstGroup[..charN]}...";
+                    msg += $"Group: {group}{NL}";
+                }
+                if (IsProxyRunning & !IsProxySet) msg += $"Proxy: Online{NL}";
+                else if (IsProxyRunning & IsProxySet) msg += $"Proxy: Online & Set{NL}";
+                if (IsDPIActive) msg += $"DPI Bypass: Active{NL}";
 
-            if (msg.EndsWith(NL)) msg = msg.TrimEnd(NL.ToCharArray());
-            if (string.IsNullOrEmpty(msg)) msg = Text;
+                if (msg.EndsWith(NL)) msg = msg.TrimEnd(NL.ToCharArray());
+                if (string.IsNullOrEmpty(msg)) msg = Text;
 
-            try { NotifyIconMain.Text = msg; } catch (Exception) { }
+                if (msg.Length <= 128) try { NotifyIconMain.Text = msg; } catch (Exception) { }
+
+                await Task.Delay(1000);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("UpdateNotifyIconIcon: " + ex.Message);
         }
     }
 
@@ -134,22 +159,28 @@ public partial class FormMain
     {
         if (!Program.IsStartup) Task.Run(async () => await CheckUpdate());
 
-        System.Timers.Timer savedDnsUpdateTimer = new();
-        savedDnsUpdateTimer.Interval = TimeSpan.FromHours(6).TotalMilliseconds;
-        savedDnsUpdateTimer.Elapsed += (s, e) =>
+        System.Timers.Timer timer = new();
+        timer.Interval = TimeSpan.FromHours(1).TotalMilliseconds;
+        timer.Elapsed += (s, e) =>
         {
             Task.Run(async () => await CheckUpdate());
         };
-        savedDnsUpdateTimer.Start();
+        timer.Start();
     }
 
     private async Task CheckUpdate(bool showMsg = false)
     {
         if (IsCheckingStarted) return;
-        if (!IsInternetOnline) return;
         if (IsCheckingForUpdate) return;
         if (showMsg) IsCheckingForUpdate = true;
 
+        await UpdateBoolInternetAccess();
+        if (!IsInternetOnline)
+        {
+            IsCheckingForUpdate = false;
+            return;
+        }
+        
         string updateUrl = "https://github.com/msasanmh/SecureDNSClient/raw/main/update";
         string update = string.Empty;
         string labelUpdate = string.Empty;
@@ -241,25 +272,17 @@ public partial class FormMain
             }
         }
 
-        // Link Label Check Update
-        this.InvokeIt(() =>
+        if (string.IsNullOrEmpty(labelUpdate))
         {
-            LinkLabelCheckUpdate.ForeColor = Color.MediumSeaGreen;
-            LinkLabelCheckUpdate.ActiveLinkColor = Color.MediumSeaGreen;
-            LinkLabelCheckUpdate.LinkColor = Color.MediumSeaGreen;
-            LinkLabelCheckUpdate.Text = labelUpdate;
-            LinkLabelCheckUpdate.Links.Clear();
-            LinkLabelCheckUpdate.Links.Add(new LinkLabel.Link(0, LinkLabelCheckUpdate.Text.Length, downloadUrl));
-
-            LinkLabelCheckUpdate.LinkClicked -= LinkLabelCheckUpdate_LinkClicked;
-            LinkLabelCheckUpdate.LinkClicked += LinkLabelCheckUpdate_LinkClicked;
-
-            void LinkLabelCheckUpdate_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-            {
-                string? dlUrl = e.Link.LinkData.ToString();
-                if (!string.IsNullOrEmpty(dlUrl)) OpenLinks.OpenUrl(dlUrl);
-            }
-        });
+            // No Update
+            this.InvokeIt(() => CustomButtonCheckUpdate.Text = "Check Update");
+            this.InvokeIt(() => CustomButtonCheckUpdate.BackColor = BackColor);
+        }
+        else
+        {
+            this.InvokeIt(() => CustomButtonCheckUpdate.Text = "New Ver");
+            this.InvokeIt(() => CustomButtonCheckUpdate.BackColor = Color.MediumSeaGreen);
+        }
 
         IsCheckingForUpdate = false;
     }
@@ -324,19 +347,17 @@ public partial class FormMain
         catch (Exception) { }
     }
 
-    private async Task UpdateBools()
+    private async Task UpdateBools(int delay = 0)
     {
-        int delay = 30;
-
         // Update Is In Action
-        IsInActionState = IsInAction(false, true, true, true, true, true, true, true, true, true, true);
+        IsInActionState = IsInAction(false, true, true, true, true, true, true, true, true, true, true, out _);
         await Task.Delay(delay);
 
         // Update Startup Info
         IsOnStartup = IsAppOnWindowsStartup(out bool isStartupPathOk);
         IsStartupPathOk = isStartupPathOk;
         await Task.Delay(delay);
-
+        
         // Update Camouflage Bools
         IsBypassProxyActive = ProcessManager.FindProcessByPID(PIDCamouflageProxy);
         IsBypassDNSActive = CamouflageDNSServer != null && CamouflageDNSServer.IsRunning && !IsConnecting;
@@ -347,7 +368,7 @@ public partial class FormMain
         if (LastConnectMode == ConnectMode.ConnectToFakeProxyDohViaProxyDPI && !IsBypassProxyActive)
             ProcessManager.KillProcessByPID(PIDDNSCryptBypass);
         await Task.Delay(delay);
-
+        
         // In Case Camouflage GoodbyeDPI Terminated
         if (LastConnectMode == ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI && !IsBypassGoodbyeDpiActive &&
             IsBypassDNSActive)
@@ -361,14 +382,21 @@ public partial class FormMain
                       ProcessManager.FindProcessByPID(PIDDNSCrypt);
         await Task.Delay(delay);
 
-        // In Case Dnsproxy or Dnscrypt Processes Terminated
-        if (!IsConnected && !IsConnecting && !IsDisconnecting &&
+        // In Case Dnsproxy Or Dnscrypt Terminated
+        if (!IsReconnecting && !IsConnected && !IsConnecting &&
             !IsQuickConnectWorking && !IsQuickConnecting && !IsQuickDisconnecting && !StopQuickConnect)
         {
             IsDNSConnected = IsDoHConnected = IsConnected;
             LocalDnsLatency = LocalDohLatency = -1;
             BypassFakeProxyDohStop(true, true, true, false);
-            if (IsDNSSet) await UnsetAllDNSs();
+            if (IsDNSSet)
+            {
+                await UnsetAllDNSs();
+                if (Visible) await UpdateStatusNic();
+            }
+            // Write Connect Status
+            this.InvokeIt(() => CustomRichTextBoxConnectStatus.ResetText());
+            this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"Disconnected.{NL}"));
         }
         await Task.Delay(delay);
 
@@ -388,11 +416,10 @@ public partial class FormMain
                 NetworkTool.UnsetProxy(false, true);
         }
         await Task.Delay(delay);
-
+        
         // Update bool IsDnsSet
-        bool detectUnset = false;
-        this.InvokeIt(() => detectUnset = CustomCheckBoxSettingDnsDetectUnset.Checked);
-        IsDNSSet = SetDnsOnNic_.IsDnsSet(detectUnset);
+        IsDNSSet = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs, out bool isDnsSetOn, out _);
+        IsDNSSetOn = isDnsSetOn;
         await Task.Delay(delay);
 
         // Update bool IsProxySet
@@ -400,12 +427,12 @@ public partial class FormMain
         IsAnotherProxySet = isAnotherProxySet;
         CurrentSystemProxy = currentSystemProxy;
         await Task.Delay(delay);
-
+        
         // Update bool IsGoodbyeDPIActive
         IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
         IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
         await Task.Delay(delay);
-
+        
         // Update bool IsDPIActive
         IsDPIActive = UpdateBoolIsDpiActive();
         await Task.Delay(delay);
@@ -413,7 +440,7 @@ public partial class FormMain
 
     private bool UpdateBoolIsDpiActive()
     {
-        return IsProxyDpiBypassActive || IsProxySSLChangeSniActive || IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive;
+        return IsProxyFragmentActive || IsProxySSLChangeSniActive || IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive;
     }
 
     private async Task UpdateBoolInternetAccess()
@@ -515,59 +542,56 @@ public partial class FormMain
 #if DEBUG
             //Debug.WriteLine($"Line({isCmdSent}): " + line);
 #endif
-
             if (!isCmdSent || string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line))
             {
-                IsProxyRunning = false; ProxyRequests = 0; ProxyMaxRequests = 250; IsProxyDpiBypassActive = false;
+                IsProxyRunning = false; ProxyRequests = 0; ProxyMaxRequests = 250; IsProxyFragmentActive = false;
                 IsProxySSLDecryptionActive = false; IsProxySSLChangeSniActive = false;
+                ProxyDNSMode = ProxyProgram.Dns.Mode.Disable;
+                ProxyStaticFragmentMode = ProxyProgram.Fragment.Mode.Disable;
+                ProxyUpStreamMode = ProxyProgram.UpStreamProxy.Mode.Disable;
+                ProxyRulesMode = ProxyProgram.Rules.Mode.Disable;
             }
             else if (line.StartsWith("details"))
             {
                 string[] split = line.Split('|');
-                if (split.Length == 15)
+                if (split.Length > 12)
                 {
                     if (bool.TryParse(split[1].ToLower(), out bool sharing)) IsProxyRunning = sharing;
                     if (int.TryParse(split[2].ToLower(), out int port)) ProxyPort = port;
                     if (int.TryParse(split[3].ToLower(), out int requests)) ProxyRequests = requests;
                     if (int.TryParse(split[4].ToLower(), out int maxRequests)) ProxyMaxRequests = maxRequests;
-                    if (bool.TryParse(split[5].ToLower(), out bool dpiActive))
+
+                    if (bool.TryParse(split[5].ToLower(), out bool sslDecryptionActive)) IsProxySSLDecryptionActive = sslDecryptionActive;
+                    if (bool.TryParse(split[6].ToLower(), out bool sslChangeSniActive)) IsProxySSLChangeSniActive = sslDecryptionActive && sslChangeSniActive;
+
+                    if (split[7].ToLower().Equals("disable")) ProxyDNSMode = ProxyProgram.Dns.Mode.Disable;
+                    else if (split[7].ToLower().Equals("system")) ProxyDNSMode = ProxyProgram.Dns.Mode.System;
+                    else if (split[7].ToLower().Equals("doh")) ProxyDNSMode = ProxyProgram.Dns.Mode.DoH;
+                    else if (split[7].ToLower().Equals("plaindns")) ProxyDNSMode = ProxyProgram.Dns.Mode.PlainDNS;
+                    
+                    if (bool.TryParse(split[8].ToLower(), out bool isFragmentActive))
                     {
-                        IsProxyDpiBypassActive = !IsProxySSLDecryptionActive && dpiActive;
+                        // SSL Decryption Will Override Fragmentation (Fragment Can Be Active For SOCKS4)
+                        IsProxyFragmentActive = !IsProxySSLDecryptionActive && isFragmentActive;
                     }
 
-                    if (split[6].ToLower().Equals("disable")) ProxyStaticDPIBypassMode = ProxyProgram.DPIBypass.Mode.Disable;
-                    else if (split[6].ToLower().Equals("program")) ProxyStaticDPIBypassMode = ProxyProgram.DPIBypass.Mode.Program;
+                    if (split[9].ToLower().Equals("disable")) ProxyStaticFragmentMode = ProxyProgram.Fragment.Mode.Disable;
+                    else if (split[9].ToLower().Equals("program")) ProxyStaticFragmentMode = ProxyProgram.Fragment.Mode.Program;
 
-                    if (split[7].ToLower().Equals("disable")) ProxyDPIBypassMode = ProxyProgram.DPIBypass.Mode.Disable;
-                    else if (split[7].ToLower().Equals("program")) ProxyDPIBypassMode = ProxyProgram.DPIBypass.Mode.Program;
+                    if (split[10].ToLower().Equals("disable")) ProxyFragmentMode = ProxyProgram.Fragment.Mode.Disable;
+                    else if (split[10].ToLower().Equals("program")) ProxyFragmentMode = ProxyProgram.Fragment.Mode.Program;
 
-                    if (split[8].ToLower().Equals("disable")) ProxyUpStreamMode = ProxyProgram.UpStreamProxy.Mode.Disable;
-                    else if (split[8].ToLower().Equals("http")) ProxyUpStreamMode = ProxyProgram.UpStreamProxy.Mode.HTTP;
-                    else if (split[8].ToLower().Equals("socks5")) ProxyUpStreamMode = ProxyProgram.UpStreamProxy.Mode.SOCKS5;
+                    if (split[11].ToLower().Equals("disable")) ProxyUpStreamMode = ProxyProgram.UpStreamProxy.Mode.Disable;
+                    else if (split[11].ToLower().Equals("http")) ProxyUpStreamMode = ProxyProgram.UpStreamProxy.Mode.HTTP;
+                    else if (split[11].ToLower().Equals("socks5")) ProxyUpStreamMode = ProxyProgram.UpStreamProxy.Mode.SOCKS5;
 
-                    if (split[9].ToLower().Equals("disable")) ProxyDNSMode = ProxyProgram.Dns.Mode.Disable;
-                    else if (split[9].ToLower().Equals("system")) ProxyDNSMode = ProxyProgram.Dns.Mode.System;
-                    else if (split[9].ToLower().Equals("doh")) ProxyDNSMode = ProxyProgram.Dns.Mode.DoH;
-                    else if (split[9].ToLower().Equals("plaindns")) ProxyDNSMode = ProxyProgram.Dns.Mode.PlainDNS;
-
-                    if (split[10].ToLower().Equals("disable")) ProxyFakeDnsMode = ProxyProgram.FakeDns.Mode.Disable;
-                    else if (split[10].ToLower().Equals("file")) ProxyFakeDnsMode = ProxyProgram.FakeDns.Mode.File;
-                    else if (split[10].ToLower().Equals("text")) ProxyFakeDnsMode = ProxyProgram.FakeDns.Mode.Text;
-
-                    if (split[11].ToLower().Equals("disable")) ProxyBWListMode = ProxyProgram.BlackWhiteList.Mode.Disable;
-                    else if (split[11].ToLower().Equals("blacklistfile")) ProxyBWListMode = ProxyProgram.BlackWhiteList.Mode.BlackListFile;
-                    else if (split[11].ToLower().Equals("blacklisttext")) ProxyBWListMode = ProxyProgram.BlackWhiteList.Mode.BlackListText;
-                    else if (split[11].ToLower().Equals("whitelistfile")) ProxyBWListMode = ProxyProgram.BlackWhiteList.Mode.WhiteListFile;
-                    else if (split[11].ToLower().Equals("whitelisttext")) ProxyBWListMode = ProxyProgram.BlackWhiteList.Mode.WhiteListText;
-
-                    if (split[12].ToLower().Equals("disable")) DontBypassMode = ProxyProgram.DontBypass.Mode.Disable;
-                    else if (split[12].ToLower().Equals("file")) DontBypassMode = ProxyProgram.DontBypass.Mode.File;
-                    else if (split[12].ToLower().Equals("text")) DontBypassMode = ProxyProgram.DontBypass.Mode.Text;
-
-                    if (bool.TryParse(split[13].ToLower(), out bool sslDecryptionActive)) IsProxySSLDecryptionActive = sslDecryptionActive;
-                    if (bool.TryParse(split[14].ToLower(), out bool sslChangeSniToIpActive)) IsProxySSLChangeSniActive = sslDecryptionActive && sslChangeSniToIpActive;
+                    if (split[12].ToLower().Equals("disable")) ProxyRulesMode = ProxyProgram.Rules.Mode.Disable;
+                    else if (split[12].ToLower().Equals("file")) ProxyRulesMode = ProxyProgram.Rules.Mode.File;
+                    else if (split[12].ToLower().Equals("text")) ProxyRulesMode = ProxyProgram.Rules.Mode.Text;
                 }
             }
+
+            IsProxyDpiBypassActive = IsProxyFragmentActive || IsProxySSLChangeSniActive;
 
             // Update Proxy PID (Rare case)
             if (IsProxyRunning) PIDProxy = ProxyConsole.GetPid;
@@ -581,14 +605,14 @@ public partial class FormMain
         string proxiesOut = string.Empty;
         List<string> proxiesList = new();
 
-        bool isHttpProxySet = NetworkTool.IsProxySet(out string httpProxyIpPort, out _, out _, out _); // HTTP
+        bool isAnyProxySet = NetworkTool.IsProxySet(out string httpProxyIpPort, out string httpsProxyIpPort, out _, out string socksProxyIpPort);
+        
         if (!string.IsNullOrEmpty(httpProxyIpPort))
         {
             proxiesOut += $"http://{httpProxyIpPort}";
             if (!proxiesList.IsContain(httpProxyIpPort)) proxiesList.Add(httpProxyIpPort);
         }
 
-        bool isHttpsProxySet = NetworkTool.IsProxySet(out _, out string httpsProxyIpPort, out _, out _); // HTTPS
         if (!string.IsNullOrEmpty(httpsProxyIpPort))
         {
             if (!string.IsNullOrEmpty(proxiesOut)) proxiesOut += ", ";
@@ -596,15 +620,12 @@ public partial class FormMain
             if (!proxiesList.IsContain(httpsProxyIpPort)) proxiesList.Add(httpsProxyIpPort);
         }
 
-        bool isSocksProxySet = NetworkTool.IsProxySet(out _, out _, out _, out string socksProxyIpPort); // SOCKS
         if (!string.IsNullOrEmpty(socksProxyIpPort))
         {
             if (!string.IsNullOrEmpty(proxiesOut)) proxiesOut += ", ";
             proxiesOut += $"socks://{socksProxyIpPort}";
             if (!proxiesList.IsContain(socksProxyIpPort)) proxiesList.Add(socksProxyIpPort);
         }
-
-        bool isAnyProxySet = isHttpProxySet || isHttpsProxySet || isSocksProxySet;
 
         if (isAnyProxySet)
         {
@@ -642,7 +663,7 @@ public partial class FormMain
                 await Task.Delay(250);
                 try
                 {
-                    if (File.Exists(TheDll) && !IsConnecting)
+                    if (!IsConnecting && File.Exists(TheDll))
                     {
                         File.Delete(TheDll);
                         Debug.WriteLine("DLL Deleted.");
@@ -664,7 +685,6 @@ public partial class FormMain
             {
                 await Task.Delay(500);
 
-                //bool boolsChanged = false;
                 string boolsText = $"{IsScreenHighDpiScaleApplied}" +
                                    $"{IsAppReady}" +
                                    $"{IsInternetOnline}" +
@@ -683,6 +703,7 @@ public partial class FormMain
                                    $"{IsDNSSetting}" +
                                    $"{IsDNSUnsetting}" +
                                    $"{IsDNSSet}" +
+                                   $"{IsDNSSetOn}" +
                                    $"{IsFlushingDns}" +
                                    $"{IsDPIActive}" +
                                    $"{IsGoodbyeDPIBasicActive}" +
@@ -694,7 +715,7 @@ public partial class FormMain
                                    $"{IsProxyActivating}" +
                                    $"{IsProxyDeactivating}" +
                                    $"{IsProxyRunning}" +
-                                   $"{IsProxyDpiBypassActive}" +
+                                   $"{IsProxyFragmentActive}" +
                                    $"{IsProxySSLDecryptionActive}" +
                                    $"{IsProxySSLChangeSniActive}" +
                                    $"{IsProxySet}" +
@@ -720,8 +741,7 @@ public partial class FormMain
 
             // Check Button Text
             if (StopChecking) this.InvokeIt(() => CustomButtonCheck.Text = "Stopping...");
-            else
-                this.InvokeIt(() => CustomButtonCheck.Text = IsCheckingStarted ? "Stop" : "Scan");
+            else this.InvokeIt(() => CustomButtonCheck.Text = IsCheckingStarted ? "Stop" : "Scan");
             await Task.Delay(delay);
 
             // Check Button Enable
@@ -749,26 +769,30 @@ public partial class FormMain
             if (CustomRadioButtonConnectCheckedServers.Checked)
             {
                 if (WorkingDnsList.Any())
-                    this.InvokeIt(() => CustomButtonConnect.Enabled = !IsDisconnecting);
+                    this.InvokeIt(() => CustomButtonConnect.Enabled = (!IsReconnecting && !IsDisconnecting) || (IsReconnecting && !IsDisconnecting && IsConnecting));
                 else
                     this.InvokeIt(() => CustomButtonConnect.Enabled = IsConnected);
             }
-            else
-                this.InvokeIt(() => CustomButtonConnect.Enabled = !IsDisconnecting);
+            else this.InvokeIt(() => CustomButtonConnect.Enabled = (!IsReconnecting && !IsDisconnecting) || (IsReconnecting && !IsDisconnecting && IsConnecting));
+            await Task.Delay(delay);
+
+            // Reconnect Button Enable
+            this.InvokeIt(() => CustomButtonReconnect.Enabled = (IsConnected || IsConnecting) && !IsDisconnecting);
             await Task.Delay(delay);
 
             // SetDNS Button Text
             this.InvokeIt(() =>
             {
-                bool isDnsSetOn = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs);
+                IsDNSSet = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs, out bool isDnsSetOn, out _);
+                IsDNSSetOn = isDnsSetOn;
                 if (IsDNSUnsetting) CustomButtonSetDNS.Text = "Unsetting...";
                 else if (IsDNSSetting) CustomButtonSetDNS.Text = "Setting...";
-                else CustomButtonSetDNS.Text = isDnsSetOn ? "Unset DNS" : "Set DNS";
+                else CustomButtonSetDNS.Text = IsDNSSetOn ? "Unset DNS" : "Set DNS";
             });
             await Task.Delay(delay);
 
             // SetDNS Button Enable
-            this.InvokeIt(() => CustomButtonSetDNS.Enabled = (IsConnected && (IsDNSConnected || IsDoHConnected) && !IsDNSSetting && !IsDNSUnsetting));
+            this.InvokeIt(() => CustomButtonSetDNS.Enabled = IsConnected && !IsDNSSetting && !IsDNSUnsetting);
             await Task.Delay(delay);
 
             // StartProxy Buttom Text
@@ -849,6 +873,10 @@ public partial class FormMain
             // Update ApplyDpiBypassChanges Button
             UpdateApplyDpiBypassChangesButton();
             await Task.Delay(delay);
+
+            // Update Is In Action
+            IsInActionState = IsInAction(false, true, true, true, true, true, true, true, true, true, true, out _);
+            await Task.Delay(delay);
         }
         catch (Exception) { }
     }
@@ -858,19 +886,14 @@ public partial class FormMain
         try
         {
             int delay = 5;
-
+            
             // Hide Label Main After a period of time
             LabelMainHide();
             await Task.Delay(delay);
 
             // Update Min Size of Main Container Panel 1
-            int offset = 20;
+            int offset = 20; // 20
             this.InvokeIt(() => SplitContainerMain.Panel1MinSize = PictureBoxFarvahar.Bottom + PictureBoxFarvahar.Height + offset);
-            await Task.Delay(delay);
-
-            // Update Height of Vertical Separator in Share Tab
-            int spaceBottom = 6;
-            this.InvokeIt(() => CustomLabelShareSeparator2.Height = CustomButtonShare.Top - CustomLabelShareSeparator2.Top - spaceBottom);
             await Task.Delay(delay);
 
             // Stop Check Timer
@@ -885,15 +908,6 @@ public partial class FormMain
                     this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Value = NumberOfWorkingServers);
             }
             await Task.Delay(delay);
-
-            // Update Size Of GroupBoxNicStatus
-            this.InvokeIt(() =>
-            {
-                int space = 6;
-                CustomGroupBoxNicStatus.Width = TabPageSetDNS.Width - CustomGroupBoxNicStatus.Left - space;
-                CustomGroupBoxNicStatus.Height = TabPageSetDNS.Height - CustomGroupBoxNicStatus.Top - space;
-            });
-            await Task.Delay(delay);
         }
         catch (Exception ex)
         {
@@ -903,14 +917,19 @@ public partial class FormMain
 
     private void UpdateMinSizeOfStatus()
     {
+        // Two Times: To Get VScrollbar Of CustomDataGridViewStatus Updated
+        UpdateMinSizeOfStatusInternal();
+        UpdateMinSizeOfStatusInternal();
+    }
+
+    private void UpdateMinSizeOfStatusInternal()
+    {
         // Update Min Size of Status
-        SplitContainerTop.IsSplitterFixed = true;
         try
         {
+            int scrollbarWidth = 0;
             this.InvokeIt(() =>
             {
-                int scrollbarWidth = 0;
-                
                 try
                 {
                     foreach (VScrollBar scrollbar in CustomDataGridViewStatus.Controls.OfType<VScrollBar>())
@@ -919,17 +938,11 @@ public partial class FormMain
                     }
                 }
                 catch (Exception) { }
-                
-                CustomDataGridViewStatus.Columns[0].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                CustomDataGridViewStatus.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-                CustomDataGridViewStatus.Left = 5;
-                CustomDataGridViewStatus.Top = LabelScreen.Height;
-                CustomDataGridViewStatus.Width = CustomDataGridViewStatus.Columns[0].Width + CustomDataGridViewStatus.Columns[1].Width + 3 + scrollbarWidth;
-                CustomDataGridViewStatus.Height = CustomGroupBoxStatus.Height - LabelScreen.Height - CustomButtonProcessMonitor.Height - 10;
             });
 
-            int minS = CustomDataGridViewStatus.Width + (CustomDataGridViewStatus.Left * 2) + 2;
-            int distance = SplitContainerTop.Width - SplitContainerTop.SplitterIncrement - minS;
+            int offset = 10;
+            int statusWidth = CustomDataGridViewStatus.Columns[0].Width + CustomDataGridViewStatus.Columns[1].Width + scrollbarWidth + offset;
+            int distance = SplitContainerTop.Width - SplitContainerTop.SplitterIncrement - statusWidth;
             if (distance > SplitContainerTop.Panel1MinSize && distance < SplitContainerTop.Width - SplitContainerTop.Panel2MinSize)
             {
                 this.InvokeIt(() => SplitContainerTop.SplitterDistance = distance);
@@ -946,23 +959,23 @@ public partial class FormMain
     {
         bool isSSLDecryptionEnable = IsSSLDecryptionEnable() || IsProxySSLDecryptionActive;
 
-        // Regular DPI Bypass Enable
+        // Enable Fragment
         this.InvokeIt(() =>
         {
             if (isSSLDecryptionEnable)
             {
-                if (CustomCheckBoxPDpiEnableDpiBypass.Enabled)
+                if (CustomCheckBoxPDpiEnableFragment.Enabled)
                 {
-                    CustomCheckBoxPDpiEnableDpiBypass.Text = "Enable DPI Bypass (Ignored. SSL Decryption is active.)";
-                    CustomCheckBoxPDpiEnableDpiBypass.ForeColor = Color.DodgerBlue;
-                    CustomCheckBoxPDpiEnableDpiBypass.Enabled = false;
+                    CustomCheckBoxPDpiEnableFragment.Text = "Enable Fragment (Ignored. SSL Decryption is active.)";
+                    CustomCheckBoxPDpiEnableFragment.ForeColor = Color.DodgerBlue;
+                    CustomCheckBoxPDpiEnableFragment.Enabled = false;
                 }
             }
             else
             {
-                CustomCheckBoxPDpiEnableDpiBypass.Text = "Enable DPI Bypass";
-                CustomCheckBoxPDpiEnableDpiBypass.ForeColor = Color.MediumSeaGreen;
-                CustomCheckBoxPDpiEnableDpiBypass.Enabled = true;
+                CustomCheckBoxPDpiEnableFragment.Text = "Enable Fragment";
+                CustomCheckBoxPDpiEnableFragment.ForeColor = Color.MediumSeaGreen;
+                CustomCheckBoxPDpiEnableFragment.Enabled = true;
             }
         });
 
@@ -976,8 +989,8 @@ public partial class FormMain
         {
             if (IsProxyActivated && IsProxyRunning && !IsProxyActivating && !IsProxyDeactivating)
             {
-                bool proxyChanged = (IsProxyDpiBypassActive != CustomCheckBoxPDpiEnableDpiBypass.Checked && CustomCheckBoxPDpiEnableDpiBypass.Enabled) ||
-                                    (CustomCheckBoxPDpiEnableDpiBypass.Checked && CustomCheckBoxPDpiEnableDpiBypass.Enabled && !LastDpiBypassProgramCommand.Equals(GetDpiBypassProgramCommand())) ||
+                bool proxyChanged = (IsProxyFragmentActive != CustomCheckBoxPDpiEnableFragment.Checked && CustomCheckBoxPDpiEnableFragment.Enabled) ||
+                                    (CustomCheckBoxPDpiEnableFragment.Checked && CustomCheckBoxPDpiEnableFragment.Enabled && !LastFragmentProgramCommand.Equals(GetFragmentProgramCommand())) ||
                                     (IsProxySSLDecryptionActive != CustomCheckBoxProxyEnableSSL.Checked) ||
                                     (IsProxySSLChangeSniActive != CustomCheckBoxProxySSLChangeSni.Checked && CustomCheckBoxProxyEnableSSL.Checked) ||
                                     (CustomCheckBoxProxyEnableSSL.Checked && CustomCheckBoxProxySSLChangeSni.Checked && !LastDefaultSni.Equals(GetDefaultSniSetting()));
@@ -997,14 +1010,13 @@ public partial class FormMain
         });
     }
 
-    private async Task UpdateStatusLong()
+    private async Task UpdateStatusLong(int delay = 0)
     {
         // Update Int Working Servers
         NumberOfWorkingServers = WorkingDnsList.Count;
 
         if (CustomDataGridViewStatus.RowCount == 14 && Visible)
         {
-            int delay = 50;
             // Update Status Working Servers
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Style.ForeColor = Color.DodgerBlue);
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Value = NumberOfWorkingServers);
@@ -1075,9 +1087,9 @@ public partial class FormMain
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[9].Cells[1].Value = textProxySet);
             await Task.Delay(delay);
 
-            // Update Status IsProxyDPIActive (Fragment Or SSL)
-            string textProxyDPI = IsProxyDpiBypassActive || IsProxySSLChangeSniActive ? "Active" : "Inactive";
-            Color colorProxyDPI = IsProxyDpiBypassActive || IsProxySSLChangeSniActive ? Color.MediumSeaGreen : Color.IndianRed;
+            // Update Status IsProxyDpiBypassActive (Fragment Or SSL)
+            string textProxyDPI = IsProxyDpiBypassActive ? "Active" : "Inactive";
+            Color colorProxyDPI = IsProxyDpiBypassActive ? Color.MediumSeaGreen : Color.IndianRed;
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[10].Cells[1].Style.ForeColor = colorProxyDPI);
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[10].Cells[1].Value = textProxyDPI);
             await Task.Delay(delay);
@@ -1092,7 +1104,7 @@ public partial class FormMain
             // 12: CPU
 
             // Empty Status to Keep Width Fixed
-            this.InvokeIt(() => CustomDataGridViewStatus.Rows[13].Cells[1].Value = "               ");
+            this.InvokeIt(() => CustomDataGridViewStatus.Rows[13].Cells[1].Value = "                  ");
 
             UpdateMinSizeOfStatus();
             await Task.Delay(delay);
@@ -1114,13 +1126,9 @@ public partial class FormMain
             this.InvokeIt(() => SplitContainerMain.BackColor = IsDNSConnected ? Color.MediumSeaGreen : Color.IndianRed);
         else
             this.InvokeIt(() => SplitContainerMain.BackColor = Color.DodgerBlue);
-
-        // Remove Connect ToolTip
-        if (!IsConnected)
-            this.InvokeIt(() => CustomButtonConnect.SetToolTip(MainToolTip, string.Empty, string.Empty));
     }
 
-    private void UpdateStatusNic() // Auto Update will increase CPU usage of "WmiPrvSE.exe"
+    private async Task UpdateStatusNic() // Auto Update will increase CPU usage of "WmiPrvSE.exe"
     {
         if (Program.IsStartup) return;
         // Variables
@@ -1129,46 +1137,42 @@ public partial class FormMain
         string name = e, description = e, adapterType = e, availability = e, status = e, netStatus = e, dnsAddresses = e;
         bool isPhysicalAdapter = false;
         string guid = e, macAddress = e, manufacturer = e, serviceName = e, speed = e, timeOfLastReset = e;
-
-        string? nicName = null;
-        object? selectedItem = null;
-        this.InvokeIt(() => selectedItem = CustomComboBoxNICs.SelectedItem);
-        if (selectedItem != null)
+        
+        SetDnsOnNic.ActiveNICs nicsList = GetNicNameSetting(CustomComboBoxNICs);
+        
+        string nicName = string.Empty;
+        if (IsInternetOnline) nicName = await nicsList.PrimaryNic(GetBootstrapSetting(out int port), port);
+        else if (nicsList.NICs.Any()) nicName = nicsList.NICs[0];
+        
+        if (!string.IsNullOrEmpty(nicName))
         {
-            try { this.InvokeIt(() => nicName = selectedItem.ToString()); } catch (Exception) { }
-            if (!string.IsNullOrEmpty(nicName))
-            {
-                NetworkInterfaces nis = new(nicName);
-                isNicDisabled = nis.ConfigManagerErrorCode == 22;
-                name = nis.NetConnectionID;
-                description = nis.Description;
-                if (string.IsNullOrEmpty(description)) description = nis.Name;
-                if (string.IsNullOrEmpty(description)) description = nis.ProductName;
-                adapterType = nis.AdapterTypeIDMessage;
-                availability = nis.AvailabilityMessage;
-                status = nis.ConfigManagerErrorCodeMessage;
-                netStatus = nis.NetConnectionStatusMessage;
+            NetworkInterfaces nis = new(nicName);
+            isNicDisabled = nis.ConfigManagerErrorCode == 22;
+            name = nis.NetConnectionID;
+            description = nis.Description;
+            if (string.IsNullOrEmpty(description)) description = nis.Name;
+            if (string.IsNullOrEmpty(description)) description = nis.ProductName;
+            adapterType = nis.AdapterTypeIDMessage;
+            availability = nis.AvailabilityMessage;
+            status = nis.ConfigManagerErrorCodeMessage;
+            netStatus = nis.NetConnectionStatusMessage;
 
-                for (int n = 0; n < nis.DnsAddresses.Count; n++)
-                    dnsAddresses += $"{nis.DnsAddresses[n]}, ";
-                dnsAddresses = dnsAddresses.Trim();
-                if (dnsAddresses.EndsWith(',')) dnsAddresses = dnsAddresses.TrimEnd(',');
+            for (int n = 0; n < nis.DnsAddresses.Count; n++)
+                dnsAddresses += $"{nis.DnsAddresses[n]}, ";
+            dnsAddresses = dnsAddresses.Trim();
+            if (dnsAddresses.EndsWith(',')) dnsAddresses = dnsAddresses.TrimEnd(',');
 
-                isPhysicalAdapter = nis.PhysicalAdapter;
-                guid = nis.GUID;
-                macAddress = nis.MACAddress;
-                manufacturer = nis.Manufacturer;
-                serviceName = nis.ServiceName;
-                speed = $"{ConvertTool.ConvertByteToHumanRead(nis.Speed / 8)}/s";
-                timeOfLastReset = $"{nis.TimeOfLastReset:yyyy/MM/dd HH:mm:ss}";
+            isPhysicalAdapter = nis.PhysicalAdapter;
+            guid = nis.GUID;
+            macAddress = nis.MACAddress;
+            manufacturer = nis.Manufacturer;
+            serviceName = nis.ServiceName;
+            speed = $"{ConvertTool.ConvertByteToHumanRead(nis.Speed / 8)}/s";
+            timeOfLastReset = $"{nis.TimeOfLastReset:yyyy/MM/dd HH:mm:ss}";
 
-                this.InvokeIt(() => CustomButtonEnableDisableNic.Enabled = true);
-            }
-            else
-                this.InvokeIt(() => CustomButtonEnableDisableNic.Enabled = false);
+            this.InvokeIt(() => CustomButtonEnableDisableNic.Enabled = true);
         }
-        else
-            this.InvokeIt(() => CustomButtonEnableDisableNic.Enabled = false);
+        else this.InvokeIt(() => CustomButtonEnableDisableNic.Enabled = false);
 
         // Update CustomButtonEnableDisableNic Text
         this.InvokeIt(() => CustomButtonEnableDisableNic.Text = isNicDisabled ? "Enable NIC" : "Disable NIC");
@@ -1236,16 +1240,23 @@ public partial class FormMain
                 this.InvokeIt(() => CustomDataGridViewNicStatus.Rows[13].Cells[1].Value = timeOfLastReset);
             }
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
     }
 
     private async Task UpdateStatusCpuUsage()
     {
         int delay = 1000;
         double cpu = await GetCpuUsage(delay);
+
+        if (!IsExiting && cpu > 95)
+        {
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{NL}Closed On CPU Overload.{NL}"));
+            try { Environment.Exit(0); } catch (Exception) { }
+            Application.Exit();
+            ProcessManager.KillProcessByPID(Environment.ProcessId, true);
+            return;
+        }
+
         // Update Status CPU Usage
         Color colorCPU = cpu <= 35 ? Color.MediumSeaGreen : Color.IndianRed;
 
@@ -1256,7 +1267,7 @@ public partial class FormMain
             UpdateMinSizeOfStatus();
             if (Once2)
             {
-                FillComboBoxes(); Once2 = false;
+                await FillComboBoxes(); Once2 = false;
             }
         }
     }
@@ -1264,12 +1275,12 @@ public partial class FormMain
     private async Task<double> GetCpuUsage(int delay)
     {
         if (Program.IsStartup) return 0;
-
+        
         float sdc = -1, sdcProxyServer = -1, sdcFakeProxy = -1;
         float dnsproxy1 = -1, dnscrypt1 = -1, goodbyeDpiBasic = -1, goodbyeDpiAdvanced = -1;
         float dnsproxy2 = -1, dnscrypt2 = -1, goodbyeDpiBypass = -1;
 
-        Task a = Task.Run(async () => sdc = await ProcessManager.GetCpuUsage(Process.GetCurrentProcess(), delay));
+        Task a = Task.Run(async () => sdc = await ProcessManager.GetCpuUsage(Environment.ProcessId, delay));
         Task b = Task.Run(async () => sdcProxyServer = await ProcessManager.GetCpuUsage(PIDProxy, delay));
         Task c = Task.Run(async () => sdcFakeProxy = await ProcessManager.GetCpuUsage(PIDFakeProxy, delay));
         Task d = Task.Run(async () => dnsproxy1 = await ProcessManager.GetCpuUsage(PIDDNSProxy, delay));
@@ -1293,7 +1304,6 @@ public partial class FormMain
         if (PIDGoodbyeDPIBypass != -1) tasksList.Add(j);
 
         await Task.WhenAll(tasksList);
-        //await Task.WhenAll(a, b, c, d, e, f, g, h, i, j);
 
         float sum = 0;
         List<float> list = new();

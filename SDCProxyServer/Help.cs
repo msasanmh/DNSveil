@@ -177,39 +177,24 @@ public class Help
         help = "\n  <Program>";
         WriteToStdout(help, ConsoleColor.Blue);
 
-        help = $"    {Key.Programs.BwList.Name}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A Black Or White List Of Domains.";
-        WriteToStdout(help);
-
         help = $"    {Key.Programs.Dns.Name}";
         WriteToStdout(help, ConsoleColor.Cyan);
         help = $"      Resolve Domains Through Specified DNS Address.";
         WriteToStdout(help);
 
-        help = $"    {Key.Programs.DontBypass.Name}";
+        help = $"    {Key.Programs.Fragment.Name}";
         WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A List Of Domains To Be Excluded From DPI Bypassing.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.DpiBypass.Name}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      Activate DPI Bypass To Circumvent Censorship (Requires Dns To Be Set To A DoH).";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.FakeDns.Name}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      Resolve Domains To Desired IP Addresses.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.FakeSni.Name}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      Set A Custom SNI For A Domain.";
+        help = $"      Activate Fragment To Circumvent Censorship (Requires Dns To Be Set To A DoH).";
         WriteToStdout(help);
 
         help = $"    {Key.Programs.UpStreamProxy.Name}";
         WriteToStdout(help, ConsoleColor.Cyan);
         help = $"      Use Upstream Proxy To Resolve Domains.";
+        WriteToStdout(help);
+
+        help = $"    {Key.Programs.Rules.Name}";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Set Per Domain Rules. e.g. Block, NoBypass, FakeDNS, DNS, FakeSNI, ETC.";
         WriteToStdout(help);
 
         help = $"\n  Type Help Program <ProgramName> To Get More Info.";
@@ -274,69 +259,11 @@ public class Help
         WriteToStdout(msg, ConsoleColor.Blue);
         msg = "  <Program>";
         WriteToStdout(msg, ConsoleColor.Blue);
-        msg = $"    {Key.Programs.BwList.Name}\n";
-        msg += $"    {Key.Programs.Dns.Name}\n";
-        msg += $"    {Key.Programs.DontBypass.Name}\n";
-        msg += $"    {Key.Programs.DpiBypass.Name}\n";
-        msg += $"    {Key.Programs.FakeDns.Name}\n";
-        msg += $"    {Key.Programs.FakeSni.Name}\n";
+        msg = $"    {Key.Programs.Dns.Name}\n";
+        msg += $"    {Key.Programs.Fragment.Name}\n";
         msg += $"    {Key.Programs.UpStreamProxy.Name}\n";
+        msg += $"    {Key.Programs.Rules.Name}\n";
         WriteToStdout(msg, ConsoleColor.Cyan);
-    }
-
-    public static void GetHelpBwList()
-    {
-        // Help Program BwList
-        // Programs BwList -Mode=m -PathOrText="m"
-        string help;
-        help = $"\nPrograms {Key.Programs.BwList.Name}";
-        WriteToStdout(help, ConsoleColor.Blue);
-        help = $"  A Black Or White List Of Domains.";
-        WriteToStdout(help);
-
-        // -Mode=
-        help = "\n  -Mode=";
-        WriteToStdout(help, ConsoleColor.Blue);
-
-        help = $"    {Key.Programs.BwList.Mode.BlackListFile}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A Black List File.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.BwList.Mode.BlackListText}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A Black List As Text.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.BwList.Mode.WhiteListFile}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A White List File.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.BwList.Mode.WhiteListText}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A White List As Text.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.BwList.Mode.Disable}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      To Disable {Key.Programs.BwList.Name}.";
-        WriteToStdout(help);
-
-        // -PathOrText=
-        help = "\n  -PathOrText=";
-        WriteToStdout(help, ConsoleColor.Blue);
-        help = $"    The File Path Or Text Depends On The Mode (Require Double Quotes).";
-        help += $"\n    File Mode: The Path Of File. (Each Line One Domain).";
-        help += $"\n    Text Mode: e.g. \"Domain1.com\\nDomain2.com\"";
-        WriteToStdout(help);
-
-        // Examples
-        help = $"\nExamples:";
-        help += $"\n  Programs BwList -Mode=Disable";
-        help += $"\n  Programs BwList -Mode=BlackListFile -PathOrText=\"C:\\list.txt\"";
-        help += $"\n  Programs BwList -Mode=WhiteListText -PathOrText=\"Domain1.com\\nDomain2.com\"";
-        WriteToStdout(help);
     }
 
     public static void GetHelpDns()
@@ -420,213 +347,78 @@ public class Help
         WriteToStdout(help);
     }
 
-    public static void GetHelpDontBypass()
+    public static void GetHelpFragment()
     {
-        // Help Program DontBypass
-        // Programs DontBypass -Mode=m -PathOrText="m"
+        // Help Program Fragment
+        // Programs Fragment -Mode=m -BeforeSniChunks=m -ChunkMode=m -SniChunks=m -AntiPatternOffset=m -FragmentDelay=m
         string help;
-        help = $"\nPrograms {Key.Programs.DontBypass.Name}";
+        help = $"\nPrograms {Key.Programs.Fragment.Name}";
         WriteToStdout(help, ConsoleColor.Blue);
-        help = $"  A List Of Domains To Be Excluded From DPI Bypassing (Fragmentation & SSL Decryption).";
+        help = $"  Activate Fragment To Circumvent Censorship (Requires Dns To Be Set To A DoH).";
         WriteToStdout(help);
 
         // -Mode=
         help = "\n  -Mode=";
         WriteToStdout(help, ConsoleColor.Blue);
 
-        help = $"    {Key.Programs.DontBypass.Mode.File}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A DontBypass List File.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.DontBypass.Mode.Text}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A DontBypass List As Text.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.DontBypass.Mode.Disable}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      To Disable {Key.Programs.DontBypass.Name}.";
-        WriteToStdout(help);
-
-        // -PathOrText=
-        help = $"\n  -{Key.Programs.DontBypass.PathOrText}=";
-        WriteToStdout(help, ConsoleColor.Blue);
-        help = $"    The File Path Or Text Depends On The Mode (Require Double Quotes).";
-        help += $"\n    File Mode: The Path Of File. (Each Line One Domain).";
-        help += $"\n    Text Mode: e.g. \"Domain1.com\\nDomain2.com\"";
-        WriteToStdout(help);
-
-        // Examples
-        help = $"\nExamples:";
-        help += $"\n  Programs DontBypass -Mode=Disable";
-        help += $"\n  Programs DontBypass -Mode=File -PathOrText=\"C:\\list.txt\"";
-        help += $"\n  Programs DontBypass -Mode=Text -PathOrText=\"Domain1.com\\nDomain2.com\"";
-        WriteToStdout(help);
-    }
-
-    public static void GetHelpDpiBypass()
-    {
-        // Help Program DpiBypass
-        // Programs DpiBypass -Mode=m -BeforeSniChunks=m -ChunkMode=m -SniChunks=m -AntiPatternOffset=m -FragmentDelay=m
-        string help;
-        help = $"\nPrograms {Key.Programs.DpiBypass.Name}";
-        WriteToStdout(help, ConsoleColor.Blue);
-        help = $"  Activate DPI Bypass To Circumvent Censorship (Requires Dns To Be Set To A DoH).";
-        WriteToStdout(help);
-
-        // -Mode=
-        help = "\n  -Mode=";
-        WriteToStdout(help, ConsoleColor.Blue);
-
-        help = $"    {Key.Programs.DpiBypass.Mode.Program.Name}";
+        help = $"    {Key.Programs.Fragment.Mode.Program.Name}";
         WriteToStdout(help, ConsoleColor.Cyan);
         help = $"      To Activate DPI Bypass.";
         WriteToStdout(help);
 
-        help = $"    {Key.Programs.DpiBypass.Mode.Disable}";
+        help = $"    {Key.Programs.Fragment.Mode.Disable}";
         WriteToStdout(help, ConsoleColor.Cyan);
         help = $"      To Disable DPI Bypass.";
         WriteToStdout(help);
 
         // -BeforeSniChunks=
-        help = $"\n  -{Key.Programs.DpiBypass.Mode.Program.BeforeSniChunks}=";
+        help = $"\n  -{Key.Programs.Fragment.Mode.Program.BeforeSniChunks}=";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"    Number Of Buffer Chunks Before SNI Extension.";
         WriteToStdout(help);
 
         // -ChunkMode=
-        help = $"\n  -{Key.Programs.DpiBypass.Mode.Program.ChunkMode.Name}=";
+        help = $"\n  -{Key.Programs.Fragment.Mode.Program.ChunkMode.Name}=";
         WriteToStdout(help, ConsoleColor.Blue);
 
-        help = $"    {Key.Programs.DpiBypass.Mode.Program.ChunkMode.SNI}";
+        help = $"    {Key.Programs.Fragment.Mode.Program.ChunkMode.SNI}";
         WriteToStdout(help, ConsoleColor.Cyan);
         help = $"      Find SNI And Chunk Based On It.";
         WriteToStdout(help);
 
-        help = $"    {Key.Programs.DpiBypass.Mode.Program.ChunkMode.SniExtension}";
+        help = $"    {Key.Programs.Fragment.Mode.Program.ChunkMode.SniExtension}";
         WriteToStdout(help, ConsoleColor.Cyan);
         help = $"      Find Sni Extension And Chunk Based On It.";
         WriteToStdout(help);
 
-        help = $"    {Key.Programs.DpiBypass.Mode.Program.ChunkMode.AllExtensions}";
+        help = $"    {Key.Programs.Fragment.Mode.Program.ChunkMode.AllExtensions}";
         WriteToStdout(help, ConsoleColor.Cyan);
         help = $"      Find All Extensions And Chunk Based On It.";
         WriteToStdout(help);
 
         // -SniChunks=
-        help = $"\n  -{Key.Programs.DpiBypass.Mode.Program.SniChunks}=";
+        help = $"\n  -{Key.Programs.Fragment.Mode.Program.SniChunks}=";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"    Number Of SNI/SniExtension/AllExtensions Chunks.";
         WriteToStdout(help);
 
         // -AntiPatternOffset=
-        help = $"\n  -{Key.Programs.DpiBypass.Mode.Program.AntiPatternOffset}=";
+        help = $"\n  -{Key.Programs.Fragment.Mode.Program.AntiPatternOffset}=";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"    Set An Offset To Chunks To Avoid Pattern Detection.";
         WriteToStdout(help);
 
         // -FragmentDelay=
-        help = $"\n  -{Key.Programs.DpiBypass.Mode.Program.FragmentDelay}=";
+        help = $"\n  -{Key.Programs.Fragment.Mode.Program.FragmentDelay}=";
         WriteToStdout(help, ConsoleColor.Blue);
         help = $"    Set Delay Between Sending Chunks In Milliseconds.";
         WriteToStdout(help);
 
         // Examples
         help = $"\nExamples:";
-        help += $"\n  Programs DpiBypass -Mode=Disable";
-        help += $"\n  Programs DpiBypass -Mode=Program -BeforeSniChunks=50 -ChunkMode=SNI -SniChunks=5 -AntiPatternOffset=2 -FragmentDelay=1";
-        help += $"\n  Programs DpiBypass -Mode=Program -BeforeSniChunks=50 -ChunkMode=AllExtensions -SniChunks=20 -AntiPatternOffset=2 -FragmentDelay=1";
-        WriteToStdout(help);
-    }
-
-    public static void GetHelpFakeDns()
-    {
-        // Help Program FakeDns
-        // Programs FakeDns -Mode=m -PathOrText="m"
-        string help;
-        help = $"\nPrograms {Key.Programs.FakeDns.Name}";
-        WriteToStdout(help, ConsoleColor.Blue);
-        help = $"  Resolve Domains To Desired IP Addresses.";
-        WriteToStdout(help);
-
-        // -Mode=
-        help = "\n  -Mode=";
-        WriteToStdout(help, ConsoleColor.Blue);
-
-        help = $"    {Key.Programs.FakeDns.Mode.File}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A FakeDns List File.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.FakeDns.Mode.Text}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A FakeDns List As Text.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.FakeDns.Mode.Disable}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      To Disable {Key.Programs.FakeDns.Name}.";
-        WriteToStdout(help);
-
-        // -PathOrText=
-        help = $"\n  -{Key.Programs.FakeDns.PathOrText}=";
-        WriteToStdout(help, ConsoleColor.Blue);
-        help = $"    The File Path Or Text Depends On The Mode (Require Double Quotes).";
-        help += $"\n    File Mode: The Path Of File. (Each Line One Rule).";
-        help += $"\n    Text Mode: e.g. \"Google.com|8.8.8.8\\nCloudflare.com|1.1.1.1\"";
-        WriteToStdout(help);
-
-        // Examples
-        help = $"\nExamples:";
-        help += $"\n  Programs FakeDns -Mode=Disable";
-        help += $"\n  Programs FakeDns -Mode=File -PathOrText=\"C:\\list.txt\"";
-        help += $"\n  Programs FakeDns -Mode=Text -PathOrText=\"Google.com|8.8.8.8\\nCloudflare.com|1.1.1.1\"";
-        WriteToStdout(help);
-    }
-
-    public static void GetHelpFakeSni()
-    {
-        // Help Program FakeSni
-        // Programs FakeSni -Mode=m -PathOrText="m"
-        string help;
-        help = $"\nPrograms {Key.Programs.FakeSni.Name}";
-        WriteToStdout(help, ConsoleColor.Blue);
-        help = $"  Change SNI To Bypass DPI.";
-        WriteToStdout(help);
-
-        // -Mode=
-        help = "\n  -Mode=";
-        WriteToStdout(help, ConsoleColor.Blue);
-
-        help = $"    {Key.Programs.FakeSni.Mode.File}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A FakeSni List File.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.FakeSni.Mode.Text}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      A FakeSni List As Text.";
-        WriteToStdout(help);
-
-        help = $"    {Key.Programs.FakeSni.Mode.Disable}";
-        WriteToStdout(help, ConsoleColor.Cyan);
-        help = $"      To Disable {Key.Programs.FakeSni.Name}.";
-        WriteToStdout(help);
-
-        // -PathOrText=
-        help = $"\n  -{Key.Programs.FakeSni.PathOrText}=";
-        WriteToStdout(help, ConsoleColor.Blue);
-        help = $"    The File Path Or Text Depends On The Mode (Require Double Quotes).";
-        help += $"\n    File Mode: The Path Of File. (Each Line One Rule).";
-        help += $"\n    Text Mode: e.g. \"Youtube.com|Google.com\\n*.googlevideo.com|*.c.docs.google.com\"";
-        WriteToStdout(help);
-
-        // Examples
-        help = $"\nExamples:";
-        help += $"\n  Programs FakeSni -Mode=Disable";
-        help += $"\n  Programs FakeSni -Mode=File -PathOrText=\"C:\\list.txt\"";
-        help += $"\n  Programs FakeSni -Mode=Text -PathOrText=\"Youtube.com|Google.com\\n*.googlevideo.com|*.c.docs.google.com\"";
+        help += $"\n  Programs Fragment -Mode=Disable";
+        help += $"\n  Programs Fragment -Mode=Program -BeforeSniChunks=50 -ChunkMode=SNI -SniChunks=5 -AntiPatternOffset=2 -FragmentDelay=1";
+        help += $"\n  Programs Fragment -Mode=Program -BeforeSniChunks=50 -ChunkMode=AllExtensions -SniChunks=20 -AntiPatternOffset=2 -FragmentDelay=1";
         WriteToStdout(help);
     }
 
@@ -682,6 +474,65 @@ public class Help
         help += $"\n  Programs UpStreamProxy -Mode=Disable";
         help += $"\n  Programs UpStreamProxy -Mode=HTTP -Host=127.0.0.1 -Port=8080 -OnlyApplyToBlockedIPs=True";
         help += $"\n  Programs UpStreamProxy -Mode=SOCKS5 -Host=myproxy.net -Port=1080 -OnlyApplyToBlockedIPs=False";
+        WriteToStdout(help);
+    }
+
+    public static void GetHelpRules()
+    {
+        // Help Program Rules
+        // Programs Rules -Mode=m -PathOrText="m"
+        string help;
+        help = $"\nPrograms {Key.Programs.Rules.Name}";
+        WriteToStdout(help, ConsoleColor.Blue);
+        help = $"  Set Per Domain Rules. e.g. Block, NoBypass, FakeDNS, DNS, FakeSNI, ETC.";
+        WriteToStdout(help);
+
+        // -Mode=
+        help = "\n  -Mode=";
+        WriteToStdout(help, ConsoleColor.Blue);
+
+        help = $"    {Key.Programs.Rules.Mode.File}";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Rules As File.";
+        WriteToStdout(help);
+
+        help = $"    {Key.Programs.Rules.Mode.Text}";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      Rules As Text.";
+        WriteToStdout(help);
+
+        help = $"    {Key.Programs.Rules.Mode.Disable}";
+        WriteToStdout(help, ConsoleColor.Cyan);
+        help = $"      To Disable {Key.Programs.Rules.Name}.";
+        WriteToStdout(help);
+
+        // -PathOrText=
+        help = $"\n  -{Key.Programs.Rules.PathOrText}=";
+        WriteToStdout(help, ConsoleColor.Blue);
+        help = $"    The File Path Or Text Depends On The Mode (Require Double Quotes).";
+        help += $"\n    File Mode: The Path Of File. (Each Line One Rule).";
+        help += $"\n    Text Mode: e.g. \"Google.com|8.8.8.8;\\nCloudflare.com|dns:tcp://8.8.8.8;\"";
+        WriteToStdout(help);
+
+        // Examples
+        help = $"\nExamples:";
+        help += $"\n  Programs FakeDns -Mode=Disable";
+        help += $"\n  Programs FakeDns -Mode=File -PathOrText=\"C:\\list.txt\"";
+        help += $"\n  Programs FakeDns -Mode=Text -PathOrText=\"Google.com|8.8.8.8\\nCloudflare.com|1.1.1.1\"";
+        WriteToStdout(help);
+
+        // Rules Syntax Example
+        help = $"\nRules Syntax Example:";
+        help += $"\n  dns:8.8.8.8:53;";
+        help += $"\n  instagram.com|163.70.128.174;sni:speedtest.com;";
+        help += $"\n  youtube.com|dns:8.8.8.8:53;dnsdomain:google.com;sni:google.com;";
+        help += $"\n  ytimg.com|dns:8.8.8.8:53;dnsdomain:google.com;";
+        help += $"\n  *.ytimg.com|dns:8.8.8.8:53;dnsdomain:google.com;";
+        help += $"\n  ggpht.com|dns:8.8.8.8:53;dnsdomain:google.com;";
+        help += $"\n  *.ggpht.com|dns:8.8.8.8:53;dnsdomain:*.googleusercontent.com;";
+        help += $"\n  *.googleapis|dns:8.8.8.8:53;dnsdomain:google.com;";
+        help += $"\n  *.googlevideo.com|dns:8.8.8.8:53;dnsdomain:*.c.docs.google.com;sni:google.com;";
+        help += $"\n\n  More Help: https://github.com/msasanmh/SecureDNSClient/tree/main/Help";
         WriteToStdout(help);
     }
 

@@ -210,7 +210,7 @@ namespace CustomControls
                     rb.FlatAppearance.BorderSize = 0;
                     rb.UseVisualStyleBackColor = false;
 
-                    SizeF sizeF = e.Graphics.MeasureString(rb.Text, rb.Font);
+                    SizeF sizeF = rb.CreateGraphics().MeasureString(rb.Text, rb.Font);
                     SizeF rectSizeF = sizeF;
                     int boxOffset = 4; // Must Be Even
                     int rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
@@ -218,22 +218,23 @@ namespace CustomControls
 
                     try
                     {
+                        string text = rb.Text;
+                        if (text.Contains(Environment.NewLine)) // Handle Multiline
+                        {
+                            List<string> lines = text.SplitToLines();
+                            lineCount = lines.Count;
+                            text = lines[0];
+                            for (int i = 0; i < lines.Count; i++)
+                            {
+                                string line = lines[i];
+                                if (line.Length > text.Length) text = line;
+                            }
+                        }
+                        rectSizeF = e.Graphics.MeasureString(text, rb.Font);
+                        rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
+
                         if (rb.AutoSize)
                         {
-                            string text = rb.Text;
-                            if (text.Contains(Environment.NewLine)) // Handle Multiline
-                            {
-                                List<string> lines = text.SplitToLines();
-                                lineCount = lines.Count;
-                                text = lines[0];
-                                for (int i = 0; i < lines.Count; i++)
-                                {
-                                    string line = lines[i];
-                                    if (line.Length > text.Length) text = line;
-                                }
-                            }
-                            rectSizeF = e.Graphics.MeasureString(text, rb.Font);
-                            rectSize = Convert.ToInt32(Math.Round(rectSizeF.Height) - boxOffset);
                             rb.Height = Convert.ToInt32(Math.Round(sizeF.Height * 1.1));
                             rb.Width = Convert.ToInt32(Math.Round(sizeF.Width) + rectSize);
                         }

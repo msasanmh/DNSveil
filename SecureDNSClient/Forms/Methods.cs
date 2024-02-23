@@ -3,19 +3,75 @@ using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
 using MsmhToolsClass;
 using MsmhToolsClass.ProxyServerPrograms;
+using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using SecureDNSClient.DPIBasic;
 using System.Diagnostics;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace SecureDNSClient;
 
 public partial class FormMain
 {
+    private async Task LoadTheme()
+    {
+        if (!IsThemeApplied || !IsScreenHighDpiScaleApplied)
+        {
+            Theme.LoadTheme(this, Theme.Themes.Dark);
+            Theme.SetColors(LabelMain);
+            CustomMessageBox.FormIcon = Properties.Resources.SecureDNSClient_Icon_Multi;
+            await Task.Delay(100);
+            List<Control> controls = Controllers.GetAllControls(this);
+            for (int i = 0; i < controls.Count; i++)
+            {
+                Control c = controls[i];
+                if (c is SplitContainer sc)
+                    if (sc.Name.EndsWith("Main"))
+                        this.InvokeIt(() => sc.Panel2.BackColor = BackColor.ChangeBrightness(-0.2f));
+            }
+            this.InvokeIt(() => CustomCheckBoxSettingQcOnStartup.BackColor = BackColor.ChangeBrightness(-0.2f));
+            await ScreenHighDpiScaleStartup(this);
+
+            // Add colors and texts to About page
+            this.InvokeIt(() =>
+            {
+                CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
+                string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({ArchProcess.ToString().ToLower()})";
+                CustomLabelAboutVersion.Text = aboutVer;
+                CustomLabelAboutThis2.ForeColor = Color.IndianRed;
+            });
+
+            // Wait
+            //Debug.WriteLine("All Controls: " + controls.Count);
+            await Task.Delay(controls.Count * 5);
+
+            IsThemeApplied = true;
+        }
+    }
+
+    public bool IsEverythingDisconnected()
+    {
+        return !IsCheckingStarted && !IsQuickConnecting &&
+               !IsConnected && !IsConnecting &&
+               !ProcessManager.FindProcessByPID(PIDDNSProxy) &&
+               !ProcessManager.FindProcessByPID(PIDDNSProxyBypass) &&
+               !ProcessManager.FindProcessByPID(PIDDNSCrypt) &&
+               !ProcessManager.FindProcessByPID(PIDDNSCryptBypass) &&
+               !ProcessManager.FindProcessByPID(PIDFakeProxy) &&
+               !ProcessManager.FindProcessByPID(PIDCamouflageProxy) &&
+               !ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass) &&
+               !ProcessManager.FindProcessByPID(PIDProxy) &&
+               !ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic) &&
+               !ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced) &&
+               !IsDNSSet && !IsDNSSetting &&
+               !IsProxyActivated && !IsProxyActivating && !IsProxyRunning &&
+               !IsProxySet &&
+               !IsGoodbyeDPIBasicActive && !IsGoodbyeDPIAdvancedActive;
+    }
+
     public async void GetAppReady()
     {
         await Task.Run(async () =>
@@ -36,6 +92,8 @@ public partial class FormMain
 
     public async void StartupTask()
     {
+        StartupTaskExecuted = true;
+
         string msgStartup = $"Startup Task Executed (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStartup, Color.Orange));
 
@@ -80,10 +138,10 @@ public partial class FormMain
         if (cancel) return;
 
         // Update NICs
-        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+        await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
 
-        // Start Quick Connect
-        await StartQuickConnect(null);
+        // Start Quick Connect (To User Settings)
+        QcToUserSetting_Click(null, EventArgs.Empty);
     }
 
     public static bool IsAppOnWindowsStartup(out bool isPathOk)
@@ -194,6 +252,8 @@ public partial class FormMain
                 existStr = $"{existStr.Split("\" ")[0]}\"";
             if (existStr.Equals(appPath)) isPathOk = true;
         }
+
+        try { registry.Dispose(); } catch (Exception) { }
         return true;
     }
 
@@ -211,126 +271,29 @@ public partial class FormMain
                 registry.SetValue(appName, args);
             else
                 registry.DeleteValue(appName, false);
+
+            try { registry.Dispose(); } catch (Exception) { }
         }
     }
 
-    private void FillComboBoxes()
+    private async Task FillComboBoxes(bool nics = true, bool qcConnectModes = true, bool qcNics = true, bool qcGoodbyeDpiModes = true)
     {
+        IPAddress bootstrapIP = GetBootstrapSetting(out int bootstrapPort);
+
         // Update NICs
-        SecureDNS.UpdateNICs(CustomComboBoxNICs, out _);
+        if (nics) await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, bootstrapIP, bootstrapPort);
 
         // Update Connect Modes (Quick Connect Settings)
-        UpdateConnectModes(CustomComboBoxSettingQcConnectMode);
+        if (qcConnectModes) UpdateConnectModes(CustomComboBoxSettingQcConnectMode);
 
         // Update NICs (Quick Connect Settings)
-        SecureDNS.UpdateNICs(CustomComboBoxSettingQcNics, out _);
+        if (qcNics) await SetDnsOnNic_.UpdateNICs(CustomComboBoxSettingQcNics, bootstrapIP, bootstrapPort);
 
         // Update GoodbyeDPI Basic Modes (Quick Connect Settings)
-        DPIBasicBypass.UpdateGoodbyeDpiBasicModes(CustomComboBoxSettingQcGdBasic);
+        if (qcGoodbyeDpiModes) DPIBasicBypass.UpdateGoodbyeDpiBasicModes(CustomComboBoxSettingQcGdBasic);
     }
 
-    public enum ConnectMode
-    {
-        ConnectToWorkingServers,
-        ConnectToFakeProxyDohViaProxyDPI,
-        ConnectToFakeProxyDohViaGoodbyeDPI,
-        ConnectToPopularServersWithProxy,
-        Unknown
-    }
-
-    public struct ConnectModeName
-    {
-        public const string WorkingServers = "Working Servers";
-        public const string FakeProxyViaProxyDPI = "Fake Proxy Via Proxy DPI Bypass";
-        public const string FakeProxyViaGoodbyeDPI = "Fake Proxy Via GoodbyeDPI";
-        public const string PopularServersWithProxy = "Popular Servers With Proxy";
-        public const string Unknown = "Unknown";
-    }
-
-    public ConnectMode GetConnectModeByName(string? name)
-    {
-        return name switch
-        {
-            ConnectModeName.WorkingServers => ConnectMode.ConnectToWorkingServers,
-            ConnectModeName.FakeProxyViaProxyDPI => ConnectMode.ConnectToFakeProxyDohViaProxyDPI,
-            ConnectModeName.FakeProxyViaGoodbyeDPI => ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI,
-            ConnectModeName.PopularServersWithProxy => ConnectMode.ConnectToPopularServersWithProxy,
-            ConnectModeName.Unknown => ConnectMode.Unknown,
-            _ => ConnectMode.Unknown
-        };
-    }
-
-    public string GetConnectModeNameByConnectMode(ConnectMode mode)
-    {
-        return mode switch
-        {
-            ConnectMode.ConnectToWorkingServers => ConnectModeName.WorkingServers,
-            ConnectMode.ConnectToFakeProxyDohViaProxyDPI => ConnectModeName.FakeProxyViaProxyDPI,
-            ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI => ConnectModeName.FakeProxyViaGoodbyeDPI,
-            ConnectMode.ConnectToPopularServersWithProxy => ConnectModeName.PopularServersWithProxy,
-            ConnectMode.Unknown => ConnectModeName.Unknown,
-            _ => ConnectModeName.Unknown
-        };
-    }
-
-    public void UpdateConnectModes(CustomComboBox ccb)
-    {
-        ccb.InvokeIt(() =>
-        {
-            ccb.Text = "Select a Connect Mode";
-            object item = ccb.SelectedItem;
-            ccb.Items.Clear();
-            List<string> connectModeNames = new()
-            {
-                ConnectModeName.WorkingServers,
-                ConnectModeName.FakeProxyViaProxyDPI,
-                ConnectModeName.FakeProxyViaGoodbyeDPI,
-                ConnectModeName.PopularServersWithProxy
-            };
-            for (int n = 0; n < connectModeNames.Count; n++)
-            {
-                string connectModeName = connectModeNames[n];
-                ccb.Items.Add(connectModeName);
-            }
-            if (ccb.Items.Count > 0)
-            {
-                bool exist = false;
-                for (int i = 0; i < ccb.Items.Count; i++)
-                {
-                    object selectedItem = ccb.Items[i];
-                    if (item != null && item.Equals(selectedItem))
-                    {
-                        exist = true;
-                        break;
-                    }
-                }
-                if (exist)
-                    ccb.SelectedItem = item;
-                else
-                    ccb.SelectedIndex = 0;
-                ccb.DropDownHeight = connectModeNames.Count * ccb.Height;
-            }
-            else ccb.SelectedIndex = -1;
-        });
-    }
-
-    public ConnectMode GetConnectMode()
-    {
-        // Get Connect modes
-        bool a = CustomRadioButtonConnectCheckedServers.Checked;
-        bool b = CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Checked;
-        bool c = CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Checked;
-        bool d = CustomRadioButtonConnectDNSCrypt.Checked;
-
-        ConnectMode connectMode = ConnectMode.ConnectToWorkingServers;
-        if (a) connectMode = ConnectMode.ConnectToWorkingServers;
-        else if (b) connectMode = ConnectMode.ConnectToFakeProxyDohViaProxyDPI;
-        else if (c) connectMode = ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI;
-        else if (d) connectMode = ConnectMode.ConnectToPopularServersWithProxy;
-        return connectMode;
-    }
-
-    private async Task<bool> DoesAppClosedNormallyAsync()
+    private static async Task<bool> DoesAppClosedNormallyAsync()
     {
         if (!File.Exists(SecureDNS.CloseStatusPath)) return true;
         string statusStr = string.Empty;
@@ -339,10 +302,8 @@ public partial class FormMain
             statusStr = await File.ReadAllTextAsync(SecureDNS.CloseStatusPath);
             statusStr = statusStr.Replace(NL, string.Empty).Trim();
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
+
         if (string.IsNullOrEmpty(statusStr)) return false;
         try
         {
@@ -360,31 +321,12 @@ public partial class FormMain
         {
             File.WriteAllText(SecureDNS.CloseStatusPath, status.ToString());
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
-    }
-
-    private static async Task MoveToNewLocation()
-    {
-        try
-        {
-            if (Directory.Exists(SecureDNS.OldUserDataDirPath))
-                await FileDirectory.MoveDirectory(SecureDNS.OldUserDataDirPath, SecureDNS.UserDataDirPath, true, CancellationToken.None);
-            
-            if (Directory.Exists(SecureDNS.OldCertificateDirPath))
-                await FileDirectory.MoveDirectory(SecureDNS.OldCertificateDirPath, SecureDNS.CertificateDirPath, true, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("MoveToNewLocation: " + ex.Message);
-        }
+        catch (Exception) { }
     }
 
     public bool IsInAction(bool showMsg, bool isCheckingForUpdate, bool isQuickConnectWorking, bool isCheckingStarted,
                            bool isConnecting, bool isDisconnecting, bool isDNSSetting, bool isDNSUnsetting,
-                           bool isProxyActivating, bool isProxyDeactivating, bool isDisconnectingAll)
+                           bool isProxyActivating, bool isProxyDeactivating, bool isDisconnectingAll, out string reason)
     {
         bool isInAction = !IsAppReady ||
                           (isCheckingForUpdate && IsCheckingForUpdate) ||
@@ -399,40 +341,27 @@ public partial class FormMain
                           (isDisconnectingAll && IsDisconnectingAll) ||
                           IsExiting;
 
-        if (isInAction && showMsg)
+        reason = "In Action...";
+
+        if (isInAction)
         {
-            if (!IsAppReady)
-                CustomMessageBox.Show(this, "App is not ready or there's no Internet connection.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (!IsAppReady) reason = "App is not ready or there's no Internet connection.";
+            else if (IsCheckingForUpdate) reason = "App is checking for update.";
+            else if (IsCheckingStarted) reason = "App is checking DNS servers.";
+            else if (IsConnecting) reason = "App is connecting.";
+            else if (IsDisconnecting) reason = "App is disconnecting.";
+            else if (IsDNSSetting) reason = "DNS is setting.";
+            else if (IsDNSUnsetting) reason = "DNS is unsetting.";
+            else if (IsProxyActivating) reason = "Proxy Server is activating.";
+            else if (IsProxyDeactivating) reason = "Proxy Server is deactivating.";
+            else if (IsQuickConnectWorking) reason = "Quick Connect is in action.";
+            else if (IsDisconnectingAll) reason = "App is disconnecting everything.";
 
-            if (IsCheckingForUpdate)
-                CustomMessageBox.Show(this, "App is checking for update.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsQuickConnectWorking)
-                CustomMessageBox.Show(this, "Quick Connect is in action.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsCheckingStarted)
-                CustomMessageBox.Show(this, "App is checking DNS servers.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsConnecting)
-                CustomMessageBox.Show(this, "App is connecting.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsDisconnecting)
-                CustomMessageBox.Show(this, "App is disconnecting.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsDNSSetting)
-                CustomMessageBox.Show(this, "Let DNS set.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsDNSUnsetting)
-                CustomMessageBox.Show(this, "Let DNS unset.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsProxyActivating)
-                CustomMessageBox.Show(this, "Let Proxy Server activate.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsProxyDeactivating)
-                CustomMessageBox.Show(this, "Let Proxy Server deactivate.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            else if (IsDisconnectingAll)
-                CustomMessageBox.Show(this, "App is disconnecting everything.", "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (showMsg)
+            {
+                string msg = IsQuickConnectWorking ? "Quick Connect is in action." : reason;
+                CustomMessageBox.Show(this, msg, "Wait...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         return isInAction;
@@ -483,9 +412,11 @@ public partial class FormMain
         
         if (!isAlive)
         {
-            string msgNet = "There is no Internet connectivity." + NL;
             if (writeToLog)
+            {
+                string msgNet = $"There is no Internet connectivity.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNet, Color.IndianRed));
+            }
             return false;
         }
         else
@@ -562,7 +493,16 @@ public partial class FormMain
         return list.Distinct().ToList();
     }
 
-    private async Task KillAll(bool killByName = false)
+    private static bool IsThereAnyLeftovers()
+    {
+        return ProcessManager.FindProcessByName("SDCProxyServer") ||
+               ProcessManager.FindProcessByName("dnslookup") ||
+               ProcessManager.FindProcessByName("dnsproxy") ||
+               ProcessManager.FindProcessByName("dnscrypt-proxy") ||
+               ProcessManager.FindProcessByName("goodbyedpi");
+    }
+
+    private static async Task KillAll(bool killByName = false)
     {
         await Task.Run(() =>
         {
@@ -939,7 +879,7 @@ public partial class FormMain
             if (!IsInternetOnline) return;
 
             // If In Action return
-            if (IsInAction(false, false, false, true, true, true, true, true, true, true, true)) return;
+            if (IsInAction(false, false, false, true, true, true, true, true, true, true, true, out _)) return;
 
             // Write start DPI checking to log
             string msgDPI = $"Checking DPI Bypass ({host})...{NL}";
@@ -976,7 +916,7 @@ public partial class FormMain
                 if (ProcessManager.FindProcessByPID(PIDFakeProxy) &&
                     IsProxyRunning &&
                     ProxyDNSMode == ProxyProgram.Dns.Mode.DoH &&
-                    ProxyStaticDPIBypassMode != ProxyProgram.DPIBypass.Mode.Disable)
+                    ProxyStaticFragmentMode != ProxyProgram.Fragment.Mode.Disable)
                     isProxyDnsSet = true;
 
                 if (!IsDNSSet && !isProxyDnsSet)
@@ -996,7 +936,7 @@ public partial class FormMain
                 bool isProxyPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), ProxyPort, 5);
                 Debug.WriteLine($"Is Proxy Port Open: {isProxyPortOpen}, Port: {ProxyPort}");
 
-                if (isProxyPortOpen && (IsProxyDpiBypassActive || IsProxySSLChangeSniActive))
+                if (isProxyPortOpen && IsProxyDpiBypassActive)
                 {
                     Debug.WriteLine("Proxy");
 
@@ -1129,7 +1069,7 @@ public partial class FormMain
         UpdateProxyBools = true;
     }
 
-    private async Task<bool> WarmUpProxy(string host, string proxyScheme, int timeoutSec, CancellationToken cancellationToken)
+    private static async Task<bool> WarmUpProxy(string host, string proxyScheme, int timeoutSec, CancellationToken cancellationToken)
     {
         string url = $"https://{host}/";
         Uri uri = new(url, UriKind.Absolute);
@@ -1156,6 +1096,236 @@ public partial class FormMain
         catch (Exception)
         {
             return false;
+        }
+    }
+
+    // ============================== Old Content To New
+
+    private static async Task MoveToNewLocation()
+    {
+        try
+        {
+            if (Directory.Exists(SecureDNS.OldUserDataDirPath))
+                await FileDirectory.MoveDirectory(SecureDNS.OldUserDataDirPath, SecureDNS.UserDataDirPath, true, CancellationToken.None);
+
+            if (Directory.Exists(SecureDNS.OldCertificateDirPath))
+                await FileDirectory.MoveDirectory(SecureDNS.OldCertificateDirPath, SecureDNS.CertificateDirPath, true, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("MoveToNewLocation: " + ex.Message);
+        }
+    }
+
+    public void OldProxyRulesToNew()
+    {
+        try
+        {
+            bool start = false;
+            if (!File.Exists(SecureDNS.ProxyRulesPath)) start = true;
+            else
+            {
+                string content = File.ReadAllText(SecureDNS.ProxyRulesPath);
+                if (content.Length < 5) start = true;
+            }
+            if (!start) return;
+
+            List<string> blackListList = new();
+            blackListList.LoadFromFile(SecureDNS.BlackWhiteListPath, true, true);
+
+            List<string> fakeDnsList = new();
+            fakeDnsList.LoadFromFile(SecureDNS.FakeDnsRulesPath, true, true);
+
+            List<string> fakeSniList = new();
+            fakeSniList.LoadFromFile(SecureDNS.FakeSniRulesPath, true, true);
+
+            List<string> dontBypassList = new();
+            dontBypassList.LoadFromFile(SecureDNS.DontBypassListPath, true, true);
+
+            // Create ProxyRules
+            List<string> proxyRules = new();
+
+            // Get All Domains And Put Them Into ProxyRules
+            foreach (string blackList in blackListList)
+            {
+                if (string.IsNullOrEmpty(blackList)) continue;
+                if (blackList.StartsWith("//")) continue;
+                proxyRules.Add($"{blackList}|");
+            }
+
+            foreach (string fakeDns in fakeDnsList)
+            {
+                if (fakeDns.StartsWith("//")) continue;
+                if (fakeDns.Contains('|'))
+                {
+                    string[] split0 = fakeDns.Split('|');
+                    string domain0 = split0[0].Trim();
+                    if (string.IsNullOrEmpty(domain0)) continue;
+                    string fd = split0[1].Trim();
+                    if (string.IsNullOrEmpty(fd)) continue;
+                    if (!proxyRules.IsContain(domain0)) proxyRules.Add($"{domain0}|");
+                }
+            }
+
+            foreach (string fakeSni in fakeSniList)
+            {
+                if (fakeSni.StartsWith("//")) continue;
+                if (fakeSni.Contains('|'))
+                {
+                    string[] split0 = fakeSni.Split('|');
+                    string domain0 = split0[0].Trim();
+                    if (string.IsNullOrEmpty(domain0)) continue;
+                    string fs = split0[1].Trim();
+                    if (string.IsNullOrEmpty(fs)) continue;
+                    if (!proxyRules.IsContain(domain0)) proxyRules.Add($"{domain0}|");
+                }
+            }
+
+            foreach (string dontBypass in dontBypassList)
+            {
+                if (string.IsNullOrEmpty(dontBypass)) continue;
+                if (dontBypass.StartsWith("//")) continue;
+                if (!proxyRules.IsContain(dontBypass)) proxyRules.Add($"{dontBypass}|");
+            }
+
+            // DeDup
+            proxyRules = proxyRules.Distinct().ToList();
+            if (!proxyRules.Any()) return;
+
+            // Apply Black List
+            for (int n = 0; n < proxyRules.Count; n++)
+            {
+                string domain = proxyRules[n];
+                if (domain.Contains('|'))
+                {
+                    string[] split = domain.Split('|');
+                    string domain0 = split[0].Trim();
+                    if (!string.IsNullOrEmpty(domain0))
+                        domain = domain0;
+                }
+
+                foreach (string blackList in blackListList)
+                {
+                    if (string.IsNullOrEmpty(blackList)) continue;
+                    if (blackList.StartsWith("//")) continue;
+                    string domain0 = blackList;
+                    if (domain0.Equals("*") || domain.Equals(domain0))
+                    {
+                        proxyRules[n] += "-;";
+                    }
+                }
+            }
+
+            // Apply Fake Dns List
+            for (int n = 0; n < proxyRules.Count; n++)
+            {
+                string domain = proxyRules[n];
+                if (domain.Contains('|'))
+                {
+                    string[] split = domain.Split('|');
+                    string domain0 = split[0].Trim();
+                    if (!string.IsNullOrEmpty(domain0))
+                        domain = domain0;
+                }
+
+                foreach (string fakeDns in fakeDnsList)
+                {
+                    if (fakeDns.StartsWith("//")) continue;
+                    if (fakeDns.Contains('|'))
+                    {
+                        string[] split0 = fakeDns.Split('|');
+                        string domain0 = split0[0].Trim();
+                        if (string.IsNullOrEmpty(domain0)) continue;
+                        string fd = split0[1].Trim();
+                        if (string.IsNullOrEmpty(fd)) continue;
+                        if (domain0.Equals("*") || domain.Equals(domain0))
+                        {
+                            if (!proxyRules[n].Contains("-;"))
+                                proxyRules[n] += $"{fd};";
+                        }
+                    }
+                }
+            }
+
+            // Apply Fake Sni List
+            for (int n = 0; n < proxyRules.Count; n++)
+            {
+                string domain = proxyRules[n];
+                if (domain.Contains('|'))
+                {
+                    string[] split = domain.Split('|');
+                    string domain0 = split[0].Trim();
+                    if (!string.IsNullOrEmpty(domain0))
+                        domain = domain0;
+                }
+
+                foreach (string fakeSni in fakeSniList)
+                {
+                    if (fakeSni.StartsWith("//")) continue;
+                    if (fakeSni.Contains('|'))
+                    {
+                        string[] split0 = fakeSni.Split('|');
+                        string domain0 = split0[0].Trim();
+                        if (string.IsNullOrEmpty(domain0)) continue;
+                        string fs = split0[1].Trim();
+                        if (string.IsNullOrEmpty(fs)) continue;
+                        if (domain0.Equals("*") || domain.Equals(domain0))
+                        {
+                            if (!proxyRules[n].Contains("-;") && !proxyRules[n].Contains("sni:"))
+                                proxyRules[n] += $"sni:{fs};";
+                        }
+                    }
+                }
+            }
+
+            // Apply DontBypassList
+            for (int n = 0; n < proxyRules.Count; n++)
+            {
+                string domain = proxyRules[n];
+                if (domain.Contains('|'))
+                {
+                    string[] split = domain.Split('|');
+                    string domain0 = split[0].Trim();
+                    if (!string.IsNullOrEmpty(domain0))
+                        domain = domain0;
+                }
+
+                foreach (string dontBypass in dontBypassList)
+                {
+                    if (string.IsNullOrEmpty(dontBypass)) continue;
+                    if (dontBypass.StartsWith("//")) continue;
+                    string domain0 = dontBypass;
+                    if (string.IsNullOrEmpty(domain0)) continue;
+                    if (domain0.Equals("*") || domain.Equals(domain0))
+                    {
+                        if (!proxyRules[n].Contains("-;") && !proxyRules[n].Contains("--;"))
+                            proxyRules[n] += "--;";
+                    }
+                }
+            }
+
+            if (proxyRules.Any())
+            {
+                // Save ProxyRules To File
+                proxyRules.SaveToFile(SecureDNS.ProxyRulesPath);
+
+                // Enable ProxyRules CheckBox
+                this.InvokeIt(() => CustomCheckBoxSettingProxyEnableRules.Checked = true);
+            }
+
+
+            try
+            {
+                File.Delete(SecureDNS.BlackWhiteListPath);
+                File.Delete(SecureDNS.FakeDnsRulesPath);
+                File.Delete(SecureDNS.FakeSniRulesPath);
+                File.Delete(SecureDNS.DontBypassListPath);
+            }
+            catch (Exception) { }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("OldProxyRulesToNew: " + ex.Message);
         }
     }
 

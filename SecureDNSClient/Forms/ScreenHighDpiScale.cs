@@ -13,148 +13,68 @@ public partial class FormMain
         int sdpi = Convert.ToInt32(Math.Round(g.DpiX, 0, MidpointRounding.AwayFromZero));
         float factor = sdpi / BaseScreenDpi;
         BaseScreenDpi = sdpi;
-        await Task.Run(() => form.InvokeIt(() => ScreenHighDpiScaleStartup(this, factor)));
+        await Task.Run(() => ScreenHighDpiScaleStartup(this, factor));
         ScreenFixControlsLocations(this); // Fix Controls Locations
     }
 
     public void ScreenHighDpiScaleStartup(Form form, float factor)
     {
-        List<Control> ctrls = Controllers.GetAllControls(form);
-        for (int n = 0; n < ctrls.Count; n++)
+        form.InvokeIt(() =>
         {
-            Control c = ctrls[n];
-
-            Font f = new(c.Font.Name, (float)(c.Font.Size * factor), c.Font.Style, c.Font.Unit, c.Font.GdiCharSet, c.Font.GdiVerticalFont);
-
-            //c.Width = Math.Max(c.Width, TextRenderer.MeasureText(c.Text, f).Width + 10);
-
-            if (c is CustomComboBox ccb)
-            {
-                ccb.DropDownHeight = ccb.Items.Count * f.Height + 5;
-            }
-
-            if (c is CustomDataGridView cdgv)
-            {
-                cdgv.ColumnHeadersDefaultCellStyle.Font = form.Font;
-                cdgv.DefaultCellStyle.Font = form.Font;
-            }
-
-            if (c is CustomLabel cl)
-            {
-                if (cl.Name.Equals(CustomLabelShareInfo.Name) ||
-                    cl.Name.Equals(CustomLabelInfoDPIModes.Name) ||
-                    cl.Name.Equals(CustomLabelSettingFakeProxyInfo.Name) ||
-                    cl.Name.Equals(CustomLabelAboutThis.Name))
-                    cl.Font = f;
-            }
-
-            if (c is CustomTabControl ctc)
-            {
-                int itemWidth = 0, itemHeight = 0;
-                foreach (TabPage tab in ctc.TabPages)
-                {
-                    itemWidth = Math.Max(itemWidth, TextRenderer.MeasureText(tab.Text, tab.Font).Width);
-                    itemHeight = Math.Max(itemWidth, TextRenderer.MeasureText(tab.Text, tab.Font).Height);
-                }
-
-                int offset = factor == 1 ? 0 : 5;
-                int w = Convert.ToInt32(Math.Round(ctc.ItemSize.Width * factor, 2, MidpointRounding.AwayFromZero));
-                int h = Convert.ToInt32(Math.Round(ctc.ItemSize.Height * factor, 2, MidpointRounding.AwayFromZero));
-                if (ctc.Alignment == TabAlignment.Top || ctc.Alignment == TabAlignment.Bottom)
-                    ctc.ItemSize = new(Math.Max(w, itemWidth) + offset, Math.Min(h, itemHeight));
-                else
-                    ctc.ItemSize = new(Math.Min(w, itemWidth), Math.Max(h, itemHeight) + offset);
-            }
-        }
-    }
-
-    public static async Task SettingWidthOfControls(Form form)
-    {
-        await Task.Run(() =>
-        {
-            // Setting Width Of Controls
             List<Control> ctrls = Controllers.GetAllControls(form);
             for (int n = 0; n < ctrls.Count; n++)
             {
-                try
+                Control c = ctrls[n];
+
+                Font f = new(c.Font.Name, (float)(c.Font.Size * factor), c.Font.Style, c.Font.Unit, c.Font.GdiCharSet, c.Font.GdiVerticalFont);
+
+                //c.Width = Math.Max(c.Width, TextRenderer.MeasureText(c.Text, f).Width + 10);
+
+                if (c is CustomComboBox ccb)
                 {
-                    Control ctrl = ctrls[n];
-                    if (ctrl.Dock == DockStyle.Fill) continue;
+                    ccb.DropDownHeight = ccb.Items.Count * f.Height + 5;
+                }
 
-                    // Filter Controls
-                    bool apply = ctrl is CustomButton ||
-                                 ctrl is CustomCheckBox ||
-                                 ctrl is CustomLabel ||
-                                 ctrl is CustomNumericUpDown ||
-                                 ctrl is CustomRadioButton;
+                if (c is CustomDataGridView cdgv)
+                {
+                    cdgv.ColumnHeadersDefaultCellStyle.Font = form.Font;
+                    cdgv.DefaultCellStyle.Font = form.Font;
+                }
 
-                    if (!apply) continue;
+                if (c is CustomLabel cl)
+                {
+                    if (cl.Name.Equals(CustomLabelShareInfo.Name) ||
+                        cl.Name.Equals(CustomLabelInfoDPIModes.Name) ||
+                        cl.Name.Equals(CustomLabelSettingFakeProxyInfo.Name) ||
+                        cl.Name.Equals(CustomLabelAboutThis.Name))
+                        cl.Font = f;
+                }
 
-                    string text = ctrl.Text;
-                    if (!string.IsNullOrEmpty(text) && !string.IsNullOrWhiteSpace(text))
+                if (c is CustomListBox clb)
+                {
+                    int itemHeight = TextRenderer.MeasureText("MSasanMH", clb.Font).Height;
+                    clb.ItemHeight = itemHeight * 2;
+                }
+
+                if (c is CustomTabControl ctc)
+                {
+                    if (!ctc.HideTabHeader)
                     {
-                        int linesCount = 1;
-                        if (text.Contains(Environment.NewLine)) // Handle Multiline
+                        ctc.SizeMode = TabSizeMode.Fixed; // Manual Size
+                        int itemWidth = 0, itemHeight = 0;
+                        foreach (TabPage tab in ctc.TabPages)
                         {
-                            List<string> lines = text.Split(Environment.NewLine).ToList(); // SplitToLines() will remove empty lines
-                            linesCount = lines.Count;
-                            text = lines[0];
-                            for (int i = 0; i < lines.Count; i++)
-                            {
-                                string line = lines[i];
-                                if (line.Length > text.Length) text = line;
-                            }
+                            Size size = TextRenderer.MeasureText(tab.Text, tab.Font);
+                            itemWidth = Math.Max(itemWidth, size.Width);
+                            itemHeight = Math.Max(itemHeight, size.Height);
                         }
 
-                        form.InvokeIt(() =>
-                        {
-                            string pad = "MSM";
-                            if (ctrl is CustomButton cb)
-                            {
-                                cb.AutoSize = false;
-                                pad = "MS";
-                            }
-                            else if (ctrl is CustomCheckBox ccb)
-                            {
-                                ccb.AutoSize = false;
-                                pad = "MSI";
-                            }
-                            else if (ctrl is CustomLabel cl)
-                            {
-                                cl.AutoSize = false;
-                                pad = "I";
-                            }
-                            else if (ctrl is CustomNumericUpDown cnud)
-                            {
-                                cnud.AutoSize = false;
-                                pad = "MSMI";
-                            }
-                            else if (ctrl is CustomRadioButton crb)
-                            {
-                                crb.AutoSize = false;
-                                pad = "MSI";
-                            }
-                            Size size = TextRenderer.MeasureText(text + pad, ctrl.Font);
-                            int width = size.Width;
-                            int height = size.Height;
-                            int modifiedHeight = Convert.ToInt32(Math.Round(height * 1.2)) * linesCount;
-
-                            if (ctrl is CustomButton)
-                            {
-                                if (width > ctrl.Width)
-                                {
-                                    ctrl.Width = width;
-                                }
-                            }
-                            else
-                            {
-                                ctrl.Width = width;
-                                ctrl.Height = modifiedHeight;
-                            }
-                        });
+                        if (ctc.Alignment == TabAlignment.Top || ctc.Alignment == TabAlignment.Bottom)
+                            ctc.ItemSize = new(itemWidth + 6, itemHeight + (itemHeight / 2)); // Width, Height
+                        else
+                            ctc.ItemSize = new(itemWidth + (itemHeight / 2), itemHeight + 6); // Height, Width
                     }
                 }
-                catch (Exception) { }
             }
         });
     }
@@ -162,7 +82,7 @@ public partial class FormMain
     public async void ScreenFixControlsLocations(Form form)
     {
         // Setting Width Of Controls
-        await SettingWidthOfControls(form);
+        await ScreenDPI.SettingWidthOfControls(form);
 
         // Don't use ComboBox Top, Bottom and Height Property!
         // Spacers
@@ -170,791 +90,861 @@ public partial class FormMain
         //Debug.WriteLine("=====> " + shw);
         int spaceBottom = 6, spaceRight = 6, spaceV, spaceH = shw, spaceH2 = spaceH * 2, spaceH3 = spaceH * 3, spaceHH = spaceH * 7;
 
-        // Containers
-        CustomTabControlMain.Location = new Point(0, 0);
-        CustomTabControlSecureDNS.Location = new Point(3, 3);
-        CustomTabControlDPIBasicAdvanced.Location = new Point(3, 3);
-        CustomTabControlSettings.Location = new Point(3, 3);
-        CustomTabControlSettingProxy.Location = new Point(3, 3);
+        form.InvokeIt(() =>
+        {
+            // Containers
+            CustomTabControlMain.Location = new Point(0, 0);
+            CustomTabControlSecureDNS.Location = new Point(3, 3);
+            CustomTabControlDPIBasicAdvanced.Location = new Point(3, 3);
+            CustomTabControlSettings.Location = new Point(3, 3);
+            CustomTabControlSettingProxy.Location = new Point(3, 3);
 
-        // Status
-        CustomDataGridViewStatus.Location = new Point(0, LabelScreen.Height);
+            // Status
+            CustomButtonProcessMonitor.Location = new Point(spaceRight, 3);
 
-        CustomButtonProcessMonitor.Left = spaceRight;
-        CustomButtonProcessMonitor.Top = CustomGroupBoxStatus.Height - CustomButtonProcessMonitor.Height - spaceBottom;
+            CustomButtonExit.Left = SplitContainerStatusMain.Panel2.Width - CustomButtonExit.Width - spaceRight;
+            CustomButtonExit.Top = CustomButtonProcessMonitor.Top;
+
+            try
+            {
+                SplitContainerStatusMain.Panel2MinSize = CustomButtonProcessMonitor.Height + 6;
+                SplitContainerStatusMain.SplitterDistance = SplitContainerStatusMain.Height - SplitContainerStatusMain.Panel2MinSize;
+            }
+            catch (Exception) { }
+
+            // Check
+            spaceV = 10;
+            CustomRadioButtonBuiltIn.Location = new Point(20, 20);
+
+            CustomRadioButtonCustom.Left = CustomRadioButtonBuiltIn.Left;
+            CustomRadioButtonCustom.Top = CustomRadioButtonBuiltIn.Bottom + spaceV;
+
+            CustomLabelCustomServersInfo.Left = CustomRadioButtonCustom.Left + spaceH2;
+            CustomLabelCustomServersInfo.Top = CustomRadioButtonCustom.Bottom + spaceV;
+
+            CustomLabelCheckInParallel.Left = CustomRadioButtonCustom.Left;
+            CustomLabelCheckInParallel.Top = CustomLabelCustomServersInfo.Bottom + spaceV;
+
+            CustomNumericUpDownCheckInParallel.Left = CustomLabelCheckInParallel.Right + spaceH2;
+            CustomNumericUpDownCheckInParallel.Top = CustomLabelCheckInParallel.Top - 2;
+
+            CustomCheckBoxInsecure.Left = CustomLabelCheckInParallel.Left;
+            CustomCheckBoxInsecure.Top = CustomNumericUpDownCheckInParallel.Bottom + spaceV;
+
+            try
+            {
+                int sd = Math.Max(CustomLabelCustomServersInfo.Right, CustomCheckBoxInsecure.Right);
+                SplitContainerCheckTop.Panel1MinSize = sd + spaceHH + spaceH3;
+                SplitContainerCheckTop.SplitterDistance = SplitContainerCheckTop.Panel1MinSize;
+            }
+            catch (Exception) { }
+
+            // ---------- Check Buttons
+            CustomButtonEditCustomServers.Location = new Point(spaceRight, 3);
+
+            CustomButtonCheck.Left = CustomButtonEditCustomServers.Right + spaceH;
+            CustomButtonCheck.Top = CustomButtonEditCustomServers.Top;
+
+            CustomButtonQuickConnect.Left = CustomButtonCheck.Right + spaceH;
+            CustomButtonQuickConnect.Top = CustomButtonEditCustomServers.Top;
+
+            CustomButtonDisconnectAll.Left = CustomButtonQuickConnect.Right + spaceH;
+            CustomButtonDisconnectAll.Top = CustomButtonQuickConnect.Top;
+
+            CustomProgressBarCheck.Left = CustomButtonDisconnectAll.Right + spaceH;
+            CustomProgressBarCheck.Top = CustomButtonEditCustomServers.Top;
+
+            CustomButtonCheckUpdate.Left = SplitContainerCheckMain.Panel2.Width - CustomButtonCheckUpdate.Width - spaceRight;
+            CustomButtonCheckUpdate.Top = CustomButtonEditCustomServers.Top;
+
+            CustomProgressBarCheck.Width = CustomButtonCheckUpdate.Left - CustomProgressBarCheck.Left - spaceH;
+
+            try
+            {
+                SplitContainerCheckMain.Panel2MinSize = CustomButtonCheck.Height + 6;
+                SplitContainerCheckMain.SplitterDistance = SplitContainerCheckMain.Height - SplitContainerCheckMain.Panel2MinSize;
+            }
+            catch (Exception) { }
+
+            // Connect
+            spaceV = 30;
+            CustomRadioButtonConnectCheckedServers.Location = new Point(20, 20);
+
+            CustomButtonWriteSavedServersDelay.Left = CustomRadioButtonConnectCheckedServers.Right + spaceH2;
+            CustomButtonWriteSavedServersDelay.Top = CustomRadioButtonConnectCheckedServers.Top - spaceBottom;
+
+            CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Left = CustomRadioButtonConnectCheckedServers.Left;
+            CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Top = CustomButtonWriteSavedServersDelay.Bottom + spaceV;
+
+            CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Left = CustomRadioButtonConnectCheckedServers.Left;
+            CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Top = CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Bottom + spaceV;
 
-        CustomButtonBenchmark.Left = CustomGroupBoxStatus.Right - CustomButtonBenchmark.Width - spaceRight;
-        CustomButtonBenchmark.Top = CustomButtonProcessMonitor.Top;
+            CustomRadioButtonConnectDNSCrypt.Left = CustomRadioButtonConnectCheckedServers.Left;
+            CustomRadioButtonConnectDNSCrypt.Top = CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Bottom + spaceV;
 
-        // Check
-        spaceV = 10;
-        CustomRadioButtonBuiltIn.Location = new Point(25, 20);
+            spaceV = 5;
+            CustomTextBoxHTTPProxy.Left = CustomRadioButtonConnectDNSCrypt.Left + spaceH2;
+            CustomTextBoxHTTPProxy.Top = CustomRadioButtonConnectDNSCrypt.Bottom + spaceV;
+            CustomTextBoxHTTPProxy.Width = CustomRadioButtonConnectDNSCrypt.Width - spaceH2;
 
-        CustomRadioButtonCustom.Left = CustomRadioButtonBuiltIn.Left;
-        CustomRadioButtonCustom.Top = CustomRadioButtonBuiltIn.Bottom + spaceV;
+            try
+            {
+                int sd = Math.Max(CustomButtonWriteSavedServersDelay.Right, CustomTextBoxHTTPProxy.Right);
+                SplitContainerConnectTop.Panel1MinSize = sd + spaceHH;
+                SplitContainerConnectTop.SplitterDistance = SplitContainerConnectTop.Panel1MinSize;
+            }
+            catch (Exception) { }
 
-        CustomLabelCustomServersInfo.Left = CustomRadioButtonCustom.Left + spaceH2;
-        CustomLabelCustomServersInfo.Top = CustomRadioButtonCustom.Bottom + spaceV;
+            // ---------- Connect Buttons
+            CustomButtonConnect.Location = new Point(spaceHH, 3);
 
-        CustomLabelCheckInParallel.Left = CustomRadioButtonCustom.Left;
-        CustomLabelCheckInParallel.Top = CustomLabelCustomServersInfo.Bottom + spaceV;
+            CustomButtonReconnect.Left = CustomButtonConnect.Right + spaceH;
+            CustomButtonReconnect.Top = CustomButtonConnect.Top;
 
-        CustomNumericUpDownCheckInParallel.Left = CustomLabelCheckInParallel.Right + spaceH2;
-        CustomNumericUpDownCheckInParallel.Top = CustomLabelCheckInParallel.Top - 2;
+            try
+            {
+                SplitContainerConnectMain.Panel2MinSize = CustomButtonConnect.Height + 6;
+                SplitContainerConnectMain.SplitterDistance = SplitContainerConnectMain.Height - SplitContainerConnectMain.Panel2MinSize;
+            }
+            catch (Exception) { }
 
-        CustomCheckBoxInsecure.Left = CustomLabelCheckInParallel.Left;
-        CustomCheckBoxInsecure.Top = CustomNumericUpDownCheckInParallel.Bottom + spaceV;
+            // Set Dns
+            try
+            {
+                SplitContainerSetDnsTop.Panel1MinSize = CustomButtonUpdateNICs.Right + CustomButtonUpdateNICs.Width + (spaceHH / 2);
+                SplitContainerSetDnsTop.SplitterDistance = SplitContainerSetDnsTop.Panel1MinSize;
+            }
+            catch (Exception) { }
 
-        CustomButtonEditCustomServers.Left = spaceRight;
-        CustomButtonEditCustomServers.Top = TabPageCheck.Height - CustomButtonEditCustomServers.Height - spaceBottom;
+            // ---------- Set DNS Buttons
+            CustomButtonSetDNS.Location = new Point(spaceHH, 3);
 
-        CustomButtonCheck.Left = CustomButtonEditCustomServers.Right + spaceH;
-        CustomButtonCheck.Top = CustomButtonEditCustomServers.Top;
+            CustomButtonUnsetAllDNSs.Top = CustomButtonSetDNS.Top;
+            CustomButtonUnsetAllDNSs.Left = CustomButtonSetDNS.Right + spaceH;
 
-        CustomButtonQuickConnect.Left = CustomButtonCheck.Right + spaceH;
-        CustomButtonQuickConnect.Top = CustomButtonEditCustomServers.Top;
+            try
+            {
+                SplitContainerSetDnsMain.Panel2MinSize = CustomButtonSetDNS.Height + 6;
+                SplitContainerSetDnsMain.SplitterDistance = SplitContainerSetDnsMain.Height - SplitContainerSetDnsMain.Panel2MinSize;
+            }
+            catch (Exception) { }
 
-        CustomButtonDisconnectAll.Left = CustomButtonQuickConnect.Right + spaceH;
-        CustomButtonDisconnectAll.Top = CustomButtonQuickConnect.Top;
+            //// Share
+            spaceV = 5;
+            CustomLabelShareInfo.Location = new Point(25, 10);
 
-        CustomProgressBarCheck.Left = CustomButtonDisconnectAll.Right + spaceH;
-        CustomProgressBarCheck.Top = CustomButtonEditCustomServers.Top;
+            CustomCheckBoxProxyEventShowRequest.Left = CustomLabelShareInfo.Left;
+            CustomCheckBoxProxyEventShowRequest.Top = CustomLabelShareInfo.Bottom + spaceV;
 
-        CustomButtonCheckUpdate.Left = TabPageCheck.Width - CustomButtonCheckUpdate.Width - spaceRight;
-        CustomButtonCheckUpdate.Top = CustomButtonEditCustomServers.Top;
+            CustomCheckBoxPDpiEnableFragment.Left = CustomCheckBoxProxyEventShowRequest.Left;
+            CustomCheckBoxPDpiEnableFragment.Top = CustomCheckBoxProxyEventShowRequest.Bottom + spaceV;
 
-        CustomProgressBarCheck.Width = CustomButtonCheckUpdate.Left - CustomProgressBarCheck.Left - spaceH;
+            CustomCheckBoxProxyEnableSSL.Left = CustomCheckBoxPDpiEnableFragment.Left;
+            CustomCheckBoxProxyEnableSSL.Top = CustomCheckBoxPDpiEnableFragment.Bottom + spaceV;
 
-        LinkLabelCheckUpdate.Left = CustomProgressBarCheck.Left;
-        LinkLabelCheckUpdate.Top = CustomButtonCheckUpdate.Top - LinkLabelCheckUpdate.Height - spaceBottom;
+            CustomLabelProxySSLInfo.Left = CustomCheckBoxProxyEnableSSL.Right + spaceH;
+            CustomLabelProxySSLInfo.Top = CustomCheckBoxProxyEnableSSL.Top;
 
-        // Connect
-        spaceV = 40;
-        CustomRadioButtonConnectCheckedServers.Location = new Point(35, 25);
+            try
+            {
+                SplitContainerShareContent.Panel1MinSize = CustomLabelProxySSLInfo.Bottom + 3;
+                SplitContainerShareContent.SplitterDistance = SplitContainerShareContent.Panel1MinSize;
+            }
+            catch (Exception) { }
 
-        CustomButtonWriteSavedServersDelay.Left = CustomRadioButtonConnectCheckedServers.Right + spaceH2;
-        CustomButtonWriteSavedServersDelay.Top = CustomRadioButtonConnectCheckedServers.Top - spaceBottom;
+            // ---------- Fragment Options
+            spaceV = 12;
+            CustomLabelPDpiBeforeSniChunks.Location = new Point(spaceRight, spaceRight);
 
-        CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Left = CustomRadioButtonConnectCheckedServers.Left;
-        CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Top = CustomButtonWriteSavedServersDelay.Bottom + spaceV;
+            CustomNumericUpDownPDpiBeforeSniChunks.Left = CustomLabelPDpiBeforeSniChunks.Right + (spaceHH / 2);
+            CustomNumericUpDownPDpiBeforeSniChunks.Top = CustomLabelPDpiBeforeSniChunks.Top - 2;
 
-        CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Left = CustomRadioButtonConnectCheckedServers.Left;
-        CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Top = CustomRadioButtonConnectFakeProxyDohViaProxyDPI.Bottom + spaceV;
+            CustomLabelPDpiSniChunkMode.Left = CustomLabelPDpiBeforeSniChunks.Left;
+            CustomLabelPDpiSniChunkMode.Top = CustomLabelPDpiBeforeSniChunks.Bottom + spaceV;
 
-        CustomRadioButtonConnectDNSCrypt.Left = CustomRadioButtonConnectCheckedServers.Left;
-        CustomRadioButtonConnectDNSCrypt.Top = CustomRadioButtonConnectFakeProxyDohViaGoodbyeDPI.Bottom + spaceV;
+            CustomComboBoxPDpiSniChunkMode.Left = CustomNumericUpDownPDpiBeforeSniChunks.Left;
+            CustomComboBoxPDpiSniChunkMode.Top = CustomLabelPDpiSniChunkMode.Top - 2;
 
-        CustomTextBoxHTTPProxy.Left = CustomRadioButtonConnectDNSCrypt.Right + spaceH2;
-        CustomTextBoxHTTPProxy.Top = CustomRadioButtonConnectDNSCrypt.Top - 2;
+            CustomLabelPDpiSniChunks.Left = CustomLabelPDpiSniChunkMode.Left;
+            CustomLabelPDpiSniChunks.Top = CustomLabelPDpiSniChunkMode.Bottom + spaceV;
 
-        CustomButtonConnect.Left = spaceHH;
-        CustomButtonConnect.Top = TabPageConnect.Height - CustomButtonConnect.Height - spaceBottom;
+            CustomNumericUpDownPDpiSniChunks.Left = CustomComboBoxPDpiSniChunkMode.Left;
+            CustomNumericUpDownPDpiSniChunks.Top = CustomLabelPDpiSniChunks.Top - 2;
 
-        // Set Dns
-        spaceV = 20;
-        CustomLabelSelectNIC.Location = new Point(25, 25);
+            CustomLabelPDpiAntiPatternOffset.Left = CustomLabelPDpiSniChunks.Left;
+            CustomLabelPDpiAntiPatternOffset.Top = CustomLabelPDpiSniChunks.Bottom + spaceV;
 
-        CustomComboBoxNICs.Left = CustomLabelSelectNIC.Left;
-        CustomComboBoxNICs.Top = CustomLabelSelectNIC.Bottom + spaceV;
+            CustomNumericUpDownPDpiAntiPatternOffset.Left = CustomNumericUpDownPDpiSniChunks.Left;
+            CustomNumericUpDownPDpiAntiPatternOffset.Top = CustomLabelPDpiAntiPatternOffset.Top - 2;
 
-        spaceV = 10;
-        CustomButtonUpdateNICs.Left = CustomComboBoxNICs.Left;
-        CustomButtonUpdateNICs.Top = CustomLabelSelectNIC.Bottom + (CustomLabelSelectNIC.Height * 3) + spaceV;
+            CustomLabelPDpiFragDelay.Left = CustomLabelPDpiAntiPatternOffset.Left;
+            CustomLabelPDpiFragDelay.Top = CustomLabelPDpiAntiPatternOffset.Bottom + spaceV;
 
-        CustomButtonEnableDisableNic.Left = CustomButtonUpdateNICs.Right + spaceH;
-        CustomButtonEnableDisableNic.Top = CustomButtonUpdateNICs.Top;
+            CustomNumericUpDownPDpiFragDelay.Left = CustomNumericUpDownPDpiAntiPatternOffset.Left;
+            CustomNumericUpDownPDpiFragDelay.Top = CustomLabelPDpiFragDelay.Top - 2;
 
-        CustomLabelSetDNSInfo.Left = CustomButtonUpdateNICs.Left;
-        CustomLabelSetDNSInfo.Top = CustomButtonUpdateNICs.Bottom + spaceV;
+            CustomLabelPDpiPresets.Left = CustomComboBoxPDpiSniChunkMode.Right + spaceH3;
+            CustomLabelPDpiPresets.Top = CustomLabelPDpiBeforeSniChunks.Top;
 
-        CustomGroupBoxNicStatus.Left = CustomLabelSetDNSInfo.Right + (spaceHH / 2);
-        CustomGroupBoxNicStatus.Top = 6;
-        CustomGroupBoxNicStatus.Width = TabPageSetDNS.Width - CustomGroupBoxNicStatus.Left - spaceRight;
-        CustomGroupBoxNicStatus.Height = TabPageSetDNS.Height - CustomGroupBoxNicStatus.Top - spaceBottom;
+            CustomButtonPDpiPresetDefault.Left = CustomLabelPDpiPresets.Left + spaceH;
+            CustomButtonPDpiPresetDefault.Top = CustomLabelPDpiPresets.Bottom + spaceV;
 
-        CustomButtonSetDNS.Left = spaceHH;
-        CustomButtonSetDNS.Top = TabPageSetDNS.Height - CustomButtonSetDNS.Height - spaceBottom;
+            CustomCheckBoxProxyEventShowChunkDetails.Left = CustomLabelPDpiPresets.Left;
+            CustomCheckBoxProxyEventShowChunkDetails.Top = CustomLabelPDpiFragDelay.Top;
 
-        // Proxy Server
-        spaceV = 5;
-        CustomLabelShareInfo.Location = new Point(25, 10);
+            // ---------- SSL Decryption Options
+            CustomCheckBoxProxySSLChangeSni.Location = new Point(spaceRight, spaceRight);
 
-        CustomCheckBoxProxyEventShowRequest.Left = CustomLabelShareInfo.Left;
-        CustomCheckBoxProxyEventShowRequest.Top = CustomLabelShareInfo.Bottom + spaceV;
+            spaceV = 5;
+            CustomLabelProxySSLChangeSniInfo.Left = CustomCheckBoxProxySSLChangeSni.Left + spaceH2;
+            CustomLabelProxySSLChangeSniInfo.Top = CustomCheckBoxProxySSLChangeSni.Bottom + spaceV;
 
-        CustomCheckBoxProxyEventShowChunkDetails.Left = CustomCheckBoxProxyEventShowRequest.Right + spaceHH;
-        CustomCheckBoxProxyEventShowChunkDetails.Top = CustomLabelShareInfo.Bottom + spaceV;
+            spaceV = 12;
+            CustomLabelProxySSLDefaultSni.Left = CustomCheckBoxProxySSLChangeSni.Left;
+            CustomLabelProxySSLDefaultSni.Top = CustomLabelProxySSLChangeSniInfo.Bottom + spaceV;
 
-        CustomLabelShareSeparator1.Left = spaceRight;
-        CustomLabelShareSeparator1.Top = CustomCheckBoxProxyEventShowChunkDetails.Bottom + spaceV;
-        CustomLabelShareSeparator1.Width = TabPageShare.Width - spaceRight;
+            CustomTextBoxProxySSLDefaultSni.Left = CustomLabelProxySSLDefaultSni.Right + spaceH;
+            CustomTextBoxProxySSLDefaultSni.Top = CustomLabelProxySSLDefaultSni.Top - 2;
 
-        CustomCheckBoxPDpiEnableDpiBypass.Left = CustomLabelShareInfo.Left;
-        CustomCheckBoxPDpiEnableDpiBypass.Top = CustomLabelShareSeparator1.Bottom + spaceV;
+            // ---------- Proxy Read Rules For A Domain
+            CustomLabelShareRulesStatus.Location = new Point(4, 2);
 
-        spaceV = 12;
-        CustomLabelPDpiBeforeSniChunks.Left = CustomLabelShareInfo.Left + spaceH2;
-        CustomLabelPDpiBeforeSniChunks.Top = CustomCheckBoxPDpiEnableDpiBypass.Bottom + spaceV;
+            spaceV = 5;
+            CustomTextBoxShareRulesStatusDomain.Left = CustomLabelShareRulesStatus.Left;
+            CustomTextBoxShareRulesStatusDomain.Top = CustomLabelShareRulesStatus.Bottom + spaceV;
+            CustomTextBoxShareRulesStatusDomain.Width = SplitContainerShareTop.Panel2MinSize - 12;
 
-        CustomNumericUpDownPDpiBeforeSniChunks.Left = CustomLabelPDpiBeforeSniChunks.Right + (spaceHH / 2);
-        CustomNumericUpDownPDpiBeforeSniChunks.Top = CustomLabelPDpiBeforeSniChunks.Top - 2;
+            try
+            {
+                SplitContainerShareRulesStatus1.Panel1MinSize = CustomTextBoxShareRulesStatusDomain.Bottom + spaceV;
+                SplitContainerShareRulesStatus1.SplitterDistance = SplitContainerShareRulesStatus1.Panel1MinSize;
+            }
+            catch (Exception) { }
 
-        CustomLabelPDpiSniChunkMode.Left = CustomLabelPDpiBeforeSniChunks.Left;
-        CustomLabelPDpiSniChunkMode.Top = CustomLabelPDpiBeforeSniChunks.Bottom + spaceV;
+            CustomButtonShareRulesStatusRead.Location = new Point(3, 3);
 
-        CustomComboBoxPDpiSniChunkMode.Left = CustomNumericUpDownPDpiBeforeSniChunks.Left;
-        CustomComboBoxPDpiSniChunkMode.Top = CustomLabelPDpiSniChunkMode.Top - 2;
+            try
+            {
+                SplitContainerShareRulesStatus2.Panel2MinSize = CustomButtonShareRulesStatusRead.Height;
+                SplitContainerShareRulesStatus2.SplitterDistance = SplitContainerShareRulesStatus2.Height - SplitContainerShareRulesStatus2.Panel2MinSize;
+            }
+            catch (Exception) { }
 
-        CustomLabelPDpiSniChunks.Left = CustomLabelPDpiSniChunkMode.Left;
-        CustomLabelPDpiSniChunks.Top = CustomLabelPDpiSniChunkMode.Bottom + spaceV;
+            CustomButtonShareRulesStatusRead.Dock = DockStyle.Fill;
 
-        CustomNumericUpDownPDpiSniChunks.Left = CustomComboBoxPDpiSniChunkMode.Left;
-        CustomNumericUpDownPDpiSniChunks.Top = CustomLabelPDpiSniChunks.Top - 2;
+            // ---------- Share Buttons
+            CustomButtonShare.Location = new Point(spaceHH, 3);
 
-        CustomLabelPDpiAntiPatternOffset.Left = CustomLabelPDpiSniChunks.Left;
-        CustomLabelPDpiAntiPatternOffset.Top = CustomLabelPDpiSniChunks.Bottom + spaceV;
+            CustomButtonSetProxy.Left = CustomButtonShare.Right + spaceH;
+            CustomButtonSetProxy.Top = CustomButtonShare.Top;
 
-        CustomNumericUpDownPDpiAntiPatternOffset.Left = CustomNumericUpDownPDpiSniChunks.Left;
-        CustomNumericUpDownPDpiAntiPatternOffset.Top = CustomLabelPDpiAntiPatternOffset.Top - 2;
+            CustomButtonPDpiApplyChanges.Left = CustomButtonSetProxy.Right + spaceHH;
+            CustomButtonPDpiApplyChanges.Top = CustomButtonShare.Top;
 
-        CustomLabelPDpiFragDelay.Left = CustomLabelPDpiAntiPatternOffset.Left;
-        CustomLabelPDpiFragDelay.Top = CustomLabelPDpiAntiPatternOffset.Bottom + spaceV;
+            CustomButtonPDpiCheck.Left = CustomButtonPDpiApplyChanges.Right + spaceH;
+            CustomButtonPDpiCheck.Top = CustomButtonShare.Top;
 
-        CustomNumericUpDownPDpiFragDelay.Left = CustomNumericUpDownPDpiAntiPatternOffset.Left;
-        CustomNumericUpDownPDpiFragDelay.Top = CustomLabelPDpiFragDelay.Top - 2;
+            try
+            {
+                SplitContainerShareMain.Panel2MinSize = CustomButtonShare.Height + 6;
+                SplitContainerShareMain.SplitterDistance = SplitContainerShareMain.Height - SplitContainerShareMain.Panel2MinSize;
+            }
+            catch (Exception) { }
 
-        CustomButtonShare.Left = spaceHH;
-        CustomButtonShare.Top = TabPageShare.Height - CustomButtonShare.Height - spaceBottom;
+            //// GoodbyeDPI Basic
+            spaceV = 12;
+            CustomLabelInfoDPIModes.Location = new Point(20, 20);
 
-        CustomButtonSetProxy.Left = CustomButtonShare.Right + spaceH;
-        CustomButtonSetProxy.Top = CustomButtonShare.Top;
+            CustomLabelDPIModes.Left = CustomLabelInfoDPIModes.Left;
+            CustomLabelDPIModes.Top = CustomLabelInfoDPIModes.Bottom + spaceV;
 
-        CustomButtonPDpiApplyChanges.Left = CustomButtonSetProxy.Right + spaceHH;
-        CustomButtonPDpiApplyChanges.Top = CustomButtonShare.Top;
+            CustomRadioButtonDPIModeLight.Left = CustomLabelInfoDPIModes.Left;
+            CustomRadioButtonDPIModeLight.Top = CustomLabelDPIModes.Bottom + spaceV;
 
-        CustomButtonPDpiCheck.Left = CustomButtonPDpiApplyChanges.Right + spaceH;
-        CustomButtonPDpiCheck.Top = CustomButtonShare.Top;
+            CustomRadioButtonDPIModeMedium.Left = CustomRadioButtonDPIModeLight.Right + spaceH;
+            CustomRadioButtonDPIModeMedium.Top = CustomRadioButtonDPIModeLight.Top;
 
-        CustomLabelPDpiPresets.Left = CustomComboBoxPDpiSniChunkMode.Right + spaceH;
-        CustomLabelPDpiPresets.Top = CustomLabelPDpiBeforeSniChunks.Top;
+            CustomRadioButtonDPIModeHigh.Left = CustomRadioButtonDPIModeMedium.Right + spaceH;
+            CustomRadioButtonDPIModeHigh.Top = CustomRadioButtonDPIModeMedium.Top;
 
-        CustomButtonPDpiPresetDefault.Left = CustomLabelPDpiPresets.Left;
-        CustomButtonPDpiPresetDefault.Top = CustomLabelPDpiPresets.Bottom + spaceV;
+            CustomRadioButtonDPIModeExtreme.Left = CustomRadioButtonDPIModeHigh.Right + spaceH;
+            CustomRadioButtonDPIModeExtreme.Top = CustomRadioButtonDPIModeHigh.Top;
 
-        CustomLabelShareSeparator2.Left = CustomButtonPDpiPresetDefault.Right + spaceH;
-        CustomLabelShareSeparator2.Top = CustomCheckBoxPDpiEnableDpiBypass.Top;
-        CustomLabelShareSeparator2.Width = 1;
-        CustomLabelShareSeparator2.Height = CustomButtonShare.Top - CustomLabelShareSeparator2.Top - spaceBottom;
+            CustomLabelSSLFragmentSize.Left = CustomRadioButtonDPIModeExtreme.Right + spaceHH;
+            CustomLabelSSLFragmentSize.Top = CustomRadioButtonDPIModeExtreme.Top;
 
-        CustomCheckBoxProxyEnableSSL.Left = CustomLabelShareSeparator2.Right + spaceH;
-        CustomCheckBoxProxyEnableSSL.Top = CustomCheckBoxPDpiEnableDpiBypass.Top;
+            CustomNumericUpDownSSLFragmentSize.Left = CustomLabelSSLFragmentSize.Right + spaceH2;
+            CustomNumericUpDownSSLFragmentSize.Top = CustomLabelSSLFragmentSize.Top - 2;
 
-        spaceV = 5;
-        CustomLabelProxySSLInfo.Left = CustomCheckBoxProxyEnableSSL.Left + spaceH2;
-        CustomLabelProxySSLInfo.Top = CustomCheckBoxProxyEnableSSL.Bottom + spaceV;
+            CustomLabelDPIModesGoodbyeDPI.Left = CustomLabelInfoDPIModes.Left;
+            CustomLabelDPIModesGoodbyeDPI.Top = CustomNumericUpDownSSLFragmentSize.Bottom + spaceV;
 
-        spaceV = 12;
-        CustomCheckBoxProxySSLChangeSni.Left = CustomCheckBoxProxyEnableSSL.Left;
-        CustomCheckBoxProxySSLChangeSni.Top = CustomLabelProxySSLInfo.Bottom + spaceV;
+            CustomRadioButtonDPIMode1.Left = CustomLabelDPIModesGoodbyeDPI.Left;
+            CustomRadioButtonDPIMode1.Top = CustomLabelDPIModesGoodbyeDPI.Bottom + spaceV;
 
-        spaceV = 5;
-        CustomLabelProxySSLChangeSniInfo.Left = CustomCheckBoxProxySSLChangeSni.Left + spaceH2;
-        CustomLabelProxySSLChangeSniInfo.Top = CustomCheckBoxProxySSLChangeSni.Bottom + spaceV;
+            CustomRadioButtonDPIMode2.Left = CustomRadioButtonDPIMode1.Right + spaceH;
+            CustomRadioButtonDPIMode2.Top = CustomRadioButtonDPIMode1.Top;
 
-        spaceV = 12;
-        CustomLabelProxySSLDefaultSni.Left = CustomCheckBoxProxySSLChangeSni.Left;
-        CustomLabelProxySSLDefaultSni.Top = CustomLabelProxySSLChangeSniInfo.Bottom + spaceV;
+            CustomRadioButtonDPIMode3.Left = CustomRadioButtonDPIMode2.Right + spaceH;
+            CustomRadioButtonDPIMode3.Top = CustomRadioButtonDPIMode2.Top;
 
-        CustomTextBoxProxySSLDefaultSni.Left = CustomLabelProxySSLDefaultSni.Right + spaceH;
-        CustomTextBoxProxySSLDefaultSni.Top = CustomLabelProxySSLDefaultSni.Top - 2;
+            CustomRadioButtonDPIMode4.Left = CustomRadioButtonDPIMode3.Right + spaceH;
+            CustomRadioButtonDPIMode4.Top = CustomRadioButtonDPIMode3.Top;
 
-        // GoodbyeDPI Basic
-        spaceV = 12;
-        CustomLabelInfoDPIModes.Location = new Point(25, 15);
+            CustomRadioButtonDPIMode5.Left = CustomRadioButtonDPIMode4.Right + spaceH;
+            CustomRadioButtonDPIMode5.Top = CustomRadioButtonDPIMode4.Top;
 
-        CustomLabelDPIModes.Left = CustomLabelInfoDPIModes.Left;
-        CustomLabelDPIModes.Top = CustomLabelInfoDPIModes.Bottom + spaceV;
+            CustomRadioButtonDPIMode6.Left = CustomRadioButtonDPIMode5.Right + spaceH;
+            CustomRadioButtonDPIMode6.Top = CustomRadioButtonDPIMode5.Top;
 
-        CustomRadioButtonDPIModeLight.Left = CustomLabelInfoDPIModes.Left;
-        CustomRadioButtonDPIModeLight.Top = CustomLabelDPIModes.Bottom + spaceV;
+            // ---------- GoodbyeDPI Basic Buttons
+            CustomButtonDPIBasicActivate.Location = new Point(spaceHH, 3);
 
-        CustomRadioButtonDPIModeMedium.Left = CustomRadioButtonDPIModeLight.Right + spaceH;
-        CustomRadioButtonDPIModeMedium.Top = CustomRadioButtonDPIModeLight.Top;
+            CustomButtonDPIBasicDeactivate.Left = CustomButtonDPIBasicActivate.Right + spaceH;
+            CustomButtonDPIBasicDeactivate.Top = CustomButtonDPIBasicActivate.Top;
 
-        CustomRadioButtonDPIModeHigh.Left = CustomRadioButtonDPIModeMedium.Right + spaceH;
-        CustomRadioButtonDPIModeHigh.Top = CustomRadioButtonDPIModeMedium.Top;
+            try
+            {
+                SplitContainerGoodbyeDpiBasicMain.Panel2MinSize = CustomButtonDPIBasicActivate.Height + 6;
+                SplitContainerGoodbyeDpiBasicMain.SplitterDistance = SplitContainerGoodbyeDpiBasicMain.Height - SplitContainerGoodbyeDpiBasicMain.Panel2MinSize;
+            }
+            catch (Exception) { }
 
-        CustomRadioButtonDPIModeExtreme.Left = CustomRadioButtonDPIModeHigh.Right + spaceH;
-        CustomRadioButtonDPIModeExtreme.Top = CustomRadioButtonDPIModeHigh.Top;
+            //// GoodbyeDPI Advanced
+            CustomCheckBoxDPIAdvP.Location = new Point(5, 5);
 
-        CustomLabelSSLFragmentSize.Left = CustomRadioButtonDPIModeExtreme.Right + spaceHH;
-        CustomLabelSSLFragmentSize.Top = CustomRadioButtonDPIModeExtreme.Top;
+            CustomCheckBoxDPIAdvF.Left = CustomCheckBoxDPIAdvP.Left;
+            CustomCheckBoxDPIAdvF.Top = CustomCheckBoxDPIAdvP.Bottom + spaceV;
 
-        CustomNumericUpDownSSLFragmentSize.Left = CustomLabelSSLFragmentSize.Right + spaceH2;
-        CustomNumericUpDownSSLFragmentSize.Top = CustomLabelSSLFragmentSize.Top - 2;
+            CustomNumericUpDownDPIAdvF.Left = CustomCheckBoxDPIAdvF.Right + spaceH;
+            CustomNumericUpDownDPIAdvF.Top = CustomCheckBoxDPIAdvF.Top - 2;
 
-        CustomLabelDPIModesGoodbyeDPI.Left = CustomLabelInfoDPIModes.Left;
-        CustomLabelDPIModesGoodbyeDPI.Top = CustomNumericUpDownSSLFragmentSize.Bottom + spaceV;
+            CustomCheckBoxDPIAdvA.Left = CustomCheckBoxDPIAdvF.Left;
+            CustomCheckBoxDPIAdvA.Top = CustomCheckBoxDPIAdvF.Bottom + spaceV;
 
-        CustomRadioButtonDPIMode1.Left = CustomLabelDPIModesGoodbyeDPI.Left;
-        CustomRadioButtonDPIMode1.Top = CustomLabelDPIModesGoodbyeDPI.Bottom + spaceV;
+            CustomCheckBoxDPIAdvAllowNoSNI.Left = CustomCheckBoxDPIAdvA.Left;
+            CustomCheckBoxDPIAdvAllowNoSNI.Top = CustomCheckBoxDPIAdvA.Bottom + spaceV;
 
-        CustomRadioButtonDPIMode2.Left = CustomRadioButtonDPIMode1.Right + spaceH;
-        CustomRadioButtonDPIMode2.Top = CustomRadioButtonDPIMode1.Top;
+            CustomCheckBoxDPIAdvWrongChksum.Left = CustomCheckBoxDPIAdvAllowNoSNI.Left;
+            CustomCheckBoxDPIAdvWrongChksum.Top = CustomCheckBoxDPIAdvAllowNoSNI.Bottom + spaceV;
 
-        CustomRadioButtonDPIMode3.Left = CustomRadioButtonDPIMode2.Right + spaceH;
-        CustomRadioButtonDPIMode3.Top = CustomRadioButtonDPIMode2.Top;
+            CustomCheckBoxDPIAdvMaxPayload.Left = CustomCheckBoxDPIAdvWrongChksum.Left;
+            CustomCheckBoxDPIAdvMaxPayload.Top = CustomCheckBoxDPIAdvWrongChksum.Bottom + spaceV;
 
-        CustomRadioButtonDPIMode4.Left = CustomRadioButtonDPIMode3.Right + spaceH;
-        CustomRadioButtonDPIMode4.Top = CustomRadioButtonDPIMode3.Top;
+            CustomNumericUpDownDPIAdvMaxPayload.Left = CustomCheckBoxDPIAdvMaxPayload.Right + spaceH;
+            CustomNumericUpDownDPIAdvMaxPayload.Top = CustomCheckBoxDPIAdvMaxPayload.Top - 2;
 
-        CustomRadioButtonDPIMode5.Left = CustomRadioButtonDPIMode4.Right + spaceH;
-        CustomRadioButtonDPIMode5.Top = CustomRadioButtonDPIMode4.Top;
+            CustomCheckBoxDPIAdvR.Left = CustomNumericUpDownDPIAdvMaxPayload.Right + (spaceHH / 2);
+            CustomCheckBoxDPIAdvR.Top = CustomCheckBoxDPIAdvP.Top;
 
-        CustomRadioButtonDPIMode6.Left = CustomRadioButtonDPIMode5.Right + spaceH;
-        CustomRadioButtonDPIMode6.Top = CustomRadioButtonDPIMode5.Top;
+            CustomCheckBoxDPIAdvK.Left = CustomCheckBoxDPIAdvR.Left;
+            CustomCheckBoxDPIAdvK.Top = CustomCheckBoxDPIAdvR.Bottom + spaceV;
 
-        CustomButtonDPIBasicActivate.Left = spaceHH;
-        CustomButtonDPIBasicActivate.Top = TabPageDPIBasic.Height - CustomButtonDPIBasicActivate.Height - spaceBottom;
+            CustomNumericUpDownDPIAdvK.Left = CustomCheckBoxDPIAdvK.Right + spaceH;
+            CustomNumericUpDownDPIAdvK.Top = CustomCheckBoxDPIAdvK.Top - 2;
 
-        CustomButtonDPIBasicDeactivate.Left = CustomButtonDPIBasicActivate.Right + spaceH;
-        CustomButtonDPIBasicDeactivate.Top = CustomButtonDPIBasicActivate.Top;
+            CustomCheckBoxDPIAdvW.Left = CustomCheckBoxDPIAdvK.Left;
+            CustomCheckBoxDPIAdvW.Top = CustomCheckBoxDPIAdvK.Bottom + spaceV;
 
-        // GoodbyeDPI Advanced
-        CustomCheckBoxDPIAdvP.Location = new Point(5, 5);
+            CustomCheckBoxDPIAdvSetTTL.Left = CustomCheckBoxDPIAdvW.Left;
+            CustomCheckBoxDPIAdvSetTTL.Top = CustomCheckBoxDPIAdvW.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvF.Left = CustomCheckBoxDPIAdvP.Left;
-        CustomCheckBoxDPIAdvF.Top = CustomCheckBoxDPIAdvP.Bottom + spaceV;
+            CustomNumericUpDownDPIAdvSetTTL.Left = CustomCheckBoxDPIAdvSetTTL.Right + spaceH;
+            CustomNumericUpDownDPIAdvSetTTL.Top = CustomCheckBoxDPIAdvSetTTL.Top - 2;
 
-        CustomNumericUpDownDPIAdvF.Left = CustomCheckBoxDPIAdvF.Right + spaceH;
-        CustomNumericUpDownDPIAdvF.Top = CustomCheckBoxDPIAdvF.Top - 2;
+            CustomCheckBoxDPIAdvWrongSeq.Left = CustomCheckBoxDPIAdvSetTTL.Left;
+            CustomCheckBoxDPIAdvWrongSeq.Top = CustomCheckBoxDPIAdvSetTTL.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvA.Left = CustomCheckBoxDPIAdvF.Left;
-        CustomCheckBoxDPIAdvA.Top = CustomCheckBoxDPIAdvF.Bottom + spaceV;
+            CustomCheckBoxDPIAdvBlacklist.Left = CustomCheckBoxDPIAdvWrongSeq.Left;
+            CustomCheckBoxDPIAdvBlacklist.Top = CustomCheckBoxDPIAdvWrongSeq.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvAllowNoSNI.Left = CustomCheckBoxDPIAdvA.Left;
-        CustomCheckBoxDPIAdvAllowNoSNI.Top = CustomCheckBoxDPIAdvA.Bottom + spaceV;
+            CustomButtonDPIAdvBlacklist.Left = CustomCheckBoxDPIAdvBlacklist.Right + spaceH;
+            CustomButtonDPIAdvBlacklist.Top = CustomCheckBoxDPIAdvBlacklist.Top - 2;
 
-        CustomCheckBoxDPIAdvWrongChksum.Left = CustomCheckBoxDPIAdvAllowNoSNI.Left;
-        CustomCheckBoxDPIAdvWrongChksum.Top = CustomCheckBoxDPIAdvAllowNoSNI.Bottom + spaceV;
+            CustomCheckBoxDPIAdvS.Left = CustomButtonDPIAdvBlacklist.Right + (spaceHH / 2);
+            CustomCheckBoxDPIAdvS.Top = CustomCheckBoxDPIAdvP.Top;
 
-        CustomCheckBoxDPIAdvMaxPayload.Left = CustomCheckBoxDPIAdvWrongChksum.Left;
-        CustomCheckBoxDPIAdvMaxPayload.Top = CustomCheckBoxDPIAdvWrongChksum.Bottom + spaceV;
+            CustomCheckBoxDPIAdvN.Left = CustomCheckBoxDPIAdvS.Left;
+            CustomCheckBoxDPIAdvN.Top = CustomCheckBoxDPIAdvS.Bottom + spaceV;
 
-        CustomNumericUpDownDPIAdvMaxPayload.Left = CustomCheckBoxDPIAdvMaxPayload.Right + spaceH;
-        CustomNumericUpDownDPIAdvMaxPayload.Top = CustomCheckBoxDPIAdvMaxPayload.Top - 2;
+            CustomCheckBoxDPIAdvPort.Left = CustomCheckBoxDPIAdvN.Left;
+            CustomCheckBoxDPIAdvPort.Top = CustomCheckBoxDPIAdvN.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvR.Left = CustomNumericUpDownDPIAdvMaxPayload.Right + (spaceHH / 2);
-        CustomCheckBoxDPIAdvR.Top = CustomCheckBoxDPIAdvP.Top;
+            CustomNumericUpDownDPIAdvPort.Left = CustomCheckBoxDPIAdvPort.Right + spaceH;
+            CustomNumericUpDownDPIAdvPort.Top = CustomCheckBoxDPIAdvPort.Top - 2;
 
-        CustomCheckBoxDPIAdvK.Left = CustomCheckBoxDPIAdvR.Left;
-        CustomCheckBoxDPIAdvK.Top = CustomCheckBoxDPIAdvR.Bottom + spaceV;
+            CustomCheckBoxDPIAdvAutoTTL.Left = CustomCheckBoxDPIAdvPort.Left;
+            CustomCheckBoxDPIAdvAutoTTL.Top = CustomCheckBoxDPIAdvPort.Bottom + spaceV;
 
-        CustomNumericUpDownDPIAdvK.Left = CustomCheckBoxDPIAdvK.Right + spaceH;
-        CustomNumericUpDownDPIAdvK.Top = CustomCheckBoxDPIAdvK.Top - 2;
+            CustomTextBoxDPIAdvAutoTTL.Left = CustomCheckBoxDPIAdvAutoTTL.Right + spaceH;
+            CustomTextBoxDPIAdvAutoTTL.Top = CustomCheckBoxDPIAdvAutoTTL.Top - 2;
 
-        CustomCheckBoxDPIAdvW.Left = CustomCheckBoxDPIAdvK.Left;
-        CustomCheckBoxDPIAdvW.Top = CustomCheckBoxDPIAdvK.Bottom + spaceV;
+            CustomCheckBoxDPIAdvNativeFrag.Left = CustomCheckBoxDPIAdvAutoTTL.Left;
+            CustomCheckBoxDPIAdvNativeFrag.Top = CustomCheckBoxDPIAdvAutoTTL.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvSetTTL.Left = CustomCheckBoxDPIAdvW.Left;
-        CustomCheckBoxDPIAdvSetTTL.Top = CustomCheckBoxDPIAdvW.Bottom + spaceV;
+            CustomCheckBoxDPIAdvM.Left = CustomTextBoxDPIAdvAutoTTL.Right + (spaceHH / 2);
+            CustomCheckBoxDPIAdvM.Top = CustomCheckBoxDPIAdvP.Top;
 
-        CustomNumericUpDownDPIAdvSetTTL.Left = CustomCheckBoxDPIAdvSetTTL.Right + spaceH;
-        CustomNumericUpDownDPIAdvSetTTL.Top = CustomCheckBoxDPIAdvSetTTL.Top - 2;
+            CustomCheckBoxDPIAdvE.Left = CustomCheckBoxDPIAdvM.Left;
+            CustomCheckBoxDPIAdvE.Top = CustomCheckBoxDPIAdvM.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvWrongSeq.Left = CustomCheckBoxDPIAdvSetTTL.Left;
-        CustomCheckBoxDPIAdvWrongSeq.Top = CustomCheckBoxDPIAdvSetTTL.Bottom + spaceV;
+            CustomNumericUpDownDPIAdvE.Left = CustomCheckBoxDPIAdvE.Right + spaceH;
+            CustomNumericUpDownDPIAdvE.Top = CustomCheckBoxDPIAdvE.Top - 2;
 
-        CustomCheckBoxDPIAdvBlacklist.Left = CustomCheckBoxDPIAdvWrongSeq.Left;
-        CustomCheckBoxDPIAdvBlacklist.Top = CustomCheckBoxDPIAdvWrongSeq.Bottom + spaceV;
+            CustomCheckBoxDPIAdvIpId.Left = CustomCheckBoxDPIAdvE.Left;
+            CustomCheckBoxDPIAdvIpId.Top = CustomCheckBoxDPIAdvE.Bottom + spaceV;
 
-        CustomButtonDPIAdvBlacklist.Left = CustomCheckBoxDPIAdvBlacklist.Right + spaceH;
-        CustomButtonDPIAdvBlacklist.Top = CustomCheckBoxDPIAdvBlacklist.Top - 2;
+            CustomTextBoxDPIAdvIpId.Left = CustomCheckBoxDPIAdvIpId.Right + spaceH;
+            CustomTextBoxDPIAdvIpId.Top = CustomCheckBoxDPIAdvIpId.Top - 2;
 
-        CustomCheckBoxDPIAdvS.Left = CustomButtonDPIAdvBlacklist.Right + (spaceHH / 2);
-        CustomCheckBoxDPIAdvS.Top = CustomCheckBoxDPIAdvP.Top;
+            CustomCheckBoxDPIAdvMinTTL.Left = CustomCheckBoxDPIAdvIpId.Left;
+            CustomCheckBoxDPIAdvMinTTL.Top = CustomCheckBoxDPIAdvIpId.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvN.Left = CustomCheckBoxDPIAdvS.Left;
-        CustomCheckBoxDPIAdvN.Top = CustomCheckBoxDPIAdvS.Bottom + spaceV;
+            CustomNumericUpDownDPIAdvMinTTL.Left = CustomCheckBoxDPIAdvMinTTL.Right + spaceH;
+            CustomNumericUpDownDPIAdvMinTTL.Top = CustomCheckBoxDPIAdvMinTTL.Top - 2;
 
-        CustomCheckBoxDPIAdvPort.Left = CustomCheckBoxDPIAdvN.Left;
-        CustomCheckBoxDPIAdvPort.Top = CustomCheckBoxDPIAdvN.Bottom + spaceV;
+            CustomCheckBoxDPIAdvReverseFrag.Left = CustomCheckBoxDPIAdvMinTTL.Left;
+            CustomCheckBoxDPIAdvReverseFrag.Top = CustomCheckBoxDPIAdvMinTTL.Bottom + spaceH;
 
-        CustomNumericUpDownDPIAdvPort.Left = CustomCheckBoxDPIAdvPort.Right + spaceH;
-        CustomNumericUpDownDPIAdvPort.Top = CustomCheckBoxDPIAdvPort.Top - 2;
+            // ---------- GoodbyeDPI Advanced Buttons
+            CustomButtonDPIAdvActivate.Location = new Point(spaceHH, 3);
 
-        CustomCheckBoxDPIAdvAutoTTL.Left = CustomCheckBoxDPIAdvPort.Left;
-        CustomCheckBoxDPIAdvAutoTTL.Top = CustomCheckBoxDPIAdvPort.Bottom + spaceV;
+            CustomButtonDPIAdvDeactivate.Left = CustomButtonDPIAdvActivate.Right + spaceH;
+            CustomButtonDPIAdvDeactivate.Top = CustomButtonDPIAdvActivate.Top;
 
-        CustomTextBoxDPIAdvAutoTTL.Left = CustomCheckBoxDPIAdvAutoTTL.Right + spaceH;
-        CustomTextBoxDPIAdvAutoTTL.Top = CustomCheckBoxDPIAdvAutoTTL.Top - 2;
+            try
+            {
+                SplitContainerGoodbyeDpiAdvancedMain.Panel2MinSize = CustomButtonDPIAdvActivate.Height + 6;
+                SplitContainerGoodbyeDpiAdvancedMain.SplitterDistance = SplitContainerGoodbyeDpiAdvancedMain.Height - SplitContainerGoodbyeDpiAdvancedMain.Panel2MinSize;
+            }
+            catch (Exception) { }
 
-        CustomCheckBoxDPIAdvNativeFrag.Left = CustomCheckBoxDPIAdvAutoTTL.Left;
-        CustomCheckBoxDPIAdvNativeFrag.Top = CustomCheckBoxDPIAdvAutoTTL.Bottom + spaceV;
+            //// Tools
+            spaceV = 30;
+            // ---------- Col 1
+            CustomButtonToolsDnsScanner.Location = new Point(50, 50);
 
-        CustomCheckBoxDPIAdvM.Left = CustomTextBoxDPIAdvAutoTTL.Right + (spaceHH / 2);
-        CustomCheckBoxDPIAdvM.Top = CustomCheckBoxDPIAdvP.Top;
+            CustomButtonToolsDnsLookup.Left = CustomButtonToolsDnsScanner.Left;
+            CustomButtonToolsDnsLookup.Top = CustomButtonToolsDnsScanner.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvE.Left = CustomCheckBoxDPIAdvM.Left;
-        CustomCheckBoxDPIAdvE.Top = CustomCheckBoxDPIAdvM.Bottom + spaceV;
+            CustomButtonToolsStampReader.Left = CustomButtonToolsDnsLookup.Left;
+            CustomButtonToolsStampReader.Top = CustomButtonToolsDnsLookup.Bottom + spaceV;
 
-        CustomNumericUpDownDPIAdvE.Left = CustomCheckBoxDPIAdvE.Right + spaceH;
-        CustomNumericUpDownDPIAdvE.Top = CustomCheckBoxDPIAdvE.Top - 2;
+            CustomButtonToolsStampGenerator.Left = CustomButtonToolsStampReader.Left;
+            CustomButtonToolsStampGenerator.Top = CustomButtonToolsStampReader.Bottom + spaceV;
 
-        CustomCheckBoxDPIAdvIpId.Left = CustomCheckBoxDPIAdvE.Left;
-        CustomCheckBoxDPIAdvIpId.Top = CustomCheckBoxDPIAdvE.Bottom + spaceV;
+            CustomButtonToolsIpScanner.Left = CustomButtonToolsStampGenerator.Left;
+            CustomButtonToolsIpScanner.Top = CustomButtonToolsStampGenerator.Bottom + spaceV;
 
-        CustomTextBoxDPIAdvIpId.Left = CustomCheckBoxDPIAdvIpId.Right + spaceH;
-        CustomTextBoxDPIAdvIpId.Top = CustomCheckBoxDPIAdvIpId.Top - 2;
+            // ---------- Col 2
+            CustomButtonToolsFlushDns.Left = CustomButtonToolsDnsScanner.Right + spaceHH;
+            CustomButtonToolsFlushDns.Top = CustomButtonToolsDnsScanner.Top;
 
-        CustomCheckBoxDPIAdvMinTTL.Left = CustomCheckBoxDPIAdvIpId.Left;
-        CustomCheckBoxDPIAdvMinTTL.Top = CustomCheckBoxDPIAdvIpId.Bottom + spaceV;
+            CustomButtonBenchmark.Left = CustomButtonToolsFlushDns.Left;
+            CustomButtonBenchmark.Top = CustomButtonToolsFlushDns.Bottom + spaceV;
 
-        CustomNumericUpDownDPIAdvMinTTL.Left = CustomCheckBoxDPIAdvMinTTL.Right + spaceH;
-        CustomNumericUpDownDPIAdvMinTTL.Top = CustomCheckBoxDPIAdvMinTTL.Top - 2;
+            //// Settings
+            int settingsMenuWidth = TextRenderer.MeasureText("MSMHSecureDNSClient", Font).Width;
+            try
+            {
+                SplitContainerSettings.Panel1MinSize = settingsMenuWidth;
+                SplitContainerSettings.SplitterDistance = SplitContainerSettings.Panel1MinSize;
+            }
+            catch (Exception) { }
 
-        CustomCheckBoxDPIAdvReverseFrag.Left = CustomCheckBoxDPIAdvMinTTL.Left;
-        CustomCheckBoxDPIAdvReverseFrag.Top = CustomCheckBoxDPIAdvMinTTL.Bottom + spaceH;
+            //// Settings Working Mode
+            spaceV = 30;
+            CustomLabelSettingInfoWorkingMode1.Location = new Point(50, 35);
 
-        CustomButtonDPIAdvActivate.Left = spaceHH;
-        CustomButtonDPIAdvActivate.Top = TabPageDPIAdvanced.Height - CustomButtonDPIAdvActivate.Height - spaceBottom;
+            CustomRadioButtonSettingWorkingModeDNS.Left = CustomLabelSettingInfoWorkingMode1.Left;
+            CustomRadioButtonSettingWorkingModeDNS.Top = CustomLabelSettingInfoWorkingMode1.Bottom + spaceV;
 
-        CustomButtonDPIAdvDeactivate.Left = CustomButtonDPIAdvActivate.Right + spaceH;
-        CustomButtonDPIAdvDeactivate.Top = CustomButtonDPIAdvActivate.Top;
+            CustomRadioButtonSettingWorkingModeDNSandDoH.Left = CustomRadioButtonSettingWorkingModeDNS.Left;
+            CustomRadioButtonSettingWorkingModeDNSandDoH.Top = CustomRadioButtonSettingWorkingModeDNS.Bottom + spaceV;
 
-        // Tools
-        spaceV = 30;
-        CustomButtonToolsDnsScanner.Location = new Point(50, 50);
+            CustomLabelSettingWorkingModeSetDohPort.Left = CustomRadioButtonSettingWorkingModeDNSandDoH.Left + spaceH2;
+            CustomLabelSettingWorkingModeSetDohPort.Top = CustomRadioButtonSettingWorkingModeDNSandDoH.Bottom + (spaceV / 2);
 
-        CustomButtonToolsDnsLookup.Left = CustomButtonToolsDnsScanner.Left;
-        CustomButtonToolsDnsLookup.Top = CustomButtonToolsDnsScanner.Bottom + spaceV;
+            CustomNumericUpDownSettingWorkingModeSetDohPort.Left = CustomLabelSettingWorkingModeSetDohPort.Right + spaceH2;
+            CustomNumericUpDownSettingWorkingModeSetDohPort.Top = CustomLabelSettingWorkingModeSetDohPort.Top - 2;
 
-        CustomButtonToolsStampReader.Left = CustomButtonToolsDnsLookup.Left;
-        CustomButtonToolsStampReader.Top = CustomButtonToolsDnsLookup.Bottom + spaceV;
+            CustomButtonSettingUninstallCertificate.Left = CustomRadioButtonSettingWorkingModeDNSandDoH.Left;
+            CustomButtonSettingUninstallCertificate.Top = CustomLabelSettingWorkingModeSetDohPort.Bottom + spaceV;
 
-        CustomButtonToolsStampGenerator.Left = CustomButtonToolsStampReader.Left;
-        CustomButtonToolsStampGenerator.Top = CustomButtonToolsStampReader.Bottom + spaceV;
+            //// Settings Check
+            spaceV = 20;
+            CustomLabelSettingCheckTimeout.Location = new Point(15, 25);
 
-        CustomButtonToolsIpScanner.Left = CustomButtonToolsStampGenerator.Left;
-        CustomButtonToolsIpScanner.Top = CustomButtonToolsStampGenerator.Bottom + spaceV;
+            CustomNumericUpDownSettingCheckTimeout.Left = CustomLabelSettingCheckTimeout.Right + spaceH2;
+            CustomNumericUpDownSettingCheckTimeout.Top = CustomLabelSettingCheckTimeout.Top - 2;
 
-        CustomButtonToolsFlushDns.Left = CustomButtonToolsDnsScanner.Right + spaceHH;
-        CustomButtonToolsFlushDns.Top = CustomButtonToolsDnsScanner.Top;
+            CustomCheckBoxSettingCheckClearWorkingServers.Left = CustomLabelSettingCheckTimeout.Left;
+            CustomCheckBoxSettingCheckClearWorkingServers.Top = CustomNumericUpDownSettingCheckTimeout.Bottom + spaceV;
 
-        // Settings Working Mode
-        spaceV = 30;
-        CustomLabelSettingInfoWorkingMode1.Location = new Point(50, 35);
+            CustomLabelSettingCheckDPIInfo.Left = CustomCheckBoxSettingCheckClearWorkingServers.Left;
+            CustomLabelSettingCheckDPIInfo.Top = CustomCheckBoxSettingCheckClearWorkingServers.Bottom + spaceV;
 
-        CustomRadioButtonSettingWorkingModeDNS.Left = CustomLabelSettingInfoWorkingMode1.Left;
-        CustomRadioButtonSettingWorkingModeDNS.Top = CustomLabelSettingInfoWorkingMode1.Bottom + spaceV;
+            CustomTextBoxSettingCheckDPIHost.Left = CustomLabelSettingCheckDPIInfo.Right + spaceH2;
+            CustomTextBoxSettingCheckDPIHost.Top = CustomLabelSettingCheckDPIInfo.Top - 2;
 
-        CustomRadioButtonSettingWorkingModeDNSandDoH.Left = CustomRadioButtonSettingWorkingModeDNS.Left;
-        CustomRadioButtonSettingWorkingModeDNSandDoH.Top = CustomRadioButtonSettingWorkingModeDNS.Bottom + spaceV;
+            CustomGroupBoxSettingCheckDnsProtocol.Left = spaceRight;
+            CustomGroupBoxSettingCheckDnsProtocol.Top = CustomLabelSettingCheckDPIInfo.Bottom + spaceV;
+            int settingsTabPageWidth = TabPageSettingsCheck.Width - (spaceRight * 2);
+            if (settingsTabPageWidth >= CustomTabControlSettings.Width - (spaceRight * 6))
+                settingsTabPageWidth -= CustomTabControlSettings.Width - TabPageSettingsCheck.Width;
+            CustomGroupBoxSettingCheckDnsProtocol.Width = settingsTabPageWidth;
 
-        CustomLabelSettingWorkingModeSetDohPort.Left = CustomRadioButtonSettingWorkingModeDNSandDoH.Left + spaceH2;
-        CustomLabelSettingWorkingModeSetDohPort.Top = CustomRadioButtonSettingWorkingModeDNSandDoH.Bottom + (spaceV / 2);
+            CustomCheckBoxSettingProtocolDoH.Location = new Point(15, 25);
 
-        CustomNumericUpDownSettingWorkingModeSetDohPort.Left = CustomLabelSettingWorkingModeSetDohPort.Right + spaceH2;
-        CustomNumericUpDownSettingWorkingModeSetDohPort.Top = CustomLabelSettingWorkingModeSetDohPort.Top - 2;
+            spaceV = 20;
+            CustomCheckBoxSettingProtocolDNSCryptRelay.Left = CustomCheckBoxSettingProtocolDoH.Left;
+            CustomCheckBoxSettingProtocolDNSCryptRelay.Top = CustomCheckBoxSettingProtocolDoH.Bottom + spaceV;
 
-        CustomButtonSettingUninstallCertificate.Left = CustomRadioButtonSettingWorkingModeDNSandDoH.Left;
-        CustomButtonSettingUninstallCertificate.Top = CustomLabelSettingWorkingModeSetDohPort.Bottom + spaceV;
+            CustomCheckBoxSettingProtocolTLS.Left = CustomCheckBoxSettingProtocolDNSCryptRelay.Right + spaceHH;
+            CustomCheckBoxSettingProtocolTLS.Top = CustomCheckBoxSettingProtocolDoH.Top;
 
-        CustomLabelSettingInfoWorkingMode2.Left = CustomButtonSettingUninstallCertificate.Left;
-        CustomLabelSettingInfoWorkingMode2.Top = TabPageSettingsWorkingMode.Height - CustomLabelSettingInfoWorkingMode2.Height - spaceBottom;
+            CustomCheckBoxSettingProtocolDoQ.Left = CustomCheckBoxSettingProtocolTLS.Left;
+            CustomCheckBoxSettingProtocolDoQ.Top = CustomCheckBoxSettingProtocolTLS.Bottom + spaceV;
 
-        // Settings Check
-        spaceV = 20;
-        CustomLabelSettingCheckTimeout.Location = new Point(15, 25);
+            CustomCheckBoxSettingProtocolDNSCrypt.Left = CustomCheckBoxSettingProtocolDoQ.Right + spaceHH;
+            CustomCheckBoxSettingProtocolDNSCrypt.Top = CustomCheckBoxSettingProtocolTLS.Top;
 
-        CustomNumericUpDownSettingCheckTimeout.Left = CustomLabelSettingCheckTimeout.Right + spaceH2;
-        CustomNumericUpDownSettingCheckTimeout.Top = CustomLabelSettingCheckTimeout.Top - 2;
+            CustomCheckBoxSettingProtocolPlainDNS.Left = CustomCheckBoxSettingProtocolDNSCrypt.Left;
+            CustomCheckBoxSettingProtocolPlainDNS.Top = CustomCheckBoxSettingProtocolDNSCrypt.Bottom + spaceV;
 
-        CustomLabelSettingCheckDPIInfo.Left = CustomLabelSettingCheckTimeout.Left;
-        CustomLabelSettingCheckDPIInfo.Top = CustomLabelSettingCheckTimeout.Bottom + spaceV;
+            CustomGroupBoxSettingCheckDnsProtocol.Height = CustomCheckBoxSettingProtocolPlainDNS.Bottom + CustomCheckBoxSettingProtocolDoH.Top - spaceBottom;
 
-        CustomTextBoxSettingCheckDPIHost.Left = CustomLabelSettingCheckDPIInfo.Right + spaceH2;
-        CustomTextBoxSettingCheckDPIHost.Top = CustomLabelSettingCheckDPIInfo.Top - 2;
+            spaceV = 10;
+            CustomGroupBoxSettingCheckSDNS.Left = CustomGroupBoxSettingCheckDnsProtocol.Left;
+            CustomGroupBoxSettingCheckSDNS.Top = CustomGroupBoxSettingCheckDnsProtocol.Bottom + spaceV;
+            CustomGroupBoxSettingCheckSDNS.Width = CustomGroupBoxSettingCheckDnsProtocol.Width;
 
-        CustomGroupBoxSettingCheckDnsProtocol.Left = spaceRight;
-        CustomGroupBoxSettingCheckDnsProtocol.Top = CustomLabelSettingCheckDPIInfo.Bottom + spaceV;
-        CustomGroupBoxSettingCheckDnsProtocol.Width = TabPageSettingsCheck.Width - (spaceRight * 2);
+            CustomCheckBoxSettingSdnsDNSSec.Location = new Point(15, 25);
 
-        CustomCheckBoxSettingProtocolDoH.Location = new Point(15, 25);
+            CustomCheckBoxSettingSdnsNoLog.Left = CustomCheckBoxSettingProtocolDoQ.Left;
+            CustomCheckBoxSettingSdnsNoLog.Top = CustomCheckBoxSettingSdnsDNSSec.Top;
 
-        spaceV = 20;
-        CustomCheckBoxSettingProtocolDNSCryptRelay.Left = CustomCheckBoxSettingProtocolDoH.Left;
-        CustomCheckBoxSettingProtocolDNSCryptRelay.Top = CustomCheckBoxSettingProtocolDoH.Bottom + spaceV;
+            CustomCheckBoxSettingSdnsNoFilter.Left = CustomCheckBoxSettingProtocolPlainDNS.Left;
+            CustomCheckBoxSettingSdnsNoFilter.Top = CustomCheckBoxSettingSdnsNoLog.Top;
 
-        CustomCheckBoxSettingProtocolTLS.Left = CustomCheckBoxSettingProtocolDNSCryptRelay.Right + spaceHH;
-        CustomCheckBoxSettingProtocolTLS.Top = CustomCheckBoxSettingProtocolDoH.Top;
+            CustomGroupBoxSettingCheckSDNS.Height = CustomCheckBoxSettingSdnsNoFilter.Bottom + CustomCheckBoxSettingSdnsNoFilter.Top - spaceBottom;
 
-        CustomCheckBoxSettingProtocolDoQ.Left = CustomCheckBoxSettingProtocolTLS.Left;
-        CustomCheckBoxSettingProtocolDoQ.Top = CustomCheckBoxSettingProtocolTLS.Bottom + spaceV;
+            //// Settings Quick Connect
+            spaceV = 20;
+            CustomLabelSettingQcInfo.Location = new Point(20, 10);
 
-        CustomCheckBoxSettingProtocolDNSCrypt.Left = CustomCheckBoxSettingProtocolDoQ.Right + spaceHH;
-        CustomCheckBoxSettingProtocolDNSCrypt.Top = CustomCheckBoxSettingProtocolTLS.Top;
+            CustomLabelSettingQcConnectMode.Left = CustomLabelSettingQcInfo.Left;
+            CustomLabelSettingQcConnectMode.Top = CustomLabelSettingQcInfo.Bottom + spaceV;
 
-        CustomCheckBoxSettingProtocolPlainDNS.Left = CustomCheckBoxSettingProtocolDNSCrypt.Left;
-        CustomCheckBoxSettingProtocolPlainDNS.Top = CustomCheckBoxSettingProtocolDNSCrypt.Bottom + spaceV;
+            CustomComboBoxSettingQcConnectMode.Left = CustomLabelSettingQcConnectMode.Right + (spaceH * 4);
+            CustomComboBoxSettingQcConnectMode.Top = CustomLabelSettingQcConnectMode.Top - 2;
 
-        CustomGroupBoxSettingCheckDnsProtocol.Height = CustomCheckBoxSettingProtocolPlainDNS.Bottom + CustomCheckBoxSettingProtocolDoH.Top - spaceBottom;
+            CustomCheckBoxSettingQcUseSavedServers.Left = CustomComboBoxSettingQcConnectMode.Left;
+            CustomCheckBoxSettingQcUseSavedServers.Top = CustomLabelSettingQcConnectMode.Bottom + CustomLabelSettingQcConnectMode.Height;
 
-        spaceV = 10;
-        CustomGroupBoxSettingCheckSDNS.Left = CustomGroupBoxSettingCheckDnsProtocol.Left;
-        CustomGroupBoxSettingCheckSDNS.Top = CustomGroupBoxSettingCheckDnsProtocol.Bottom + spaceV;
-        CustomGroupBoxSettingCheckSDNS.Width = CustomGroupBoxSettingCheckDnsProtocol.Width;
+            CustomCheckBoxSettingQcCheckAllServers.Left = CustomCheckBoxSettingQcUseSavedServers.Right + spaceH2;
+            CustomCheckBoxSettingQcCheckAllServers.Top = CustomCheckBoxSettingQcUseSavedServers.Top;
 
-        CustomCheckBoxSettingSdnsDNSSec.Location = new Point(15, 25);
+            CustomCheckBoxSettingQcSetDnsTo.Left = CustomLabelSettingQcConnectMode.Left;
+            CustomCheckBoxSettingQcSetDnsTo.Top = CustomCheckBoxSettingQcUseSavedServers.Bottom + spaceV;
 
-        CustomCheckBoxSettingSdnsNoLog.Left = CustomCheckBoxSettingProtocolDoQ.Left;
-        CustomCheckBoxSettingSdnsNoLog.Top = CustomCheckBoxSettingSdnsDNSSec.Top;
+            CustomComboBoxSettingQcNics.Left = CustomComboBoxSettingQcConnectMode.Left;
+            CustomComboBoxSettingQcNics.Top = CustomCheckBoxSettingQcSetDnsTo.Top - 2;
 
-        CustomCheckBoxSettingSdnsNoFilter.Left = CustomCheckBoxSettingProtocolPlainDNS.Left;
-        CustomCheckBoxSettingSdnsNoFilter.Top = CustomCheckBoxSettingSdnsNoLog.Top;
+            CustomButtonSettingQcUpdateNics.Left = CustomComboBoxSettingQcNics.Right + spaceH;
+            CustomButtonSettingQcUpdateNics.Top = CustomComboBoxSettingQcNics.Top - 2;
 
-        CustomGroupBoxSettingCheckSDNS.Height = CustomCheckBoxSettingSdnsNoFilter.Bottom + CustomCheckBoxSettingSdnsNoFilter.Top - spaceBottom;
+            CustomCheckBoxSettingQcStartProxyServer.Left = CustomCheckBoxSettingQcSetDnsTo.Left;
+            CustomCheckBoxSettingQcStartProxyServer.Top = CustomCheckBoxSettingQcSetDnsTo.Bottom + spaceV;
 
-        // Settings Quick Connect
-        spaceV = 20;
-        CustomLabelSettingQcInfo.Location = new Point(20, 10);
+            CustomCheckBoxSettingQcSetProxy.Left = CustomCheckBoxSettingQcStartProxyServer.Right + spaceHH;
+            CustomCheckBoxSettingQcSetProxy.Top = CustomCheckBoxSettingQcStartProxyServer.Top;
 
-        CustomLabelSettingQcConnectMode.Left = CustomLabelSettingQcInfo.Left;
-        CustomLabelSettingQcConnectMode.Top = CustomLabelSettingQcInfo.Bottom + spaceV;
+            CustomCheckBoxSettingQcStartGoodbyeDpi.Left = CustomCheckBoxSettingQcStartProxyServer.Left;
+            CustomCheckBoxSettingQcStartGoodbyeDpi.Top = CustomCheckBoxSettingQcStartProxyServer.Bottom + spaceV;
 
-        CustomComboBoxSettingQcConnectMode.Left = CustomLabelSettingQcConnectMode.Right + (spaceH * 4);
-        CustomComboBoxSettingQcConnectMode.Top = CustomLabelSettingQcConnectMode.Top - 2;
+            spaceV = 10;
+            CustomRadioButtonSettingQcGdBasic.Left = CustomCheckBoxSettingQcStartGoodbyeDpi.Left + spaceH;
+            CustomRadioButtonSettingQcGdBasic.Top = CustomCheckBoxSettingQcStartGoodbyeDpi.Bottom + spaceV;
 
-        CustomCheckBoxSettingQcUseSavedServers.Left = CustomComboBoxSettingQcConnectMode.Left;
-        CustomCheckBoxSettingQcUseSavedServers.Top = CustomLabelSettingQcConnectMode.Bottom + CustomLabelSettingQcConnectMode.Height;
+            CustomComboBoxSettingQcGdBasic.Left = CustomComboBoxSettingQcNics.Left;
+            CustomComboBoxSettingQcGdBasic.Top = CustomRadioButtonSettingQcGdBasic.Top - 2;
 
-        CustomCheckBoxSettingQcCheckAllServers.Left = CustomCheckBoxSettingQcUseSavedServers.Right + spaceH2;
-        CustomCheckBoxSettingQcCheckAllServers.Top = CustomCheckBoxSettingQcUseSavedServers.Top;
+            CustomRadioButtonSettingQcGdAdvanced.Left = CustomComboBoxSettingQcGdBasic.Right + spaceHH;
+            CustomRadioButtonSettingQcGdAdvanced.Top = CustomRadioButtonSettingQcGdBasic.Top;
 
-        spaceV = 20;
-        CustomCheckBoxSettingQcSetDnsTo.Left = CustomLabelSettingQcConnectMode.Left;
-        CustomCheckBoxSettingQcSetDnsTo.Top = CustomCheckBoxSettingQcUseSavedServers.Bottom + spaceV;
+            // ---------- Settings Quick Connect Buttons
+            CustomButtonSettingQcStartup.Location = new Point(spaceRight, 3);
 
-        CustomComboBoxSettingQcNics.Left = CustomComboBoxSettingQcConnectMode.Left;
-        CustomComboBoxSettingQcNics.Top = CustomCheckBoxSettingQcSetDnsTo.Top - 2;
+            CustomCheckBoxSettingQcOnStartup.Left = CustomButtonSettingQcStartup.Right + spaceH2;
+            CustomCheckBoxSettingQcOnStartup.Top = CustomButtonSettingQcStartup.Top + 4;
 
-        CustomButtonSettingQcUpdateNics.Left = CustomComboBoxSettingQcNics.Right + spaceH;
-        CustomButtonSettingQcUpdateNics.Top = CustomComboBoxSettingQcNics.Top - 2;
+            try
+            {
+                SplitContainerSettingQcMain.Panel2MinSize = CustomButtonSettingQcStartup.Height + 6;
+                SplitContainerSettingQcMain.SplitterDistance = SplitContainerSettingQcMain.Height - SplitContainerSettingQcMain.Panel2MinSize;
+            }
+            catch (Exception) { }
 
-        CustomCheckBoxSettingQcStartProxyServer.Left = CustomCheckBoxSettingQcSetDnsTo.Left;
-        CustomCheckBoxSettingQcStartProxyServer.Top = CustomCheckBoxSettingQcSetDnsTo.Bottom + spaceV;
+            //// Settings Connect
+            spaceV = 50;
+            CustomCheckBoxSettingEnableCache.Location = new Point(spaceHH, 50);
 
-        CustomCheckBoxSettingQcSetProxy.Left = CustomCheckBoxSettingQcStartProxyServer.Right + spaceHH;
-        CustomCheckBoxSettingQcSetProxy.Top = CustomCheckBoxSettingQcStartProxyServer.Top;
+            CustomLabelSettingMaxServers.Left = CustomCheckBoxSettingEnableCache.Left;
+            CustomLabelSettingMaxServers.Top = CustomCheckBoxSettingEnableCache.Bottom + spaceV;
 
-        CustomCheckBoxSettingQcStartGoodbyeDpi.Left = CustomCheckBoxSettingQcStartProxyServer.Left;
-        CustomCheckBoxSettingQcStartGoodbyeDpi.Top = CustomCheckBoxSettingQcStartProxyServer.Bottom + spaceV;
+            CustomNumericUpDownSettingMaxServers.Left = CustomLabelSettingMaxServers.Right + spaceH2;
+            CustomNumericUpDownSettingMaxServers.Top = CustomLabelSettingMaxServers.Top - 2;
 
-        spaceV = 10;
-        CustomRadioButtonSettingQcGdBasic.Left = CustomCheckBoxSettingQcStartGoodbyeDpi.Left + spaceH;
-        CustomRadioButtonSettingQcGdBasic.Top = CustomCheckBoxSettingQcStartGoodbyeDpi.Bottom + spaceV;
+            CustomLabelSettingCamouflageDnsPort.Left = CustomLabelSettingMaxServers.Left;
+            CustomLabelSettingCamouflageDnsPort.Top = CustomLabelSettingMaxServers.Bottom + spaceV;
 
-        CustomComboBoxSettingQcGdBasic.Left = CustomComboBoxSettingQcNics.Left;
-        CustomComboBoxSettingQcGdBasic.Top = CustomRadioButtonSettingQcGdBasic.Top - 2;
+            CustomNumericUpDownSettingCamouflageDnsPort.Left = CustomLabelSettingCamouflageDnsPort.Right + spaceH2;
+            CustomNumericUpDownSettingCamouflageDnsPort.Top = CustomLabelSettingCamouflageDnsPort.Top - 2;
 
-        CustomRadioButtonSettingQcGdAdvanced.Left = CustomComboBoxSettingQcGdBasic.Right + spaceHH;
-        CustomRadioButtonSettingQcGdAdvanced.Top = CustomRadioButtonSettingQcGdBasic.Top;
+            //// Settings Set/Unset DNS
+            spaceV = 30;
+            CustomRadioButtonSettingUnsetDnsToDhcp.Location = new Point(spaceHH, 35);
 
-        CustomButtonSettingQcStartup.Left = TabPageSettingsQuickConnect.Width - CustomButtonSettingQcStartup.Width - spaceRight;
-        CustomButtonSettingQcStartup.Top = TabPageSettingsQuickConnect.Height - CustomButtonSettingQcStartup.Height - spaceBottom;
+            CustomRadioButtonSettingUnsetDnsToStatic.Left = CustomRadioButtonSettingUnsetDnsToDhcp.Left;
+            CustomRadioButtonSettingUnsetDnsToStatic.Top = CustomRadioButtonSettingUnsetDnsToDhcp.Bottom + spaceV;
 
-        CustomCheckBoxSettingQcOnStartup.Left = CustomButtonSettingQcStartup.Left - CustomCheckBoxSettingQcOnStartup.Width - spaceH3;
-        CustomCheckBoxSettingQcOnStartup.Top = CustomButtonSettingQcStartup.Top + (CustomButtonSettingQcStartup.Height / 2 - CustomCheckBoxSettingQcOnStartup.Height / 2);
+            spaceV = 20;
+            CustomLabelSettingUnsetDns1.Left = CustomRadioButtonSettingUnsetDnsToStatic.Left + spaceHH;
+            CustomLabelSettingUnsetDns1.Top = CustomRadioButtonSettingUnsetDnsToStatic.Bottom + spaceV;
 
-        // Settings Connect
-        spaceV = 50;
-        CustomCheckBoxSettingEnableCache.Location = new Point(spaceHH, 50);
+            CustomTextBoxSettingUnsetDns1.Left = CustomLabelSettingUnsetDns1.Right + (spaceHH / 2);
+            CustomTextBoxSettingUnsetDns1.Top = CustomLabelSettingUnsetDns1.Top - 2;
 
-        CustomLabelSettingMaxServers.Left = CustomCheckBoxSettingEnableCache.Left;
-        CustomLabelSettingMaxServers.Top = CustomCheckBoxSettingEnableCache.Bottom + spaceV;
+            CustomLabelSettingUnsetDns2.Left = CustomLabelSettingUnsetDns1.Left;
+            CustomLabelSettingUnsetDns2.Top = CustomLabelSettingUnsetDns1.Bottom + spaceV;
 
-        CustomNumericUpDownSettingMaxServers.Left = CustomLabelSettingMaxServers.Right + spaceH2;
-        CustomNumericUpDownSettingMaxServers.Top = CustomLabelSettingMaxServers.Top - 2;
+            CustomTextBoxSettingUnsetDns2.Left = CustomTextBoxSettingUnsetDns1.Left;
+            CustomTextBoxSettingUnsetDns2.Top = CustomLabelSettingUnsetDns2.Top - 2;
 
-        CustomLabelSettingCamouflageDnsPort.Left = CustomLabelSettingMaxServers.Left;
-        CustomLabelSettingCamouflageDnsPort.Top = CustomLabelSettingMaxServers.Bottom + spaceV;
+            //// Settings Share Basic
+            CustomLabelSettingProxyPort.Location = new Point(spaceRight, 25);
 
-        CustomNumericUpDownSettingCamouflageDnsPort.Left = CustomLabelSettingCamouflageDnsPort.Right + spaceH2;
-        CustomNumericUpDownSettingCamouflageDnsPort.Top = CustomLabelSettingCamouflageDnsPort.Top - 2;
+            CustomNumericUpDownSettingProxyPort.Left = CustomLabelSettingProxyPort.Right + spaceH2;
+            CustomNumericUpDownSettingProxyPort.Top = CustomLabelSettingProxyPort.Top - 2;
 
-        // Settings Set/Unset DNS
-        spaceV = 30;
-        CustomRadioButtonSettingUnsetDnsToDhcp.Location = new Point(spaceHH, 35);
+            CustomLabelSettingProxyHandleRequests.Left = CustomNumericUpDownSettingProxyPort.Right + spaceHH;
+            CustomLabelSettingProxyHandleRequests.Top = CustomLabelSettingProxyPort.Top;
 
-        CustomRadioButtonSettingUnsetDnsToStatic.Left = CustomRadioButtonSettingUnsetDnsToDhcp.Left;
-        CustomRadioButtonSettingUnsetDnsToStatic.Top = CustomRadioButtonSettingUnsetDnsToDhcp.Bottom + spaceV;
+            CustomNumericUpDownSettingProxyHandleRequests.Left = CustomLabelSettingProxyHandleRequests.Right + spaceH2;
+            CustomNumericUpDownSettingProxyHandleRequests.Top = CustomNumericUpDownSettingProxyPort.Top;
 
-        spaceV = 20;
-        CustomLabelSettingUnsetDns1.Left = CustomRadioButtonSettingUnsetDnsToStatic.Left + spaceHH;
-        CustomLabelSettingUnsetDns1.Top = CustomRadioButtonSettingUnsetDnsToStatic.Bottom + spaceV;
+            CustomCheckBoxSettingProxyBlockPort80.Left = CustomNumericUpDownSettingProxyHandleRequests.Right + spaceHH;
+            CustomCheckBoxSettingProxyBlockPort80.Top = CustomLabelSettingProxyHandleRequests.Top;
 
-        CustomTextBoxSettingUnsetDns1.Left = CustomLabelSettingUnsetDns1.Right + (spaceHH / 2);
-        CustomTextBoxSettingUnsetDns1.Top = CustomLabelSettingUnsetDns1.Top - 2;
+            spaceV = 20;
+            CustomLabelSettingProxyKillRequestTimeout.Left = CustomLabelSettingProxyPort.Left;
+            CustomLabelSettingProxyKillRequestTimeout.Top = CustomLabelSettingProxyPort.Bottom + spaceV;
 
-        CustomLabelSettingUnsetDns2.Left = CustomLabelSettingUnsetDns1.Left;
-        CustomLabelSettingUnsetDns2.Top = CustomLabelSettingUnsetDns1.Bottom + spaceV;
+            CustomNumericUpDownSettingProxyKillRequestTimeout.Left = CustomLabelSettingProxyKillRequestTimeout.Right + spaceH2;
+            CustomNumericUpDownSettingProxyKillRequestTimeout.Top = CustomLabelSettingProxyKillRequestTimeout.Top - 2;
 
-        CustomTextBoxSettingUnsetDns2.Left = CustomTextBoxSettingUnsetDns1.Left;
-        CustomTextBoxSettingUnsetDns2.Top = CustomLabelSettingUnsetDns2.Top - 2;
+            CustomCheckBoxSettingProxyUpstream.Left = CustomLabelSettingProxyKillRequestTimeout.Left;
+            CustomCheckBoxSettingProxyUpstream.Top = CustomLabelSettingProxyKillRequestTimeout.Bottom + spaceV;
 
-        spaceV = 30;
-        CustomCheckBoxSettingDnsDetectUnset.Left = CustomRadioButtonSettingUnsetDnsToStatic.Left;
-        CustomCheckBoxSettingDnsDetectUnset.Top = CustomTextBoxSettingUnsetDns2.Bottom + spaceV;
+            spaceV = 10;
+            CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Left = CustomCheckBoxSettingProxyUpstream.Left + (spaceRight * 2);
+            CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Top = CustomCheckBoxSettingProxyUpstream.Bottom + spaceV;
 
-        // Settings Share Basic
-        CustomLabelSettingProxyPort.Location = new Point(spaceRight, 25);
+            CustomComboBoxSettingProxyUpstreamMode.Left = CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Left;
+            CustomComboBoxSettingProxyUpstreamMode.Top = CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Bottom + spaceV;
 
-        CustomNumericUpDownSettingProxyPort.Left = CustomLabelSettingProxyPort.Right + spaceH2;
-        CustomNumericUpDownSettingProxyPort.Top = CustomLabelSettingProxyPort.Top - 2;
+            CustomLabelSettingProxyUpstreamHost.Left = CustomComboBoxSettingProxyUpstreamMode.Right + spaceHH;
+            CustomLabelSettingProxyUpstreamHost.Top = CustomComboBoxSettingProxyUpstreamMode.Top + 3;
 
-        CustomLabelSettingProxyHandleRequests.Left = CustomNumericUpDownSettingProxyPort.Right + spaceHH;
-        CustomLabelSettingProxyHandleRequests.Top = CustomLabelSettingProxyPort.Top;
+            CustomTextBoxSettingProxyUpstreamHost.Left = CustomLabelSettingProxyUpstreamHost.Right + spaceH2;
+            CustomTextBoxSettingProxyUpstreamHost.Top = CustomLabelSettingProxyUpstreamHost.Top - 3;
 
-        CustomNumericUpDownSettingProxyHandleRequests.Left = CustomLabelSettingProxyHandleRequests.Right + spaceH2;
-        CustomNumericUpDownSettingProxyHandleRequests.Top = CustomNumericUpDownSettingProxyPort.Top;
+            CustomLabelSettingProxyUpstreamPort.Left = CustomTextBoxSettingProxyUpstreamHost.Right + spaceHH;
+            CustomLabelSettingProxyUpstreamPort.Top = CustomLabelSettingProxyUpstreamHost.Top;
 
-        CustomCheckBoxSettingProxyBlockPort80.Left = CustomNumericUpDownSettingProxyHandleRequests.Right + spaceHH;
-        CustomCheckBoxSettingProxyBlockPort80.Top = CustomLabelSettingProxyHandleRequests.Top;
+            CustomNumericUpDownSettingProxyUpstreamPort.Left = CustomLabelSettingProxyUpstreamPort.Right + spaceH2;
+            CustomNumericUpDownSettingProxyUpstreamPort.Top = CustomTextBoxSettingProxyUpstreamHost.Top;
 
-        spaceV = 20;
-        CustomLabelSettingProxyKillRequestTimeout.Left = CustomLabelSettingProxyPort.Left;
-        CustomLabelSettingProxyKillRequestTimeout.Top = CustomLabelSettingProxyPort.Bottom + spaceV;
+            //// Settings Share Advanced
+            spaceV = 10;
+            CustomCheckBoxSettingProxyEnableFakeProxy.Location = new Point(spaceRight, 15);
 
-        CustomNumericUpDownSettingProxyKillRequestTimeout.Left = CustomLabelSettingProxyKillRequestTimeout.Right + spaceH2;
-        CustomNumericUpDownSettingProxyKillRequestTimeout.Top = CustomLabelSettingProxyKillRequestTimeout.Top - 2;
+            CustomCheckBoxSettingProxyCfCleanIP.Left = CustomCheckBoxSettingProxyEnableFakeProxy.Left;
+            CustomCheckBoxSettingProxyCfCleanIP.Top = CustomCheckBoxSettingProxyEnableFakeProxy.Bottom + spaceV;
 
-        CustomCheckBoxSettingProxyUpstream.Left = CustomLabelSettingProxyKillRequestTimeout.Left;
-        CustomCheckBoxSettingProxyUpstream.Top = CustomLabelSettingProxyKillRequestTimeout.Bottom + spaceV;
+            CustomTextBoxSettingProxyCfCleanIP.Left = CustomCheckBoxSettingProxyCfCleanIP.Right + spaceH;
+            CustomTextBoxSettingProxyCfCleanIP.Top = CustomCheckBoxSettingProxyCfCleanIP.Top - 2;
 
-        spaceV = 10;
-        CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Left = CustomCheckBoxSettingProxyUpstream.Left + (spaceRight * 2);
-        CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Top = CustomCheckBoxSettingProxyUpstream.Bottom + spaceV;
+            CustomLabelSettingShareSeparator1.Left = spaceRight;
+            CustomLabelSettingShareSeparator1.Top = CustomCheckBoxSettingProxyCfCleanIP.Bottom + spaceV;
+            CustomLabelSettingShareSeparator1.Width = TabPageSettingProxyAdvanced.Width - (spaceRight * 2);
+            CustomLabelSettingShareSeparator1.Height = 1;
 
-        CustomComboBoxSettingProxyUpstreamMode.Left = CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Left;
-        CustomComboBoxSettingProxyUpstreamMode.Top = CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Bottom + spaceV;
+            CustomCheckBoxSettingProxyEnableRules.Left = CustomCheckBoxSettingProxyCfCleanIP.Left;
+            CustomCheckBoxSettingProxyEnableRules.Top = CustomLabelSettingShareSeparator1.Bottom + spaceV;
 
-        CustomLabelSettingProxyUpstreamHost.Left = CustomComboBoxSettingProxyUpstreamMode.Right + spaceHH;
-        CustomLabelSettingProxyUpstreamHost.Top = CustomComboBoxSettingProxyUpstreamMode.Top + 3;
+            CustomLabelSettingProxyRules.Left = spaceRight * 4;
+            CustomLabelSettingProxyRules.Top = CustomCheckBoxSettingProxyEnableRules.Bottom + (spaceV / 2);
 
-        CustomTextBoxSettingProxyUpstreamHost.Left = CustomLabelSettingProxyUpstreamHost.Right + spaceH2;
-        CustomTextBoxSettingProxyUpstreamHost.Top = CustomLabelSettingProxyUpstreamHost.Top - 3;
+            CustomButtonSettingProxyRules.Left = CustomLabelSettingProxyRules.Right + spaceHH;
+            CustomButtonSettingProxyRules.Top = CustomCheckBoxSettingProxyEnableRules.Bottom + 5;
 
-        CustomLabelSettingProxyUpstreamPort.Left = CustomTextBoxSettingProxyUpstreamHost.Right + spaceHH;
-        CustomLabelSettingProxyUpstreamPort.Top = CustomLabelSettingProxyUpstreamHost.Top;
+            //// Settings Fake Proxy
+            spaceV = 50;
+            CustomLabelSettingFakeProxyInfo.Location = new Point(20, 10);
 
-        CustomNumericUpDownSettingProxyUpstreamPort.Left = CustomLabelSettingProxyUpstreamPort.Right + spaceH2;
-        CustomNumericUpDownSettingProxyUpstreamPort.Top = CustomTextBoxSettingProxyUpstreamHost.Top;
+            CustomLabelSettingFakeProxyPort.Left = CustomLabelSettingFakeProxyInfo.Left;
+            CustomLabelSettingFakeProxyPort.Top = CustomLabelSettingFakeProxyInfo.Bottom + spaceV;
 
-        // Settings Share Advanced
-        spaceV = 10;
-        CustomCheckBoxSettingProxyEnableFakeProxy.Location = new Point(spaceRight, 15);
+            CustomNumericUpDownSettingFakeProxyPort.Left = CustomLabelSettingFakeProxyPort.Right + (spaceHH / 2);
+            CustomNumericUpDownSettingFakeProxyPort.Top = CustomLabelSettingFakeProxyPort.Top - 2;
 
-        CustomCheckBoxSettingProxyCfCleanIP.Left = CustomCheckBoxSettingProxyEnableFakeProxy.Left;
-        CustomCheckBoxSettingProxyCfCleanIP.Top = CustomCheckBoxSettingProxyEnableFakeProxy.Bottom + spaceV;
+            CustomLabelSettingFakeProxyDohAddress.Left = CustomLabelSettingFakeProxyPort.Left;
+            CustomLabelSettingFakeProxyDohAddress.Top = CustomLabelSettingFakeProxyPort.Bottom + spaceV;
 
-        CustomTextBoxSettingProxyCfCleanIP.Left = CustomCheckBoxSettingProxyCfCleanIP.Right + spaceH;
-        CustomTextBoxSettingProxyCfCleanIP.Top = CustomCheckBoxSettingProxyCfCleanIP.Top - 2;
+            CustomTextBoxSettingFakeProxyDohAddress.Left = CustomNumericUpDownSettingFakeProxyPort.Left;
+            CustomTextBoxSettingFakeProxyDohAddress.Top = CustomLabelSettingFakeProxyDohAddress.Top - 2;
 
-        CustomLabelSettingShareSeparator1.Left = spaceRight;
-        CustomLabelSettingShareSeparator1.Top = CustomCheckBoxSettingProxyCfCleanIP.Bottom + spaceV;
-        CustomLabelSettingShareSeparator1.Width = TabPageSettingProxyAdvanced.Width - (spaceRight * 2);
-        CustomLabelSettingShareSeparator1.Height = 1;
+            CustomLabelSettingFakeProxyDohCleanIP.Left = CustomLabelSettingFakeProxyDohAddress.Left;
+            CustomLabelSettingFakeProxyDohCleanIP.Top = CustomLabelSettingFakeProxyDohAddress.Bottom + spaceV;
 
-        CustomCheckBoxSettingProxyEnableFakeDNS.Left = CustomCheckBoxSettingProxyCfCleanIP.Left;
-        CustomCheckBoxSettingProxyEnableFakeDNS.Top = CustomLabelSettingShareSeparator1.Bottom + spaceV;
+            CustomTextBoxSettingFakeProxyDohCleanIP.Left = CustomTextBoxSettingFakeProxyDohAddress.Left;
+            CustomTextBoxSettingFakeProxyDohCleanIP.Top = CustomLabelSettingFakeProxyDohCleanIP.Top - 2;
 
-        CustomLabelSettingProxyFakeDNS.Left = spaceRight * 4;
-        CustomLabelSettingProxyFakeDNS.Top = CustomCheckBoxSettingProxyEnableFakeDNS.Bottom + (spaceV / 2);
+            //// Settings CPU
+            spaceV = 30;
+            CustomLabelSettingInfoCPU.Location = new Point(50, 35);
 
-        CustomButtonSettingProxyFakeDNS.Left = CustomLabelSettingProxyFakeDNS.Right + spaceHH;
-        CustomButtonSettingProxyFakeDNS.Top = CustomCheckBoxSettingProxyEnableFakeDNS.Bottom + 5;
+            CustomRadioButtonSettingCPUHigh.Left = CustomLabelSettingInfoCPU.Left;
+            CustomRadioButtonSettingCPUHigh.Top = CustomLabelSettingInfoCPU.Bottom + spaceV;
 
-        CustomLabelSettingShareSeparator2.Left = CustomLabelSettingShareSeparator1.Left;
-        CustomLabelSettingShareSeparator2.Top = CustomLabelSettingProxyFakeDNS.Bottom + spaceV;
-        CustomLabelSettingShareSeparator2.Width = CustomLabelSettingShareSeparator1.Width;
-        CustomLabelSettingShareSeparator2.Height = 1;
+            spaceV = 10;
+            CustomRadioButtonSettingCPUAboveNormal.Left = CustomRadioButtonSettingCPUHigh.Left;
+            CustomRadioButtonSettingCPUAboveNormal.Top = CustomRadioButtonSettingCPUHigh.Bottom + spaceV;
 
-        CustomCheckBoxSettingProxyEnableBlackWhiteList.Left = CustomCheckBoxSettingProxyEnableFakeDNS.Left;
-        CustomCheckBoxSettingProxyEnableBlackWhiteList.Top = CustomLabelSettingShareSeparator2.Bottom + spaceV;
+            CustomRadioButtonSettingCPUNormal.Left = CustomRadioButtonSettingCPUAboveNormal.Left;
+            CustomRadioButtonSettingCPUNormal.Top = CustomRadioButtonSettingCPUAboveNormal.Bottom + spaceV;
 
-        CustomLabelSettingProxyBlackWhiteList.Left = CustomLabelSettingProxyFakeDNS.Left;
-        CustomLabelSettingProxyBlackWhiteList.Top = CustomCheckBoxSettingProxyEnableBlackWhiteList.Bottom + (spaceV / 2);
+            CustomRadioButtonSettingCPUBelowNormal.Left = CustomRadioButtonSettingCPUNormal.Left;
+            CustomRadioButtonSettingCPUBelowNormal.Top = CustomRadioButtonSettingCPUNormal.Bottom + spaceV;
 
-        CustomButtonSettingProxyBlackWhiteList.Left = CustomButtonSettingProxyFakeDNS.Left;
-        CustomButtonSettingProxyBlackWhiteList.Top = CustomCheckBoxSettingProxyEnableBlackWhiteList.Bottom + 5;
+            CustomRadioButtonSettingCPULow.Left = CustomRadioButtonSettingCPUBelowNormal.Left;
+            CustomRadioButtonSettingCPULow.Top = CustomRadioButtonSettingCPUBelowNormal.Bottom + spaceV;
 
-        CustomLabelSettingShareSeparator3.Left = CustomLabelSettingShareSeparator2.Left;
-        CustomLabelSettingShareSeparator3.Top = CustomLabelSettingProxyBlackWhiteList.Bottom + spaceV;
-        CustomLabelSettingShareSeparator3.Width = CustomLabelSettingShareSeparator2.Width;
-        CustomLabelSettingShareSeparator3.Height = 1;
+            spaceV = 20;
+            CustomLabelUpdateAutoDelayMS.Left = CustomRadioButtonSettingCPULow.Left;
+            CustomLabelUpdateAutoDelayMS.Top = CustomRadioButtonSettingCPULow.Bottom + spaceV;
 
-        CustomCheckBoxSettingProxyEnableDontBypass.Left = CustomCheckBoxSettingProxyEnableBlackWhiteList.Left;
-        CustomCheckBoxSettingProxyEnableDontBypass.Top = CustomLabelSettingShareSeparator3.Bottom + spaceV;
+            CustomNumericUpDownUpdateAutoDelayMS.Left = CustomLabelUpdateAutoDelayMS.Right + spaceH2;
+            CustomNumericUpDownUpdateAutoDelayMS.Top = CustomLabelUpdateAutoDelayMS.Top - 2;
 
-        CustomLabelSettingProxyDontBypass.Left = CustomLabelSettingProxyBlackWhiteList.Left;
-        CustomLabelSettingProxyDontBypass.Top = CustomCheckBoxSettingProxyEnableDontBypass.Bottom + (spaceV / 2);
+            CustomLabelSettingCpuKillProxyRequests.Left = CustomLabelUpdateAutoDelayMS.Left;
+            CustomLabelSettingCpuKillProxyRequests.Top = CustomNumericUpDownUpdateAutoDelayMS.Bottom + spaceV;
 
-        CustomButtonSettingProxyDontBypass.Left = CustomButtonSettingProxyBlackWhiteList.Left;
-        CustomButtonSettingProxyDontBypass.Top = CustomCheckBoxSettingProxyEnableDontBypass.Bottom + 5;
+            CustomNumericUpDownSettingCpuKillProxyRequests.Left = CustomLabelSettingCpuKillProxyRequests.Right + spaceH2;
+            CustomNumericUpDownSettingCpuKillProxyRequests.Top = CustomLabelSettingCpuKillProxyRequests.Top - 2;
 
-        // Settings Share SSL Decryption
-        CustomCheckBoxSettingProxyEnableFakeSNI.Location = new Point(spaceRight, 15);
+            //// Settings Others
+            spaceV = 30;
+            CustomLabelSettingBootstrapDnsIP.Location = new Point(15, 20);
 
-        CustomLabelSettingProxyFakeSNI.Left = spaceRight * 4;
-        CustomLabelSettingProxyFakeSNI.Top = CustomCheckBoxSettingProxyEnableFakeSNI.Bottom + (spaceV / 2);
+            CustomTextBoxSettingBootstrapDnsIP.Left = CustomLabelSettingBootstrapDnsIP.Right + spaceH2;
+            CustomTextBoxSettingBootstrapDnsIP.Top = CustomLabelSettingBootstrapDnsIP.Top - 2;
 
-        CustomButtonSettingProxyFakeSNI.Left = CustomLabelSettingProxyFakeSNI.Right + spaceHH;
-        CustomButtonSettingProxyFakeSNI.Top = CustomCheckBoxSettingProxyEnableFakeSNI.Bottom + 5;
+            CustomLabelSettingBootstrapDnsPort.Left = CustomTextBoxSettingBootstrapDnsIP.Right + spaceHH;
+            CustomLabelSettingBootstrapDnsPort.Top = CustomLabelSettingBootstrapDnsIP.Top;
 
-        // Settings Fake Proxy
-        spaceV = 50;
-        CustomLabelSettingFakeProxyInfo.Location = new Point(20, 10);
+            CustomNumericUpDownSettingBootstrapDnsPort.Left = CustomLabelSettingBootstrapDnsPort.Right + spaceH2;
+            CustomNumericUpDownSettingBootstrapDnsPort.Top = CustomLabelSettingBootstrapDnsPort.Top - 2;
 
-        CustomLabelSettingFakeProxyPort.Left = CustomLabelSettingFakeProxyInfo.Left;
-        CustomLabelSettingFakeProxyPort.Top = CustomLabelSettingFakeProxyInfo.Bottom + spaceV;
+            CustomLabelSettingFallbackDnsIP.Left = CustomLabelSettingBootstrapDnsIP.Left;
+            CustomLabelSettingFallbackDnsIP.Top = CustomLabelSettingBootstrapDnsIP.Bottom + spaceV;
 
-        CustomNumericUpDownSettingFakeProxyPort.Left = CustomLabelSettingFakeProxyPort.Right + (spaceHH / 2);
-        CustomNumericUpDownSettingFakeProxyPort.Top = CustomLabelSettingFakeProxyPort.Top - 2;
+            CustomTextBoxSettingFallbackDnsIP.Left = CustomTextBoxSettingBootstrapDnsIP.Left;
+            CustomTextBoxSettingFallbackDnsIP.Top = CustomLabelSettingFallbackDnsIP.Top - 2;
 
-        CustomLabelSettingFakeProxyDohAddress.Left = CustomLabelSettingFakeProxyPort.Left;
-        CustomLabelSettingFakeProxyDohAddress.Top = CustomLabelSettingFakeProxyPort.Bottom + spaceV;
+            CustomLabelSettingFallbackDnsPort.Left = CustomLabelSettingBootstrapDnsPort.Left;
+            CustomLabelSettingFallbackDnsPort.Top = CustomLabelSettingFallbackDnsIP.Top;
 
-        CustomTextBoxSettingFakeProxyDohAddress.Left = CustomNumericUpDownSettingFakeProxyPort.Left;
-        CustomTextBoxSettingFakeProxyDohAddress.Top = CustomLabelSettingFakeProxyDohAddress.Top - 2;
+            CustomNumericUpDownSettingFallbackDnsPort.Left = CustomNumericUpDownSettingBootstrapDnsPort.Left;
+            CustomNumericUpDownSettingFallbackDnsPort.Top = CustomLabelSettingFallbackDnsPort.Top - 2;
 
-        CustomLabelSettingFakeProxyDohCleanIP.Left = CustomLabelSettingFakeProxyDohAddress.Left;
-        CustomLabelSettingFakeProxyDohCleanIP.Top = CustomLabelSettingFakeProxyDohAddress.Bottom + spaceV;
+            CustomCheckBoxSettingDontAskCertificate.Left = CustomLabelSettingFallbackDnsIP.Left;
+            CustomCheckBoxSettingDontAskCertificate.Top = CustomLabelSettingFallbackDnsIP.Bottom + spaceV;
 
-        CustomTextBoxSettingFakeProxyDohCleanIP.Left = CustomTextBoxSettingFakeProxyDohAddress.Left;
-        CustomTextBoxSettingFakeProxyDohCleanIP.Top = CustomLabelSettingFakeProxyDohCleanIP.Top - 2;
+            spaceV = 20;
+            CustomCheckBoxSettingDisableAudioAlert.Left = CustomCheckBoxSettingDontAskCertificate.Left;
+            CustomCheckBoxSettingDisableAudioAlert.Top = CustomCheckBoxSettingDontAskCertificate.Bottom + spaceV;
 
-        // Settings CPU
-        spaceV = 30;
-        CustomLabelSettingInfoCPU.Location = new Point(50, 35);
+            CustomCheckBoxSettingWriteLogWindowToFile.Left = CustomCheckBoxSettingDisableAudioAlert.Left;
+            CustomCheckBoxSettingWriteLogWindowToFile.Top = CustomCheckBoxSettingDisableAudioAlert.Bottom + spaceV;
 
-        CustomRadioButtonSettingCPUHigh.Left = CustomLabelSettingInfoCPU.Left;
-        CustomRadioButtonSettingCPUHigh.Top = CustomLabelSettingInfoCPU.Bottom + spaceV;
+            CustomCheckBoxSettingAlertDisplayChanges.Left = CustomCheckBoxSettingWriteLogWindowToFile.Left;
+            CustomCheckBoxSettingAlertDisplayChanges.Top = CustomCheckBoxSettingWriteLogWindowToFile.Bottom + spaceV;
 
-        spaceV = 10;
-        CustomRadioButtonSettingCPUAboveNormal.Left = CustomRadioButtonSettingCPUHigh.Left;
-        CustomRadioButtonSettingCPUAboveNormal.Top = CustomRadioButtonSettingCPUHigh.Bottom + spaceV;
+            // ========== Settings Others Buttons
+            CustomButtonSettingRestoreDefault.Location = new Point(spaceRight, 3);
 
-        CustomRadioButtonSettingCPUNormal.Left = CustomRadioButtonSettingCPUAboveNormal.Left;
-        CustomRadioButtonSettingCPUNormal.Top = CustomRadioButtonSettingCPUAboveNormal.Bottom + spaceV;
+            CustomButtonImportUserData.Left = CustomButtonSettingRestoreDefault.Right + spaceH3;
+            CustomButtonImportUserData.Top = CustomButtonSettingRestoreDefault.Top;
 
-        CustomRadioButtonSettingCPUBelowNormal.Left = CustomRadioButtonSettingCPUNormal.Left;
-        CustomRadioButtonSettingCPUBelowNormal.Top = CustomRadioButtonSettingCPUNormal.Bottom + spaceV;
+            CustomButtonExportUserData.Left = CustomButtonImportUserData.Right + spaceH;
+            CustomButtonExportUserData.Top = CustomButtonSettingRestoreDefault.Top;
 
-        CustomRadioButtonSettingCPULow.Left = CustomRadioButtonSettingCPUBelowNormal.Left;
-        CustomRadioButtonSettingCPULow.Top = CustomRadioButtonSettingCPUBelowNormal.Bottom + spaceV;
+            try
+            {
+                SplitContainerSettingOthersMain.Panel2MinSize = CustomButtonSettingRestoreDefault.Height + 6;
+                SplitContainerSettingOthersMain.SplitterDistance = SplitContainerSettingOthersMain.Height - SplitContainerSettingOthersMain.Panel2MinSize;
+            }
+            catch (Exception) { }
 
-        spaceV = 20;
-        CustomLabelUpdateAutoDelayMS.Left = CustomRadioButtonSettingCPULow.Left;
-        CustomLabelUpdateAutoDelayMS.Top = CustomRadioButtonSettingCPULow.Bottom + spaceV;
+            //// About
+            spaceV = 30;
+            PictureBoxAbout.Location = new Point(55, 35);
 
-        CustomNumericUpDownUpdateAutoDelayMS.Left = CustomLabelUpdateAutoDelayMS.Right + spaceH2;
-        CustomNumericUpDownUpdateAutoDelayMS.Top = CustomLabelUpdateAutoDelayMS.Top - 2;
+            CustomLabelAboutCopyright.Left = PictureBoxAbout.Left;
+            CustomLabelAboutCopyright.Top = PictureBoxAbout.Bottom + spaceV;
 
-        CustomLabelSettingCpuKillProxyRequests.Left = CustomLabelUpdateAutoDelayMS.Left;
-        CustomLabelSettingCpuKillProxyRequests.Top = CustomNumericUpDownUpdateAutoDelayMS.Bottom + spaceV;
+            PictureBoxFarvahar.Left = CustomLabelAboutCopyright.Left;
+            PictureBoxFarvahar.Top = CustomLabelAboutCopyright.Bottom + spaceV;
 
-        CustomNumericUpDownSettingCpuKillProxyRequests.Left = CustomLabelSettingCpuKillProxyRequests.Right + spaceH2;
-        CustomNumericUpDownSettingCpuKillProxyRequests.Top = CustomLabelSettingCpuKillProxyRequests.Top - 2;
+            CustomLabelAboutThis.Left = PictureBoxAbout.Right + 40;
+            CustomLabelAboutThis.Top = PictureBoxAbout.Top;
 
-        // Settings Others
-        spaceV = 30;
-        CustomLabelSettingBootstrapDnsIP.Location = new Point(15, 20);
+            CustomLabelAboutVersion.Left = CustomLabelAboutThis.Right;
+            CustomLabelAboutVersion.Top = CustomLabelAboutThis.Bottom - 10;
 
-        CustomTextBoxSettingBootstrapDnsIP.Left = CustomLabelSettingBootstrapDnsIP.Right + spaceH2;
-        CustomTextBoxSettingBootstrapDnsIP.Top = CustomLabelSettingBootstrapDnsIP.Top - 2;
+            CustomLabelAboutThis2.Left = CustomLabelAboutThis.Left + 25;
+            CustomLabelAboutThis2.Top = CustomLabelAboutThis.Bottom + 5;
 
-        CustomLabelSettingBootstrapDnsPort.Left = CustomTextBoxSettingBootstrapDnsIP.Right + spaceHH;
-        CustomLabelSettingBootstrapDnsPort.Top = CustomLabelSettingBootstrapDnsIP.Top;
+            CustomLabelAboutUsing.Left = CustomLabelAboutThis2.Left;
+            CustomLabelAboutUsing.Top = CustomLabelAboutThis2.Bottom + 40;
 
-        CustomNumericUpDownSettingBootstrapDnsPort.Left = CustomLabelSettingBootstrapDnsPort.Right + spaceH2;
-        CustomNumericUpDownSettingBootstrapDnsPort.Top = CustomLabelSettingBootstrapDnsPort.Top - 2;
+            LinkLabelDNSLookup.Left = CustomLabelAboutUsing.Left + 15;
+            LinkLabelDNSLookup.Top = CustomLabelAboutUsing.Top + (LinkLabelDNSLookup.Height * 2);
 
-        CustomLabelSettingFallbackDnsIP.Left = CustomLabelSettingBootstrapDnsIP.Left;
-        CustomLabelSettingFallbackDnsIP.Top = CustomLabelSettingBootstrapDnsIP.Bottom + spaceV;
+            spaceV = 5;
+            LinkLabelDNSProxy.Left = LinkLabelDNSLookup.Left;
+            LinkLabelDNSProxy.Top = LinkLabelDNSLookup.Bottom + spaceV;
 
-        CustomTextBoxSettingFallbackDnsIP.Left = CustomTextBoxSettingBootstrapDnsIP.Left;
-        CustomTextBoxSettingFallbackDnsIP.Top = CustomLabelSettingFallbackDnsIP.Top - 2;
+            LinkLabelDNSCrypt.Left = LinkLabelDNSProxy.Left;
+            LinkLabelDNSCrypt.Top = LinkLabelDNSProxy.Bottom + spaceV;
 
-        CustomLabelSettingFallbackDnsPort.Left = CustomLabelSettingBootstrapDnsPort.Left;
-        CustomLabelSettingFallbackDnsPort.Top = CustomLabelSettingFallbackDnsIP.Top;
+            LinkLabelGoodbyeDPI.Left = LinkLabelDNSCrypt.Left;
+            LinkLabelGoodbyeDPI.Top = LinkLabelDNSCrypt.Bottom + spaceV;
 
-        CustomNumericUpDownSettingFallbackDnsPort.Left = CustomNumericUpDownSettingBootstrapDnsPort.Left;
-        CustomNumericUpDownSettingFallbackDnsPort.Top = CustomLabelSettingFallbackDnsPort.Top - 2;
+            CustomLabelAboutSpecialThanks.Left = LinkLabelDNSProxy.Right + 15;
+            CustomLabelAboutSpecialThanks.Top = CustomLabelAboutUsing.Top;
 
-        CustomCheckBoxSettingDontAskCertificate.Left = CustomLabelSettingFallbackDnsIP.Left;
-        CustomCheckBoxSettingDontAskCertificate.Top = CustomLabelSettingFallbackDnsIP.Bottom + spaceV;
+            LinkLabelStAlidxdydz.Left = CustomLabelAboutSpecialThanks.Left + 15;
+            LinkLabelStAlidxdydz.Top = CustomLabelAboutSpecialThanks.Top + (LinkLabelStAlidxdydz.Height * 2);
 
-        spaceV = 20;
-        CustomCheckBoxSettingDisableAudioAlert.Left = CustomCheckBoxSettingDontAskCertificate.Left;
-        CustomCheckBoxSettingDisableAudioAlert.Top = CustomCheckBoxSettingDontAskCertificate.Bottom + spaceV;
+            LinkLabelStWolfkingal2000.Left = LinkLabelStAlidxdydz.Left;
+            LinkLabelStWolfkingal2000.Top = LinkLabelStAlidxdydz.Bottom + spaceV;
 
-        CustomCheckBoxSettingWriteLogWindowToFile.Left = CustomCheckBoxSettingDisableAudioAlert.Left;
-        CustomCheckBoxSettingWriteLogWindowToFile.Top = CustomCheckBoxSettingDisableAudioAlert.Bottom + spaceV;
-
-        CustomButtonSettingRestoreDefault.Left = spaceHH;
-        CustomButtonSettingRestoreDefault.Top = TabPageSettingsOthers.Height - CustomButtonSettingRestoreDefault.Height - spaceBottom;
-
-        CustomButtonImportUserData.Left = TabPageSettingsOthers.Width - CustomButtonImportUserData.Width - spaceRight;
-        CustomButtonImportUserData.Top = CustomButtonSettingRestoreDefault.Top;
-
-        CustomButtonExportUserData.Left = CustomButtonImportUserData.Left - CustomButtonExportUserData.Width - spaceH;
-        CustomButtonExportUserData.Top = CustomButtonSettingRestoreDefault.Top;
-
-        // About
-        spaceV = 30;
-        PictureBoxAbout.Location = new Point(55, 35);
-
-        CustomLabelAboutCopyright.Left = PictureBoxAbout.Left;
-        CustomLabelAboutCopyright.Top = PictureBoxAbout.Bottom + spaceV;
-
-        PictureBoxFarvahar.Left = CustomLabelAboutCopyright.Left;
-        PictureBoxFarvahar.Top = CustomLabelAboutCopyright.Bottom + spaceV;
-
-        CustomLabelAboutThis.Left = PictureBoxAbout.Right + 40;
-        CustomLabelAboutThis.Top = PictureBoxAbout.Top;
-
-        CustomLabelAboutVersion.Left = CustomLabelAboutThis.Right;
-        CustomLabelAboutVersion.Top = CustomLabelAboutThis.Bottom - 10;
-
-        CustomLabelAboutThis2.Left = CustomLabelAboutThis.Left + 25;
-        CustomLabelAboutThis2.Top = CustomLabelAboutThis.Bottom + 5;
-
-        CustomLabelAboutUsing.Left = CustomLabelAboutThis2.Left;
-        CustomLabelAboutUsing.Top = CustomLabelAboutThis2.Bottom + 40;
-
-        LinkLabelDNSLookup.Left = CustomLabelAboutUsing.Left + 15;
-        LinkLabelDNSLookup.Top = CustomLabelAboutUsing.Top + (LinkLabelDNSLookup.Height * 2);
-
-        spaceV = 5;
-        LinkLabelDNSProxy.Left = LinkLabelDNSLookup.Left;
-        LinkLabelDNSProxy.Top = LinkLabelDNSLookup.Bottom + spaceV;
-
-        LinkLabelDNSCrypt.Left = LinkLabelDNSProxy.Left;
-        LinkLabelDNSCrypt.Top = LinkLabelDNSProxy.Bottom + spaceV;
-
-        LinkLabelGoodbyeDPI.Left = LinkLabelDNSCrypt.Left;
-        LinkLabelGoodbyeDPI.Top = LinkLabelDNSCrypt.Bottom + spaceV;
-
-        CustomLabelAboutSpecialThanks.Left = LinkLabelDNSProxy.Right + 15;
-        CustomLabelAboutSpecialThanks.Top = CustomLabelAboutUsing.Top;
-
-        LinkLabelStAlidxdydz.Left = CustomLabelAboutSpecialThanks.Left + 15;
-        LinkLabelStAlidxdydz.Top = CustomLabelAboutSpecialThanks.Top + (LinkLabelStAlidxdydz.Height * 2);
-
-        LinkLabelStWolfkingal2000.Left = LinkLabelStAlidxdydz.Left;
-        LinkLabelStWolfkingal2000.Top = LinkLabelStAlidxdydz.Bottom + spaceV;
-
-        IsScreenHighDpiScaleApplied = true;
+            IsScreenHighDpiScaleApplied = true;
+        });
     }
 
 }
