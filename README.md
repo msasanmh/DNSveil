@@ -8,14 +8,18 @@
 **A Secure DNS Client.** Using: [DNSLookup](https://github.com/ameshkov/dnslookup), [DNSProxy](https://github.com/AdguardTeam/dnsproxy), [DNSCrypt](https://github.com/DNSCrypt/dnscrypt-proxy) and [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI). (Windows only)
 
 - *Find and use fastest secure DNS servers.*
-- *Hide SNI and website addresses from ISP.*
+- *Hide SNI and website addresses from ISP (Fragment or Fake SNI).*
 - *Bypass YouTube, Twitter and any SNI/DNS based blocked websites.*
 - *Encode and decode DNSCrypt STAMP (sdns://).*
 - *Share to other devices via Proxy (HTTP, HTTPS, SOCKS4, SOCKS4A, SOCKS5).*
 
-**Requirements:** .Net Destop Runtime 6. (Installing both x86 and x64 are required)<br>
-[Download Runtime x64 v6.0.25](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.25-windows-x64-installer)<br>
-[Download Runtime x86 v6.0.25](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.25-windows-x86-installer)<br>
+**Requirements:** `.Net Destop Runtime 6` and `ASP.NET Core Runtime 6`<br><br>
+For x64:<br>
+First install [.Net Destop Runtime x64 v6.0.27](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.27-windows-x64-installer)<br>
+Then install [ASP.NET Core Runtime x64 v6.0.27](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.27-windows-x64-installer)<br><br>
+For x86:<br>
+First install [.Net Destop Runtime x86 v6.0.27](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.27-windows-x86-installer)<br>
+Then install [ASP.NET Core Runtime x86 v6.0.27](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.27-windows-x86-installer)<br><br>
 [Microsoft .NET 6.0 Runtime Page](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)<br>
 
 **Download:**<br>
