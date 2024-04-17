@@ -32,7 +32,7 @@ public partial class FormMain
     {
         await Task.Run(async () =>
         {
-            if (File.Exists(SecureDNS.IssuerCertPath) && !CustomCheckBoxSettingDontAskCertificate.Checked)
+            if (File.Exists(SecureDNS.IssuerCertPath))
             {
                 bool isCertInstalledBySubject = CertificateTool.IsCertificateInstalled(SecureDNS.CertIssuerSubjectName, StoreName.Root, StoreLocation.CurrentUser);
                 X509Certificate2 rootCA = new(X509Certificate2.CreateFromCertFile(SecureDNS.IssuerCertPath));
@@ -60,7 +60,7 @@ public partial class FormMain
                         {
                             // Stop Proxy
                             await StartProxy(true);
-                            string msg = "Due to Certificate changes you need to restart Proxy Server.";
+                            string msg = "Due To Certificate Changes You Need To Restart Proxy Server.";
                             CustomMessageBox.Show(this, msg, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
@@ -68,7 +68,7 @@ public partial class FormMain
                     bool certInstalled = CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
                     if (!certInstalled)
                     {
-                        string msg = "Local DoH Server doesn't work without certificate.\nYou can remove certificate anytime from Windows.\nTry again?";
+                        string msg = "Local DoH Server Doesn't Work Without Certificate.\nYou Can Remove Certificate Anytime From Windows.\nTry Again?";
                         DialogResult dr = CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                         if (dr == DialogResult.Yes)
                             CertificateTool.InstallCertificate(SecureDNS.IssuerCertPath, StoreName.Root, StoreLocation.CurrentUser);
@@ -85,14 +85,14 @@ public partial class FormMain
         {
             if (IsDoHConnected)
             {
-                string msg = "You cannot uninstall Root Certificate while DoH Server is active.";
+                string msg = "You Cannot Uninstall Root Certificate While DoH Server is Active.";
                 CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             if (IsProxySSLDecryptionActive)
             {
-                string msg = "You cannot uninstall Root Certificate while Proxy Server is active and using SSL Decryption.";
+                string msg = "You Cannot Uninstall Root Certificate While Proxy Server Is Active And Using SSL Decryption.";
                 CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -165,7 +165,7 @@ public partial class FormMain
 
         if (!isRootCertInstalled && !isAnyCertInstalledByMistake)
         {
-            string msg = "Root Certificate is already uninstalled.";
+            string msg = "Root Certificate Is Already Uninstalled.";
             CustomMessageBox.Show(this, msg, "Certificate", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }

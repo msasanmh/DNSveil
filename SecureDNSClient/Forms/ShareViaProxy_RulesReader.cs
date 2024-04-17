@@ -1,6 +1,7 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
-using MsmhToolsClass.ProxyServerPrograms;
+using MsmhToolsClass.MsmhAgnosticServer;
+using System.Diagnostics;
 using System.Net;
 
 namespace SecureDNSClient;
@@ -19,7 +20,7 @@ public partial class FormMain
 
             bool isRulesEnabled = false;
             this.InvokeIt(() => isRulesEnabled = CustomCheckBoxSettingProxyEnableRules.Checked);
-            if (!isRulesEnabled && ProxyRulesMode == ProxyProgram.Rules.Mode.Disable)
+            if (!isRulesEnabled && ProxyRulesMode == AgnosticProgram.ProxyRules.Mode.Disable)
             {
                 this.InvokeIt(() => log.AppendText("Proxy Rules Are Disabled.", Color.DarkOrange));
 
@@ -35,7 +36,7 @@ public partial class FormMain
 
             url = url.ToLower().Trim();
 
-            NetworkTool.GetHostDetails(url, 443, out string host, out _, out _, out int port, out _, out _);
+            NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out _, out int port, out _, out _);
 
             string rulesPath = string.IsNullOrEmpty(LastProxyRulesPath) ? SecureDNS.ProxyRulesPath : LastProxyRulesPath;
             if (!File.Exists(rulesPath))
@@ -52,66 +53,84 @@ public partial class FormMain
             {
                 LastProxyRulesContent = content;
 
-                // Reapply Rules To Proxy Server
-                if (IsProxyActivated && !IsProxyActivating) await ApplyPRules();
+                // Reapply ProxyRules To Proxy Server
+                if (IsProxyActivated && !IsProxyActivating) await ApplyProxyRules();
 
-                CheckProxyRules.Set(ProxyProgram.Rules.Mode.Text, LastProxyRulesContent);
+                CheckProxyRules.Set(AgnosticProgram.ProxyRules.Mode.Text, LastProxyRulesContent);
             }
 
-            ProxyProgram.Rules.RulesResult rr = await CheckProxyRules.GetAsync(IPAddress.Loopback.ToString(), host, port);
+            AgnosticSettings agnosticSettings = new()
+            {
+                AllowInsecure = true,
+                DnsTimeoutSec = 5,
+                CloudflareCleanIP = GetCfCleanIpSetting()
+            };
+            AgnosticProgram.ProxyRules.ProxyRulesResult prr = await CheckProxyRules.GetAsync(IPAddress.Loopback.ToString(), host, port, agnosticSettings);
 
             this.InvokeIt(() => log.AppendText($"Domain:{NL}"));
             this.InvokeIt(() => log.AppendText($"{host}{NL}", Color.DodgerBlue));
 
-            Color isMatchColor = rr.IsMatch ? Color.MediumSeaGreen : Color.DarkOrange;
+            Color isMatchColor = prr.IsMatch ? Color.MediumSeaGreen : Color.DarkOrange;
             this.InvokeIt(() => log.AppendText($"{NL}Is Match: "));
-            this.InvokeIt(() => log.AppendText($"{rr.IsMatch.ToString().CapitalizeFirstLetter()}{NL}", isMatchColor));
+            this.InvokeIt(() => log.AppendText($"{prr.IsMatch.ToString().CapitalizeFirstLetter()}{NL}", isMatchColor));
 
-            if (rr.IsMatch)
+            if (prr.IsMatch)
             {
                 this.InvokeIt(() => log.AppendText($"Is Black List: "));
-                this.InvokeIt(() => log.AppendText($"{rr.IsBlackList.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
+                this.InvokeIt(() => log.AppendText($"{prr.IsBlackList.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
 
-                if (!rr.IsBlackList)
+                if (!prr.IsBlackList)
                 {
                     this.InvokeIt(() => log.AppendText($"Is Port Block: "));
-                    this.InvokeIt(() => log.AppendText($"{rr.IsPortBlock.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
+                    this.InvokeIt(() => log.AppendText($"{prr.IsPortBlock.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
 
-                    if (!rr.IsPortBlock)
+                    if (!prr.IsPortBlock)
                     {
                         // DNS
-                        if (!string.IsNullOrEmpty(rr.DnsServer))
+                        if (prr.Dnss.Any())
                         {
-                            this.InvokeIt(() => log.AppendText($"{NL}DNS Server:{NL}"));
-                            this.InvokeIt(() => log.AppendText($"{rr.DnsServer}{NL}", Color.DodgerBlue));
+                            this.InvokeIt(() => log.AppendText($"{NL}DNS Servers:{NL}"));
+                            foreach (string dns in prr.Dnss)
+                                this.InvokeIt(() => log.AppendText($"{dns}{NL}", Color.DodgerBlue));
 
                             this.InvokeIt(() => log.AppendText($"Query Domain:{NL}"));
-                            this.InvokeIt(() => log.AppendText($"{rr.DnsCustomDomain}{NL}", Color.DodgerBlue));
-
-                            if (!string.IsNullOrEmpty(rr.DnsProxyScheme))
+                            this.InvokeIt(() => log.AppendText($"{prr.DnsCustomDomain}{NL}", Color.DodgerBlue));
+                            
+                            if (!string.IsNullOrEmpty(prr.ProxyScheme))
                             {
                                 this.InvokeIt(() => log.AppendText($"DNS Proxy Scheme:{NL}"));
-                                this.InvokeIt(() => log.AppendText($"{rr.DnsProxyScheme}{NL}", Color.DodgerBlue));
+                                this.InvokeIt(() => log.AppendText($"{prr.ProxyScheme}{NL}", Color.DodgerBlue));
                             }
 
-                            CheckDns checkDns = new(false, false, GetCPUPriority());
-
-                            string bootstrapIP = GetBootstrapSetting(out int bootstrapPort).ToString();
-                            bool isSmart = await checkDns.CheckAsSmartDns($"tcp://{bootstrapIP}:{bootstrapPort}", rr.DnsCustomDomain, rr.DnsServer);
-                            if (!isSmart && IsDNSConnected)
+                            if (prr.Dnss.Count == 1)
                             {
-                                isSmart = await checkDns.CheckAsSmartDns(IPAddress.Loopback.ToString(), rr.DnsCustomDomain, rr.DnsServer);
+                                string dns = prr.Dnss[0];
+                                CheckDns checkDns = new(false, false);
+
+                                string bootstrapIP = GetBootstrapSetting(out int bootstrapPort).ToString();
+                                string uncensoredDns = IsDNSConnected ? $"udp://{IPAddress.Loopback}" : $"tcp://{bootstrapIP}:{bootstrapPort}";
+                                bool isSmart = await checkDns.CheckAsSmartDns(uncensoredDns, prr.DnsCustomDomain, dns);
+
+                                this.InvokeIt(() => log.AppendText($"Act As Smart DNS: "));
+                                this.InvokeIt(() => log.AppendText($"{isSmart}{NL}", Color.DodgerBlue));
                             }
-
-                            this.InvokeIt(() => log.AppendText($"Act As Smart DNS: "));
-                            this.InvokeIt(() => log.AppendText($"{isSmart}{NL}", Color.DodgerBlue));
+                            else
+                            {
+                                this.InvokeIt(() => log.AppendText($"Act As Smart DNS: "));
+                                this.InvokeIt(() => log.AppendText($"There Are Multiple DNSs!{NL}", Color.DarkOrange));
+                            }
                         }
-
-                        bool isIp = NetworkTool.IsIp(rr.Dns, out _);
+                        else
+                        {
+                            this.InvokeIt(() => log.AppendText($"{NL}DNS Servers: "));
+                            this.InvokeIt(() => log.AppendText($"None{NL}", Color.DodgerBlue));
+                        }
+                        
+                        bool isIp = NetworkTool.IsIp(prr.Dns, out _);
                         if (isIp)
                         {
                             this.InvokeIt(() => log.AppendText($"IP: "));
-                            this.InvokeIt(() => log.AppendText($"{rr.Dns}{NL}", Color.DodgerBlue));
+                            this.InvokeIt(() => log.AppendText($"{prr.Dns}{NL}", Color.DodgerBlue));
                         }
                         else
                         {
@@ -121,39 +140,36 @@ public partial class FormMain
 
                         // DPI Bypass
                         this.InvokeIt(() => log.AppendText($"{NL}Apply DPI Bypass: "));
-                        this.InvokeIt(() => log.AppendText($"{rr.ApplyDpiBypass.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
+                        this.InvokeIt(() => log.AppendText($"{prr.ApplyDpiBypass.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
 
-                        if (!host.Equals(rr.Sni))
+                        if (!host.Equals(prr.Sni))
                         {
                             this.InvokeIt(() => log.AppendText($"SNI: "));
-                            this.InvokeIt(() => log.AppendText($"{rr.Sni}{NL}", Color.DodgerBlue));
+                            this.InvokeIt(() => log.AppendText($"{prr.Sni}{NL}", Color.DodgerBlue));
                         }
 
                         // UpStream Proxy
                         this.InvokeIt(() => log.AppendText($"{NL}Apply UpStream Proxy: "));
-                        this.InvokeIt(() => log.AppendText($"{rr.ApplyUpStreamProxy.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
+                        this.InvokeIt(() => log.AppendText($"{prr.ApplyUpStreamProxy.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
 
-                        if (rr.ApplyUpStreamProxy)
+                        if (prr.ApplyUpStreamProxy)
                         {
                             this.InvokeIt(() => log.AppendText($"Only Apply To Blocked IPs: "));
-                            this.InvokeIt(() => log.AppendText($"{rr.ApplyUpStreamProxyToBlockedIPs.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
+                            this.InvokeIt(() => log.AppendText($"{prr.ApplyUpStreamProxyToBlockedIPs.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
 
                             this.InvokeIt(() => log.AppendText($"UpStream Proxy Scheme: "));
-                            this.InvokeIt(() => log.AppendText($"{rr.ProxyScheme}{NL}", Color.DodgerBlue));
-
-                            bool upstreamWorks = await NetworkTool.IsWebsiteOnlineAsync($"{host}:{port}", rr.Dns, 5000, false, rr.ProxyScheme);
-                            this.InvokeIt(() => log.AppendText($"Does UpStream Works: "));
-                            this.InvokeIt(() => log.AppendText($"{upstreamWorks.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
+                            this.InvokeIt(() => log.AppendText($"{prr.ProxyScheme}{NL}", Color.DodgerBlue));
                         }
 
-                        // Can Open
-                        bool canOpen = false;
+                        // Http Status Code
+                        HttpStatusCode hsc = HttpStatusCode.RequestTimeout;
                         if (IsProxyRunning)
-                            canOpen = await NetworkTool.IsWebsiteOnlineAsync(url, rr.Dns, 5000, false, $"socks5://{IPAddress.Loopback}:{ProxyPort}");
+                            hsc = await NetworkTool.GetHttpStatusCode(url, null, 5000, false, $"socks5://{IPAddress.Loopback}:{ProxyPort}");
                         else
-                            canOpen = await NetworkTool.IsWebsiteOnlineAsync(url, rr.Dns, 5000, true);
-                        this.InvokeIt(() => log.AppendText($"{NL}Can Get Headers: "));
-                        this.InvokeIt(() => log.AppendText($"{canOpen.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
+                            hsc = await NetworkTool.GetHttpStatusCode(url, prr.Dns, 5000, true);
+                        
+                        this.InvokeIt(() => log.AppendText($"{NL}HTTP Status Code: "));
+                        this.InvokeIt(() => log.AppendText($"{hsc}{NL}", Color.DodgerBlue));
                     }
                 }
             }

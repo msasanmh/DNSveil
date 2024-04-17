@@ -69,7 +69,7 @@
             CustomLabelProtocol.RoundedCorners = 0;
             CustomLabelProtocol.Size = new Size(57, 17);
             CustomLabelProtocol.TabIndex = 0;
-            CustomLabelProtocol.Text = "Protocol:";
+            CustomLabelProtocol.Text = "ListenerProtocol:";
             // 
             // CustomComboBoxProtocol
             // 

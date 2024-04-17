@@ -12,10 +12,7 @@ public class ProcessConsole
     public event EventHandler<DataReceivedEventArgs>? StandardDataReceived;
     public event EventHandler<DataReceivedEventArgs>? ErrorDataReceived;
 
-    public ProcessConsole()
-    {
-        
-    }
+    public ProcessConsole() { }
 
     public string GetStdout => Stdout;
     public string GetStderr => Stderr;
@@ -26,67 +23,75 @@ public class ProcessConsole
     /// </summary>
     public int Execute(string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
     {
-        int pid;
-        // Create process
-        Process_ = new();
-        Process_.StartInfo.FileName = processName;
-
-        if (args != null)
-            Process_.StartInfo.Arguments = args;
-
-        if (hideWindow)
-        {
-            Process_.StartInfo.CreateNoWindow = true;
-            Process_.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-        }
-        else
-        {
-            Process_.StartInfo.CreateNoWindow = false;
-            Process_.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-        }
-
-        if (runAsAdmin)
-        {
-            Process_.StartInfo.Verb = "runas";
-        }
-        else
-        {
-            Process_.StartInfo.Verb = "";
-        }
-
-        // Redirect input output to get ability of sending and reading process output
-        Process_.StartInfo.UseShellExecute = false;
-        Process_.StartInfo.RedirectStandardInput = true;
-        Process_.StartInfo.RedirectStandardOutput = true;
-        Process_.StartInfo.RedirectStandardError = true;
-
-        if (workingDirectory != null)
-            Process_.StartInfo.WorkingDirectory = workingDirectory;
-
         try
         {
-            Process_.Start();
+            int pid;
+            // Create process
+            Process_ = new();
+            Process_.StartInfo.FileName = processName;
 
-            // Set process priority
-            Process_.PriorityClass = processPriorityClass;
-            pid = Process_.Id;
+            if (!string.IsNullOrEmpty(args))
+                Process_.StartInfo.Arguments = args;
+
+            if (hideWindow)
+            {
+                Process_.StartInfo.CreateNoWindow = true;
+                Process_.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            }
+            else
+            {
+                Process_.StartInfo.CreateNoWindow = false;
+                Process_.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+            }
+
+            if (runAsAdmin)
+            {
+                Process_.StartInfo.Verb = "runas";
+            }
+            else
+            {
+                Process_.StartInfo.Verb = "";
+            }
+
+            // Redirect input output to get ability of sending and reading process output
+            Process_.StartInfo.UseShellExecute = false;
+            Process_.StartInfo.RedirectStandardInput = true;
+            Process_.StartInfo.RedirectStandardOutput = true;
+            Process_.StartInfo.RedirectStandardError = true;
+
+            if (!string.IsNullOrEmpty(workingDirectory))
+                Process_.StartInfo.WorkingDirectory = workingDirectory;
+
+            try
+            {
+                Process_.Start();
+
+                // Set process priority
+                Process_.PriorityClass = processPriorityClass;
+                pid = Process_.Id;
+            }
+            catch (Exception ex)
+            {
+                pid = -1;
+                Debug.WriteLine("ProcessConsole Execute Start: " + ex.Message);
+            }
+
+            Process_.OutputDataReceived -= Process__OutputDataReceived;
+            Process_.OutputDataReceived += Process__OutputDataReceived;
+            Process_.ErrorDataReceived -= Process__ErrorDataReceived;
+            Process_.ErrorDataReceived += Process__ErrorDataReceived;
+
+            Process_.BeginOutputReadLine();
+            Process_.BeginErrorReadLine();
+
+            Pid = pid;
+            return pid;
         }
         catch (Exception ex)
         {
-            pid = -1;
-            Debug.WriteLine($"ExecuteOnly: {ex.Message}");
+            Debug.WriteLine("ProcessConsole Execute: " + ex.Message);
+            return -1;
         }
-
-        Process_.OutputDataReceived -= Process__OutputDataReceived;
-        Process_.OutputDataReceived += Process__OutputDataReceived;
-        Process_.ErrorDataReceived -= Process__ErrorDataReceived;
-        Process_.ErrorDataReceived += Process__ErrorDataReceived;
-
-        Process_.BeginOutputReadLine();
-        Process_.BeginErrorReadLine();
-
-        Pid = pid;
-        return pid;
     }
 
     private void Process__OutputDataReceived(object sender, DataReceivedEventArgs e)
@@ -114,7 +119,7 @@ public class ProcessConsole
     /// </summary>
     /// <param name="command">Command</param>
     /// <returns>Returns True if success</returns>
-    public async Task<bool> SendCommandAsync(string command, int delayMS = 100, int timeoutSec = 5)
+    public async Task<bool> SendCommandAsync(string command, int delayMS = 10, int timeoutSec = 5)
     {
         try
         {

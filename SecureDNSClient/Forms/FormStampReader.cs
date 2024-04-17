@@ -1,7 +1,8 @@
-﻿using MsmhToolsClass.DnsTool;
+﻿using MsmhToolsClass.MsmhAgnosticServer;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.Globalization;
+using System.Net;
 
 namespace SecureDNSClient;
 
@@ -54,6 +55,8 @@ public partial class FormStampReader : Form
         CustomTextBoxResult.Top = CustomButtonDecode.Bottom + spaceV;
         CustomTextBoxResult.Width = ClientRectangle.Width - (spaceRight * 2);
         CustomTextBoxResult.Height = ClientRectangle.Height - CustomTextBoxResult.Top - spaceBottom;
+
+        Controllers.SetDarkControl(CustomTextBoxResult);
     }
 
     private void CustomButtonDecode_Click(object sender, EventArgs e)
@@ -64,7 +67,11 @@ public partial class FormStampReader : Form
         if (string.IsNullOrWhiteSpace(stamp)) return;
         CustomTextBoxResult.Text = string.Empty;
 
-        CustomTextBoxResult.Font = new Font(FontFamily.GenericMonospace, 10);
+        try
+        {
+            CustomTextBoxResult.Font = new Font(FontFamily.GenericMonospace, 10);
+        }
+        catch (Exception) { }
 
         if (!stamp.ToLower().StartsWith("sdns://"))
         {
@@ -91,7 +98,7 @@ public partial class FormStampReader : Form
             result += $"Is No Filter: {sr.IsNoFilter}{NL}"; // Filter
             result += $"Is No Log: {sr.IsNoLog}{NL}{NL}"; // Log
 
-            if (!string.IsNullOrEmpty(sr.IP)) // IP
+            if (!sr.IP.Equals(IPAddress.None) && !sr.IP.Equals(IPAddress.IPv6None)) // IP
                 result += $"IP: {sr.IP}{NL}";
             if (!string.IsNullOrEmpty(sr.Host)) // Host
                 result += $"Host: {sr.Host}{NL}";

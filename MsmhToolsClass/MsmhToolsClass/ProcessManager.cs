@@ -299,12 +299,18 @@ public static class ProcessManager
     /// <summary>
     /// Execute and returns PID, if fails return -1
     /// </summary>
-    public static int ExecuteOnly(string processName, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
+    public static int ExecuteOnly(string processName, Dictionary<string, string>? environmentVariables = null, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
     {
         int pid;
         // Create process
         Process process0 = new();
         process0.StartInfo.FileName = processName;
+
+        if (environmentVariables != null)
+        {
+            foreach (KeyValuePair<string, string> kvp in environmentVariables)
+                process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+        }
 
         if (args != null)
             process0.StartInfo.Arguments = args;
@@ -450,54 +456,48 @@ public static class ProcessManager
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
-    /// Returns process PID, if faild returns -1
+    /// Returns A List Of PIDs (Windows Only)
     /// </summary>
-    public static int GetProcessPidByListeningPort(int port)
+    public static List<int> GetProcessPidsByUsingPort(int port)
     {
-        string netstatArgs = "-a -n -o";
-        string? stdout = Execute(out Process process, "netstat", null, netstatArgs);
-        if (!string.IsNullOrWhiteSpace(stdout))
+        List<int> list = new();
+        if (!OperatingSystem.IsWindows()) return list;
+
+        try
         {
-            List<string> lines = stdout.SplitToLines();
-            for (int n = 0; n < lines.Count; n++)
+            string netstatArgs = "-a -n -o";
+            string? stdout = Execute(out Process process, "netstat", null, netstatArgs);
+            if (!string.IsNullOrWhiteSpace(stdout))
             {
-                string line = lines[n];
-                if (!string.IsNullOrWhiteSpace(line) && line.Contains("LISTENING") && line.Contains($":{port} "))
+                List<string> lines = stdout.SplitToLines();
+                for (int n = 0; n < lines.Count; n++)
                 {
-                    string[] split1 = line.Split("LISTENING", StringSplitOptions.TrimEntries);
-                    bool isBool = int.TryParse(split1[1], out int pid);
-                    if (isBool)
+                    string line = lines[n].Trim();
+                    if (!string.IsNullOrEmpty(line) && line.Contains($":{port} ") && !line.Contains("FIN_WAIT_2"))
                     {
-                        process?.Dispose();
-                        return pid;
+                        string[] splitLine = line.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                        
+                        if (splitLine.Length > 2)
+                        {
+                            string localAddress = splitLine[1];
+                            if (localAddress.EndsWith($":{port}"))
+                            {
+                                string pidStr = splitLine[^1]; // Last Column Is PID
+                                bool isBool = int.TryParse(pidStr, out int pid);
+                                if (isBool && pid != 0 && !list.IsContain(pid)) list.Add(pid);
+                            }
+                        }
                     }
                 }
             }
+            process?.Dispose();
         }
-        process?.Dispose();
-        return -1;
-    }
-    //-----------------------------------------------------------------------------------
-    /// <summary>
-    /// Returns process name, if failed returns string.empty
-    /// </summary>
-    public static string GetProcessNameByListeningPort(int port)
-    {
-        int pid = GetProcessPidByListeningPort(port);
-        if (pid != -1)
+        catch (Exception ex)
         {
-            try
-            {
-                using Process process = Process.GetProcessById(pid);
-                return process.ProcessName;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Get Process Name By Listening Port:");
-                Debug.WriteLine(ex.Message);
-            }
+            Debug.WriteLine("ProcessManager GetProcessPidsByUsingPort: " + ex.Message);
         }
-        return string.Empty;
+
+        return list;
     }
     //-----------------------------------------------------------------------------------
     /// <summary>

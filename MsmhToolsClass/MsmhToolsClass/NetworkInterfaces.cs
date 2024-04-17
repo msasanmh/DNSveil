@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Management;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 
@@ -414,7 +415,16 @@ public class NetworkInterfaces
     /// </summary>
     public NetworkInterface? NIC { get; private set; }
 
-    public List<string> DnsAddresses { get; private set; } = new();
+    public bool IsIPv4ProtocolSupported { get; private set; }
+    public bool IsIPv6ProtocolSupported { get; private set; }
+    public List<IPAddressInformation> AnycastAddresses { get; private set; } = new();
+    public List<IPAddress> DhcpServerAddresses { get; private set; } = new();
+    public List<IPAddress> DnsAddresses { get; private set; } = new();
+    public string DnsSuffix { get; private set; } = string.Empty;
+    public List<GatewayIPAddressInformation> GatewayAddresses { get; private set; } = new();
+    public List<MulticastIPAddressInformation> MulticastAddresses { get; private set; } = new();
+    public List<UnicastIPAddressInformation> UnicastAddresses { get; private set; } = new();
+    public List<IPAddress> WinsServersAddresses { get; private set; } = new();
 
     /// <summary>
     /// Get NIC Information
@@ -911,31 +921,7 @@ public class NetworkInterfaces
         NIC ??= NetworkTool.GetNICByName(NetConnectionID);
 
         // Get DNS Addresses
-        if (NIC != null)
-        {
-            try
-            {
-                IPAddressCollection dnss = NIC.GetIPProperties().DnsAddresses;
-                for (int n = 0; n < dnss.Count; n++)
-                    DnsAddresses.Add(dnss[n].ToString());
-
-                if (string.IsNullOrEmpty(MACAddress))
-                {
-                    string macAddress = NIC.GetPhysicalAddress().ToString();
-                    if (!string.IsNullOrEmpty(macAddress))
-                    {
-                        try
-                        {
-                            string regex = "(.{2})(.{2})(.{2})(.{2})(.{2})(.{2})";
-                            string replace = "$1:$2:$3:$4:$5:$6";
-                            MACAddress = Regex.Replace(macAddress, regex, replace);
-                        }
-                        catch (Exception) { }
-                    }
-                }
-            }
-            catch (Exception) { }
-        }
+        if (NIC != null) ReadInternal(NIC);
     }
 
     private void Read(NetworkInterface? nic)
@@ -965,27 +951,54 @@ public class NetworkInterfaces
             else if (nic.OperationalStatus == OperationalStatus.Up) NetConnectionStatus = 2;
             else if (nic.OperationalStatus == OperationalStatus.NotPresent) NetConnectionStatus = 4;
 
-            IPAddressCollection dnss = nic.GetIPProperties().DnsAddresses;
-            for (int n = 0; n < dnss.Count; n++)
-                DnsAddresses.Add(dnss[n].ToString());
-
             GUID = nic.Id;
 
-            string macAddress = nic.GetPhysicalAddress().ToString();
-            if (!string.IsNullOrEmpty(macAddress))
-            {
-                try
-                {
-                    string regex = "(.{2})(.{2})(.{2})(.{2})(.{2})(.{2})";
-                    string replace = "$1:$2:$3:$4:$5:$6";
-                    MACAddress = Regex.Replace(macAddress, regex, replace);
-                }
-                catch (Exception) { }
-            }
-
             if (nic.Speed > 0) Speed = Convert.ToUInt64(nic.Speed);
+
+            ReadInternal(nic);
         }
         catch (Exception) { }
+    }
+
+    private void ReadInternal(NetworkInterface nic)
+    {
+        try
+        {
+            IsIPv4ProtocolSupported = nic.Supports(NetworkInterfaceComponent.IPv4);
+            IsIPv6ProtocolSupported = nic.Supports(NetworkInterfaceComponent.IPv6);
+
+            IPInterfaceProperties ipInterfaceProperties = nic.GetIPProperties();
+
+            // Addresses
+            AnycastAddresses.AddRange(ipInterfaceProperties.AnycastAddresses);
+            DhcpServerAddresses.AddRange(ipInterfaceProperties.DhcpServerAddresses);
+            DnsAddresses.AddRange(ipInterfaceProperties.DnsAddresses);
+            DnsSuffix = ipInterfaceProperties.DnsSuffix;
+            GatewayAddresses.AddRange(ipInterfaceProperties.GatewayAddresses);
+            MulticastAddresses.AddRange(ipInterfaceProperties.MulticastAddresses);
+            UnicastAddresses.AddRange(ipInterfaceProperties.UnicastAddresses);
+            WinsServersAddresses.AddRange(ipInterfaceProperties.WinsServersAddresses);
+
+            // MAC Address
+            if (string.IsNullOrEmpty(MACAddress))
+            {
+                string macAddress = nic.GetPhysicalAddress().ToString();
+                if (!string.IsNullOrEmpty(macAddress))
+                {
+                    try
+                    {
+                        string regex = "(.{2})(.{2})(.{2})(.{2})(.{2})(.{2})";
+                        string replace = "$1:$2:$3:$4:$5:$6";
+                        MACAddress = Regex.Replace(macAddress, regex, replace);
+                    }
+                    catch (Exception) { }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkInterfaces_ReadInternal: " + ex.Message);
+        }
     }
 
     //== TEST

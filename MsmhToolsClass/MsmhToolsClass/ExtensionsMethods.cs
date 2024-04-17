@@ -13,6 +13,8 @@ using System.Xml.Linq;
 using System.Diagnostics;
 using System.Drawing;
 using System.Net.Sockets;
+using System.Collections.Specialized;
+using System.Collections.Concurrent;
 
 namespace MsmhToolsClass;
 
@@ -23,6 +25,63 @@ public static class Methods
 }
 public static class ExtensionsMethods
 {
+    //-----------------------------------------------------------------------------------
+    public static bool TryUpdate<K, V>(this ConcurrentDictionary<K, V> ccDic, K key, V newValue) where K : notnull
+    {
+        try
+        {
+            if (key == null) return false;
+            bool isKeyExist = ccDic.TryGetValue(key, out V? oldValue);
+            if (isKeyExist && oldValue != null)
+                return ccDic.TryUpdate(key, newValue, oldValue);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods TryUpdate: " + ex.Message);
+            return false;
+        }
+    }
+    //-----------------------------------------------------------------------------------
+    public static V? AddOrUpdate<K, V>(this ConcurrentDictionary<K, V> ccDic, K key, V newValue) where K : notnull
+    {
+        try
+        {
+            if (key == null) return default;
+            return ccDic.AddOrUpdate(key, newValue, (oldkey, oldvalue) => newValue);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods TryUpdate: " + ex.Message);
+            return default;
+        }
+    }
+    //-----------------------------------------------------------------------------------
+    /// <summary>
+    /// If Key Exist Adds The Value (Comma-Separated)
+    /// </summary>
+    public static void AddAndUpdate(this NameValueCollection nvc, string? key, string? value)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(key)) return;
+            if (string.IsNullOrEmpty(value)) return;
+
+            string? theKey = nvc[key];
+            if (!string.IsNullOrEmpty(theKey)) // Key Exist
+            {
+                string tempVal = theKey;
+                tempVal += "," + value;
+                nvc.Remove(key);
+                nvc.Add(key, tempVal);
+            }
+            else
+            {
+                nvc.Add(key, value);
+            }
+        }
+        catch (Exception) { }
+    }
     //-----------------------------------------------------------------------------------
     public static string GetInnerExceptions(this Exception ex)
     {
@@ -84,12 +143,14 @@ public static class ExtensionsMethods
     {
         try
         {
-            XmlWriterSettings xmlWriterSettings = new();
-            xmlWriterSettings.WriteEndDocumentOnClose = true;
-            xmlWriterSettings.Async = true;
-            xmlWriterSettings.Indent = true;
-            xmlWriterSettings.OmitXmlDeclaration = true;
-            xmlWriterSettings.Encoding = new UTF8Encoding(false);
+            XmlWriterSettings xmlWriterSettings = new()
+            {
+                WriteEndDocumentOnClose = true,
+                Async = true,
+                Indent = true,
+                OmitXmlDeclaration = true,
+                Encoding = new UTF8Encoding(false)
+            };
             using XmlWriter xmlWriter = XmlWriter.Create(xmlFilePath, xmlWriterSettings);
             await xDocument.SaveAsync(xmlWriter, CancellationToken.None);
         }
@@ -104,10 +165,26 @@ public static class ExtensionsMethods
         return TimeSpan.FromSeconds(Math.Round(timeSpan.TotalSeconds, precision));
     }
     //-----------------------------------------------------------------------------------
+    public static string ToString<T>(this List<T> list, string separator)
+    {
+        string result = string.Empty;
+        for (int n = 0; n < list.Count; n++)
+        {
+            T t = list[n];
+            result += $"{t}{separator}";
+        }
+        if (result.EndsWith(separator)) result = result.TrimEnd(separator);
+        return result;
+    }
+    //-----------------------------------------------------------------------------------
     public static bool IsContain<T>(this List<T> list, T t)
     {
-        for (int n = 0; n < list.Count; n++)
-            if (t != null && t.Equals(list[n])) return true;
+        try
+        {
+            for (int n = 0; n < list.Count; n++)
+                if (t != null && t.Equals(list[n])) return true;
+        }
+        catch (Exception) { }
         return false;
     }
     //-----------------------------------------------------------------------------------
@@ -282,7 +359,7 @@ public static class ExtensionsMethods
     /// </summary>
     public static GraphicsPath? Shrink(this GraphicsPath path, float width)
     {
-        if (!OperatingSystem.IsWindows()) return null;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return null;
         using GraphicsPath gp = new();
         gp.AddPath(path, false);
         gp.CloseAllFigures();
@@ -314,7 +391,7 @@ public static class ExtensionsMethods
     private static int CountNextFigure(PathData data, int position)
     {
         int count = 0;
-        if (!OperatingSystem.IsWindows()) return count;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return count;
         for (int i = position; i < data?.Types?.Length; i++)
         {
             count++;
@@ -329,7 +406,7 @@ public static class ExtensionsMethods
     /// </summary>
     public static void DrawRoundedRectangle(this Graphics graphics, Pen pen, Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
         GraphicsPath? path = DrawingTool.RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
         if (path != null)
@@ -342,7 +419,7 @@ public static class ExtensionsMethods
     /// </summary>
     public static void FillRoundedRectangle(this Graphics graphics, Brush brush, Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
         GraphicsPath? path = DrawingTool.RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
         if (path != null)
@@ -355,7 +432,7 @@ public static class ExtensionsMethods
     /// </summary>
     public static void DrawCircle(this Graphics g, Pen pen, float centerX, float centerY, float radius)
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
         g.DrawEllipse(pen, centerX - radius, centerY - radius, radius + radius, radius + radius);
     }
     //-----------------------------------------------------------------------------------
@@ -364,7 +441,7 @@ public static class ExtensionsMethods
     /// </summary>
     public static void FillCircle(this Graphics g, Brush brush, float centerX, float centerY, float radius)
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
         g.FillEllipse(brush, centerX - radius, centerY - radius, radius + radius, radius + radius);
     }
     //-----------------------------------------------------------------------------------
@@ -475,11 +552,13 @@ public static class ExtensionsMethods
     {
         try
         {
-            FileStreamOptions streamOptions = new();
-            streamOptions.Access = FileAccess.ReadWrite;
-            streamOptions.Share = FileShare.ReadWrite;
-            streamOptions.Mode = FileMode.Create;
-            streamOptions.Options = FileOptions.RandomAccess;
+            FileStreamOptions streamOptions = new()
+            {
+                Access = FileAccess.ReadWrite,
+                Share = FileShare.ReadWrite,
+                Mode = FileMode.Create,
+                Options = FileOptions.RandomAccess
+            };
             using StreamWriter file = new(filePath, streamOptions);
             for (int n = 0; n < list.Count; n++)
                 if (list[n] != null)
@@ -544,7 +623,7 @@ public static class ExtensionsMethods
     {
         try
         {
-            return list.FindIndex(a => a.Equals(value));
+            return list.FindIndex(a => a != null && a.Equals(value));
             // If the item is not found, it will return -1
         }
         catch (Exception)

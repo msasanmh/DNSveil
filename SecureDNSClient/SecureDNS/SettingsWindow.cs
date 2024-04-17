@@ -34,11 +34,20 @@ public partial class FormMain
         return nicsList;
     }
 
+    public string GetCfCleanIpSetting()
+    {
+        string result = string.Empty;
+        this.InvokeIt(() => result = CustomTextBoxSettingProxyCfCleanIP.Text.Trim());
+        bool isCfCleanIpv4Valid = NetworkTool.IsIPv4Valid(result, out IPAddress? _);
+        if (!isCfCleanIpv4Valid) result = string.Empty;
+        return result;
+    }
+
     public string GetDefaultSniSetting()
     {
-        string defaultSni = string.Empty;
-        this.InvokeIt(() => defaultSni = CustomTextBoxProxySSLDefaultSni.Text);
-        return defaultSni.Trim();
+        string result = string.Empty;
+        this.InvokeIt(() => result = CustomTextBoxProxySSLDefaultSni.Text);
+        return result.Trim();
     }
 
     public int GetCheckTimeoutSetting()
@@ -87,6 +96,28 @@ public partial class FormMain
         return updateAutoDelayMS;
     }
 
+    public int GetMaxRequestsSetting()
+    {
+        int maxRequests = 1000;
+        try
+        {
+            this.InvokeIt(() => maxRequests = Convert.ToInt32(CustomNumericUpDownSettingProxyHandleRequests.Value));
+        }
+        catch (Exception) { }
+        return maxRequests;
+    }
+
+    public int GetProxyTimeoutSetting()
+    {
+        int timeoutSec = 40;
+        try
+        {
+            this.InvokeIt(() => timeoutSec = Convert.ToInt32(CustomNumericUpDownSettingProxyKillRequestTimeout.Value));
+        }
+        catch (Exception) { }
+        return timeoutSec;
+    }
+
     public int GetKillOnCpuUsageSetting()
     {
         int killOnCpuUsage = 40;
@@ -96,6 +127,13 @@ public partial class FormMain
         }
         catch (Exception) { }
         return killOnCpuUsage;
+    }
+
+    public bool GetBlockPort80Setting()
+    {
+        bool result = false;
+        this.InvokeIt(() => result = CustomCheckBoxSettingProxyBlockPort80.Checked);
+        return result;
     }
 
     public IPAddress GetBootstrapSetting(out int bootstrapPort)
@@ -179,6 +217,61 @@ public partial class FormMain
         return blockedDomain.Trim();
     }
 
+    public async Task<(bool IsSuccess, string ProxyScheme, string ProxyUser, string ProxyPass, bool OnlyBlockedIPs)> GetUpStreamProxySetting()
+    {
+        if (!CustomCheckBoxSettingProxyUpstream.Checked) return (true, string.Empty, string.Empty, string.Empty, false);
+
+        // Get Upstream Mode
+        string? mode = null;
+        this.InvokeIt(() => mode = CustomComboBoxSettingProxyUpstreamMode.SelectedItem as string);
+
+        // Check If Mode Is Empty
+        if (string.IsNullOrEmpty(mode))
+        {
+            string msg = "Select The Mode Of Upstream Proxy." + NL;
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+            return (false, string.Empty, string.Empty, string.Empty, false);
+        }
+
+        // Get Upstream Host
+        string upstreamHost = string.Empty;
+        this.InvokeIt(() => upstreamHost = CustomTextBoxSettingProxyUpstreamHost.Text.Trim());
+
+        // Check If Host Is Empty
+        if (string.IsNullOrEmpty(upstreamHost))
+        {
+            string msg = "Upstream proxy host cannot be empty." + NL;
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+            return (false, string.Empty, string.Empty, string.Empty, false);
+        }
+
+        // Get Upstream Port
+        int upstreamPort = -1;
+        this.InvokeIt(() => upstreamPort = Convert.ToInt32(CustomNumericUpDownSettingProxyUpstreamPort.Value));
+
+        // Get Blocked Domain
+        string blockedDomain = GetBlockedDomainSetting(out string _);
+        if (string.IsNullOrEmpty(blockedDomain)) return (false, string.Empty, string.Empty, string.Empty, false);
+
+        // Get Upstream Proxy Scheme
+        string proxyScheme = $"{mode.ToLower().Trim()}://{upstreamHost}:{upstreamPort}";
+
+        // Check Upstream Proxy Works
+        bool isUpstreamProxyOk = await NetworkTool.IsWebsiteOnlineAsync($"https://{blockedDomain}", null, 5000, false, proxyScheme);
+        if (!isUpstreamProxyOk)
+        {
+            string msg = $"Upstream Proxy Cannot Open {blockedDomain}." + NL;
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+            return (false, string.Empty, string.Empty, string.Empty, false);
+        }
+
+        // Get Apply Only To Blocked IPs
+        bool onlyBlockedIPs = false;
+        this.InvokeIt(() => onlyBlockedIPs = CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Checked);
+
+        return (true, proxyScheme, string.Empty, string.Empty, onlyBlockedIPs);
+    }
+
     public int GetDohPortSetting()
     {
         int dohPort = 443;
@@ -201,28 +294,6 @@ public partial class FormMain
         return proxyPort;
     }
 
-    public int GetFakeProxyPortSetting()
-    {
-        int fakeProxyPort = 8070;
-        try
-        {
-            this.InvokeIt(() => fakeProxyPort = Convert.ToInt32(CustomNumericUpDownSettingFakeProxyPort.Value));
-        }
-        catch (Exception) { }
-        return fakeProxyPort;
-    }
-
-    public int GetCamouflageDnsPortSetting()
-    {
-        int camouflageDnsPort = 5380;
-        try
-        {
-            this.InvokeIt(() => camouflageDnsPort = Convert.ToInt32(CustomNumericUpDownSettingCamouflageDnsPort.Value));
-        }
-        catch (Exception) { }
-        return camouflageDnsPort;
-    }
-
     /// <summary>
     /// Get listening port
     /// </summary>
@@ -230,12 +301,20 @@ public partial class FormMain
     /// <returns>Returns True if everything's ok</returns>
     public bool GetListeningPort(int portToCheck, string message, Color color)
     {
-        bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), portToCheck, 3);
+        List<int> pids = ProcessManager.GetProcessPidsByUsingPort(portToCheck);
+        bool isPortOpen = pids.Any();
         if (isPortOpen)
         {
-            string existingProcessName = ProcessManager.GetProcessNameByListeningPort(portToCheck);
-            existingProcessName = existingProcessName == string.Empty ? "Unknown" : existingProcessName;
-            string msg = $"Port {portToCheck} is occupied by \"{existingProcessName}\". {message}{NL}";
+            List<string> names = new();
+            foreach (int pid in pids)
+            {
+                string name = ProcessManager.GetProcessNameByPID(pid);
+                if (!string.IsNullOrEmpty(name)) names.Add(name);
+            }
+            string namesStr = names.ToString(", ");
+            namesStr = string.IsNullOrEmpty(namesStr) ? "Unknown" : namesStr;
+
+            string msg = $"Port {portToCheck} Is Occupied By \"{namesStr}\". {message}{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, color));
             return false;
         }

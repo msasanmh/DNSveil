@@ -1,4 +1,6 @@
-﻿namespace MsmhToolsClass;
+﻿using System.Diagnostics;
+
+namespace MsmhToolsClass;
 
 public class WindowsFirewall
 {
@@ -24,9 +26,17 @@ public class WindowsFirewall
     {
         return await Task.Run(async () =>
         {
-            string args = $"/c netsh advfirewall show allprofiles | find \"State\"";
-            string output = await ProcessManager.ExecuteAsync("cmd", null, args, true, true);
-            return output.Contains("ON");
+            try
+            {
+                string args = $"/c netsh advfirewall show allprofiles | find \"State\"";
+                string output = await ProcessManager.ExecuteAsync("cmd", null, args, true, true);
+                return output.Contains("ON");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("WindowsFirewall IsWindowsFirewallEnabledAsync: " + ex.Message);
+                return false;
+            }
         });
     }
 
@@ -37,9 +47,17 @@ public class WindowsFirewall
     {
         return await Task.Run(async () =>
         {
-            string args = $"advfirewall firewall show rule name=\"{ruleName}\"";
-            string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-            return output.Contains("Ok.");
+            try
+            {
+                string args = $"advfirewall firewall show rule name=\"{ruleName}\"";
+                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return output.Contains("Ok.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("WindowsFirewall IsRuleExistAsync: " + ex.Message);
+                return false;
+            }
         });
     }
 
@@ -51,54 +69,76 @@ public class WindowsFirewall
     {
         return await Task.Run(async () =>
         {
-            string dir = ruleDirection == RuleDirection.IN ? "in" : "out";
-            string action = ruleAction == RuleAction.Allow ? "allow" : ruleAction == RuleAction.Block ? "block" : "bypass";
+            try
+            {
+                string dir = ruleDirection == RuleDirection.IN ? "in" : "out";
+                string action = ruleAction == RuleAction.Allow ? "allow" : ruleAction == RuleAction.Block ? "block" : "bypass";
 
-            string args = $"advfirewall firewall add rule name=\"{ruleName}\" program=\"{exePath}\" dir={dir} action={action} enable=yes profile=any localip=any remoteip=any protocol=any interfacetype=any";
-            bool isRuleExist = await IsRuleExistAsync(ruleName);
-            if (isRuleExist)
-                args = $"advfirewall firewall set rule name=\"{ruleName}\" new program=\"{exePath}\" dir={dir} action={action} enable=yes profile=any localip=any remoteip=any protocol=any interfacetype=any";
+                string args = $"advfirewall firewall add rule name=\"{ruleName}\" program=\"{exePath}\" dir={dir} action={action} enable=yes profile=any localip=any remoteip=any protocol=any interfacetype=any";
+                bool isRuleExist = await IsRuleExistAsync(ruleName);
+                if (isRuleExist)
+                    args = $"advfirewall firewall set rule name=\"{ruleName}\" new program=\"{exePath}\" dir={dir} action={action} enable=yes profile=any localip=any remoteip=any protocol=any interfacetype=any";
 
-            string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-            return output.Contains("Ok.");
+                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return output.Contains("Ok.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("WindowsFirewall AddOrUpdateRuleAsync 1: " + ex.Message);
+                return false;
+            }
         });
     }
 
     /// <summary>
-    /// Add Or Update Firewall Rules
+    /// Add Or Update Firewall ProxyRules
     /// </summary>
     public static async Task AddOrUpdateRuleAsync(List<RuleSet> ruleSets)
     {
         await Task.Run(async () =>
         {
-            await Parallel.ForEachAsync(ruleSets, async (rule, ct) =>
+            try
             {
-                string ruleName = rule.RuleName;
-                string exePath = rule.ExePath;
-                RuleDirection dir = rule.Direction;
-                RuleAction action = rule.Action;
+                await Parallel.ForEachAsync(ruleSets, async (rule, ct) =>
+                {
+                    string ruleName = rule.RuleName;
+                    string exePath = rule.ExePath;
+                    RuleDirection dir = rule.Direction;
+                    RuleAction action = rule.Action;
 
-                await AddOrUpdateRuleAsync(ruleName, exePath, dir, action);
-            });
+                    await AddOrUpdateRuleAsync(ruleName, exePath, dir, action);
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("WindowsFirewall AddOrUpdateRuleAsync 2: " + ex.Message);
+            }
         });
     }
 
     /// <summary>
-    /// Add Or Update Firewall Rules
+    /// Add Or Update Firewall ProxyRules
     /// </summary>
     public static void AddOrUpdateRule(List<RuleSet> ruleSets)
     {
         Task.Run(() =>
         {
-            Parallel.ForEach(ruleSets, async (rule) =>
+            try
             {
-                string ruleName = rule.RuleName;
-                string exePath = rule.ExePath;
-                RuleDirection dir = rule.Direction;
-                RuleAction action = rule.Action;
+                Parallel.ForEach(ruleSets, async (rule) =>
+                {
+                    string ruleName = rule.RuleName;
+                    string exePath = rule.ExePath;
+                    RuleDirection dir = rule.Direction;
+                    RuleAction action = rule.Action;
 
-                await AddOrUpdateRuleAsync(ruleName, exePath, dir, action);
-            });
+                    await AddOrUpdateRuleAsync(ruleName, exePath, dir, action);
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("WindowsFirewall AddOrUpdateRule: " + ex.Message);
+            }
         });
     }
 
@@ -110,9 +150,17 @@ public class WindowsFirewall
     {
         return await Task.Run(async () =>
         {
-            string args = $"netsh advfirewall firewall set rule name=\"{ruleName}\" new enable=no";
-            string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-            return output.Contains("Ok.");
+            try
+            {
+                string args = $"netsh advfirewall firewall set rule name=\"{ruleName}\" new enable=no";
+                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return output.Contains("Ok.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("WindowsFirewall DisableRuleAsync: " + ex.Message);
+                return false;
+            }
         });
     }
 
@@ -124,9 +172,17 @@ public class WindowsFirewall
     {
         return await Task.Run(async () =>
         {
-            string args = $"netsh advfirewall firewall set rule name=\"{ruleName}\" new enable=yes";
-            string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-            return output.Contains("Ok.");
+            try
+            {
+                string args = $"netsh advfirewall firewall set rule name=\"{ruleName}\" new enable=yes";
+                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return output.Contains("Ok.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("WindowsFirewall EnableRuleAsync: " + ex.Message);
+                return false;
+            }
         });
     }
 
@@ -138,9 +194,17 @@ public class WindowsFirewall
     {
         return await Task.Run(async () =>
         {
-            string args = $"advfirewall firewall delete rule name=\"{ruleName}\"";
-            string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-            return output.Contains("Ok.");
+            try
+            {
+                string args = $"advfirewall firewall delete rule name=\"{ruleName}\"";
+                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return output.Contains("Ok.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("WindowsFirewall DeleteRuleAsync: " + ex.Message);
+                return false;
+            }
         });
     }
 

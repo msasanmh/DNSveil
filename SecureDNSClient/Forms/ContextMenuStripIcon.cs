@@ -2,7 +2,6 @@
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass.Themes;
 using SecureDNSClient.DPIBasic;
-using System.Diagnostics;
 
 namespace SecureDNSClient;
 
@@ -62,7 +61,7 @@ public partial class FormMain
         CustomContextMenuStripIcon.Items.Add("-");
 
         // Update Bool
-        IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
+        IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxyServer);
 
         // Proxy Server Menu
         TsiProxy.Font = Font;
@@ -313,7 +312,6 @@ public partial class FormMain
                 IsDisconnecting = true;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating GoodbyeDPI Bypass...{NL}", Color.LightGray));
                 ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
-                BypassFakeProxyDohStop(true, true, true, false);
 
                 // Wait
                 Task wait = Task.Run(async () =>
@@ -352,38 +350,20 @@ public partial class FormMain
             {
                 IsProxyDeactivating = true;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating Proxy...{NL}", Color.LightGray));
-                ProcessManager.KillProcessByPID(PIDProxy);
+                ProcessManager.KillProcessByPID(PIDProxyServer);
 
                 // Wait
                 Task wait = Task.Run(async () =>
                 {
                     while (true)
                     {
-                        if (!ProcessManager.FindProcessByPID(PIDProxy)) break;
+                        if (!ProcessManager.FindProcessByPID(PIDProxyServer)) break;
                         await Task.Delay(100);
                     }
                 });
                 try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
                 IsProxyDeactivating = false;
-            }
-
-            // Deactivate Fake Proxy
-            if (ProcessManager.FindProcessByPID(PIDFakeProxy))
-            {
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating Fake Proxy...{NL}", Color.LightGray));
-                ProcessManager.KillProcessByPID(PIDFakeProxy);
-
-                // Wait
-                Task wait = Task.Run(async () =>
-                {
-                    while (true)
-                    {
-                        if (!ProcessManager.FindProcessByPID(PIDFakeProxy)) break;
-                        await Task.Delay(100);
-                    }
-                });
-                try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
             }
 
             // Disconnect -  Kill all processes
@@ -434,7 +414,7 @@ public partial class FormMain
                 if (!IsDnsFullFlushed)
                 {
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Full Flushing DNS...{NL}", Color.LightGray));
-                    await Task.Run(async () => await FlushDnsOnExit(false));
+                    await Task.Run(async () => await FlushDNS(true, true, false, false, false));
                     IsDnsFlushed = true;
                     IsDnsFullFlushed = true;
                 }
@@ -444,7 +424,7 @@ public partial class FormMain
                 if (!IsDnsFlushed)
                 {
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flushing DNS...{NL}", Color.LightGray));
-                    await FlushDNS(false, false);
+                    await FlushDNS(true, false, false, false, false);
                     IsDnsFlushed = true;
                 }
             }

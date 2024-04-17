@@ -14,7 +14,7 @@ public partial class FormMain
             bool isFwEnabled = await IsWindowsFirewallEnabledAsync();
             if (!isFwEnabled)
             {
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Windows Firewall is not enabled.{NL}", Color.OrangeRed));
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Windows Firewall Is Not Enabled.{NL}", Color.OrangeRed));
                 return;
             }
 
@@ -24,12 +24,8 @@ public partial class FormMain
                 new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcOut, ExePath = SecureDNS.CurrentExecutablePath, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
                 new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDnsLookupIn, ExePath = SecureDNS.DnsLookup, Direction = RuleDirection.IN, Action = RuleAction.Allow},
                 new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDnsLookupOut, ExePath = SecureDNS.DnsLookup, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
-                new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDnsProxyIn, ExePath = SecureDNS.DnsProxy, Direction = RuleDirection.IN, Action = RuleAction.Allow},
-                new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDnsProxyOut, ExePath = SecureDNS.DnsProxy, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
-                new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDNSCryptIn, ExePath = SecureDNS.DNSCrypt, Direction = RuleDirection.IN, Action = RuleAction.Allow},
-                new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDNSCryptOut, ExePath = SecureDNS.DNSCrypt, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
-                new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcProxyServerIn, ExePath = SecureDNS.ProxyServerPath, Direction = RuleDirection.IN, Action = RuleAction.Allow},
-                new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcProxyServerOut, ExePath = SecureDNS.ProxyServerPath, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
+                new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcAgnosticServerIn, ExePath = SecureDNS.AgnosticServerPath, Direction = RuleDirection.IN, Action = RuleAction.Allow},
+                new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcAgnosticServerOut, ExePath = SecureDNS.AgnosticServerPath, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
                 new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcGoodbyeDpiIn, ExePath = SecureDNS.GoodbyeDpi, Direction = RuleDirection.IN, Action = RuleAction.Allow},
                 new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcGoodbyeDpiOut, ExePath = SecureDNS.GoodbyeDpi, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
                 new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcWinDivertIn, ExePath = SecureDNS.WinDivert, Direction = RuleDirection.IN, Action = RuleAction.Allow},
@@ -78,12 +74,8 @@ public partial class FormMain
             new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcOut, ExePath = SecureDNS.CurrentExecutablePath, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
             new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDnsLookupIn, ExePath = SecureDNS.DnsLookup, Direction = RuleDirection.IN, Action = RuleAction.Allow},
             new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDnsLookupOut, ExePath = SecureDNS.DnsLookup, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
-            new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDnsProxyIn, ExePath = SecureDNS.DnsProxy, Direction = RuleDirection.IN, Action = RuleAction.Allow},
-            new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDnsProxyOut, ExePath = SecureDNS.DnsProxy, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
-            new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDNSCryptIn, ExePath = SecureDNS.DNSCrypt, Direction = RuleDirection.IN, Action = RuleAction.Allow},
-            new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcDNSCryptOut, ExePath = SecureDNS.DNSCrypt, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
-            new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcProxyServerIn, ExePath = SecureDNS.ProxyServerPath, Direction = RuleDirection.IN, Action = RuleAction.Allow},
-            new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcProxyServerOut, ExePath = SecureDNS.ProxyServerPath, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
+            new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcAgnosticServerIn, ExePath = SecureDNS.AgnosticServerPath, Direction = RuleDirection.IN, Action = RuleAction.Allow},
+            new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcAgnosticServerOut, ExePath = SecureDNS.AgnosticServerPath, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
             new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcGoodbyeDpiIn, ExePath = SecureDNS.GoodbyeDpi, Direction = RuleDirection.IN, Action = RuleAction.Allow},
             new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcGoodbyeDpiOut, ExePath = SecureDNS.GoodbyeDpi, Direction = RuleDirection.OUT, Action = RuleAction.Allow},
             new RuleSet{ RuleName = SecureDNS.FirewallRule_SdcWinDivertIn, ExePath = SecureDNS.WinDivert, Direction = RuleDirection.IN, Action = RuleAction.Allow},

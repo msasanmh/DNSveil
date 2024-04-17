@@ -80,7 +80,7 @@ public partial class FormMain
         StopQuickConnect = false;
 
         // Delay Between tasks
-        int delay = 100;
+        int delay = 50;
 
         // Benchmark Start
         QuickConnectBenchmark.Restart();
@@ -113,7 +113,7 @@ public partial class FormMain
         // Cancel
         if (await cancelOnCondition()) return;
 
-        // Disconnect 1
+        // ManualDisconnect 1
         if (setDns) await QuickDisconnect(true, false, false, true, true, true);
         else await QuickDisconnect(true, true, true, true, true, true);
 
@@ -123,7 +123,7 @@ public partial class FormMain
         // === Check Servers
         if (qcRequest.ConnectMode == ConnectMode.ConnectToWorkingServers && !useSavedServers)
         {
-            // Disconnect 2
+            // ManualDisconnect 2
             if ((IsDNSSet && !IsDNSConnected) || (!IsDNSSet && IsDNSConnected))
             {
                 if (setDns) await QuickDisconnect(true, true, true, true, true, true);
@@ -191,7 +191,7 @@ public partial class FormMain
             }
         }
 
-        // Disconnect 3
+        // ManualDisconnect 3
         if (setDns) await QuickDisconnect(true, true, !setDns, true, true, true);
 
         // === Connect
@@ -256,7 +256,7 @@ public partial class FormMain
                         if (!IsConnected) break;
                         if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
                         if (IsDNSConnected || QuickConnectTimeout.ElapsedMilliseconds > 60000) break;
-                        await Task.Delay(200);
+                        await Task.Delay(100);
                     }
                 });
                 await wait8.WaitAsync(CancellationToken.None);
@@ -392,13 +392,13 @@ public partial class FormMain
 
             IsProxyActivated = await runStartProxy(); // 1
             await Task.Delay(delay); // 2
-            IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
+            IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxyServer);
             if (!IsProxyActivated)
             {
                 if (await cancelOnCondition()) return;
                 await runStartProxy();
                 await Task.Delay(delay); // 3
-                IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
+                IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxyServer);
                 if (!IsProxyActivated)
                 {
                     if (await cancelOnCondition()) return;
@@ -418,7 +418,7 @@ public partial class FormMain
                     while (true)
                     {
                         if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
-                        IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxy);
+                        IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxyServer);
                         if (IsProxyActivated || QuickConnectTimeout.ElapsedMilliseconds > 30000) break;
                         await Task.Delay(100);
                     }
@@ -676,7 +676,7 @@ public partial class FormMain
                 }
                 else if (startGoodbyeDpiBasic != IsGoodbyeDPIBasicActive) msgNotifyUser += $"Couldn't Activate GoodbyeDPI Basic.{NL}";
                 else if (startGoodbyeDpiAdvanced != IsGoodbyeDPIAdvancedActive) msgNotifyUser += $"Couldn't Activate GoodbyeDPI Advanced.{NL}";
-                if (!string.IsNullOrEmpty(msgNotifyUser))
+                if (!string.IsNullOrEmpty(msgNotifyUser) && !IsDisconnectingAll)
                 {
                     msgNotifyUser += "Check your Quick Connect Settings.";
                     CustomMessageBox.Show(this, msgNotifyUser, "Quick Connect Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -719,7 +719,7 @@ public partial class FormMain
             await wait.WaitAsync(CancellationToken.None);
         }
 
-        // Disconnect
+        // ManualDisconnect
         if (disconnect && (IsConnected || IsConnecting))
         {
             await StartConnect(ConnectMode.Unknown);

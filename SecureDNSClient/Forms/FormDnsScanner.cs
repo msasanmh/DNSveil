@@ -1,14 +1,12 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
-using MsmhToolsClass.DnsTool;
+using MsmhToolsClass.MsmhAgnosticServer;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
-using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using static SecureDNSClient.FormMain;
 
 namespace SecureDNSClient;
 
@@ -21,9 +19,9 @@ public partial class FormDnsScanner : Form
     private string ScanContent = string.Empty;
     private readonly List<string> SelectedFilesList = new();
     private static List<string> DomainsToCheckForSmartDNS = new();
-    private readonly CheckDns DnsScanner = new(false, true, ProcessPriorityClass.Normal);
-    private readonly CheckDns DnsScannerInsecureWithFilters = new(true, true, ProcessPriorityClass.Normal);
-    private readonly CheckDns DnsScannerInsecureNoFilters = new(true, false, ProcessPriorityClass.Normal);
+    private readonly CheckDns DnsScanner = new(false, true);
+    private readonly CheckDns DnsScannerInsecureWithFilters = new(true, true);
+    private readonly CheckDns DnsScannerInsecureNoFilters = new(true, false);
     private readonly string DNS = string.Empty;
     private readonly List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>>> ExportList = new();
     private readonly List<string> ExportListPrivate = new();
@@ -56,13 +54,6 @@ public partial class FormDnsScanner : Form
         SelectedFilesList.Clear();
         DomainsToCheckForSmartDNS.Clear();
         CustomButtonExport.Enabled = false;
-
-        //CustomLabelBootstrapIp.Visible = false;
-        CustomTextBoxBootstrapIpPort.Enabled = false;
-        //CustomTextBoxBootstrapIpPort.Visible = false;
-        //CustomLabelBootstrapPort.Visible = false;
-        CustomNumericUpDownBootstrapPort.Enabled = false;
-        //CustomNumericUpDownBootstrapPort.Visible = false;
 
         FixScreenDpi();
 
@@ -147,6 +138,8 @@ public partial class FormDnsScanner : Form
         catch (Exception) { }
 
         CustomRichTextBoxLog.Location = new Point(0, 0);
+
+        Controllers.SetDarkControl(this);
     }
 
     private void FormDnsScanner_Shown(object? sender, EventArgs e)
@@ -209,13 +202,13 @@ public partial class FormDnsScanner : Form
         CustomLabelDnsBrowse.Text = $"{selectedFiles.Count} file{s} selected.";
     }
 
-    private void ReadRdrList(List<ReadDnsResult> rdrList)
+    private void ReadRdrList(List<FormMain.ReadDnsResult> rdrList)
     {
         string allContent = string.Empty;
 
         for (int n = 0; n < rdrList.Count; n++)
         {
-            ReadDnsResult rdr = rdrList[n];
+            FormMain.ReadDnsResult rdr = rdrList[n];
             allContent += rdr.DNS;
             allContent += NL;
         }
@@ -303,7 +296,7 @@ public partial class FormDnsScanner : Form
 
         if (!FormMain.IsDNSConnected)
         {
-            string msg = $"SDC must be online.{NL}";
+            string msg = $"SDC must be online with built-in servers.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
             return false;
         }
@@ -322,21 +315,22 @@ public partial class FormDnsScanner : Form
             ExportListPrivate.Clear();
         }
 
-        //// Get Bootstrap IP
-        //string bootstrapIp = "8.8.8.8";
-        //this.InvokeIt(() => bootstrapIp = CustomTextBoxBootstrapIpPort.Text);
-        //bootstrapIp = bootstrapIp.Trim();
+        // Get Bootstrap IP
+        string bootstrapIpStr = "8.8.8.8";
+        this.InvokeIt(() => bootstrapIpStr = CustomTextBoxBootstrapIpPort.Text);
+        bootstrapIpStr = bootstrapIpStr.Trim();
 
-        //if (!NetworkTool.IsIPv4Valid(bootstrapIp, out _))
-        //{
-        //    string msg = $"Bootstrap IP is not valid.{NL}";
-        //    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-        //    return false;
-        //}
+        bool isBootstrapIpValid = NetworkTool.IsIPv4Valid(bootstrapIpStr, out IPAddress? bootstrapIP);
+        if (!isBootstrapIpValid || bootstrapIP == null)
+        {
+            string msg = $"Bootstrap IP is not valid.{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+            return false;
+        }
 
-        //// Get Bootstrap Port
-        //int bootstrapPort = 53;
-        //this.InvokeIt(() => bootstrapPort = decimal.ToInt32(CustomNumericUpDownBootstrapPort.Value));
+        // Get Bootstrap Port
+        int bootstrapPort = 53;
+        this.InvokeIt(() => bootstrapPort = decimal.ToInt32(CustomNumericUpDownBootstrapPort.Value));
 
         if (CustomRadioButtonDnsUrl.Checked)
             ScanContent = CustomTextBoxDnsUrl.Text;
@@ -347,12 +341,12 @@ public partial class FormDnsScanner : Form
             string msg = $"Reading Custom Servers...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
 
-            CheckRequest cr = new() { CheckMode = CheckMode.CustomServers };
-            List<ReadDnsResult> rdrList = await FormMain.ReadCustomServersXml(SecureDNS.CustomServersXmlPath, cr);
+            FormMain.CheckRequest cr = new() { CheckMode = FormMain.CheckMode.CustomServers };
+            List<FormMain.ReadDnsResult> rdrList = await FormMain.ReadCustomServersXml(SecureDNS.CustomServersXmlPath, cr);
             ReadRdrList(rdrList);
         }
 
-        string localDns = $"{IPAddress.Loopback}";
+        string localDns = $"udp://{IPAddress.Loopback}:53";
 
         string msg1 = $"Generating Google Safe Search IPs...{NL}";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg1, Color.DodgerBlue));
@@ -391,7 +385,7 @@ public partial class FormDnsScanner : Form
 
                 if (FormMain.IsDnsProtocolSupported(dns))
                 {
-                    await ScanDns(dns, companyDataContent);
+                    await ScanDns(dns, companyDataContent, bootstrapIP, bootstrapPort);
                 }
 
                 // Percent
@@ -407,7 +401,7 @@ public partial class FormDnsScanner : Form
         return true;
     }
 
-    private async Task ScanDns(string dns, string? companyDataContent)
+    private async Task ScanDns(string dns, string? companyDataContent, IPAddress bootstrapIP, int bootstrapPort)
     {
         await Task.Run(async () =>
         {
@@ -428,26 +422,8 @@ public partial class FormDnsScanner : Form
             this.InvokeIt(() => timeoutSec = decimal.ToInt32(CustomNumericUpDownDnsTimeout.Value));
             int timeoutMS = timeoutSec * 1000;
 
-            int localPort = 5390;
-
             // Add New Line
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(NL));
-
-            bool isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
-            if (isPortOpen)
-            {
-                localPort = NetworkTool.GetNextPort(localPort);
-                isPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), localPort, 3);
-                if (isPortOpen)
-                {
-                    localPort = NetworkTool.GetNextPort(localPort);
-                    string existingProcessName = ProcessManager.GetProcessNameByListeningPort(localPort);
-                    existingProcessName = existingProcessName == string.Empty ? "Unknown" : existingProcessName;
-                    string msg = $"Port {localPort} is occupied by \"{existingProcessName}\". You need to resolve the conflict.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    return;
-                }
-            }
 
             DnsReader dnsReader = new(dns, companyDataContent);
 
@@ -480,14 +456,14 @@ public partial class FormDnsScanner : Form
 
             // IP
             r1 = $"IP: ";
-            string? ip = null;
+            IPAddress? ip = null;
             if (!string.IsNullOrEmpty(dnsReader.Host))
-                ip = await GetIP.GetIpFromPlainDNS(dnsReader.Host, IPAddress.Loopback.ToString(), 53, timeoutSec);
-            if (string.IsNullOrEmpty(ip) || NetworkTool.IsLocalIP(ip))
+                ip = await GetIP.GetIpFromDnsAddressAsync(dnsReader.Host, $"udp://{IPAddress.Loopback}:53", true, timeoutSec, false, bootstrapIP, bootstrapPort);
+            if (ip == null || ip.Equals(IPAddress.None))
                 ip = dnsReader.IP;
             r2 = $"{ip}{NL}";
 
-            if (!string.IsNullOrEmpty(ip))
+            if (ip != null && !ip.Equals(IPAddress.None))
             {
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r1, Color.LightGray));
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.Orange));
@@ -501,7 +477,7 @@ public partial class FormDnsScanner : Form
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.Orange));
 
             // Path
-            if (!string.IsNullOrEmpty(dnsReader.Path) && dnsReader.Protocol == DnsReader.DnsProtocol.DoH)
+            if (!string.IsNullOrEmpty(dnsReader.Path) && dnsReader.Protocol == DnsEnums.DnsProtocol.DoH)
             {
                 r1 = $"Path: ";
                 r2 = $"{dnsReader.Path}{NL}";
@@ -515,11 +491,11 @@ public partial class FormDnsScanner : Form
             {
                 r1 = $"Stamp Properties: {NL}";
                 r2 = "Is DnsSec: ";
-                string r3 = $"{dnsReader.StampProperties.IsDnsSec}, ";
+                string r3 = $"{dnsReader.StampReader.IsDnsSec}, ";
                 string r4 = "Is No Filter: ";
-                string r5 = $"{dnsReader.StampProperties.IsNoFilter}, ";
+                string r5 = $"{dnsReader.StampReader.IsNoFilter}, ";
                 string r6 = "Is No Log: ";
-                string r7 = $"{dnsReader.StampProperties.IsNoLog}{NL}";
+                string r7 = $"{dnsReader.StampReader.IsNoLog}{NL}";
 
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r1, Color.LightGray));
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.LightGray));
@@ -538,7 +514,7 @@ public partial class FormDnsScanner : Form
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(r2, Color.Orange));
 
             // Check Online Secure
-            await DnsScanner.CheckDnsAsync(domain, dns, timeoutMS);
+            await DnsScanner.CheckDnsAsync(domain, dns, timeoutMS, bootstrapIP, bootstrapPort);
 
             secureSuccess = DnsScanner.IsDnsOnline;
             secureLatency = DnsScanner.DnsLatency;
@@ -575,19 +551,23 @@ public partial class FormDnsScanner : Form
 
             // Generate Insecure Address
             insecureAddress = dns;
-            if (!string.IsNullOrEmpty(ip))
+            if (ip != null && !ip.Equals(IPAddress.None))
             {
                 NetworkTool.GetUrlDetails(dns, dnsReader.Port, out string scheme, out _, out _, out _, out _, out _, out _);
-                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsReader.DnsProtocol.DoH) scheme = "https://";
-                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsReader.DnsProtocol.DoT) scheme = "tls://";
-                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsReader.DnsProtocol.DoQ) scheme = "quic://";
+                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.DoH) scheme = "https://";
+                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.DoT) scheme = "tls://";
+                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.DoQ) scheme = "quic://";
+                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.TCP) scheme = "tcp://";
+                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.UDP) scheme = "udp://";
 
                 dns = $"{scheme}{ip}:{dnsReader.Port}{dnsReader.Path}";
+                if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.DnsCrypt) dns = insecureAddress;
+                
                 insecureAddress = dns;
             }
 
             if (CustomCheckBoxCheckInsecure.Checked && !DnsScanner.IsDnsOnline)
-                await insecureCheck.CheckDnsAsync(domain, dns, timeoutMS);
+                await insecureCheck.CheckDnsAsync(domain, dns, timeoutMS, bootstrapIP, bootstrapPort);
 
             insecureSuccess = insecureCheck.IsDnsOnline;
             insecureLatency = insecureCheck.DnsLatency;
@@ -674,9 +654,9 @@ public partial class FormDnsScanner : Form
                         string website = DomainsToCheckForSmartDNS[n].Trim();
                         if (!string.IsNullOrEmpty(website))
                         {
-                            bool isSmart = await checkFilters.CheckAsSmartDns($"tcp://{SecureDNS.BootstrapDnsIPv4}:{SecureDNS.BootstrapDnsPort}", website);
+                            bool isSmart = await checkFilters.CheckAsSmartDns($"tcp://{bootstrapIP}:{bootstrapPort}", website);
                             if (!isSmart)
-                                isSmart = await checkFilters.CheckAsSmartDns(IPAddress.Loopback.ToString(), website);
+                                isSmart = await checkFilters.CheckAsSmartDns($"udp://{IPAddress.Loopback}:53", website);
                             Color color = isSmart ? Color.MediumSeaGreen : Color.DodgerBlue;
                             r1 = "Act as SmartDNS for \"";
                             r2 = "\": ";

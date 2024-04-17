@@ -10,7 +10,7 @@ namespace SecureDNSClient;
 
 public partial class FormDnsLookup : Form
 {
-    // Settings XML path
+    // AgnosticSettings XML path
     private static readonly string SettingsXmlPath = SecureDNS.SettingsXmlDnsLookup;
     private readonly Settings AppSettings;
     private List<string> ResultList = new();
@@ -41,7 +41,7 @@ public partial class FormDnsLookup : Form
         ednsopt += $"{Environment.NewLine}65074:3132333435363738";
         CustomLabelEDNSOPT.SetToolTip(FormMain.MainToolTip, "Info", ednsopt);
 
-        // Initialize and load Settings
+        // Initialize and load AgnosticSettings
         if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
             AppSettings = new(this, SettingsXmlPath);
         else
@@ -131,6 +131,8 @@ public partial class FormDnsLookup : Form
         CustomTextBoxResult.Top = CustomTextBoxEDNSOPT.Bottom + spaceV;
         CustomTextBoxResult.Width = ClientRectangle.Width - (spaceRight * 2);
         CustomTextBoxResult.Height = ClientRectangle.Height - CustomTextBoxResult.Top - spaceBottom;
+
+        Controllers.SetDarkControl(CustomTextBoxResult);
     }
 
     private void CustomButtonDefault_Click(object sender, EventArgs e)
@@ -313,10 +315,10 @@ public partial class FormDnsLookup : Form
             AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
 
-            // Add Settings to save
+            // Add AgnosticSettings to save
             AppSettings.AddSelectedSettings(this);
 
-            // Save Application Settings
+            // Save Application AgnosticSettings
             await AppSettings.SaveAsync(SettingsXmlPath);
             await Task.Delay(100);
             IsExitDone = true;

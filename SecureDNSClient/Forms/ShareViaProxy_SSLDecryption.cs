@@ -63,7 +63,7 @@ public partial class FormMain
                     // Check If DoH Server Is Running With Previous Cert
                     if (IsConnected && IsDoHConnected)
                     {
-                        string msg = "Due to Certificate changes you need to restart DoH Server.";
+                        string msg = "Due to Certificate Changes You Need To Restart DoH Server.";
                         CustomMessageBox.Show(this, msg, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 });
@@ -86,7 +86,7 @@ public partial class FormMain
                 string msg = "Applied.";
                 msg += $"{NL}SSL Status: Enable";
                 if (IsProxyActivated || IsProxyActivating)
-                    msg += $"{NL}You need to restart Proxy Server.";
+                    msg += $"{NL}You Need To Restart Proxy Server.";
                 CustomMessageBox.Show(this, msg, "SSL Decryption", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -118,8 +118,8 @@ public partial class FormMain
                 if (CustomCheckBoxProxyEnableSSL.Tag == null)
                 {
                     CustomCheckBoxProxyEnableSSL.Checked = false;
-                    if (!CustomCheckBoxPDpiEnableFragment.Enabled)
-                        CustomCheckBoxPDpiEnableFragment.Enabled = true;
+                    //if (!CustomCheckBoxPDpiEnableFragment.Enabled)
+                    //    CustomCheckBoxPDpiEnableFragment.Enabled = true;
                 }
                 CustomCheckBoxProxyEnableSSL.Tag = null;
             });

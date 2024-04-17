@@ -116,9 +116,9 @@ public partial class FormMain : Form
         CustomCheckBoxSettingQcOnStartup.Checked = true;
 
         // Settings Connect
-        CustomCheckBoxSettingEnableCache.Checked = true;
         CustomNumericUpDownSettingMaxServers.Value = (decimal)5;
-        CustomNumericUpDownSettingCamouflageDnsPort.Value = (decimal)5380;
+        CustomCheckBoxDnsEventShowRequest.Checked = false;
+        CustomCheckBoxSettingDnsEnableRules.Checked = false;
 
         // Settings Set/Unset DNS
         CustomRadioButtonSettingUnsetDnsToDhcp.Checked = false;
@@ -128,9 +128,9 @@ public partial class FormMain : Form
 
         // Settings Share Basic
         CustomNumericUpDownSettingProxyPort.Value = (decimal)8080;
-        CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)500;
+        CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)1000;
         CustomCheckBoxSettingProxyBlockPort80.Checked = true;
-        CustomNumericUpDownSettingProxyKillRequestTimeout.Value = (decimal)20;
+        CustomNumericUpDownSettingProxyKillRequestTimeout.Value = (decimal)60;
         CustomCheckBoxSettingProxyUpstream.Checked = false;
         CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Checked = true;
         CustomComboBoxSettingProxyUpstreamMode.SelectedIndex = 1;
@@ -138,13 +138,11 @@ public partial class FormMain : Form
         CustomNumericUpDownSettingProxyUpstreamPort.Value = (decimal)1090;
 
         // Settings Share Advanced
-        CustomCheckBoxSettingProxyEnableFakeProxy.Checked = false;
         CustomCheckBoxSettingProxyCfCleanIP.Checked = false;
         CustomTextBoxSettingProxyCfCleanIP.Text = string.Empty;
         CustomCheckBoxSettingProxyEnableRules.Checked = false;
 
         // Settings Fake Proxy
-        CustomNumericUpDownSettingFakeProxyPort.Value = (decimal)8070;
         CustomTextBoxSettingFakeProxyDohAddress.Text = "https://dns.cloudflare.com/dns-query";
         CustomTextBoxSettingFakeProxyDohCleanIP.Text = "104.16.132.229";
 
@@ -162,7 +160,6 @@ public partial class FormMain : Form
         CustomNumericUpDownSettingBootstrapDnsPort.Value = (decimal)SecureDNS.BootstrapDnsPort;
         CustomTextBoxSettingFallbackDnsIP.Text = "8.8.8.8";
         CustomNumericUpDownSettingFallbackDnsPort.Value = (decimal)53;
-        CustomCheckBoxSettingDontAskCertificate.Checked = false;
         CustomCheckBoxSettingDisableAudioAlert.Checked = false;
         CustomCheckBoxSettingWriteLogWindowToFile.Checked = false;
         CustomCheckBoxSettingAlertDisplayChanges.Checked = false;

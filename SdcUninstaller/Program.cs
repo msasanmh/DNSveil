@@ -36,10 +36,8 @@ internal static class Program
             ShowWindow(handle, SW_HIDE);
 
             // Kill Processes
-            ProcessManager.KillProcessByName("SDCProxyServer", true);
+            ProcessManager.KillProcessByName("SDCAgnosticServer", true);
             ProcessManager.KillProcessByName("dnslookup", true);
-            ProcessManager.KillProcessByName("dnsproxy", true);
-            ProcessManager.KillProcessByName("dnscrypt-proxy", true);
             ProcessManager.KillProcessByName("goodbyedpi", true);
             ProcessManager.KillProcessByName("SecureDNSClient", true);
 
@@ -147,7 +145,7 @@ internal static class Program
         }
     }
 
-    private static void RemoveProgramFiles(string programFiles)
+    private static async void RemoveProgramFiles(string programFiles)
     {
         try
         {
@@ -155,6 +153,16 @@ internal static class Program
             Debug.WriteLine(appDir);
             if (Directory.Exists(appDir))
             {
+                List<string> allFiles = await FileDirectory.GetAllFilesAsync(appDir);
+                foreach (string file in allFiles)
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception) { }
+                }
+
                 try
                 {
                     Directory.Delete(appDir, true);

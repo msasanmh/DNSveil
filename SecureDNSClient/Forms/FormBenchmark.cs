@@ -1,7 +1,6 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
-using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 
@@ -9,7 +8,7 @@ namespace SecureDNSClient;
 
 public partial class FormBenchmark : Form
 {
-    private readonly CheckDns ScanDns = new(false, false, ProcessPriorityClass.Normal);
+    private readonly CheckDns ScanDns = new(false, false);
     private string BootstrapIp { get; set; }
     private int BootstrapPort { get; set; }
     private bool IsExiting { get; set; } = false;

@@ -1,11 +1,14 @@
 using MsmhToolsClass;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 
 namespace SecureDNSClient;
 
 internal static partial class Program
 {
+    private static readonly ReaderWriterLockSlim Locker = new();
+
     internal static bool IsPortable = false;
     internal static bool IsStartup = false;
     internal static int StartupDelaySec = 0; // Default
@@ -98,6 +101,74 @@ internal static partial class Program
         }
         GC.KeepAlive(mutex);
 
+        TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        Application.ThreadException += Application_ThreadException;
+        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
         Application.Run(new FormMain());
+    }
+
+    private static async void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        try
+        {
+            string err = e.Exception.GetInnerExceptions();
+            Debug.WriteLine("-=-=-=-=-=-=-=-=-=-=-=-= UnobservedTaskException:" + Environment.NewLine + err);
+
+            try
+            {
+                Locker.EnterWriteLock();
+                await FileDirectory.AppendTextLineAsync(SecureDNS.ErrorLogPath, err, new UTF8Encoding(false));
+            }
+            catch (Exception) { }
+            finally
+            {
+                Locker.ExitWriteLock();
+            }
+        }
+        catch (Exception) { }
+    }
+
+    private static async void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
+    {
+        try
+        {
+            string err = e.Exception.GetInnerExceptions();
+            Debug.WriteLine("-=-=-=-=-=-=-=-=-=-=-=-= ThreadException:" + Environment.NewLine + err);
+
+            try
+            {
+                Locker.EnterWriteLock();
+                await FileDirectory.AppendTextLineAsync(SecureDNS.ErrorLogPath, err, new UTF8Encoding(false));
+            }
+            catch (Exception) { }
+            finally
+            {
+                Locker.ExitWriteLock();
+            }
+        }
+        catch (Exception) { }
+    }
+
+    private static async void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        try
+        {
+            string? err = e.ExceptionObject.ToString();
+            if (string.IsNullOrEmpty(err)) return;
+            Debug.WriteLine("-=-=-=-=-=-=-=-=-=-=-=-= UnhandledException:" + Environment.NewLine + err);
+
+            try
+            {
+                Locker.EnterWriteLock();
+                await FileDirectory.AppendTextLineAsync(SecureDNS.ErrorLogPath, err, new UTF8Encoding(false));
+            }
+            catch (Exception) { }
+            finally
+            {
+                Locker.ExitWriteLock();
+            }
+        }
+        catch (Exception) { }
     }
 }

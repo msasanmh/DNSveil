@@ -118,38 +118,20 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="dnscrypt_proxyTOML" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>dnscrypt-proxy.toml;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="dnscrypt_proxy_fakeproxyTOML" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>dnscrypt-proxy-fakeproxy.toml;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="dnscrypt_proxy_X64" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>dnscrypt-proxy-X64.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="dnscrypt_proxy_X86" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>dnscrypt-proxy-X86.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
   <data name="dnslookup_X64" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>dnslookup-X64.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="dnslookup_X86" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>dnslookup-X86.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="dnsproxy_X64" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>dnsproxy-X64.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="dnsproxy_X86" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>dnsproxy-X86.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
   <data name="goodbyedpi" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>goodbyedpi.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="SDCProxyServer_X64" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>SDCProxyServer-X64.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="SDCAgnosticServer_X64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>SDCAgnosticServer-X64.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="SDCProxyServer_X86" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>SDCProxyServer-X86.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="SDCAgnosticServer_X86" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>SDCAgnosticServer-X86.exe;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="versions" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>versions.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>

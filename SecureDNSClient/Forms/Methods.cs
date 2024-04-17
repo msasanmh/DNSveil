@@ -2,7 +2,6 @@
 using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
 using MsmhToolsClass;
-using MsmhToolsClass.ProxyServerPrograms;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using SecureDNSClient.DPIBasic;
@@ -23,7 +22,7 @@ public partial class FormMain
             Theme.LoadTheme(this, Theme.Themes.Dark);
             Theme.SetColors(LabelMain);
             CustomMessageBox.FormIcon = Properties.Resources.SecureDNSClient_Icon_Multi;
-            await Task.Delay(100);
+            await Task.Delay(10);
             List<Control> controls = Controllers.GetAllControls(this);
             for (int i = 0; i < controls.Count; i++)
             {
@@ -44,9 +43,11 @@ public partial class FormMain
                 CustomLabelAboutThis2.ForeColor = Color.IndianRed;
             });
 
+            Controllers.SetDarkControl(this);
+
             // Wait
             //Debug.WriteLine("All Controls: " + controls.Count);
-            await Task.Delay(controls.Count * 5);
+            await Task.Delay(controls.Count);
 
             IsThemeApplied = true;
         }
@@ -56,14 +57,9 @@ public partial class FormMain
     {
         return !IsCheckingStarted && !IsQuickConnecting &&
                !IsConnected && !IsConnecting &&
-               !ProcessManager.FindProcessByPID(PIDDNSProxy) &&
-               !ProcessManager.FindProcessByPID(PIDDNSProxyBypass) &&
-               !ProcessManager.FindProcessByPID(PIDDNSCrypt) &&
-               !ProcessManager.FindProcessByPID(PIDDNSCryptBypass) &&
-               !ProcessManager.FindProcessByPID(PIDFakeProxy) &&
-               !ProcessManager.FindProcessByPID(PIDCamouflageProxy) &&
+               !ProcessManager.FindProcessByPID(PIDDnsServer) &&
                !ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass) &&
-               !ProcessManager.FindProcessByPID(PIDProxy) &&
+               !ProcessManager.FindProcessByPID(PIDProxyServer) &&
                !ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic) &&
                !ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced) &&
                !IsDNSSet && !IsDNSSetting &&
@@ -140,7 +136,7 @@ public partial class FormMain
         // Update NICs
         await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
 
-        // Start Quick Connect (To User Settings)
+        // Start Quick Connect (To User AgnosticSettings)
         QcToUserSetting_Click(null, EventArgs.Empty);
     }
 
@@ -283,13 +279,13 @@ public partial class FormMain
         // Update NICs
         if (nics) await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, bootstrapIP, bootstrapPort);
 
-        // Update Connect Modes (Quick Connect Settings)
+        // Update Connect Modes (Quick Connect AgnosticSettings)
         if (qcConnectModes) UpdateConnectModes(CustomComboBoxSettingQcConnectMode);
 
-        // Update NICs (Quick Connect Settings)
+        // Update NICs (Quick Connect AgnosticSettings)
         if (qcNics) await SetDnsOnNic_.UpdateNICs(CustomComboBoxSettingQcNics, bootstrapIP, bootstrapPort);
 
-        // Update GoodbyeDPI Basic Modes (Quick Connect Settings)
+        // Update GoodbyeDPI Basic Modes (Quick Connect AgnosticSettings)
         if (qcGoodbyeDpiModes) DPIBasicBypass.UpdateGoodbyeDpiBasicModes(CustomComboBoxSettingQcGdBasic);
     }
 
@@ -423,62 +419,74 @@ public partial class FormMain
             return true;
     }
 
-    private async Task FlushDNS(bool showMsgHeaderAndFooter, bool showMsg)
+    private async Task FlushDNS(bool flush, bool register, bool release, bool renew, bool showMsg)
     {
         if (IsFlushingDns) return;
+        if (flush == false && register == false && release == false && renew == false) return;
         IsFlushingDns = true;
         string remove = "Windows IP Configuration";
         await Task.Run(async () =>
         {
-            string msg = $"{NL}Flushing Dns...{NL}";
-            if (showMsgHeaderAndFooter) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
-
-            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
-            if (showMsg)
-            {
-                if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
-                msg = msg.Replace(Environment.NewLine, string.Empty);
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flush: ", Color.DodgerBlue));
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
-            }
-
-            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
-            if (showMsg)
-            {
-                if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
-                msg = msg.Replace(Environment.NewLine, string.Empty);
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Register: ", Color.DodgerBlue));
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
-            }
-
-            msg = $"Dns flushed successfully.{NL}";
-            if (showMsgHeaderAndFooter) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
-        });
-        IsFlushingDns = false;
-    }
-
-    private async Task FlushDnsOnExit(bool showMsg)
-    {
-        if (IsFlushingDns) return;
-        await Task.Run(async () =>
-        {
-            string msg = $"{NL}Full Flushing Dns...{NL}";
+            string msg = $"{NL}Flushing DNS...{NL}";
             if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
 
-            await FlushDNS(false, showMsg);
-            IsFlushingDns = true;
+            if (flush)
+            {
+                msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
+                if (showMsg)
+                {
+                    if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                    msg = msg.Replace(Environment.NewLine, string.Empty);
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flush: ", Color.DodgerBlue));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+                }
 
-            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText("Release:", Color.DodgerBlue));
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-
-            msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText("Renew:", Color.DodgerBlue));
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.LightGray));
-
-            msg = $"Dns flushed successfully.{NL}";
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                if (IsDNSConnected && !IsExiting)
+                {
+                    await DnsConsole.SendCommandAsync("flush");
+                }
+            }
+            
+            if (register)
+            {
+                msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
+                if (showMsg)
+                {
+                    if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                    msg = msg.Replace(Environment.NewLine, string.Empty);
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Register: ", Color.DodgerBlue));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+                }
+            }
+            
+            if (release)
+            {
+                msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
+                if (showMsg)
+                {
+                    if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                    msg = msg.Replace(Environment.NewLine, string.Empty);
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Release: ", Color.DodgerBlue));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+                }
+            }
+            
+            if (renew)
+            {
+                msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
+                if (showMsg)
+                {
+                    if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                    msg = msg.Replace(Environment.NewLine, string.Empty);
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Renew: ", Color.DodgerBlue));
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+                }
+            }
+            
             //ProcessManager.Execute("netsh", "winsock reset"); // Needs PC Restart
+
+            msg = $"Dns Flushed Successfully.{NL}";
+            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
         });
         IsFlushingDns = false;
     }
@@ -486,7 +494,7 @@ public partial class FormMain
     public static List<int> GetPids(bool includeGoodbyeDpi)
     {
         List<int> list = new();
-        int[] pids = { Environment.ProcessId, PIDProxy, PIDFakeProxy, PIDDNSProxy, PIDDNSProxyBypass, PIDDNSCrypt, PIDDNSCryptBypass };
+        int[] pids = { Environment.ProcessId, PIDDnsServer, PIDProxyServer };
         int[] pidsGD = { PIDGoodbyeDPIBasic, PIDGoodbyeDPIAdvanced, PIDGoodbyeDPIBypass };
         list.AddRange(pids);
         if (includeGoodbyeDpi) list.AddRange(pidsGD);
@@ -510,21 +518,15 @@ public partial class FormMain
             {
                 if (killByName)
                 {
-                    ProcessManager.KillProcessByName("SDCProxyServer");
+                    ProcessManager.KillProcessByName("SDCAgnosticServer");
                     ProcessManager.KillProcessByName("dnslookup");
-                    ProcessManager.KillProcessByName("dnsproxy");
-                    ProcessManager.KillProcessByName("dnscrypt-proxy");
                     ProcessManager.KillProcessByName("goodbyedpi");
                 }
                 else
                 {
-                    ProcessManager.KillProcessByPID(PIDProxy);
-                    ProcessManager.KillProcessByPID(PIDFakeProxy);
                     ProcessManager.KillProcessByName("dnslookup");
-                    ProcessManager.KillProcessByPID(PIDDNSProxy);
-                    ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
-                    ProcessManager.KillProcessByPID(PIDDNSCrypt);
-                    ProcessManager.KillProcessByPID(PIDDNSCryptBypass);
+                    ProcessManager.KillProcessByPID(PIDDnsServer);
+                    ProcessManager.KillProcessByPID(PIDProxyServer);
                     ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
                     ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
                     ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
@@ -555,52 +557,43 @@ public partial class FormMain
 
     public bool CheckNecessaryFiles(bool showMessage = true)
     {
-        if (!File.Exists(SecureDNS.DnsLookup) || !File.Exists(SecureDNS.DnsProxy) || !File.Exists(SecureDNS.DNSCrypt) ||
-            !File.Exists(SecureDNS.DNSCryptConfigPath) || !File.Exists(SecureDNS.DNSCryptConfigFakeProxyPath) ||
-            !File.Exists(SecureDNS.ProxyServerPath) || !File.Exists(SecureDNS.GoodbyeDpi) ||
+        if (!File.Exists(SecureDNS.DnsLookup) || !File.Exists(SecureDNS.AgnosticServerPath) ||
+            !File.Exists(SecureDNS.GoodbyeDpi) ||
             !File.Exists(SecureDNS.WinDivert) || !File.Exists(SecureDNS.WinDivert32) || !File.Exists(SecureDNS.WinDivert64))
         {
             if (showMessage)
             {
-                string msg = "ERROR: Some of binary files are missing!" + NL;
+                string msg = "ERROR: Some Of Binary Files Are Missing!" + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            }
-            return false;
+            } return false;
         }
-        else
-            return true;
+        else return true;
     }
 
     private async Task<bool> WriteNecessaryFilesToDisk()
     {
         bool success = true;
         Architecture arch = RuntimeInformation.ProcessArchitecture;
+
         // Get New Versions
         string dnslookupNewVer = SecureDNS.GetBinariesVersionFromResource("dnslookup", arch);
-        string dnsproxyNewVer = SecureDNS.GetBinariesVersionFromResource("dnsproxy", arch);
-        string dnscryptNewVer = SecureDNS.GetBinariesVersionFromResource("dnscrypt-proxy", arch);
-        string sdcproxyserverNewVer = SecureDNS.GetBinariesVersionFromResource("sdcproxyserver", arch);
+        string sdcagnosticserverNewVer = SecureDNS.GetBinariesVersionFromResource("sdcagnosticserver", arch);
         string goodbyedpiNewVer = SecureDNS.GetBinariesVersionFromResource("goodbyedpi", arch);
 
         // Get Old Versions
         string dnslookupOldVer = SecureDNS.GetBinariesVersion("dnslookup", arch);
-        string dnsproxyOldVer = SecureDNS.GetBinariesVersion("dnsproxy", arch);
-        string dnscryptOldVer = SecureDNS.GetBinariesVersion("dnscrypt-proxy", arch);
-        string sdcproxyserverOldVer = SecureDNS.GetBinariesVersion("sdcproxyserver", arch);
+        string sdcagnosticserverOldVer = SecureDNS.GetBinariesVersion("sdcagnosticserver", arch);
         string goodbyedpiOldVer = SecureDNS.GetBinariesVersion("goodbyedpi", arch);
 
         // Get Version Result
         int dnslookupResult = Info.VersionCompare(dnslookupNewVer, dnslookupOldVer);
-        int dnsproxyResult = Info.VersionCompare(dnsproxyNewVer, dnsproxyOldVer);
-        int dnscryptResult = Info.VersionCompare(dnscryptNewVer, dnscryptOldVer);
-        int sdcproxyserverResult = Info.VersionCompare(sdcproxyserverNewVer, sdcproxyserverOldVer);
+        int sdcagnosticserverResult = Info.VersionCompare(sdcagnosticserverNewVer, sdcagnosticserverOldVer);
         int goodbyedpiResult = Info.VersionCompare(goodbyedpiNewVer, goodbyedpiOldVer);
 
         // Check Missing/Update Binaries
-        if (!CheckNecessaryFiles(false) || dnslookupResult == 1 || dnsproxyResult == 1 || dnscryptResult == 1 ||
-                                           sdcproxyserverResult == 1 || goodbyedpiResult == 1)
+        if (!CheckNecessaryFiles(false) || dnslookupResult == 1 || sdcagnosticserverResult == 1 || goodbyedpiResult == 1)
         {
-            string msg1 = $"Creating/Updating {arch} binaries. Please Wait..." + NL;
+            string msg1 = $"Creating/Updating {arch} Binaries. Please Wait..." + NL;
             CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
 
             success = await writeBinariesAsync();
@@ -623,35 +616,12 @@ public partial class FormMain
                         await File.WriteAllBytesAsync(SecureDNS.DnsLookup, NecessaryFiles.Resource1.dnslookup_X86);
                 }
 
-
-                if (!File.Exists(SecureDNS.DnsProxy) || dnsproxyResult == 1)
+                if (!File.Exists(SecureDNS.AgnosticServerPath) || sdcagnosticserverResult == 1)
                 {
                     if (arch == Architecture.X64)
-                        await File.WriteAllBytesAsync(SecureDNS.DnsProxy, NecessaryFiles.Resource1.dnsproxy_X64);
+                        await File.WriteAllBytesAsync(SecureDNS.AgnosticServerPath, NecessaryFiles.Resource1.SDCAgnosticServer_X64);
                     if (arch == Architecture.X86)
-                        await File.WriteAllBytesAsync(SecureDNS.DnsProxy, NecessaryFiles.Resource1.dnsproxy_X86);
-                }
-
-                if (!File.Exists(SecureDNS.DNSCrypt) || dnscryptResult == 1)
-                {
-                    if (arch == Architecture.X64)
-                        await File.WriteAllBytesAsync(SecureDNS.DNSCrypt, NecessaryFiles.Resource1.dnscrypt_proxy_X64);
-                    if (arch == Architecture.X86)
-                        await File.WriteAllBytesAsync(SecureDNS.DNSCrypt, NecessaryFiles.Resource1.dnscrypt_proxy_X86);
-                }
-
-                if (!File.Exists(SecureDNS.DNSCryptConfigPath))
-                    await File.WriteAllBytesAsync(SecureDNS.DNSCryptConfigPath, NecessaryFiles.Resource1.dnscrypt_proxyTOML);
-
-                if (!File.Exists(SecureDNS.DNSCryptConfigFakeProxyPath))
-                    await File.WriteAllBytesAsync(SecureDNS.DNSCryptConfigFakeProxyPath, NecessaryFiles.Resource1.dnscrypt_proxy_fakeproxyTOML);
-
-                if (!File.Exists(SecureDNS.ProxyServerPath) || sdcproxyserverResult == 1)
-                {
-                    if (arch == Architecture.X64)
-                        await File.WriteAllBytesAsync(SecureDNS.ProxyServerPath, NecessaryFiles.Resource1.SDCProxyServer_X64);
-                    if (arch == Architecture.X86)
-                        await File.WriteAllBytesAsync(SecureDNS.ProxyServerPath, NecessaryFiles.Resource1.SDCProxyServer_X86);
+                        await File.WriteAllBytesAsync(SecureDNS.AgnosticServerPath, NecessaryFiles.Resource1.SDCAgnosticServer_X86);
                 }
 
                 if (!File.Exists(SecureDNS.GoodbyeDpi) || goodbyedpiResult == 1)
@@ -818,7 +788,7 @@ public partial class FormMain
                 4 => "Status",
                 5 => "Net Status",
                 6 => "DNS Addresses",
-                7 => "GUID",
+                7 => "Is IPv6 Enabled",
                 8 => "MAC Address",
                 9 => "Manufacturer",
                 10 => "Is Physical Adapter",
@@ -904,26 +874,18 @@ public partial class FormMain
                 {
                     // Write activate DPI first to log
                     string msgDPI1 = $"Check DPI Bypass: ";
-                    string msgDPI2 = $"Activate DPI Bypass to check.{NL}";
+                    string msgDPI2 = $"Activate DPI Bypass To Check.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
                     
                     return;
                 }
 
-                // Is Proxy Direct DNS Set?!
-                bool isProxyDnsSet = false;
-                if (ProcessManager.FindProcessByPID(PIDFakeProxy) &&
-                    IsProxyRunning &&
-                    ProxyDNSMode == ProxyProgram.Dns.Mode.DoH &&
-                    ProxyStaticFragmentMode != ProxyProgram.Fragment.Mode.Disable)
-                    isProxyDnsSet = true;
-
-                if (!IsDNSSet && !isProxyDnsSet)
+                if (!IsDNSSet)
                 {
                     // Write set DNS first to log
                     string msgDPI1 = $"Check DPI Bypass: ";
-                    string msgDPI2 = $"Set DNS to check.{NL}";
+                    string msgDPI2 = $"Set DNS To Check.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.Orange));
 
@@ -932,8 +894,8 @@ public partial class FormMain
 
                 string url = $"https://{host}/";
                 Uri uri = new(url, UriKind.Absolute);
-
-                bool isProxyPortOpen = NetworkTool.IsPortOpen(IPAddress.Loopback.ToString(), ProxyPort, 5);
+                
+                bool isProxyPortOpen = NetworkTool.IsPortOpen(ProxyPort);
                 Debug.WriteLine($"Is Proxy Port Open: {isProxyPortOpen}, Port: {ProxyPort}");
 
                 if (isProxyPortOpen && IsProxyDpiBypassActive)
@@ -948,59 +910,29 @@ public partial class FormMain
 
                     string proxyScheme = $"socks5://{IPAddress.Loopback}:{ProxyPort}";
 
-                    using HttpClientHandler handler = new ();
-                    handler.Proxy = new WebProxy(proxyScheme, true);
-                    // Ignore Cert Check To Make It Faster
-                    handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-                    handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
-                    
-                    using HttpClient httpClientWithProxy = new(handler);
-                    httpClientWithProxy.Timeout = TimeSpan.FromSeconds(timeoutSec);
-
-                    // Get Only Header
-                    using HttpRequestMessage message = new(HttpMethod.Head, uri);
-                    message.Headers.TryAddWithoutValidation("User-Agent", "Other");
-
                     StopWatchCheckDPIWorks.Restart();
-                    HttpResponseMessage r = await httpClientWithProxy.SendAsync(message, CheckDpiBypassCTS.Token);
+                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCode(url, null, timeoutSec * 1000, false, proxyScheme, null, null, CheckDpiBypassCTS.Token);
                     StopWatchCheckDPIWorks.Stop();
-
-                    if (r.IsSuccessStatusCode || r.StatusCode == HttpStatusCode.NotFound || r.StatusCode == HttpStatusCode.Forbidden)
+                    Debug.WriteLine(hsc);
+                    if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
                     {
                         msgSuccess();
-                        r.Dispose();
                     }
-                    else
-                        msgFailed(r);
+                    else msgFailed(hsc);
                 }
                 else
                 {
                     Debug.WriteLine("No Proxy");
 
-                    using HttpClientHandler handler = new();
-                    handler.UseProxy = false;
-                    // Ignore Cert Check To Make It Faster
-                    handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-                    handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
-
-                    using HttpClient httpClient = new(handler);
-                    httpClient.Timeout = TimeSpan.FromSeconds(timeoutSec);
-
-                    // Get Only Header
-                    using HttpRequestMessage message = new(HttpMethod.Head, uri);
-                    message.Headers.TryAddWithoutValidation("User-Agent", "Other");
-
                     StopWatchCheckDPIWorks.Restart();
-                    HttpResponseMessage r = await httpClient.SendAsync(message, CheckDpiBypassCTS.Token);
+                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCode(url, null, timeoutSec * 1000, false, null, null, null, CheckDpiBypassCTS.Token);
                     StopWatchCheckDPIWorks.Stop();
 
-                    if (r.IsSuccessStatusCode || r.StatusCode == HttpStatusCode.NotFound || r.StatusCode == HttpStatusCode.Forbidden)
+                    if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
                     {
                         msgSuccess();
-                        r.Dispose();
                     }
-                    else
-                        msgFailed(r);
+                    else msgFailed(hsc);
                 }
 
                 void msgSuccess()
@@ -1023,29 +955,27 @@ public partial class FormMain
                     }
                 }
 
-                void msgFailed(HttpResponseMessage r)
+                void msgFailed(HttpStatusCode hsc)
                 {
                     // Write Status to log
-                    if (IsDPIActive)
+                    if (IsDPIActive && !CheckDpiBypassCTS.IsCancellationRequested)
                     {
                         string msgDPI1 = $"Check DPI Bypass: ";
-                        string msgDPI2 = $"Status {r.StatusCode}: {r.ReasonPhrase}.{NL}";
+                        string msgDPI2 = $"{hsc}{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
                     }
                     else
                     {
                         string msgCancel = $"Check DPI Bypass: Canceled.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCancel, Color.LightGray));
                     }
-
-                    r.Dispose();
                 }
             }
             catch (Exception ex)
             {
                 // Write Failed to log
-                if (IsDPIActive)
+                if (IsDPIActive && !CheckDpiBypassCTS.IsCancellationRequested)
                 {
                     string msgDPI1 = $"Check DPI Bypass:{ex.Message}{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.IndianRed));
@@ -1106,10 +1036,10 @@ public partial class FormMain
         try
         {
             if (Directory.Exists(SecureDNS.OldUserDataDirPath))
-                await FileDirectory.MoveDirectory(SecureDNS.OldUserDataDirPath, SecureDNS.UserDataDirPath, true, CancellationToken.None);
+                await FileDirectory.MoveDirectoryAsync(SecureDNS.OldUserDataDirPath, SecureDNS.UserDataDirPath, true, CancellationToken.None);
 
             if (Directory.Exists(SecureDNS.OldCertificateDirPath))
-                await FileDirectory.MoveDirectory(SecureDNS.OldCertificateDirPath, SecureDNS.CertificateDirPath, true, CancellationToken.None);
+                await FileDirectory.MoveDirectoryAsync(SecureDNS.OldCertificateDirPath, SecureDNS.CertificateDirPath, true, CancellationToken.None);
         }
         catch (Exception ex)
         {

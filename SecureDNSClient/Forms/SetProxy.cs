@@ -1,4 +1,5 @@
 ﻿using MsmhToolsClass;
+using System.Diagnostics;
 using System.Net;
 
 namespace SecureDNSClient;
@@ -19,13 +20,13 @@ public partial class FormMain
             if (!IsAnotherProxySet)
             {
                 // Write Unset Proxy message to log
-                string msg = $"Proxy Server ({CurrentSystemProxy}) removed from system.";
+                string msg = $"Proxy Server ({CurrentSystemProxy}) Removed From System.";
                 CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray);
             }
             else
             {
                 // Write Unset Proxy error to log
-                string msg = $"Couldn't unset Proxy Server ({CurrentSystemProxy}) from system.";
+                string msg = $"Couldn't Unset Proxy Server ({CurrentSystemProxy}) From System.";
                 CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
             }
         }
@@ -47,7 +48,7 @@ public partial class FormMain
                 // Write Enable Proxy first to log
                 if (!IsProxyActivated)
                 {
-                    string msg = "Enable Proxy first." + NL;
+                    string msg = "Enable Proxy First." + NL;
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
                     return;
                 }
@@ -69,21 +70,21 @@ public partial class FormMain
                     if (!limitLog)
                     {
                         string msg1 = "Proxy Server ";
-                        string msg2 = " set to system.";
+                        string msg2 = " Set To System.";
                         CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
                         CustomRichTextBoxLog.AppendText(CurrentSystemProxy, Color.DodgerBlue);
                         CustomRichTextBoxLog.AppendText(msg2 + NL, Color.LightGray);
                     }
                     else
                     {
-                        string msg = $"Proxy Server ({CurrentSystemProxy}) set to system.";
+                        string msg = $"Proxy Server ({CurrentSystemProxy}) Set To System.";
                         CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray);
                     }
                 }
                 else
                 {
                     // Write Set Proxy error to log
-                    string msg = "Couldn't set Proxy Server to system.";
+                    string msg = "Couldn't Set Proxy Server To System.";
                     CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
                 }
             }
@@ -99,13 +100,13 @@ public partial class FormMain
                 if (!IsProxySet)
                 {
                     // Write Unset Proxy message to log
-                    string msg = $"Proxy Server ({CurrentSystemProxy}) removed from system.";
+                    string msg = $"Proxy Server ({CurrentSystemProxy}) Removed From System.";
                     CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray);
                 }
                 else
                 {
                     // Write Unset Proxy error to log
-                    string msg = $"Couldn't unset Proxy Server ({CurrentSystemProxy}) from system.";
+                    string msg = $"Couldn't Unset Proxy Server ({CurrentSystemProxy}) From System.";
                     CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
                 }
             }
@@ -119,15 +120,13 @@ public partial class FormMain
     {
         // Update Proxy Bools
         await UpdateBoolProxy();
-
+        
         // Get IP:Port
         string ip = IPAddress.Loopback.ToString();
         int port = ProxyPort != -1 ? ProxyPort : GetProxyPortSetting();
+        string proxy = $"{ip}:{port}";
 
         // Start Set Proxy
-        if (IsProxySSLDecryptionActive)
-            NetworkTool.SetProxy($"{ip}:{port}", null, null, null, true);
-        else
-            NetworkTool.SetProxy(null, null, null, $"{ip}:{port}", false);
+        NetworkTool.SetProxy(proxy, proxy, proxy, proxy, false);
     }
 }

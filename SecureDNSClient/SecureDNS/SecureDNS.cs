@@ -3,9 +3,8 @@ using System.Diagnostics;
 using CustomControls;
 using System.Reflection;
 using MsmhToolsClass;
-using MsmhToolsClass.DnsTool;
+using MsmhToolsClass.MsmhAgnosticServer;
 using System.Runtime.InteropServices;
-using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
@@ -14,12 +13,12 @@ namespace SecureDNSClient;
 public class SecureDNS
 {
     // App Name Without Extension
-    private static readonly string appNameWithoutExtension = Path.GetFileNameWithoutExtension(Application.ExecutablePath);
+    private static readonly string appNameWithoutExtension = GetFileNameWithoutExtension(Application.ExecutablePath);
     
     // App Directory Path
-    public static readonly string CurrentPath = Path.GetFullPath(AppContext.BaseDirectory);
+    public static readonly string CurrentPath = GetFullPath(AppContext.BaseDirectory);
 
-    public static readonly string CurrentExecutablePath = Path.GetFullPath(Application.ExecutablePath);
+    public static readonly string CurrentExecutablePath = GetFullPath(Application.ExecutablePath);
 
     public static string GetParent
     {
@@ -37,26 +36,18 @@ public class SecureDNS
     }
 
     // Binaries path
-    public static readonly string BinaryDirPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary"));
-    public static readonly string DnsLookup = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "dnslookup.exe"));
-    public static readonly string DnsProxy = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "dnsproxy.exe"));
-    public string DnsProxyDll = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
-    public static readonly string DNSCrypt = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "dnscrypt-proxy.exe"));
-    public static readonly string ProxyServerPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "SDCProxyServer.exe"));
-    public static readonly string GoodbyeDpi = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "goodbyedpi.exe"));
-    public static readonly string WinDivert = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "WinDivert.dll"));
-    public static readonly string WinDivert32 = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "WinDivert32.sys"));
-    public static readonly string WinDivert64 = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "WinDivert64.sys"));
-
-    // Binaries file version path
-    public static readonly string BinariesVersionPath = Path.GetFullPath(Path.Combine(CurrentPath, "binary", "versions.txt"));
+    public static readonly string BinaryDirPath = GetFullPath(CurrentPath, "binary");
+    public static readonly string DnsLookup = GetFullPath(CurrentPath, "binary", "dnslookup.exe");
+    public static readonly string RandomPath = GetRandomPath();
+    public static readonly string AgnosticServerPath = GetFullPath(CurrentPath, "binary", "SDCAgnosticServer.exe");
+    public static readonly string GoodbyeDpi = GetFullPath(CurrentPath, "binary", "goodbyedpi.exe");
+    public static readonly string WinDivert = GetFullPath(CurrentPath, "binary", "WinDivert.dll");
+    public static readonly string WinDivert32 = GetFullPath(CurrentPath, "binary", "WinDivert32.sys");
+    public static readonly string WinDivert64 = GetFullPath(CurrentPath, "binary", "WinDivert64.sys");
+    public static readonly string BinariesVersionPath = GetFullPath(CurrentPath, "binary", "versions.txt");
 
     // Others
-    public static readonly string DNSCryptConfigPath = Path.GetFullPath(Path.Combine(CurrentPath, "dnscrypt-proxy.toml"));
-    public static readonly string DNSCryptConfigFakeProxyPath = Path.GetFullPath(Path.Combine(CurrentPath, "dnscrypt-proxy-fakeproxy.toml"));
-    public static readonly string DPIBlacklistFPPath = Path.GetFullPath(Path.Combine(CurrentPath, "DPIBlacklistFP.txt"));
-    public static readonly string ProxyServerErrorLogPath = Path.GetFullPath(Path.Combine(CurrentPath, "ProxyServerError.log"));
-    public static readonly string ProxyServerRequestLogPath = Path.GetFullPath(Path.Combine(CurrentPath, "ProxyServerRequest.log"));
+    public static readonly string DPIBlacklistFPPath = GetFullPath(CurrentPath, "DPIBlacklistFP.txt");
 
     // User Data
     private const string UDN = "UserData";
@@ -65,13 +56,13 @@ public class SecureDNS
     {
         get
         {
-            if (Program.IsPortable) return Path.GetFullPath(Path.Combine(GetParent, UDN));
+            if (Program.IsPortable) return GetFullPath(GetParent, UDN);
             else
             {
                 try
                 {
                     string appDataLocal = Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-                    return Path.GetFullPath(Path.Combine(appDataLocal, "SecureDNSClient", UDN));
+                    return GetFullPath(appDataLocal, "SecureDNSClient", UDN);
                 }
                 catch (Exception)
                 {
@@ -79,47 +70,49 @@ public class SecureDNS
                     MessageBox.Show(msgErr, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Environment.Exit(0);
                     Application.Exit();
-                    return Path.GetFullPath(Path.Combine(GetParent, UDN));
+                    return GetFullPath(GetParent, UDN);
                 }
             }
         }
     }
 
-    public static readonly string SettingsXmlPath = Path.GetFullPath(Path.Combine(UserDataDirPath, appNameWithoutExtension + ".xml")); // Settings XML path
-    public static readonly string SettingsXmlDnsLookup = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsLookupSettings.xml"));
-    public static readonly string SettingsXmlIpScanner = Path.GetFullPath(Path.Combine(UserDataDirPath, "IpScannerSettings.xml"));
-    public static readonly string SettingsXmlDnsScanner = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsScannerSettings.xml"));
-    public static readonly string SettingsXmlDnsScannerExport = Path.GetFullPath(Path.Combine(UserDataDirPath, "DnsScannerExportSettings.xml"));
-    public static readonly string UserIdPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "uid.txt"));
-    public static readonly string ProxyRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "ProxyRules.txt"));
-    public static readonly string CustomServersPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers.txt"));
-    public static readonly string CustomServersXmlPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers.xml"));
-    public static readonly string WorkingServersPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CustomServers_Working.txt"));
-    public static readonly string DPIBlacklistPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DPIBlacklist.txt")); // GoodbyeDPI Black List
-    public static readonly string NicNamePath = Path.GetFullPath(Path.Combine(UserDataDirPath, "NicName.txt"));
-    public static readonly string SavedEncodedDnsPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "SavedEncodedDns.txt"));
-    public static readonly string LogWindowPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "LogWindow.txt"));
-    public static readonly string CloseStatusPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "CloseStatus.txt"));
+    public static readonly string SettingsXmlPath = GetFullPath(UserDataDirPath, appNameWithoutExtension + ".xml"); // AgnosticSettings XML path
+    public static readonly string SettingsXmlDnsLookup = GetFullPath(UserDataDirPath, "DnsLookupSettings.xml");
+    public static readonly string SettingsXmlIpScanner = GetFullPath(UserDataDirPath, "IpScannerSettings.xml");
+    public static readonly string SettingsXmlDnsScanner = GetFullPath(UserDataDirPath, "DnsScannerSettings.xml");
+    public static readonly string SettingsXmlDnsScannerExport = GetFullPath(UserDataDirPath, "DnsScannerExportSettings.xml");
+    public static readonly string UserIdPath = GetFullPath(UserDataDirPath, "uid.txt");
+    public static readonly string DnsRulesPath = GetFullPath(UserDataDirPath, "DnsRules.txt");
+    public static readonly string ProxyRulesPath = GetFullPath(UserDataDirPath, "ProxyRules.txt");
+    public static readonly string CustomServersPath = GetFullPath(UserDataDirPath, "CustomServers.txt");
+    public static readonly string CustomServersXmlPath = GetFullPath(UserDataDirPath, "CustomServers.xml");
+    public static readonly string WorkingServersPath = GetFullPath(UserDataDirPath, "CustomServers_Working.txt");
+    public static readonly string DPIBlacklistPath = GetFullPath(UserDataDirPath, "DPIBlacklist.txt"); // GoodbyeDPI Black List
+    public static readonly string NicNamePath = GetFullPath(UserDataDirPath, "NicName.txt");
+    public static readonly string SavedEncodedDnsPath = GetFullPath(UserDataDirPath, "SavedEncodedDns.txt");
+    public static readonly string LogWindowPath = GetFullPath(UserDataDirPath, "LogWindow.txt");
+    public static readonly string CloseStatusPath = GetFullPath(UserDataDirPath, "CloseStatus.txt");
+    public static readonly string ErrorLogPath = GetFullPath(UserDataDirPath, "ErrorLog.txt");
 
-    // Old Proxy Rules
-    public static readonly string BlackWhiteListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "BlackWhiteList.txt"));
-    public static readonly string FakeDnsRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeDnsRules.txt"));
-    public static readonly string FakeSniRulesPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "FakeSniRules.txt"));
-    public static readonly string DontBypassListPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "DontBypassList.txt"));
+    // Old Proxy ProxyRules
+    public static readonly string BlackWhiteListPath = GetFullPath(UserDataDirPath, "BlackWhiteList.txt");
+    public static readonly string FakeDnsRulesPath = GetFullPath(UserDataDirPath, "FakeDnsRules.txt");
+    public static readonly string FakeSniRulesPath = GetFullPath(UserDataDirPath, "FakeSniRules.txt");
+    public static readonly string DontBypassListPath = GetFullPath(UserDataDirPath, "DontBypassList.txt");
 
     // User Data Old Path
     private const string OldUDN = "user";
-    public static readonly string OldUserDataDirPath = Path.GetFullPath(Path.Combine(CurrentPath, OldUDN));
+    public static readonly string OldUserDataDirPath = GetFullPath(CurrentPath, OldUDN);
 
     // Certificates Path
-    public static readonly string CertificateDirPath = Path.GetFullPath(Path.Combine(UserDataDirPath, "certificate"));
-    public static readonly string IssuerKeyPath = Path.GetFullPath(Path.Combine(CertificateDirPath, "rootCA.key"));
-    public static readonly string IssuerCertPath = Path.GetFullPath(Path.Combine(CertificateDirPath, "rootCA.crt"));
-    public static readonly string KeyPath = Path.GetFullPath(Path.Combine(CertificateDirPath, "localhost.key"));
-    public static readonly string CertPath = Path.GetFullPath(Path.Combine(CertificateDirPath, "localhost.crt"));
+    public static readonly string CertificateDirPath = GetFullPath(UserDataDirPath, "certificate");
+    public static readonly string IssuerKeyPath = GetFullPath(CertificateDirPath, "rootCA.key");
+    public static readonly string IssuerCertPath = GetFullPath(CertificateDirPath, "rootCA.crt");
+    public static readonly string KeyPath = GetFullPath(CertificateDirPath, "localhost.key");
+    public static readonly string CertPath = GetFullPath(CertificateDirPath, "localhost.crt");
 
     // Certificates Old Path
-    public static readonly string OldCertificateDirPath = Path.GetFullPath(Path.Combine(CurrentPath, "certificate"));
+    public static readonly string OldCertificateDirPath = GetFullPath(CurrentPath, "certificate");
 
     // Certificate Subject Names
     public static readonly string CertIssuerSubjectName = "SecureDNSClient Authority";
@@ -138,12 +131,8 @@ public class SecureDNS
     public static readonly string FirewallRule_SdcOut = "SDC OUT";
     public static readonly string FirewallRule_SdcDnsLookupIn = "SDC DnsLookup IN";
     public static readonly string FirewallRule_SdcDnsLookupOut = "SDC DnsLookup OUT";
-    public static readonly string FirewallRule_SdcDnsProxyIn = "SDC DnsProxy IN";
-    public static readonly string FirewallRule_SdcDnsProxyOut = "SDC DnsProxy OUT";
-    public static readonly string FirewallRule_SdcDNSCryptIn = "SDC DNSCrypt IN";
-    public static readonly string FirewallRule_SdcDNSCryptOut = "SDC DNSCrypt OUT";
-    public static readonly string FirewallRule_SdcProxyServerIn = "SDC ProxyServer IN";
-    public static readonly string FirewallRule_SdcProxyServerOut = "SDC ProxyServer OUT";
+    public static readonly string FirewallRule_SdcAgnosticServerIn = "SDC AgnosticServer IN";
+    public static readonly string FirewallRule_SdcAgnosticServerOut = "SDC AgnosticServer OUT";
     public static readonly string FirewallRule_SdcGoodbyeDpiIn = "SDC GoodbyeDpi IN";
     public static readonly string FirewallRule_SdcGoodbyeDpiOut = "SDC GoodbyeDpi OUT";
     public static readonly string FirewallRule_SdcWinDivertIn = "SDC WinDivert IN";
@@ -152,6 +141,81 @@ public class SecureDNS
     public static readonly string FirewallRule_SdcWinDivert32Out = "SDC WinDivert32 OUT";
     public static readonly string FirewallRule_SdcWinDivert64In = "SDC WinDivert64 IN";
     public static readonly string FirewallRule_SdcWinDivert64Out = "SDC WinDivert64 OUT";
+
+    private static string GetFileNameWithoutExtension(string path)
+    {
+        try
+        {
+            return Path.GetFileNameWithoutExtension(path);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Environment.Exit(0);
+            Application.Exit();
+            return string.Empty;
+        }
+    }
+
+    private static string GetFullPath(string path)
+    {
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Environment.Exit(0);
+            Application.Exit();
+            return string.Empty;
+        }
+    }
+
+    private static string GetFullPath(string path1, string path2)
+    {
+        try
+        {
+            return Path.GetFullPath(Path.Combine(path1, path2));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Environment.Exit(0);
+            Application.Exit();
+            return string.Empty;
+        }
+    }
+
+    private static string GetFullPath(string path1, string path2, string path3)
+    {
+        try
+        {
+            return Path.GetFullPath(Path.Combine(path1, path2, path3));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Environment.Exit(0);
+            Application.Exit();
+            return string.Empty;
+        }
+    }
+
+    private static string GetRandomPath()
+    {
+        try
+        {
+            return GetFullPath(Path.GetTempPath(), Path.GetRandomFileName());
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Environment.Exit(0);
+            Application.Exit();
+            return string.Empty;
+        }
+    }
 
     public static void GenerateUid(Control control)
     {
@@ -210,103 +274,143 @@ public class SecureDNS
 
     public static bool IsDomainValid(string domain)
     {
-        if (string.IsNullOrEmpty(domain)) return false;
-        if (domain.StartsWith("http:", StringComparison.OrdinalIgnoreCase)) return false;
-        if (domain.StartsWith("https:", StringComparison.OrdinalIgnoreCase)) return false;
-        if (domain.Contains('/', StringComparison.OrdinalIgnoreCase)) return false;
-        if (!domain.Contains('.', StringComparison.OrdinalIgnoreCase)) return false;
-        return true;
+        try
+        {
+            if (string.IsNullOrEmpty(domain)) return false;
+            if (domain.StartsWith("http:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (domain.StartsWith("https:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (domain.Contains('/', StringComparison.OrdinalIgnoreCase)) return false;
+            if (!domain.Contains('.', StringComparison.OrdinalIgnoreCase)) return false;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SecureDNS IsDomainValid: " + ex.Message);
+            return false;
+        }
     }
 
     public static bool IsBlockedDomainValid(CustomTextBox customTextBox, out string blockedDomain)
     {
-        // Get DNS based blocked domain to check
-        string domain = customTextBox.Text;
-        domain = domain.Trim();
-        if (domain.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) domain = domain[7..];
-        if (domain.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) domain = domain[8..];
-        if (domain.EndsWith('/')) domain = domain.TrimEnd('/');
-
-        // Check blocked domain is valid
-        bool isBlockedDomainValid = IsDomainValid(domain);
-        if (!isBlockedDomainValid)
+        try
         {
+            // Get DNS based blocked domain to check
+            string domain = customTextBox.Text;
+            domain = domain.Trim();
+            if (domain.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) domain = domain[7..];
+            if (domain.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) domain = domain[8..];
+            if (domain.EndsWith('/')) domain = domain.TrimEnd('/');
+
+            // Check blocked domain is valid
+            bool isBlockedDomainValid = IsDomainValid(domain);
+            if (!isBlockedDomainValid)
+            {
+                blockedDomain = string.Empty;
+                return false;
+            }
+            else
+            {
+                blockedDomain = domain;
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SecureDNS IsBlockedDomainValid: " + ex.Message);
             blockedDomain = string.Empty;
             return false;
-        }
-        else
-        {
-            blockedDomain = domain;
-            return true;
         }
     }
 
     public static string GetBinariesVersion(string binaryName, Architecture arch)
     {
-        if (File.Exists(BinariesVersionPath))
+        try
         {
-            string content = File.ReadAllText(BinariesVersionPath);
-            List<string> lines = content.SplitToLines();
-            for (int n = 0; n < lines.Count; n++)
+            if (File.Exists(BinariesVersionPath))
             {
-                string line = lines[n];
-                string appName = $"{binaryName}-{arch}";
-                if (line.StartsWith(appName, StringComparison.OrdinalIgnoreCase))
+                string content = File.ReadAllText(BinariesVersionPath);
+                List<string> lines = content.SplitToLines();
+                for (int n = 0; n < lines.Count; n++)
                 {
-                    string[] split = line.Split(" ");
-                    if (split[1].Length > 0)
-                        return split[1];
+                    string line = lines[n];
+                    string appName = $"{binaryName}-{arch}";
+                    if (line.StartsWith(appName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string[] split = line.Split(" ");
+                        if (split[1].Length > 0) return split[1];
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SecureDNS GetBinariesVersion: " + ex.Message);
+        }
+
         return "0.0.0";
     }
 
     public static string GetBinariesVersionFromResource(string binaryName, Architecture arch)
     {
-        string? content = NecessaryFiles.Resource1.versions;
-        if (!string.IsNullOrWhiteSpace(content))
+        try
         {
-            List<string> lines = content.SplitToLines();
-            for (int n = 0; n < lines.Count; n++)
+            string? content = NecessaryFiles.Resource1.versions;
+            if (!string.IsNullOrWhiteSpace(content))
             {
-                string line = lines[n];
-                string appName = $"{binaryName}-{arch}";
-                if (line.StartsWith(appName, StringComparison.OrdinalIgnoreCase))
+                List<string> lines = content.SplitToLines();
+                for (int n = 0; n < lines.Count; n++)
                 {
-                    string[] split = line.Split(" ");
-                    if (split[1].Length > 0)
-                        return split[1];
+                    string line = lines[n];
+                    string appName = $"{binaryName}-{arch}";
+                    if (line.StartsWith(appName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string[] split = line.Split(" ");
+                        if (split[1].Length > 0) return split[1];
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SecureDNS GetBinariesVersionFromResource: " + ex.Message);
+        }
+
         return "99.99.99";
     }
 
     public static async Task<string> HostToCompanyOffline(string host)
     {
         string company = "Couldn't retrieve information.";
-        if (!string.IsNullOrWhiteSpace(host))
+
+        try
         {
-            string? fileContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load from Embedded Resource
-            if (!string.IsNullOrWhiteSpace(fileContent))
+            if (!string.IsNullOrWhiteSpace(host))
             {
-                List<string> split = fileContent.SplitToLines();
-                for (int n = 0; n < split.Count; n++)
+                string? fileContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load From Embedded Resource
+                if (!string.IsNullOrWhiteSpace(fileContent))
                 {
-                    string hostToCom = split[n];
-                    if (hostToCom.Contains(host))
+                    List<string> split = fileContent.SplitToLines();
+                    for (int n = 0; n < split.Count; n++)
                     {
-                        string com = hostToCom.Split('|')[1];
-                        if (!string.IsNullOrWhiteSpace(com))
+                        string hostToCom = split[n];
+                        if (hostToCom.Contains(host))
                         {
-                            company = com;
-                            break;
+                            string com = hostToCom.Split('|')[1];
+                            if (!string.IsNullOrWhiteSpace(com))
+                            {
+                                company = com;
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SecureDNS HostToCompanyOffline: " + ex.Message);
+        }
+
         return company;
     }
 
@@ -327,8 +431,8 @@ public class SecureDNS
             {
                 if (!string.IsNullOrEmpty(stamp.Host))
                     company = await HostToCompanyOffline(stamp.Host);
-                else if (!string.IsNullOrEmpty(stamp.IP))
-                    company = await HostToCompanyOffline(stamp.IP);
+                else if (!stamp.IP.Equals(IPAddress.None))
+                    company = await HostToCompanyOffline(stamp.IP.ToString());
                 else if (!string.IsNullOrEmpty(stamp.ProviderName))
                     company = await HostToCompanyOffline(stamp.ProviderName);
                 else
@@ -339,7 +443,7 @@ public class SecureDNS
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("SecureDNS StampToCompanyOffline: " + ex.Message);
         }
 
         return company;
@@ -347,18 +451,18 @@ public class SecureDNS
 
     public static async Task<string> UrlToCompanyAsync(string url, string? proxyScheme = null)
     {
-        string company = "Couldn't retrieve information.";
+        string company = "Couldn't Retrieve Information.";
         NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out _, out int _, out string _, out bool _);
         if (!string.IsNullOrWhiteSpace(host))
         {
-            string ipStr = GetIP.GetIpFromSystem(host);
+            IPAddress ip = GetIP.GetIpFromSystem(host);
             string? companyFull;
-            if (!string.IsNullOrEmpty(ipStr))
+            if (!ip.Equals(IPAddress.None))
             {
                 if (proxyScheme == null)
-                    companyFull = await NetworkTool.IpToCompanyAsync(ipStr);
+                    companyFull = await NetworkTool.IpToCompanyAsync(ip.ToString());
                 else
-                    companyFull = await NetworkTool.IpToCompanyAsync(ipStr, proxyScheme);
+                    companyFull = await NetworkTool.IpToCompanyAsync(ip.ToString(), proxyScheme);
                 if (!string.IsNullOrWhiteSpace(companyFull))
                 {
                     company = string.Empty;
@@ -421,10 +525,10 @@ public class SecureDNS
             HostToCompanyList = HostToCompanyList.RemoveDuplicates();
             // Sort List
             HostToCompanyList.Sort();
-            Task.Delay(500).Wait();
+            await Task.Delay(500);
             // Save IpToCompany to file
             HostToCompanyList.SaveToFile(outPath);
-            Debug.WriteLine("File saved.");
+            Debug.WriteLine("File Saved.");
         }
     }
 

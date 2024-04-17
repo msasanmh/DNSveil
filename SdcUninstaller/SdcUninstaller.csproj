@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <Platforms>AnyCPU;x86;x64</Platforms>
     <Version>$(VersionPrefix)1.0.1</Version>
   </PropertyGroup>

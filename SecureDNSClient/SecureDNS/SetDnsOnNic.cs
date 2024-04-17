@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using static SecureDNSClient.SetDnsOnNic;
 
 namespace SecureDNSClient;
 
@@ -69,10 +68,7 @@ public class SetDnsOnNic
         }
     }
 
-    public SetDnsOnNic()
-    {
-
-    }
+    public SetDnsOnNic() { }
 
     private void SaveToFile()
     {
@@ -118,7 +114,7 @@ public class SetDnsOnNic
                 if (nics.Count < 1)
                 {
                     Debug.WriteLine("There is no Network Interface.");
-                    ccb.InvokeIt(() => ccb.Text = "There is not any Network Adapter");
+                    ccb.InvokeIt(() => ccb.Text = "There Is Not Any Network Adapter");
                     ccb.InvokeIt(() => ccb.SelectedIndex = -1);
                     return;
                 }
@@ -198,7 +194,7 @@ public class SetDnsOnNic
                 {
                     if (ccb.SelectedIndex == -1)
                     {
-                        ccb.Text = "Select a Network Adapter";
+                        ccb.Text = "Select A Network Adapter";
                         ccb.Refresh();
                     }
                 });
@@ -259,65 +255,89 @@ public class SetDnsOnNic
 
     public bool IsDnsSet(List<string> nicNameList)
     {
-        // We Need To Get The New NIC With New Properties
-        NICs = NetworkTool.GetNetworkInterfaces();
-
-        int count = 0;
-        for (int i = 0; i < nicNameList.Count; i++)
+        try
         {
-            string nicName = nicNameList[i];
-            List<NetworkTool.NICResult> nics = NICs.ToList();
-            for (int n = 0; n < nics.Count; n++)
-                if (nics[n].NIC_Name.Equals(nicName) && nics[n].IsDnsSetToLoopback)
-                {
-                    count++; break;
-                }
-        }
+            // We Need To Get The New NIC With New Properties
+            NICs = NetworkTool.GetNetworkInterfaces();
 
-        return nicNameList.Any() && nicNameList.Count == count;
+            int count = 0;
+            for (int i = 0; i < nicNameList.Count; i++)
+            {
+                string nicName = nicNameList[i];
+                List<NetworkTool.NICResult> nics = NICs.ToList();
+                for (int n = 0; n < nics.Count; n++)
+                    if (nics[n].NIC_Name.Equals(nicName) && nics[n].IsDnsSetToLoopback)
+                    {
+                        count++; break;
+                    }
+            }
+
+            return nicNameList.Any() && nicNameList.Count == count;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SetDnsOnNic IsDnsSet 1: " + ex.Message);
+            return false;
+        }
     }
 
     public bool IsDnsSet(NetworkInterface nic)
     {
-        // We Need To Get The New NIC With New Properties
-        NICs = NetworkTool.GetNetworkInterfaces();
-        List<NetworkTool.NICResult> nics = NICs.ToList();
-        for (int n = 0; n < nics.Count; n++)
-            if (nics[n].NIC_Name.Equals(nic.Name)) return nics[n].IsDnsSetToLoopback;
+        try
+        {
+            // We Need To Get The New NIC With New Properties
+            NICs = NetworkTool.GetNetworkInterfaces();
+            List<NetworkTool.NICResult> nics = NICs.ToList();
+            for (int n = 0; n < nics.Count; n++)
+                if (nics[n].NIC_Name.Equals(nic.Name)) return nics[n].IsDnsSetToLoopback;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SetDnsOnNic IsDnsSet 2: " + ex.Message);
+        }
+
         return false;
     }
 
     public bool IsDnsSet(string? nicName)
     {
-        if (string.IsNullOrEmpty(nicName)) return false;
-        // We Need To Get The New NIC With New Properties
-        NICs = NetworkTool.GetNetworkInterfaces();
-        List<NetworkTool.NICResult> nics = NICs.ToList();
-        for (int n = 0; n < nics.Count; n++)
-            if (nics[n].NIC_Name.Equals(nicName)) return nics[n].IsDnsSetToLoopback;
+        try
+        {
+            if (string.IsNullOrEmpty(nicName)) return false;
+            // We Need To Get The New NIC With New Properties
+            NICs = NetworkTool.GetNetworkInterfaces();
+            List<NetworkTool.NICResult> nics = NICs.ToList();
+            for (int n = 0; n < nics.Count; n++)
+                if (nics[n].NIC_Name.Equals(nicName)) return nics[n].IsDnsSetToLoopback;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SetDnsOnNic IsDnsSet 3: " + ex.Message);
+        }
+
         return false;
     }
 
-    public async Task SetDns(string nicName, string dnss)
+    public async Task SetDns(string nicName)
     {
-        await Task.Run(async () => await NetworkTool.SetDnsIPv4(nicName, dnss));
-        await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName)); // Unset IPv6
+        await Task.Run(async () => await NetworkTool.SetDnsIPv4(nicName, IPAddress.Loopback.ToString()));
+        await Task.Run(async () => await NetworkTool.SetDnsIPv6(nicName, IPAddress.IPv6Loopback.ToString()));
         SaveToFile();
     }
 
-    public async Task SetDns(NetworkInterface nic, string dnss)
+    public async Task SetDns(NetworkInterface nic)
     {
-        await Task.Run(async () => await NetworkTool.SetDnsIPv4(nic, dnss));
-        await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nic)); // Unset IPv6
+        await Task.Run(async () => await NetworkTool.SetDnsIPv4(nic, IPAddress.Loopback.ToString()));
+        await Task.Run(async () => await NetworkTool.SetDnsIPv6(nic, IPAddress.IPv6Loopback.ToString()));
         SaveToFile();
     }
 
-    public async Task SetDns(List<string> nicNameList, string dnss)
+    public async Task SetDns(List<string> nicNameList)
     {
         for (int n = 0; n < nicNameList.Count; n++)
         {
             string nicName = nicNameList[n];
-            await SetDns(nicName, dnss);
+            await SetDns(nicName);
         }
     }
 

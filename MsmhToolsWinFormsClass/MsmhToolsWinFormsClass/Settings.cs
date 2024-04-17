@@ -66,65 +66,72 @@ public class Settings
 
     public void LoadFromXMLFile(Control form, string xmlFilePath)
     {
-        if (xmlFilePath != null && XmlTool.IsValidXMLFile(xmlFilePath))
+        try
         {
-            // Clear List
-            SettingList.Clear();
-
-            // Clear XDoc
-            XElement? settingsx = XDoc.Element("Settings");
-            settingsx?.RemoveAll();
-
-            // Add Settings to XDoc
-            XDoc = XDocument.Load(xmlFilePath);
-
-            // Add Settings to List
-            // Begin Check
-            var settings = XDoc.Elements("Settings");
-            bool settingExist = settings.Any();
-            if (settingExist)
+            if (xmlFilePath != null && XmlTool.IsValidXMLFile(xmlFilePath))
             {
-                // Top Exist
-                XElement? setting0 = XDoc.Element("Settings");
-                if (setting0 != null)
+                // Clear List
+                SettingList.Clear();
+
+                // Clear XDoc
+                XElement? settingsx = XDoc.Element("Settings");
+                settingsx?.RemoveAll();
+
+                // Add Settings to XDoc
+                XDoc = XDocument.Load(xmlFilePath);
+
+                // Add Settings to List
+                // Begin Check
+                var settings = XDoc.Elements("Settings");
+                bool settingExist = settings.Any();
+                if (settingExist)
                 {
-                    var controls = setting0.Elements().ToArray();
-                    bool controlExist = controls.Any();
-                    if (controlExist)
+                    // Top Exist
+                    XElement? setting0 = XDoc.Element("Settings");
+                    if (setting0 != null)
                     {
-                        // Control Exist
-                        for (int n1 = 0; n1 < controls.Length; n1++)
+                        var controls = setting0.Elements().ToArray();
+                        bool controlExist = controls.Any();
+                        if (controlExist)
                         {
-                            XElement? control0 = controls.ToArray()[n1];
-                            if (control0 != null)
+                            // Control Exist
+                            for (int n1 = 0; n1 < controls.Length; n1++)
                             {
-                                var controlProperties = control0.Elements();
-                                bool controlPropertyExist = controlProperties.Any();
-                                if (controlPropertyExist)
+                                XElement? control0 = controls.ToArray()[n1];
+                                if (control0 != null)
                                 {
-                                    // Control Property Exist
-                                    for (int n2 = 0; n2 < controlProperties.Count(); n2++)
+                                    var controlProperties = control0.Elements();
+                                    bool controlPropertyExist = controlProperties.Any();
+                                    if (controlPropertyExist)
                                     {
-                                        XElement? controlProperty0 = controlProperties.ToArray()[n2];
-                                        if (controlProperty0 != null)
+                                        // Control Property Exist
+                                        for (int n2 = 0; n2 < controlProperties.Count(); n2++)
                                         {
-                                            if (IsControlExistInForm(form, control0.Name.LocalName))
-                                                AddSettingToList(control0.Name.LocalName, controlProperty0.Name.LocalName, controlProperty0.Value);
-                                            else
+                                            XElement? controlProperty0 = controlProperties.ToArray()[n2];
+                                            if (controlProperty0 != null)
                                             {
-                                                // Remove old controls settings
-                                                XElement? elementToRemove = setting0.Element(control0.Name.LocalName);
-                                                elementToRemove?.Remove();
+                                                if (IsControlExistInForm(form, control0.Name.LocalName))
+                                                    AddSettingToList(control0.Name.LocalName, controlProperty0.Name.LocalName, controlProperty0.Value);
+                                                else
+                                                {
+                                                    // Remove old controls settings
+                                                    XElement? elementToRemove = setting0.Element(control0.Name.LocalName);
+                                                    elementToRemove?.Remove();
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                            LoadAllSettings(form);
                         }
-                        LoadAllSettings(form);
                     }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Settings LoadFromXMLFile: " + ex.Message);
         }
     }
 
@@ -141,57 +148,73 @@ public class Settings
 
     public void LoadAllSettings(Control form)
     {
-        List<Control> controls = Controllers.GetAllControls(form);
-        for (int n1 = 0; n1 < controls.Count; n1++)
+        try
         {
-            Control control = controls[n1];
-            PropertyInfo[] properties = control.GetType().GetProperties();
-            for (int n2 = 0; n2 < properties.Length; n2++)
+            List<Control> controls = Controllers.GetAllControls(form);
+            for (int n1 = 0; n1 < controls.Count; n1++)
             {
-                PropertyInfo property = properties[n2];
-                List<Setting> settingList = SettingList.ToList(); // ToList: Fix: Collection was modified; enumeration operation may not execute.
-                for (int n3 = 0; n3 < settingList.Count; n3++)
+                Control control = controls[n1];
+                PropertyInfo[] properties = control.GetType().GetProperties();
+                for (int n2 = 0; n2 < properties.Length; n2++)
                 {
-                    Setting setting = settingList[n3];
-                    if (control.Name == setting.ControlName && property.Name == setting.PropertyName && setting.PropertyValue != null)
+                    PropertyInfo property = properties[n2];
+                    List<Setting> settingList = SettingList.ToList(); // ToList: Fix: Collection was modified; enumeration operation may not execute.
+                    for (int n3 = 0; n3 < settingList.Count; n3++)
                     {
-                        try
+                        Setting setting = settingList[n3];
+                        if (control.Name == setting.ControlName && property.Name == setting.PropertyName && setting.PropertyValue != null)
                         {
-                            TypeConverter typeConverter = TypeDescriptor.GetConverter(property.PropertyType);
-                            if (typeConverter.CanConvertFrom(typeof(string)))
-                            {
-                                property.SetValue(control, typeConverter.ConvertFrom(setting.PropertyValue), null);
-                                break;
-                            }
-                        }
-                        catch (Exception ex1)
-                        {
-                            Debug.WriteLine(property.Name + ": " + ex1.Message);
                             try
                             {
-                                property.SetValue(control, Convert.ChangeType(setting.PropertyValue, property.PropertyType), null);
-                                break;
+                                TypeConverter typeConverter = TypeDescriptor.GetConverter(property.PropertyType);
+                                if (typeConverter.CanConvertFrom(typeof(string)))
+                                {
+                                    property.SetValue(control, typeConverter.ConvertFrom(setting.PropertyValue), null);
+                                    break;
+                                }
                             }
-                            catch (Exception ex2)
+                            catch (Exception ex1)
                             {
-                                Debug.WriteLine(property.Name + ": " + ex2.Message);
+                                Debug.WriteLine(property.Name + ": " + ex1.Message);
+                                try
+                                {
+                                    property.SetValue(control, Convert.ChangeType(setting.PropertyValue, property.PropertyType), null);
+                                    break;
+                                }
+                                catch (Exception ex2)
+                                {
+                                    Debug.WriteLine(property.Name + ": " + ex2.Message);
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Settings LoadAllSettings: " + ex.Message);
+        }
     }
 
     public void Save(string xmlFilePath)
     {
-        XmlWriterSettings xmlWriterSettings = new();
-        xmlWriterSettings.Async = true;
-        xmlWriterSettings.Indent = true;
-        xmlWriterSettings.OmitXmlDeclaration = true;
-        xmlWriterSettings.Encoding = new UTF8Encoding(false);
-        using XmlWriter xmlWriter = XmlWriter.Create(xmlFilePath, xmlWriterSettings);
-        XDoc.Save(xmlWriter);
+        try
+        {
+            XmlWriterSettings xmlWriterSettings = new()
+            {
+                Async = true,
+                Indent = true,
+                OmitXmlDeclaration = true,
+                Encoding = new UTF8Encoding(false)
+            };
+            using XmlWriter xmlWriter = XmlWriter.Create(xmlFilePath, xmlWriterSettings);
+            XDoc.Save(xmlWriter);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Settings Save: " + ex.Message);
+        }
     }
 
     public async Task SaveAsync(string xmlFilePath)
@@ -448,97 +471,111 @@ public class Settings
 
     private void AddSettingToList(string controlName, string propertyName, object propertyValue)
     {
-        if (string.IsNullOrWhiteSpace(controlName)) return;
-        if (string.IsNullOrWhiteSpace(propertyName)) return;
-        if (propertyValue == null) return;
-
-        string? value = propertyValue.ToString();
-        if (value == null) return;
-
-        Setting setting = new(controlName, propertyName, value);
-
-        // Begin Check
-        bool alreadyExist = false;
-        for (int n = 0; n < SettingList.Count; n++)
+        try
         {
-            Setting s = SettingList[n];
-            if (controlName.Equals(s.ControlName) && propertyName.Equals(s.PropertyName))
-            {
-                // Control Property Exist
-                s.PropertyValue = value;
-                alreadyExist = true;
-                break;
-            }
-        }
+            if (string.IsNullOrWhiteSpace(controlName)) return;
+            if (string.IsNullOrWhiteSpace(propertyName)) return;
+            if (propertyValue == null) return;
 
-        if (!alreadyExist)
-            SettingList.Add(setting);
+            string? value = propertyValue.ToString();
+            if (value == null) return;
+
+            Setting setting = new(controlName, propertyName, value);
+
+            // Begin Check
+            bool alreadyExist = false;
+            for (int n = 0; n < SettingList.Count; n++)
+            {
+                Setting s = SettingList[n];
+                if (controlName.Equals(s.ControlName) && propertyName.Equals(s.PropertyName))
+                {
+                    // Control Property Exist
+                    s.PropertyValue = value;
+                    alreadyExist = true;
+                    break;
+                }
+            }
+
+            if (!alreadyExist)
+                SettingList.Add(setting);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Settings AddSettingToList: " + ex.Message);
+        }
     }
 
     private void AddSettingToXDoc(string controlName, string propertyName, object propertyValue)
     {
-        if (string.IsNullOrWhiteSpace(controlName)) return;
-        if (string.IsNullOrWhiteSpace(propertyName)) return;
-        if (propertyValue == null) return;
-
-        string? value = propertyValue.ToString();
-        if (value == null) return;
-
-        // Create Control Property
-        XElement xControlProperty = new(propertyName);
-        xControlProperty.Value = value;
-
-        // Create Control Name
-        XElement xControl = new(controlName);
-        xControl.Add(xControlProperty);
-
-        // Create Settings
-        XElement xSettings = new("Settings");
-        xSettings.Add(xControl);
-
-        // Begin Check
-        var settings = XDoc.Elements("Settings");
-        bool settingExist = settings.Any();
-        if (settingExist)
+        try
         {
-            // Top Exist
-            XElement? setting0 = XDoc.Element("Settings");
-            if (setting0 == null) return;
+            if (string.IsNullOrWhiteSpace(controlName)) return;
+            if (string.IsNullOrWhiteSpace(propertyName)) return;
+            if (propertyValue == null) return;
 
-            var controls = setting0.Elements(controlName);
-            bool controlExist = controls.Any();
-            if (controlExist)
+            string? value = propertyValue.ToString();
+            if (value == null) return;
+
+            // Create Control Property
+            XElement xControlProperty = new(propertyName);
+            xControlProperty.Value = value;
+
+            // Create Control Name
+            XElement xControl = new(controlName);
+            xControl.Add(xControlProperty);
+
+            // Create Settings
+            XElement xSettings = new("Settings");
+            xSettings.Add(xControl);
+
+            // Begin Check
+            var settings = XDoc.Elements("Settings");
+            bool settingExist = settings.Any();
+            if (settingExist)
             {
-                // Control Exist
-                XElement? control0 = setting0.Element(controlName);
-                if (control0 == null) return;
+                // Top Exist
+                XElement? setting0 = XDoc.Element("Settings");
+                if (setting0 == null) return;
 
-                var controlProperties = control0.Elements(propertyName);
-                bool controlPropertyExist = controlProperties.Any();
-                if (controlPropertyExist)
+                var controls = setting0.Elements(controlName);
+                bool controlExist = controls.Any();
+                if (controlExist)
                 {
-                    // Control Property Exist
-                    XElement? controlProperty0 = control0.Element(propertyName);
-                    if (controlProperty0 == null) return;
+                    // Control Exist
+                    XElement? control0 = setting0.Element(controlName);
+                    if (control0 == null) return;
 
-                    controlProperty0.Value = value;
+                    var controlProperties = control0.Elements(propertyName);
+                    bool controlPropertyExist = controlProperties.Any();
+                    if (controlPropertyExist)
+                    {
+                        // Control Property Exist
+                        XElement? controlProperty0 = control0.Element(propertyName);
+                        if (controlProperty0 == null) return;
+
+                        controlProperty0.Value = value;
+                    }
+                    else
+                    {
+                        // Control Property Not Exist
+                        control0.Add(xControlProperty);
+                    }
                 }
                 else
                 {
-                    // Control Property Not Exist
-                    control0.Add(xControlProperty);
+                    // Control Not Exist
+                    setting0.Add(xControl);
                 }
             }
             else
             {
-                // Control Not Exist
-                setting0.Add(xControl);
+                // Setiings Not Exist
+                XDoc.Add(xSettings);
             }
         }
-        else
+        catch (Exception ex)
         {
-            // Setiings Not Exist
-            XDoc.Add(xSettings);
+            Debug.WriteLine("Settings AddSettingToXDoc: " + ex.Message);
         }
     }
 

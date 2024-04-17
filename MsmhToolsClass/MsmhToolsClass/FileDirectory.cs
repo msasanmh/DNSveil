@@ -6,7 +6,43 @@ namespace MsmhToolsClass;
 public class FileDirectory
 {
     //-----------------------------------------------------------------------------------
-    public static async Task MoveDirectory(string sourceDir, string destDir, bool overWrite, CancellationToken token)
+    public static async Task<List<string>> GetAllFilesAsync(string dirPath, CancellationToken ct = default)
+    {
+        return await Task.Run(async () =>
+        {
+            List<string> paths = new();
+
+            try
+            {
+                if (!Directory.Exists(dirPath)) return paths;
+                DirectoryInfo rootDirInfo = new(dirPath);
+
+                FileInfo[] fileInfos = rootDirInfo.GetFiles();
+                for (int n = 0; n < fileInfos.Length; n++)
+                {
+                    if (ct.IsCancellationRequested) break;
+                    FileInfo fileInfo = fileInfos[n];
+                    paths.Add(fileInfo.FullName);
+                }
+
+                DirectoryInfo[] dirInfos = rootDirInfo.GetDirectories();
+                for (int n = 0; n < dirInfos.Length; n++)
+                {
+                    if (ct.IsCancellationRequested) break;
+                    DirectoryInfo dirInfo = dirInfos[n];
+                    paths.AddRange(await GetAllFilesAsync(dirInfo.FullName, ct));
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("FileDirectory GetAllFiles: " + ex.Message);
+            }
+
+            return paths;
+        }, ct);
+    }
+    //-----------------------------------------------------------------------------------
+    public static async Task MoveDirectoryAsync(string sourceDir, string destDir, bool overWrite, CancellationToken ct)
     {
         await Task.Run(async () =>
         {
@@ -19,24 +55,26 @@ public class FileDirectory
                 FileInfo[] fileInfos = rootDirInfo.GetFiles();
                 for (int n = 0; n < fileInfos.Length; n++)
                 {
+                    if (ct.IsCancellationRequested) break;
                     FileInfo fileInfo = fileInfos[n];
                     fileInfo.MoveTo(Path.GetFullPath(Path.Combine(destDir, fileInfo.Name)), overWrite);
                 }
 
                 DirectoryInfo[] dirInfos = rootDirInfo.GetDirectories();
-                for (int n2 = 0; n2 < dirInfos.Length; n2++)
+                for (int n = 0; n < dirInfos.Length; n++)
                 {
-                    DirectoryInfo dirInfo = dirInfos[n2];
-                    await MoveDirectory(dirInfo.FullName, Path.GetFullPath(Path.Combine(destDir, dirInfo.Name)), overWrite, token);
+                    if (ct.IsCancellationRequested) break;
+                    DirectoryInfo dirInfo = dirInfos[n];
+                    await MoveDirectoryAsync(dirInfo.FullName, Path.GetFullPath(Path.Combine(destDir, dirInfo.Name)), overWrite, ct);
                 }
 
                 if (Directory.Exists(sourceDir)) Directory.Delete(sourceDir, false);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("MoveDirectory: " + ex.Message);
+                Debug.WriteLine("FileDirectory MoveDirectory: " + ex.Message);
             }
-        }, token);
+        }, ct);
     }
     //-----------------------------------------------------------------------------------
     public static bool IsPathTooLong(string path)
@@ -107,8 +145,14 @@ public class FileDirectory
     /// </summary>
     public static void CreateEmptyFile(string filePath)
     {
-        if (!File.Exists(filePath))
-            File.Create(filePath).Dispose();
+        try
+        {
+            if (!File.Exists(filePath)) File.Create(filePath).Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("FileDirectory CreateEmptyFile: " + ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
@@ -116,8 +160,14 @@ public class FileDirectory
     /// </summary>
     public static void CreateEmptyDirectory(string directoryPath)
     {
-        if (!Directory.Exists(directoryPath))
-            Directory.CreateDirectory(directoryPath);
+        try
+        {
+            if (!Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("FileDirectory CreateEmptyDirectory: " + ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     public static bool CompareByLength(string path1, string path2)
@@ -193,7 +243,7 @@ public class FileDirectory
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("FileDirectory AppendTextLine: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
@@ -209,7 +259,7 @@ public class FileDirectory
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("AppendTextLineAsync: " + ex.Message);
+            Debug.WriteLine("FileDirectory AppendTextLineAsync: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
@@ -223,7 +273,7 @@ public class FileDirectory
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("AppendText: " + ex.Message);
+            Debug.WriteLine("FileDirectory AppendText: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
@@ -237,7 +287,7 @@ public class FileDirectory
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("AppendTextAsync: " + ex.Message);
+            Debug.WriteLine("FileDirectory AppendTextAsync: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
@@ -253,7 +303,7 @@ public class FileDirectory
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("WriteAllText: " + ex.Message);
+            Debug.WriteLine("FileDirectory WriteAllText: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
@@ -269,7 +319,7 @@ public class FileDirectory
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("WriteAllTextAsync: " + ex.Message);
+            Debug.WriteLine("FileDirectory WriteAllTextAsync: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
@@ -306,119 +356,35 @@ public class FileDirectory
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("IsFileLocked: " + ex.Message);
+            Debug.WriteLine("FileDirectory IsFileLocked: " + ex.Message);
             return true;
         }
     }
     //-----------------------------------------------------------------------------------
     public static List<string>? FindFilesByPartialName(string partialName, string dirPath)
     {
-        if (Directory.Exists(dirPath))
+        try
         {
-            DirectoryInfo hdDirectoryInWhichToSearch = new(dirPath);
-            FileInfo[] filesInDir = hdDirectoryInWhichToSearch.GetFiles("*" + partialName + "*.*");
-            List<string> list = new();
-            foreach (FileInfo foundFile in filesInDir)
+            if (Directory.Exists(dirPath))
             {
-                string fullName = foundFile.FullName;
-                list.Add(fullName);
+                DirectoryInfo hdDirectoryInWhichToSearch = new(dirPath);
+                FileInfo[] filesInDir = hdDirectoryInWhichToSearch.GetFiles("*" + partialName + "*.*");
+                List<string> list = new();
+                foreach (FileInfo foundFile in filesInDir)
+                {
+                    string fullName = foundFile.FullName;
+                    list.Add(fullName);
+                }
+                return list;
             }
-            return list;
+            Console.WriteLine("FileDirectory Directory Not Exist: " + dirPath);
         }
-        Console.WriteLine("Directory Not Exist: " + dirPath);
+        catch (Exception ex)
+        {
+            Debug.WriteLine("FileDirectory FindFilesByPartialName: " + ex.Message);
+        }
+
         return null;
-    }
-    //-----------------------------------------------------------------------------------
-    // ===== Old Methods ================================================================
-    public static byte[] ReadAllBytes(MemoryStream memoryStream)
-    {
-        return memoryStream.ToArray();
-    }
-    //-----------------------------------------------------------------------------------
-    public static byte[]? ReadAllBytes(string filePath)
-    {
-        try
-        {
-            using FileStream fsSource = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            // Read the source file into a byte array.
-            byte[] bytes = new byte[fsSource.Length];
-            int numBytesToRead = (int)fsSource.Length;
-            int numBytesRead = 0;
-            while (numBytesToRead > 0)
-            {
-                // Read may return anything from 0 to numBytesToRead.
-                int n = fsSource.Read(bytes, numBytesRead, numBytesToRead);
-                // Break when the end of the file is reached.
-                if (n == 0) break;
-                numBytesRead += n;
-                numBytesToRead -= n;
-            }
-            numBytesToRead = bytes.Length;
-            return bytes;
-        }
-        catch (FileNotFoundException ioEx)
-        {
-            Console.WriteLine(ioEx.Message);
-            return null;
-        }
-    }
-    //-----------------------------------------------------------------------------------
-    public static async Task<byte[]?> ReadAllBytesAsync(string filePath)
-    {
-        try
-        {
-            using FileStream fsSource = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            // Read the source file into a byte array.
-            byte[] bytes = new byte[fsSource.Length];
-            int numBytesToRead = (int)fsSource.Length;
-            int numBytesRead = 0;
-            while (numBytesToRead > 0)
-            {
-                // Read may return anything from 0 to numBytesToRead.
-                int n = await fsSource.ReadAsync(bytes.AsMemory(numBytesRead, numBytesToRead));
-                // Break when the end of the file is reached.
-                if (n == 0) break;
-                numBytesRead += n;
-                numBytesToRead -= n;
-            }
-            numBytesToRead = bytes.Length;
-            return bytes;
-        }
-        catch (FileNotFoundException ioEx)
-        {
-            Console.WriteLine(ioEx.Message);
-            return null;
-        }
-    }
-    //-----------------------------------------------------------------------------------
-    public static void WriteAllBytes(string filePath, byte[] bytes)
-    {
-        try
-        {
-            int numBytesToRead = bytes.Length;
-            // Write the byte array to the other FileStream.
-            using FileStream fsNew = new(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            fsNew.Write(bytes, 0, numBytesToRead);
-        }
-        catch (FileNotFoundException ioEx)
-        {
-            Console.WriteLine(ioEx.Message);
-        }
-    }
-    //-----------------------------------------------------------------------------------
-    public static async Task WriteAllBytesAsync(string filePath, byte[] bytes)
-    {
-        try
-        {
-            int numBytesToRead = bytes.Length;
-            // Write the byte array to the other FileStream.
-            using FileStream fsNew = new(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            await fsNew.WriteAsync(bytes.AsMemory(0, numBytesToRead));
-        }
-        catch (FileNotFoundException ioEx)
-        {
-            Console.WriteLine(ioEx.Message);
-        }
     }
     //-----------------------------------------------------------------------------------
 }

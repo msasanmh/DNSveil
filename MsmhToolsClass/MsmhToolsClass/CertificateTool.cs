@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -127,38 +128,51 @@ public static class CertificateTool
     {
         // Create SubjectAlternativeNameBuilder
         SubjectAlternativeNameBuilder sanBuilder = new();
-        sanBuilder.AddDnsName("localhost"); // Add Localhost
-        sanBuilder.AddDnsName(Environment.UserName); // Add Current User
-        if (OperatingSystem.IsWindows())
-            sanBuilder.AddUserPrincipalName(System.Security.Principal.WindowsIdentity.GetCurrent().Name); // Add User Principal Name
-        sanBuilder.AddIpAddress(IPAddress.Loopback);
-        sanBuilder.AddIpAddress(IPAddress.IPv6Loopback);
-        sanBuilder.AddIpAddress(IPAddress.Any);
-        sanBuilder.AddIpAddress(IPAddress.IPv6Any);
 
-        // Generate IP range for gateway
-        if (NetworkTool.IsIPv4(gateway))
+        try
         {
-            string ipString = gateway.ToString();
-            string[] ipSplit = ipString.Split('.');
-            string ip1 = ipSplit[0] + "." + ipSplit[1] + "." + ipSplit[2] + ".";
-            for (int n = 0; n <= 255; n++)
+            sanBuilder.AddDnsName("localhost"); // Add Localhost
+            sanBuilder.AddDnsName(Environment.UserName); // Add Current User
+            if (OperatingSystem.IsWindows())
+                sanBuilder.AddUserPrincipalName(System.Security.Principal.WindowsIdentity.GetCurrent().Name); // Add User Principal Name
+            sanBuilder.AddIpAddress(IPAddress.Loopback);
+            sanBuilder.AddIpAddress(IPAddress.IPv6Loopback);
+            sanBuilder.AddIpAddress(IPAddress.Any);
+            sanBuilder.AddIpAddress(IPAddress.IPv6Any);
+
+            // Add All Machine IPv4 And IPv6 Configuration To SAN Extension
+            foreach (var ipAddress in Dns.GetHostAddresses(Dns.GetHostName()))
+                if (ipAddress.AddressFamily == AddressFamily.InterNetwork || ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
+                    sanBuilder.AddIpAddress(ipAddress);
+
+            // Generate IP range for gateway
+            if (NetworkTool.IsIPv4(gateway))
             {
-                string ip2 = ip1 + n.ToString();
-                sanBuilder.AddIpAddress(IPAddress.Parse(ip2));
-                sanBuilder.AddUri(new Uri($"https://{ip2}"));
-            }
-            // Generate local IP range in case a VPN is active.
-            if (!ip1.Equals("192.168.1."))
-            {
-                string ipLocal1 = "192.168.1.";
+                string ipString = gateway.ToString();
+                string[] ipSplit = ipString.Split('.');
+                string ip1 = ipSplit[0] + "." + ipSplit[1] + "." + ipSplit[2] + ".";
                 for (int n = 0; n <= 255; n++)
                 {
-                    string ipLocal2 = ipLocal1 + n.ToString();
-                    sanBuilder.AddIpAddress(IPAddress.Parse(ipLocal2));
-                    sanBuilder.AddUri(new Uri($"https://{ipLocal2}"));
+                    string ip2 = ip1 + n.ToString();
+                    sanBuilder.AddIpAddress(IPAddress.Parse(ip2));
+                    sanBuilder.AddUri(new Uri($"https://{ip2}"));
+                }
+                // Generate local IP range in case a VPN is active.
+                if (!ip1.Equals("192.168.1."))
+                {
+                    string ipLocal1 = "192.168.1.";
+                    for (int n = 0; n <= 255; n++)
+                    {
+                        string ipLocal2 = ipLocal1 + n.ToString();
+                        sanBuilder.AddIpAddress(IPAddress.Parse(ipLocal2));
+                        sanBuilder.AddUri(new Uri($"https://{ipLocal2}"));
+                    }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("CertificateTool GetSanBuilderForGateway: " + ex.Message);
         }
 
         return sanBuilder;
@@ -297,10 +311,15 @@ public static class CertificateTool
         SubjectAlternativeNameBuilder sanBuilder = GetSanBuilderForGateway(gateway);
 
         // Create Issuer Certificate
-        using X509Certificate2 issuerCert = GenerateRootCertificate(sanBuilder, issuerSubjectName, out RSA issuerRsaKey);
+        X509Certificate2 issuerCert = GenerateRootCertificate(sanBuilder, issuerSubjectName, out RSA issuerRsaKey);
+        //if (!issuerCert.HasPrivateKey) issuerCert = issuerCert.CopyWithPrivateKey(issuerRsaKey);
+        //string pass = Guid.NewGuid().ToString();
+        //issuerCert = new(issuerCert.Export(X509ContentType.Pfx, pass), pass);
 
         // Create Certificate
-        using X509Certificate2 cert = GenerateCertificateByIssuer(issuerCert, sanBuilder, subjectName, out RSA rsaKey);
+        X509Certificate2 cert = GenerateCertificateByIssuer(issuerCert, sanBuilder, subjectName, out RSA rsaKey);
+        //if (!cert.HasPrivateKey) cert = cert.CopyWithPrivateKey(rsaKey);
+        //cert = new(cert.Export(X509ContentType.Pfx, pass), pass);
 
         //== Export to Files
         // Export Issuer Private Key
@@ -310,6 +329,7 @@ public static class CertificateTool
 
         // Export Issuer Certificate
         await issuerCert.SaveToFileAsCrt(issuerFilePathNoExt);
+        issuerCert.Dispose();
 
         // Export Private Key
         string filePathNoExt = Path.GetFullPath(Path.Combine(folderPath, "localhost"));
@@ -318,16 +338,24 @@ public static class CertificateTool
 
         // Export Certificate
         await cert.SaveToFileAsCrt(filePathNoExt);
+        cert.Dispose();
     }
 
     public static async void CreateP12(string certPath, string keyPath, string password = "")
     {
-        string? folderPath = Path.GetDirectoryName(certPath);
-        string fileName = Path.GetFileNameWithoutExtension(certPath);
-        using X509Certificate2 certWithKey = X509Certificate2.CreateFromPemFile(certPath, keyPath);
-        byte[] certWithKeyExport = certWithKey.Export(X509ContentType.Pfx, password);
-        if (!string.IsNullOrEmpty(folderPath))
-            await File.WriteAllBytesAsync(Path.Combine(folderPath, fileName + ".p12"), certWithKeyExport);
+        try
+        {
+            string? folderPath = Path.GetDirectoryName(certPath);
+            string fileName = Path.GetFileNameWithoutExtension(certPath);
+            using X509Certificate2 certWithKey = X509Certificate2.CreateFromPemFile(certPath, keyPath);
+            byte[] certWithKeyExport = certWithKey.Export(X509ContentType.Pfx, password);
+            if (!string.IsNullOrEmpty(folderPath))
+                await File.WriteAllBytesAsync(Path.Combine(folderPath, fileName + ".p12"), certWithKeyExport);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("CreateP12: " + ex.Message);
+        }
     }
 
     /// <summary>

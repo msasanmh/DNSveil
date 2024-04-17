@@ -306,7 +306,7 @@ public partial class FormMain
             CustomTextBoxProxySSLDefaultSni.Left = CustomLabelProxySSLDefaultSni.Right + spaceH;
             CustomTextBoxProxySSLDefaultSni.Top = CustomLabelProxySSLDefaultSni.Top - 2;
 
-            // ---------- Proxy Read Rules For A Domain
+            // ---------- Proxy Read ProxyRules For A Domain
             CustomLabelShareRulesStatus.Location = new Point(4, 2);
 
             spaceV = 5;
@@ -688,19 +688,19 @@ public partial class FormMain
 
             //// Settings Connect
             spaceV = 50;
-            CustomCheckBoxSettingEnableCache.Location = new Point(spaceHH, 50);
-
-            CustomLabelSettingMaxServers.Left = CustomCheckBoxSettingEnableCache.Left;
-            CustomLabelSettingMaxServers.Top = CustomCheckBoxSettingEnableCache.Bottom + spaceV;
+            CustomLabelSettingMaxServers.Location = new Point(spaceHH, 50);
 
             CustomNumericUpDownSettingMaxServers.Left = CustomLabelSettingMaxServers.Right + spaceH2;
             CustomNumericUpDownSettingMaxServers.Top = CustomLabelSettingMaxServers.Top - 2;
 
-            CustomLabelSettingCamouflageDnsPort.Left = CustomLabelSettingMaxServers.Left;
-            CustomLabelSettingCamouflageDnsPort.Top = CustomLabelSettingMaxServers.Bottom + spaceV;
+            CustomCheckBoxDnsEventShowRequest.Left = CustomLabelSettingMaxServers.Left;
+            CustomCheckBoxDnsEventShowRequest.Top = CustomLabelSettingMaxServers.Bottom + spaceV;
 
-            CustomNumericUpDownSettingCamouflageDnsPort.Left = CustomLabelSettingCamouflageDnsPort.Right + spaceH2;
-            CustomNumericUpDownSettingCamouflageDnsPort.Top = CustomLabelSettingCamouflageDnsPort.Top - 2;
+            CustomCheckBoxSettingDnsEnableRules.Left = CustomCheckBoxDnsEventShowRequest.Left;
+            CustomCheckBoxSettingDnsEnableRules.Top = CustomCheckBoxDnsEventShowRequest.Bottom + spaceV;
+
+            CustomButtonSettingDnsRules.Left = CustomCheckBoxSettingDnsEnableRules.Right + spaceH2;
+            CustomButtonSettingDnsRules.Top = CustomCheckBoxSettingDnsEnableRules.Top - 2;
 
             //// Settings Set/Unset DNS
             spaceV = 30;
@@ -768,10 +768,7 @@ public partial class FormMain
 
             //// Settings Share Advanced
             spaceV = 10;
-            CustomCheckBoxSettingProxyEnableFakeProxy.Location = new Point(spaceRight, 15);
-
-            CustomCheckBoxSettingProxyCfCleanIP.Left = CustomCheckBoxSettingProxyEnableFakeProxy.Left;
-            CustomCheckBoxSettingProxyCfCleanIP.Top = CustomCheckBoxSettingProxyEnableFakeProxy.Bottom + spaceV;
+            CustomCheckBoxSettingProxyCfCleanIP.Location = new Point(spaceRight, 15);
 
             CustomTextBoxSettingProxyCfCleanIP.Left = CustomCheckBoxSettingProxyCfCleanIP.Right + spaceH;
             CustomTextBoxSettingProxyCfCleanIP.Top = CustomCheckBoxSettingProxyCfCleanIP.Top - 2;
@@ -794,22 +791,16 @@ public partial class FormMain
             spaceV = 50;
             CustomLabelSettingFakeProxyInfo.Location = new Point(20, 10);
 
-            CustomLabelSettingFakeProxyPort.Left = CustomLabelSettingFakeProxyInfo.Left;
-            CustomLabelSettingFakeProxyPort.Top = CustomLabelSettingFakeProxyInfo.Bottom + spaceV;
+            CustomLabelSettingFakeProxyDohAddress.Left = CustomLabelSettingFakeProxyInfo.Left;
+            CustomLabelSettingFakeProxyDohAddress.Top = CustomLabelSettingFakeProxyInfo.Bottom + spaceV;
 
-            CustomNumericUpDownSettingFakeProxyPort.Left = CustomLabelSettingFakeProxyPort.Right + (spaceHH / 2);
-            CustomNumericUpDownSettingFakeProxyPort.Top = CustomLabelSettingFakeProxyPort.Top - 2;
-
-            CustomLabelSettingFakeProxyDohAddress.Left = CustomLabelSettingFakeProxyPort.Left;
-            CustomLabelSettingFakeProxyDohAddress.Top = CustomLabelSettingFakeProxyPort.Bottom + spaceV;
-
-            CustomTextBoxSettingFakeProxyDohAddress.Left = CustomNumericUpDownSettingFakeProxyPort.Left;
+            CustomTextBoxSettingFakeProxyDohAddress.Left = CustomLabelSettingFakeProxyDohAddress.Right + spaceH;
             CustomTextBoxSettingFakeProxyDohAddress.Top = CustomLabelSettingFakeProxyDohAddress.Top - 2;
 
             CustomLabelSettingFakeProxyDohCleanIP.Left = CustomLabelSettingFakeProxyDohAddress.Left;
             CustomLabelSettingFakeProxyDohCleanIP.Top = CustomLabelSettingFakeProxyDohAddress.Bottom + spaceV;
 
-            CustomTextBoxSettingFakeProxyDohCleanIP.Left = CustomTextBoxSettingFakeProxyDohAddress.Left;
+            CustomTextBoxSettingFakeProxyDohCleanIP.Left = CustomLabelSettingFakeProxyDohCleanIP.Right + spaceH;
             CustomTextBoxSettingFakeProxyDohCleanIP.Top = CustomLabelSettingFakeProxyDohCleanIP.Top - 2;
 
             //// Settings CPU
@@ -870,13 +861,10 @@ public partial class FormMain
             CustomNumericUpDownSettingFallbackDnsPort.Left = CustomNumericUpDownSettingBootstrapDnsPort.Left;
             CustomNumericUpDownSettingFallbackDnsPort.Top = CustomLabelSettingFallbackDnsPort.Top - 2;
 
-            CustomCheckBoxSettingDontAskCertificate.Left = CustomLabelSettingFallbackDnsIP.Left;
-            CustomCheckBoxSettingDontAskCertificate.Top = CustomLabelSettingFallbackDnsIP.Bottom + spaceV;
+            CustomCheckBoxSettingDisableAudioAlert.Left = CustomLabelSettingFallbackDnsIP.Left;
+            CustomCheckBoxSettingDisableAudioAlert.Top = CustomLabelSettingFallbackDnsIP.Bottom + spaceV;
 
             spaceV = 20;
-            CustomCheckBoxSettingDisableAudioAlert.Left = CustomCheckBoxSettingDontAskCertificate.Left;
-            CustomCheckBoxSettingDisableAudioAlert.Top = CustomCheckBoxSettingDontAskCertificate.Bottom + spaceV;
-
             CustomCheckBoxSettingWriteLogWindowToFile.Left = CustomCheckBoxSettingDisableAudioAlert.Left;
             CustomCheckBoxSettingWriteLogWindowToFile.Top = CustomCheckBoxSettingDisableAudioAlert.Bottom + spaceV;
 
@@ -925,16 +913,10 @@ public partial class FormMain
             LinkLabelDNSLookup.Top = CustomLabelAboutUsing.Top + (LinkLabelDNSLookup.Height * 2);
 
             spaceV = 5;
-            LinkLabelDNSProxy.Left = LinkLabelDNSLookup.Left;
-            LinkLabelDNSProxy.Top = LinkLabelDNSLookup.Bottom + spaceV;
+            LinkLabelGoodbyeDPI.Left = LinkLabelDNSLookup.Left;
+            LinkLabelGoodbyeDPI.Top = LinkLabelDNSLookup.Bottom + spaceV;
 
-            LinkLabelDNSCrypt.Left = LinkLabelDNSProxy.Left;
-            LinkLabelDNSCrypt.Top = LinkLabelDNSProxy.Bottom + spaceV;
-
-            LinkLabelGoodbyeDPI.Left = LinkLabelDNSCrypt.Left;
-            LinkLabelGoodbyeDPI.Top = LinkLabelDNSCrypt.Bottom + spaceV;
-
-            CustomLabelAboutSpecialThanks.Left = LinkLabelDNSProxy.Right + 15;
+            CustomLabelAboutSpecialThanks.Left = LinkLabelGoodbyeDPI.Right + 50;
             CustomLabelAboutSpecialThanks.Top = CustomLabelAboutUsing.Top;
 
             LinkLabelStAlidxdydz.Left = CustomLabelAboutSpecialThanks.Left + 15;

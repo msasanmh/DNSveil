@@ -59,8 +59,8 @@
             // 
             SplitContainerMain.Panel2.Controls.Add(CustomRichTextBoxDown);
             SplitContainerMain.Panel2MinSize = 100;
-            SplitContainerMain.Size = new Size(284, 361);
-            SplitContainerMain.SplitterDistance = 150;
+            SplitContainerMain.Size = new Size(284, 411);
+            SplitContainerMain.SplitterDistance = 170;
             SplitContainerMain.TabIndex = 1;
             // 
             // CustomDataGridViewStatusTop
@@ -107,7 +107,7 @@
             CustomDataGridViewStatusTop.ShowCellToolTips = false;
             CustomDataGridViewStatusTop.ShowEditingIcon = false;
             CustomDataGridViewStatusTop.ShowRowErrors = false;
-            CustomDataGridViewStatusTop.Size = new Size(284, 150);
+            CustomDataGridViewStatusTop.Size = new Size(284, 170);
             CustomDataGridViewStatusTop.TabIndex = 19;
             // 
             // ColumnStatusName
@@ -158,7 +158,7 @@
             CustomRichTextBoxDown.SelectionLength = 0;
             CustomRichTextBoxDown.SelectionStart = 0;
             CustomRichTextBoxDown.ShortcutsEnabled = true;
-            CustomRichTextBoxDown.Size = new Size(284, 207);
+            CustomRichTextBoxDown.Size = new Size(284, 237);
             CustomRichTextBoxDown.TabIndex = 0;
             CustomRichTextBoxDown.Texts = "";
             CustomRichTextBoxDown.UnderlinedStyle = false;
@@ -170,7 +170,7 @@
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
-            ClientSize = new Size(284, 361);
+            ClientSize = new Size(284, 411);
             Controls.Add(SplitContainerMain);
             FormBorderStyle = FormBorderStyle.FixedToolWindow;
             Icon = (Icon)resources.GetObject("$this.Icon");

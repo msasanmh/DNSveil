@@ -31,6 +31,9 @@ public partial class FormProcessMonitor : Form
 
     private void FormProcessMonitor_Shown(object? sender, EventArgs e)
     {
+        // Is IPv6 Supported By OS
+        bool isIPv6SupportedByOS = NetworkTool.IsIPv6Supported();
+
         CustomRichTextBox logDown = CustomRichTextBoxDown;
 
         ProcessMonitor.NetStatistics ns = new();
@@ -89,7 +92,13 @@ public partial class FormProcessMonitor : Form
                 string m01 = $"{NL} Local DNS Address: ";
                 string m02;
                 if (FormMain.IsDNSConnected)
-                    m02 = $"{NL} {IPAddress.Loopback}, {FormMain.LocalIP}{NL}";
+                {
+                    m02 = $"{NL} udp://{IPAddress.Loopback}, tcp://{IPAddress.Loopback}{NL}";
+                    if (isIPv6SupportedByOS)
+                        m02 += $" udp://[{IPAddress.IPv6Loopback}], tcp://[{IPAddress.IPv6Loopback}]{NL}";
+                    if (FormMain.LocalIP != null)
+                        m02 += $" udp://{FormMain.LocalIP}, tcp://{FormMain.LocalIP}{NL}";
+                }
                 else m02 = $"Offline{NL}";
 
                 string m03 = $"{NL} Local DoH Address: ";
@@ -99,12 +108,18 @@ public partial class FormProcessMonitor : Form
                     if (FormMain.ConnectedDohPort == 443)
                     {
                         m04 = $"{NL} https://{IPAddress.Loopback}/dns-query{NL}";
-                        m04 += $" https://{FormMain.LocalIP}/dns-query{NL}";
+                        if (isIPv6SupportedByOS)
+                            m04 += $" https://[{IPAddress.IPv6Loopback}]/dns-query{NL}";
+                        if (FormMain.LocalIP != null)
+                            m04 += $" https://{FormMain.LocalIP}/dns-query{NL}";
                     }
                     else
                     {
                         m04 = $"{NL} https://{IPAddress.Loopback}:{FormMain.ConnectedDohPort}/dns-query{NL}";
-                        m04 += $" https://{FormMain.LocalIP}:{FormMain.ConnectedDohPort}/dns-query{NL}";
+                        if (isIPv6SupportedByOS)
+                            m04 += $" https://[{IPAddress.IPv6Loopback}]:{FormMain.ConnectedDohPort}/dns-query{NL}";
+                        if (FormMain.LocalIP != null)
+                            m04 += $" https://{FormMain.LocalIP}:{FormMain.ConnectedDohPort}/dns-query{NL}";
                     }
                 }
                 else m04 = $"Offline{NL}";
@@ -114,7 +129,10 @@ public partial class FormProcessMonitor : Form
                 if (FormMain.IsProxyRunning)
                 {
                     m06 = $"{NL} {IPAddress.Loopback}:{FormMain.ProxyPort}{NL}";
-                    m06 += $" {FormMain.LocalIP}:{FormMain.ProxyPort}{NL}";
+                    if (isIPv6SupportedByOS)
+                        m06 += $" [{IPAddress.IPv6Loopback}]:{FormMain.ProxyPort}{NL}";
+                    if (FormMain.LocalIP != null)
+                        m06 += $" {FormMain.LocalIP}:{FormMain.ProxyPort}{NL}";
                 }
                 else m06 = $"Offline{NL}";
 

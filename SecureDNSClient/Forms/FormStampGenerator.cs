@@ -1,5 +1,5 @@
 ﻿using MsmhToolsClass;
-using MsmhToolsClass.DnsTool;
+using MsmhToolsClass.MsmhAgnosticServer;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
@@ -122,6 +122,8 @@ public partial class FormStampGenerator : Form
         CustomTextBoxStamp.Height = CustomLabelStatus.Top - CustomTextBoxStamp.Top - spaceV;
 
         CustomLabelStatus.Width = CustomTextBoxStamp.Width;
+
+        Controllers.SetDarkControl(CustomTextBoxStamp);
     }
 
     private void CustomButtonClear_Click(object? sender, EventArgs? e)
@@ -177,7 +179,7 @@ public partial class FormStampGenerator : Form
             CustomCheckBoxIsNoFilter.Checked = sr.IsNoFilter;
             CustomCheckBoxIsNoLog.Checked = sr.IsNoLog;
 
-            CustomTextBoxIP.Text = sr.IP; // IP
+            CustomTextBoxIP.Text = sr.IP.ToString(); // IP
             CustomTextBoxHost.Text = sr.Host; // Host
             CustomNumericUpDownPort.Value = Convert.ToDecimal(sr.Port); // Port
             CustomTextBoxPath.Text = sr.Path; // Path

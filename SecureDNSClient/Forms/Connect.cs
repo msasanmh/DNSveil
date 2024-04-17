@@ -36,7 +36,7 @@ public partial class FormMain
                 await UpdateStatusShortOnBoolsChanged();
 
                 // Create uid
-                SecureDNS.GenerateUid(this);
+                //SecureDNS.GenerateUid(this);
 
                 // Update NICs
                 await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
@@ -59,7 +59,7 @@ public partial class FormMain
                     {
                         if (connectMode == ConnectMode.ConnectToWorkingServers)
                         {
-                            string faulted = $"Current DNS Servers are not stable, please check servers.{NL}";
+                            string faulted = $"Current DNS Servers Are Not Stable, Please Check Servers.{NL}";
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(faulted, Color.IndianRed));
                         }
                     }
@@ -98,23 +98,15 @@ public partial class FormMain
                 });
                 try { await wait1.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
 
-                void disconnect()
+                static void disconnect()
                 {
                     // Kill processes (DNSProxy, DNSCrypt)
-                    ProcessManager.KillProcessByPID(PIDDNSProxy);
-                    ProcessManager.KillProcessByPID(PIDDNSProxyBypass);
-                    ProcessManager.KillProcessByPID(PIDDNSCrypt);
-                    ProcessManager.KillProcessByPID(PIDDNSCryptBypass);
-
-                    // Stop Cloudflare Bypass
-                    BypassFakeProxyDohStop(true, true, true, false);
+                    ProcessManager.KillProcessByPID(PIDDnsServer);
+                    ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
                 }
 
                 // To See Status Immediately
-                PIDDNSProxy = -1;
-                PIDDNSProxyBypass = -1;
-                PIDDNSCrypt = -1;
-                PIDDNSCryptBypass = -1;
+                PIDDnsServer = -1;
                 LocalDnsLatency = -1;
                 IsDNSConnected = LocalDnsLatency != -1;
                 LocalDohLatency = -1;
@@ -147,15 +139,15 @@ public partial class FormMain
 
     private async Task<bool> Connect(ConnectMode connectMode, bool limitLog = false)
     {
-        // Write Connecting message to log
-        string msgConnecting = "Connecting... Please wait..." + NL + NL;
+        // Write Connecting Message To Log
+        string msgConnecting = "Connecting... Please Wait..." + NL + NL;
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnecting, Color.MediumSeaGreen));
 
         // Solve: "bind: An attempt was made to access a socket in a way forbidden by its access permissions"
         if (!Program.IsStartup) await NetworkTool.RestartNATDriver();
 
-        // Check Plain DNS port
-        bool portDns = GetListeningPort(53, "You need to resolve the conflict.", Color.IndianRed);
+        // Check Plain DNS Port
+        bool portDns = GetListeningPort(53, "You Need To Resolve The Conflict.", Color.IndianRed);
         if (!portDns)
         {
             IsConnecting = false;
@@ -165,7 +157,7 @@ public partial class FormMain
         // Check DoH port if working mode is set to Plain DNS and DoH
         if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
         {
-            bool portDoH = GetListeningPort(GetDohPortSetting(), "You need to resolve the conflict.", Color.IndianRed);
+            bool portDoH = GetListeningPort(GetDohPortSetting(), "You Need To Resolve The Conflict.", Color.IndianRed);
             if (!portDoH)
             {
                 IsConnecting = false;
@@ -180,113 +172,67 @@ public partial class FormMain
             await InstallCertificateForDoH();
         }
 
-        // Connect modes
+        // Connect Modes
         if (connectMode == ConnectMode.Unknown) return false;
         if (connectMode == ConnectMode.ConnectToWorkingServers)
         {
-            //=== Connect DNSProxy (With working servers)
-            int countUsingServers = await ConnectToWorkingServersAsync();
-
-            // Wait Until DNS gets Online
-            Task wait2 = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    if (IsDisconnecting) break;
-                    if (IsDNSConnected) break;
-                    if (!ProcessManager.FindProcessByPID(PIDDNSProxy)) break;
-                    if (!IsInternetOnline) break;
-                    await UpdateBoolDnsOnce(GetCheckTimeoutSetting() * 2, GetBlockedDomainSetting(out string _));
-                    await Task.Delay(50);
-                }
-            });
-            try { await wait2.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
-            countUsingServers = IsDNSConnected ? countUsingServers : -1;
-
-            // Write dnsproxy message to log
-            string msgDnsProxy = string.Empty;
-            if (countUsingServers != -1)
-            {
-                if (countUsingServers > 1)
-                    msgDnsProxy = "Local DNS Server started using " + countUsingServers + " fastest servers in parallel." + NL;
-                else
-                    msgDnsProxy = "Local DNS Server started using " + countUsingServers + " server." + NL;
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy, Color.MediumSeaGreen));
-
-                // Connected with DNSProxy
-                internalConnect();
-
-                // Write Connected message to log
-                connectMessage();
-
-                return true;
-            }
-            else
-            {
-                msgDnsProxy = "Error: Couldn't start DNSProxy!";
-                if (ProcessManager.FindProcessByPID(PIDDNSProxy) && !IsDNSConnected)
-                    msgDnsProxy = "DNS can't get online. Check servers.";
-                if (IsDisconnecting) msgDnsProxy = "Task Canceled.";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDnsProxy + NL, Color.IndianRed));
-            }
-        }
-        else if (connectMode == ConnectMode.ConnectToFakeProxyDohViaProxyDPI || connectMode == ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI)
-        {
-            //=== Connect To Fake Proxy
-            int camouflagePort = -1;
-            int fakeProxyPort = GetFakeProxyPortSetting();
-            int camouflageDNSPort = GetCamouflageDnsPortSetting();
-            camouflagePort = connectMode == ConnectMode.ConnectToFakeProxyDohViaProxyDPI ? fakeProxyPort : camouflageDNSPort;
-
-            bool connected = await BypassFakeProxyDohStart(connectMode, camouflagePort);
+            //=== Connect To Working Servers
+            bool connected = await ConnectToWorkingServersAsync();
             if (connected)
             {
-                // Connected with DNSProxy
                 internalConnect();
-
-                // Write Connected message to log
                 connectMessage();
-
                 return true;
             }
             else
             {
-                BypassFakeProxyDohStop(true, true, true, true);
+                ProcessManager.KillProcessByPID(PIDDnsServer);
+            }
+        }
+        else if (connectMode == ConnectMode.ConnectToFakeProxyDohViaProxyDPI)
+        {
+            //=== Connect To Fake Proxy Via Proxy Fragment
+            bool connected = await ConnectToFakeProxyDohUsingProxyDPIAsync().ConfigureAwait(false);
+            if (connected)
+            {
+                internalConnect();
+                connectMessage();
+                return true;
+            }
+            else
+            {
+                ProcessManager.KillProcessByPID(PIDDnsServer);
+            }
+        }
+        else if (connectMode == ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI)
+        {
+            //=== Connect To Fake Proxy Via GoodbyeDPI
+            bool connected = await ConnectToFakeProxyDohUsingGoodbyeDPIAsync().ConfigureAwait(false);
+            if (connected)
+            {
+                internalConnect();
+                connectMessage();
+                return true;
+            }
+            else
+            {
+                ProcessManager.KillProcessByPID(PIDDnsServer);
+                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
             }
         }
         else if (connectMode == ConnectMode.ConnectToPopularServersWithProxy)
         {
             //=== Connect To Servers Using Proxy
-            await ConnectToServersUsingProxy();
-
-            // Wait for DNSCrypt
-            Task wait1 = Task.Run(async () =>
+            bool connected = await ConnectToServersUsingProxy();
+            if (connected)
             {
-                while (true)
-                {
-                    if (IsDisconnecting) break;
-                    if (ProcessManager.FindProcessByPID(PIDDNSCrypt)) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
-
-            if (ProcessManager.FindProcessByPID(PIDDNSCrypt))
-            {
-                // Connected with DNSCrypt
                 internalConnect();
-
-                // Write Connected message to Status
-                connectMessage(false);
-
+                connectMessage();
                 return true;
             }
             else
             {
-                // Write DNSCryptProxy Error to log
-                string msg = "DNSCryptProxy couldn't connect, try again.";
-                if (IsDisconnecting) msg = "Task Canceled.";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed));
+                ProcessManager.KillProcessByPID(PIDDnsServer);
             }
         }
 
@@ -341,19 +287,25 @@ public partial class FormMain
                 }
             }
 
+            // Is IPv6 Supported By OS
+            bool isIPv6SupportedByOS = NetworkTool.IsIPv6Supported();
+
             // Update Local IP
             LocalIP = NetworkTool.GetLocalIPv4();
 
             // Get Loopback IP
-            IPAddress loopbackIP = IPAddress.Loopback;
+            IPAddress loopbackIPv4 = IPAddress.Loopback;
+            IPAddress loopbackIPv6 = IPAddress.IPv6Loopback;
 
             // Write local DNS addresses to log
             string msgLocalDNS1 = "Local DNS:";
             if (!limitLog)
                 if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDNS1, Color.LightGray));
-            string msgLocalDNS2 = NL + loopbackIP;
+            string msgLocalDNS2 = $"{NL}udp://{loopbackIPv4}, tcp://{loopbackIPv4}";
+            if (isIPv6SupportedByOS)
+                msgLocalDNS2 += $"{NL}udp://[{loopbackIPv6}], tcp://[{loopbackIPv6}]";
             if (LocalIP != null)
-                msgLocalDNS2 += NL + LocalIP.ToString();
+                msgLocalDNS2 += $"{NL}udp://{LocalIP}, tcp://{LocalIP}";
             msgLocalDNS2 += NL;
             if (!limitLog)
                 if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDNS2, Color.DodgerBlue));
@@ -371,9 +323,16 @@ public partial class FormMain
 
                 string msgLocalDoH2;
                 if (ConnectedDohPort == 443)
-                    msgLocalDoH2 = $"{NL}https://{loopbackIP}/dns-query";
+                    msgLocalDoH2 = $"{NL}https://{loopbackIPv4}/dns-query";
                 else
-                    msgLocalDoH2 = $"{NL}https://{loopbackIP}:{ConnectedDohPort}/dns-query";
+                    msgLocalDoH2 = $"{NL}https://{loopbackIPv4}:{ConnectedDohPort}/dns-query";
+                if (isIPv6SupportedByOS)
+                {
+                    if (ConnectedDohPort == 443)
+                        msgLocalDoH2 += $"{NL}https://[{loopbackIPv6}]/dns-query";
+                    else
+                        msgLocalDoH2 += $"{NL}https://[{loopbackIPv6}]:{ConnectedDohPort}/dns-query";
+                }
                 msgLocalDoH2 += NL;
                 if (!limitLog)
                     if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH2, Color.DodgerBlue));
@@ -396,9 +355,6 @@ public partial class FormMain
                     // Connect Status - Local DoH Local IP
                     this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{msgLocalDoH3}", Color.DodgerBlue));
                 }
-
-                // Copy Local DoH to Clipboard
-                this.InvokeIt(() => Clipboard.SetText(msgLocalDoH2.Trim(NL.ToCharArray())));
             }
         }
     }

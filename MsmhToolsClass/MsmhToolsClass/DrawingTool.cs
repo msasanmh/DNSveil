@@ -17,16 +17,15 @@ public static class DrawingTool
     public static Icon? ExtractIcon(string dllPath, int index, bool largeIcon)
     {
         Icon? icon = null;
-        if (!OperatingSystem.IsWindows()) return icon;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return icon;
         _ = ExtractIconEx(dllPath, index, out IntPtr large, out IntPtr small, 1);
+
         try
         {
             icon = Icon.FromHandle(largeIcon ? large : small);
         }
-        catch
-        {
-            // do nothing
-        }
+        catch { }
+
         return icon;
     }
     //-----------------------------------------------------------------------------------
@@ -35,7 +34,7 @@ public static class DrawingTool
     /// </summary>
     public static GraphicsPath? RoundedRectangle(Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
     {
-        if (!OperatingSystem.IsWindows()) return null;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return null;
         int diameterTopLeft = radiusTopLeft * 2;
         int diameterTopRight = radiusTopRight * 2;
         int diameterBottomRight = radiusBottomRight * 2;
@@ -98,7 +97,7 @@ public static class DrawingTool
     /// </summary>
     public static Bitmap? Invert(Bitmap source)
     {
-        if (!OperatingSystem.IsWindows()) return null;
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return null;
         //create a blank bitmap the same size as original
         Bitmap newBitmap = new(source.Width, source.Height);
         //get a graphics object from the new image

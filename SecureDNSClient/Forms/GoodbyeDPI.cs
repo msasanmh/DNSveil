@@ -58,7 +58,7 @@ public partial class FormMain
         modeStr = dpiBypass.Text;
 
         // Execute GoodByeDPI
-        PIDGoodbyeDPIBasic = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+        PIDGoodbyeDPIBasic = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, null, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
 
         // Wait for GoodbyeDPI
         Task wait1 = Task.Run(async () =>
@@ -276,7 +276,7 @@ public partial class FormMain
         string modeStr = "Advanced";
 
         // Execute GoodByeDPI
-        PIDGoodbyeDPIAdvanced = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
+        PIDGoodbyeDPIAdvanced = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, null, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
         await Task.Delay(100);
 
         if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced))

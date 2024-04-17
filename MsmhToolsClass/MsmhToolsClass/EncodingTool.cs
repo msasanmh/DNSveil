@@ -92,12 +92,11 @@ public class EncodingTool
         }
     }
 
-    public static string UrlEncode(byte[] arg)
+    public static string Base64ToBase64Url(string base64)
     {
         try
         {
-            string s = Convert.ToBase64String(arg);
-            return s.Replace("=", "").Replace("/", "_").Replace("+", "-");
+            return base64.Replace("=", "").Replace("/", "_").Replace("+", "-");
         }
         catch (Exception)
         {
@@ -105,11 +104,11 @@ public class EncodingTool
         }
     }
 
-    public static string UrlToBase64(string arg)
+    public static string Base64UrlToBase64(string base64Url)
     {
         try
         {
-            return arg.PadRight(arg.Length + (4 - arg.Length % 4) % 4, '=').Replace("_", "/").Replace("-", "+");
+            return base64Url.PadRight(base64Url.Length + (4 - base64Url.Length % 4) % 4, '=').Replace("_", "/").Replace("-", "+");
         }
         catch (Exception)
         {
@@ -117,36 +116,35 @@ public class EncodingTool
         }
     }
 
-    public static byte[] UrlDecode(string arg)
+    public static string UrlEncode(byte[] buffer)
     {
         try
         {
-            string decrypted = UrlToBase64(arg);
-            return Convert.FromBase64String(decrypted);
+            string base64 = Convert.ToBase64String(buffer);
+            return Base64ToBase64Url(base64);
+        }
+        catch (Exception)
+        {
+            return string.Empty;
+        }
+    }
+
+    public static byte[] UrlDecode(string base64Url)
+    {
+        string base64 = Base64UrlToBase64(base64Url);
+
+        try
+        {
+            
+            return Convert.FromBase64String(base64);
         }
         catch (Exception ex)
         {
             Debug.WriteLine("UrlDecode: " + ex.Message);
+            Debug.WriteLine("UrlDecode Base64Url: " + base64Url);
+            Debug.WriteLine("UrlDecode Base64: " + base64);
             return Array.Empty<byte>();
         }
     }
 
-    public static T[] SubArray<T>(T[] arr, int start, int length)
-    {
-        T[] result = new T[length];
-        try
-        {
-            Buffer.BlockCopy(arr, start, result, 0, length);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("SubArray: " + ex.Message);
-        }
-        return result;
-    }
-
-    public static T[] SubArray<T>(T[] arr, int start)
-    {
-        return SubArray(arr, start, arr.Length - start);
-    }
 }

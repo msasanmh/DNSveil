@@ -1,5 +1,5 @@
 ﻿using MsmhToolsClass;
-using MsmhToolsClass.ProxyServerPrograms;
+using MsmhToolsClass.MsmhAgnosticServer;
 using System.Diagnostics;
 using System.Net;
 
@@ -8,42 +8,42 @@ namespace SecureDNSClient;
 public partial class FormMain
 {
     /// <summary>
-    /// Apply Fake Proxy (Rules: Fake DNS and White List)
+    /// Apply Fake Proxy (ProxyRules: Fake DNS and White List)
     /// </summary>
     /// <param name="fakeProcess">Process</param>
     /// <returns>Returns True if everything's ok.</returns>
     public async Task<bool> ApplyFakeProxy(ProcessConsole processConsole)
     {
-        bool isOk = ApplyFakeProxyOut(out ProxyProgram.Rules? rules);
+        bool isOk = ApplyFakeProxyOut(out AgnosticProgram.ProxyRules? rules);
         if (!isOk) return false;
         if (rules == null) return false;
 
         // Add Program to Proxy
-        string rulesCommand = $"Programs Rules -Mode={rules.RulesMode} -PathOrText=\"{rules.TextContent.ReplaceLineEndings("\\n")}\"";
+        string rulesCommand = $"Programs ProxyRules -Mode={rules.RulesMode} -PathOrText=\"{rules.TextContent.ReplaceLineEndings("\\n")}\"";
         Debug.WriteLine(rulesCommand);
         return await processConsole.SendCommandAsync(rulesCommand);
     }
 
-    public bool ApplyFakeProxyOut(out ProxyProgram.Rules? rules)
+    public bool ApplyFakeProxyOut(out AgnosticProgram.ProxyRules? rules)
     {
         // Get DoH Clean Ip
         string dohCleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text;
         bool isValid = NetworkTool.IsIPv4Valid(dohCleanIP, out IPAddress? _);
         if (!isValid)
         {
-            string msg = $"Fake Proxy clean IP is not valid, check Settings.{NL}";
+            string msg = $"Fake Proxy Clean IP Is Not Valid, Check Settings.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
             rules = null;
             return false;
         }
 
-        // Check IP is Clean
+        // Check IP Is Clean
         bool isDohIpClean1 = NetworkTool.CanPing(dohCleanIP, 5000).Result;
         bool isDohIpClean2 = NetworkTool.CanTcpConnect(dohCleanIP, 443, 5000).Result;
         if (!isDohIpClean1 || !isDohIpClean2)
         {
-            // CF Clean IP is not valid
-            string msg = $"Fake Proxy clean IP is not clean.{NL}";
+            // CF Clean IP Is Not Valid
+            string msg = $"Fake Proxy Clean IP Is Not Clean.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
             rules = null;
             return false;
@@ -56,7 +56,7 @@ public partial class FormMain
         string host2 = "cloudflare-dns.com";
         string host3 = "every1dns.com";
 
-        // Set Rules Content
+        // Set ProxyRules Content
         string rulesContent = $"{host}|{dohCleanIP};";
         rulesContent += $"\n{dohCleanIP}|+;";
         rulesContent += $"\n*|-;"; // Block Other Requests
@@ -70,9 +70,9 @@ public partial class FormMain
             rulesContent += $"\n*|-;"; // Block Other Requests
         }
 
-        // Rules Program
-        ProxyProgram.Rules rulesProgram = new();
-        rulesProgram.Set(ProxyProgram.Rules.Mode.Text, rulesContent);
+        // ProxyRules Program
+        AgnosticProgram.ProxyRules rulesProgram = new();
+        rulesProgram.Set(AgnosticProgram.ProxyRules.Mode.Text, rulesContent);
 
         rules = rulesProgram;
         return true;
@@ -104,69 +104,125 @@ public partial class FormMain
                 IsProxyActivating = true;
                 await UpdateStatusShortOnBoolsChanged();
 
-                // Start Share
+                // Start Proxy Server
                 string msgStart = $"Starting Proxy Server...{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStart, Color.MediumSeaGreen));
 
-                // Delete request log on > 50KB
-                try
-                {
-                    if (File.Exists(SecureDNS.ProxyServerRequestLogPath))
-                    {
-                        long lenth = new FileInfo(SecureDNS.ProxyServerRequestLogPath).Length;
-                        if (ConvertTool.ConvertSize(lenth, ConvertTool.SizeUnits.Byte, ConvertTool.SizeUnits.KB, out _) > 50)
-                            File.Delete(SecureDNS.ProxyServerRequestLogPath);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Delete Proxy Server Request log file: {ex.Message}");
-                }
-
-                // Check port
+                // Check Port
                 int proxyPort = GetProxyPortSetting();
-                bool isPortOk = GetListeningPort(proxyPort, "Change Proxy Server port from settings.", Color.IndianRed);
+                bool isPortOk = GetListeningPort(proxyPort, "Change Proxy Server Port From Settings.", Color.IndianRed);
                 if (!isPortOk)
                 {
+                    UpdateProxyBools = true;
                     IsProxyActivating = false;
                     await UpdateStatusShortOnBoolsChanged();
                     return;
                 }
 
-                // Kill if it's already running
-                ProcessManager.KillProcessByPID(PIDProxy);
+                // Get MaxRequests
+                int maxRequests = GetMaxRequestsSetting();
+
+                // Get Proxy Timeout (Sec)
+                int proxyTimeoutSec = GetProxyTimeoutSetting();
+
+                // Get KillOnCpuUsage Setting
+                int killOnCpuUsage = GetKillOnCpuUsageSetting();
+
+                // Get Block Port 80 Setting
+                bool blockPort80 = GetBlockPort80Setting();
+
+                // Get DNSs
+                bool isIPv6SupportedByOS = NetworkTool.IsIPv6Supported();
+                string dnss = isIPv6SupportedByOS ? $"udp://[{IPAddress.IPv6Loopback}]:53" : $"udp://{IPAddress.Loopback}:53";
+                dnss += ",system";
+
+                // Get Cloudflare Clean IPv4
+                string cfCleanIPv4 = GetCfCleanIpSetting();
+
+                // Get Bootstrap IP And Port
+                string bootstrapIp = GetBootstrapSetting(out int bootstrapPort).ToString();
+
+                // Get UpStream Proxy
+                var upstream = await GetUpStreamProxySetting();
+                if (!upstream.IsSuccess)
+                {
+                    UpdateProxyBools = true;
+                    IsProxyActivating = false;
+                    await UpdateStatusShortOnBoolsChanged();
+                    return;
+                }
+
+                // Kill If It's Already Running
+                ProcessManager.KillProcessByPID(PIDProxyServer);
                 bool isCmdSent = false;
-                PIDProxy = ProxyConsole.Execute(SecureDNS.ProxyServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
-                
-                // Wait for Proxy
+                PIDProxyServer = ProxyConsole.Execute(SecureDNS.AgnosticServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
+                await Task.Delay(100);
+
+                // Wait For Proxy Server
                 Task wait1 = Task.Run(async () =>
                 {
                     while (true)
                     {
-                        if (ProcessManager.FindProcessByPID(PIDProxy)) break;
+                        if (ProcessManager.FindProcessByPID(PIDProxyServer)) break;
                         await Task.Delay(100);
                     }
                 });
                 try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
-                if (!ProcessManager.FindProcessByPID(PIDProxy))
+                if (!ProcessManager.FindProcessByPID(PIDProxyServer))
                 {
-                    string msg = $"Couldn't start Proxy Server. Try again.{NL}";
+                    string msg = $"Couldn't Start Proxy Server. Try Again.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    ProcessManager.KillProcessByPID(PIDProxy);
+                    ProcessManager.KillProcessByPID(PIDProxyServer);
+                    UpdateProxyBools = true;
                     IsProxyActivating = false;
                     await UpdateStatusShortOnBoolsChanged();
                     return;
                 }
 
-                // Write Requests to Log
+                // Send Set Profile
+                isCmdSent = await ProxyConsole.SendCommandAsync("Profile Proxy");
+                if (!isCmdSent)
+                {
+                    await FaildSendCommandMessage();
+                    return;
+                }
+
+                // Send Settings
+                string settingsCmd = $"Setting -Port={proxyPort} -WorkingMode=DnsAndProxy -MaxRequests={maxRequests} -DnsTimeoutSec=5 -ProxyTimeoutSec={proxyTimeoutSec}";
+                settingsCmd += $" -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80} -AllowInsecure=True -DNSs={dnss} -CfCleanIP={cfCleanIPv4}";
+                settingsCmd += $" -BootstrapIp={bootstrapIp} -BootstrapPort={bootstrapPort}";
+                settingsCmd += $" -ProxyScheme={upstream.ProxyScheme} -ProxyUser={upstream.ProxyUser} -ProxyPass={upstream.ProxyPass} -OnlyBlockedIPs={upstream.OnlyBlockedIPs}";
+                isCmdSent = await ProxyConsole.SendCommandAsync(settingsCmd);
+                if (!isCmdSent)
+                {
+                    await FaildSendCommandMessage();
+                    return;
+                }
+
+                // Send SSL Settings (HTTPS) / SSL Decryption / Fragment
+                bool isDpiBypassApplied = await ApplyProxyDpiChanges();
+                if (!isDpiBypassApplied)
+                {
+                    await FaildSendCommandMessage();
+                    return;
+                }
+
+                // Send ProxyRules
+                bool isRulesOk = await ApplyProxyRules();
+                if (!isRulesOk)
+                {
+                    await FaildSendCommandMessage();
+                    return;
+                }
+
+                // Send Write Requests To Log
                 if (CustomCheckBoxProxyEventShowRequest.Checked)
                 {
                     isCmdSent = await ProxyConsole.SendCommandAsync("Requests True");
                     if (!isCmdSent)
                     {
-                        FaildSendCommandMessage();
-                        IsProxyActivating = false;
+                        await FaildSendCommandMessage();
                         return;
                     }
                 }
@@ -175,136 +231,47 @@ public partial class FormMain
                     isCmdSent = await ProxyConsole.SendCommandAsync("Requests False");
                     if (!isCmdSent)
                     {
-                        FaildSendCommandMessage();
-                        IsProxyActivating = false;
+                        await FaildSendCommandMessage();
                         return;
                     }
                 }
 
-                // Write Chunk Details to Log
+                // Send Write Fragment Details To Log
                 if (CustomCheckBoxProxyEventShowChunkDetails.Checked)
                 {
-                    isCmdSent = await ProxyConsole.SendCommandAsync("ChunkDetails True");
+                    isCmdSent = await ProxyConsole.SendCommandAsync("FragmentDetails True");
                     if (!isCmdSent)
                     {
-                        FaildSendCommandMessage();
-                        IsProxyActivating = false;
+                        await FaildSendCommandMessage();
                         return;
                     }
                 }
                 else
                 {
-                    isCmdSent = await ProxyConsole.SendCommandAsync("ChunkDetails False");
+                    isCmdSent = await ProxyConsole.SendCommandAsync("FragmentDetails False");
                     if (!isCmdSent)
                     {
-                        FaildSendCommandMessage();
-                        IsProxyActivating = false;
+                        await FaildSendCommandMessage();
                         return;
                     }
                 }
 
-                // Write Proxy Requests And Chunk Details To Log
-                ProxyConsole.ErrorDataReceived -= ProxyProcess_ErrorDataReceived;
-                ProxyConsole.ErrorDataReceived += ProxyProcess_ErrorDataReceived;
-                void ProxyProcess_ErrorDataReceived(object? sender, DataReceivedEventArgs e)
-                {
-                    string? msg = e.Data;
-                    if (!string.IsNullOrEmpty(msg))
-                    {
-                        if (StopWatchWriteProxyOutputDelay.ElapsedMilliseconds < 100) return;
-                        StopWatchWriteProxyOutputDelay.Restart();
-
-                        if (!IsInternetOnline) return;
-
-                        Color reqColor = msg.Contains("Request Denied") ? Color.Orange : Color.Gray;
-
-                        // Write to log
-                        if (!IsExiting && IsProxyActivated && IsProxyRunning && !IsInActionState)
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, reqColor));
-
-                        // Write to file // No Need For Extra IO, We Have "Write log window to file" Option.
-                        //try
-                        //{
-                        //    FileDirectory.AppendTextLine(SecureDNS.ProxyServerRequestLogPath, msg, new UTF8Encoding(false));
-                        //}
-                        //catch (Exception ex)
-                        //{
-                        //    Debug.WriteLine($"Write Proxy Request log file: {ex.Message}");
-                        //}
-                    }
-                }
-
-                // Apply DNS Support
-                bool isDnsOk = await ApplyPDNS();
-                if (!isDnsOk)
-                {
-                    ProcessManager.KillProcessByPID(PIDFakeProxy);
-                    ProcessManager.KillProcessByPID(PIDProxy);
-                    IsProxyActivating = false;
-                    return;
-                }
-
-                // Apply DPI Bypass Support
-                bool isDpiBypassApplied = await ApplyPDpiChanges();
-                if (!isDpiBypassApplied)
-                {
-                    ProcessManager.KillProcessByPID(PIDProxy);
-                    IsProxyActivating = false;
-                    return;
-                }
-
-                // Apply UpStream Proxy Support
-                bool isUpstreamOK = await ApplyPUpStreamProxy();
-                if (!isUpstreamOK)
-                {
-                    ProcessManager.KillProcessByPID(PIDProxy);
-                    IsProxyActivating = false;
-                    return;
-                }
-
-                // Apply Rules Support
-                bool isRulesOk = await ApplyPRules();
-                if (!isRulesOk)
-                {
-                    ProcessManager.KillProcessByPID(PIDFakeProxy);
-                    ProcessManager.KillProcessByPID(PIDProxy);
-                    IsProxyActivating = false;
-                    return;
-                }
-
-                // Get number of handle requests
-                int handleReq = 250;
-                this.InvokeIt(() => handleReq = Convert.ToInt32(CustomNumericUpDownSettingProxyHandleRequests.Value));
-
-                // Get block port 80 setting
-                bool blockPort80 = false;
-                this.InvokeIt(() => blockPort80 = CustomCheckBoxSettingProxyBlockPort80.Checked);
-
-                // Get killOnCpuUsage Setting
-                int killOnCpuUsage = GetKillOnCpuUsageSetting();
-
-                // Kill Request on Timeout (Sec)
-                int reqTimeoutSec = 0;
-                this.InvokeIt(() => reqTimeoutSec = Convert.ToInt32(CustomNumericUpDownSettingProxyKillRequestTimeout.Value));
-
                 // Send Parent Process Command
                 string parentCommand = $"ParentProcess -PID={Environment.ProcessId}";
                 Debug.WriteLine(parentCommand);
-                await ProxyConsole.SendCommandAsync(parentCommand);
+                isCmdSent = await ProxyConsole.SendCommandAsync(parentCommand);
+                if (!isCmdSent)
+                {
+                    await FaildSendCommandMessage();
+                    return;
+                }
 
-                // Send Setting Command
-                string settingCommand = $"Setting -Port={proxyPort} -MaxRequests={handleReq} -RequestTimeoutSec={reqTimeoutSec} -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80}";
-                Debug.WriteLine(settingCommand);
-                await ProxyConsole.SendCommandAsync(settingCommand);
+                // Send Start Command
+                await ProxyConsole.SendCommandAsync("Start");
+                await Task.Delay(200);
 
-                // Start Proxy
-                string startCommand = "Start";
-                Debug.WriteLine(startCommand);
-                await ProxyConsole.SendCommandAsync(startCommand);
-                await Task.Delay(500);
-
-                // Check for successfull comunication with console
-                isCmdSent = await ProxyConsole.SendCommandAsync("out");
+                // Check For Successfull Communication With Console
+                isCmdSent = await ProxyConsole.SendCommandAsync("Out Proxy"); // Out <ProfileName>
                 string confirmMsg = "details|true";
 
                 // Wait For Confirm Message
@@ -321,30 +288,42 @@ public partial class FormMain
 
                 if (!isCmdSent || !ProxyConsole.GetStdout.ToLower().StartsWith(confirmMsg))
                 {
-                    ProcessManager.KillProcessByPID(PIDFakeProxy);
-                    ProcessManager.KillProcessByPID(PIDProxy);
-                    FaildSendCommandMessage();
-                    IsProxyActivating = false;
+                    await FaildSendCommandMessage();
                     return;
                 }
 
                 // Update Proxy Port
                 ProxyPort = GetProxyPortSetting();
 
-                // Write Sharing Address to log
+                // Write Sharing Addresses To Log
                 if (!limitLog)
                 {
                     LocalIP = NetworkTool.GetLocalIPv4(); // Update Local IP
-                    IPAddress localIP = LocalIP ?? IPAddress.Loopback;
 
-                    string msgProxy1 = $"Local Proxy Server (HTTP, HTTPS, SOCKS4, SOCKS4A, SOCKS5):{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy1, Color.LightGray));
+                    string msgProxy0 = $"Local Proxy Server (HTTP, HTTPS, SOCKS4, SOCKS4A, SOCKS5):{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy0, Color.LightGray));
 
-                    string msgProxy2 = $"{IPAddress.Loopback}:{proxyPort}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy2 + NL, Color.DodgerBlue));
+                    string msgProxy1 = $"{IPAddress.Loopback}:{proxyPort}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy1 + NL, Color.DodgerBlue));
 
-                    string msgProxy3 = $"{localIP}:{proxyPort}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy3 + NL, Color.DodgerBlue));
+                    if (LocalIP != null)
+                    {
+                        string msgProxy2 = $"{LocalIP}:{proxyPort}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy2 + NL, Color.DodgerBlue));
+                    }
+                    
+                    if (isIPv6SupportedByOS)
+                    {
+                        string msgProxy3 = $"[{IPAddress.IPv6Loopback}]:{proxyPort}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy3 + NL, Color.DodgerBlue));
+
+                        IPAddress? localIPv6 = NetworkTool.GetLocalIPv6();
+                        if (localIPv6 != null)
+                        {
+                            string msgProxy4 = $"[{localIPv6}]:{proxyPort}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy4 + NL, Color.DodgerBlue));
+                        }
+                    }
                 }
                 
                 // Update Bools
@@ -353,18 +332,16 @@ public partial class FormMain
                 IsProxyActivating = false;
                 await UpdateStatusShortOnBoolsChanged();
 
-                // Start Delay Timer
-                StopWatchWriteProxyOutputDelay.Restart();
-
                 // To See Status Immediately
                 await UpdateBoolProxy();
                 IsDPIActive = UpdateBoolIsDpiActive();
                 await UpdateStatusLong();
 
-                // Warm up Proxy (Sync)
+                // Warm Up Proxy (Sync)
                 string blockedDomain = GetBlockedDomainSetting(out string _);
                 string proxyScheme = $"socks5://{IPAddress.Loopback}:{ProxyPort}";
-                if (IsDNSSet || ProcessManager.FindProcessByPID(PIDFakeProxy))
+                if (isIPv6SupportedByOS) proxyScheme = $"socks5://[{IPAddress.IPv6Loopback}]:{ProxyPort}";
+                if (IsDNSSet)
                     _ = Task.Run(() => WarmUpProxy(blockedDomain, proxyScheme, 30, CancellationToken.None));
             }
             else
@@ -374,31 +351,28 @@ public partial class FormMain
                 IsProxyDeactivating = true;
                 await UpdateStatusShortOnBoolsChanged();
 
-                // Stop Fake Proxy
-                ProcessManager.KillProcessByPID(PIDFakeProxy);
-
                 // Stop Proxy Server
-                if (ProcessManager.FindProcessByPID(PIDProxy))
+                if (ProcessManager.FindProcessByPID(PIDProxyServer))
                 {
                     // Unset Proxy First
                     if (IsProxySet) SetProxy(true);
                     await Task.Delay(100);
                     if (IsProxySet) NetworkTool.UnsetProxy(false, true);
 
-                    ProcessManager.KillProcessByPID(PIDProxy);
+                    ProcessManager.KillProcessByPID(PIDProxyServer);
 
                     // Wait for Proxy Server to Exit
                     Task wait1 = Task.Run(async () =>
                     {
                         while (true)
                         {
-                            if (!ProcessManager.FindProcessByPID(PIDProxy)) break;
+                            if (!ProcessManager.FindProcessByPID(PIDProxyServer)) break;
                             await Task.Delay(100);
                         }
                     });
                     try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
-                    if (!ProcessManager.FindProcessByPID(PIDProxy))
+                    if (!ProcessManager.FindProcessByPID(PIDProxyServer))
                     {
                         // Update Bool
                         IsProxyRunning = false;
@@ -408,19 +382,18 @@ public partial class FormMain
                         LastProxyRulesPath = string.Empty;
 
                         // Write deactivated message to log
-                        string msgDiactivated = $"Proxy Server deactivated.{NL}";
+                        string msgDiactivated = $"Proxy Server Deactivated.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDiactivated, Color.MediumSeaGreen));
 
                         // Stop Delay Timer
                         StopWatchWriteProxyOutputDelay.Reset();
 
-                        PIDFakeProxy = -1;
-                        PIDProxy = -1;
+                        PIDProxyServer = -1;
                     }
                     else
                     {
-                        // Couldn't stop
-                        string msg = $"Couldn't stop Proxy Server.{NL}";
+                        // Couldn't Stop
+                        string msg = $"Couldn't Stop Proxy Server.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
                     }
 
@@ -431,8 +404,8 @@ public partial class FormMain
                 }
                 else
                 {
-                    // Already deactivated
-                    string msg = $"It's already deactivated.{NL}";
+                    // Already Deactivated
+                    string msg = $"It's Already Deactivated.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
                 }
 
@@ -444,17 +417,22 @@ public partial class FormMain
 
     // ========================================== Other Proxy Methods
 
-    public void FaildSendCommandMessage()
+    public async Task FaildSendCommandMessage()
     {
         if (!IsDisconnectingAll && !IsQuickConnecting)
         {
-            string msg = $"Couldn't communicate with Proxy Console.{NL}";
-            msg += $"Please make sure you have .NET Desktop v6 x86 and x64 installed on your OS.{NL}";
+            string msg = $"Couldn't Communicate With Proxy Console.{NL}";
+            msg += $"Please Make Sure You Have .NET Desktop v6 x86 And x64 Installed On Your OS.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
         }
+
+        ProcessManager.KillProcessByPID(PIDProxyServer);
+        UpdateProxyBools = true;
+        IsProxyActivating = false;
+        await UpdateStatusShortOnBoolsChanged();
     }
 
-    private async Task<bool> ApplyPDpiChanges()
+    private async Task<bool> ApplyProxyDpiChanges()
     {
         // Return if DNS is setting or unsetting
         if (IsDNSSetting || IsDNSUnsetting) return false;
@@ -463,38 +441,29 @@ public partial class FormMain
         string command = GetFragmentProgramCommand();
         Debug.WriteLine(command);
         bool isCommandSent = await ProxyConsole.SendCommandAsync(command);
-
+        
         // Save LastFragmentProgramCommand
         if (isCommandSent) LastFragmentProgramCommand = command;
 
         // Apply SSL Decryption
-        bool isSSLDecryptionOk = await ApplyPSSLDecryption();
-
+        bool isSSLDecryptionOk = await ApplyProxySSLDecryption();
+        
         UpdateProxyBools = true;
         if (!isCommandSent || !isSSLDecryptionOk) return false;
 
         return true;
     }
 
-    private async Task ApplyPDpiChangesFakeProxy()
-    {
-        UpdateProxyBools = false;
-        string command = GetFragmentProgramCommand();
-        Debug.WriteLine(command);
-        await FakeProxyConsole.SendCommandAsync(command);
-        UpdateProxyBools = true;
-    }
-
     private string GetFragmentProgramCommand()
     {
-        ApplyPDpiFragmentChangesOut(out ProxyProgram.Fragment.Mode fragmentMode, out int beforSniChunks, out ProxyProgram.Fragment.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay);
+        ApplyProxyDpiFragmentChangesOut(out AgnosticProgram.Fragment.Mode fragmentMode, out int beforSniChunks, out AgnosticProgram.Fragment.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay);
         string command = $"Programs Fragment -Mode={fragmentMode} -BeforeSniChunks={beforSniChunks} -ChunkMode={chunkMode} -SniChunks={sniChunks} -AntiPatternOffset={antiPatternOffset} -FragmentDelay={fragmentDelay}";
         return command;
     }
 
-    private void ApplyPDpiFragmentChangesOut(out ProxyProgram.Fragment.Mode fragmentMode, out int beforSniChunks, out ProxyProgram.Fragment.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay)
+    private void ApplyProxyDpiFragmentChangesOut(out AgnosticProgram.Fragment.Mode fragmentMode, out int beforSniChunks, out AgnosticProgram.Fragment.ChunkMode chunkMode, out int sniChunks, out int antiPatternOffset, out int fragmentDelay)
     {
-        // Get Fragment Settings
+        // Get Fragment AgnosticSettings
         bool enableFragment = false;
         int beforSniChunks0 = -1, chunkModeInt = -1;
         this.InvokeIt(() =>
@@ -507,10 +476,10 @@ public partial class FormMain
 
         chunkMode = chunkModeInt switch
         {
-            0 => ProxyProgram.Fragment.ChunkMode.SNI,
-            1 => ProxyProgram.Fragment.ChunkMode.SniExtension,
-            2 => ProxyProgram.Fragment.ChunkMode.AllExtensions,
-            _ => ProxyProgram.Fragment.ChunkMode.AllExtensions,
+            0 => AgnosticProgram.Fragment.ChunkMode.SNI,
+            1 => AgnosticProgram.Fragment.ChunkMode.SniExtension,
+            2 => AgnosticProgram.Fragment.ChunkMode.AllExtensions,
+            _ => AgnosticProgram.Fragment.ChunkMode.AllExtensions,
         };
 
         int sniChunks0 = -1, antiPatternOffset0 = -1, fragmentDelay0 = -1;
@@ -522,10 +491,10 @@ public partial class FormMain
         });
         sniChunks = sniChunks0; antiPatternOffset = antiPatternOffset0; fragmentDelay = fragmentDelay0;
 
-        fragmentMode = enableFragment ? ProxyProgram.Fragment.Mode.Program : ProxyProgram.Fragment.Mode.Disable;
+        fragmentMode = enableFragment ? AgnosticProgram.Fragment.Mode.Program : AgnosticProgram.Fragment.Mode.Disable;
     }
 
-    public async Task<bool> ApplyPSSLDecryption()
+    public async Task<bool> ApplyProxySSLDecryption()
     {
         bool changeSni = false;
         this.InvokeIt(() => changeSni = CustomCheckBoxProxySSLChangeSni.Checked);
@@ -535,7 +504,7 @@ public partial class FormMain
             // Get Default SNI
             string defaultSni = GetDefaultSniSetting();
 
-            string command = $"SSLSetting -Enable=True -RootCA_Path=\"{SecureDNS.IssuerCertPath}\" -RootCA_KeyPath=\"{SecureDNS.IssuerKeyPath}\" -ChangeSni={changeSni} -DefaultSni={defaultSni}";
+            string command = $"SSLSetting -Enable=True -RootCA_Path=\"{SecureDNS.IssuerCertPath}\" -RootCA_KeyPath=\"{SecureDNS.IssuerKeyPath}\" -Cert_Path=\"{SecureDNS.CertPath}\" -Cert_KeyPath=\"{SecureDNS.KeyPath}\" -ChangeSni={changeSni} -DefaultSni={defaultSni}";
 
             Debug.WriteLine(command);
             bool isSuccess = await ProxyConsole.SendCommandAsync(command);
@@ -551,251 +520,11 @@ public partial class FormMain
         }
     }
 
-    public async Task<bool> ApplyPDNS()
-    {
-        // Set timeout
-        int timeoutSec = 5;
-
-        // Get CF Clean IP
-        bool changeCfIp = false;
-        this.InvokeIt(() => changeCfIp = CustomCheckBoxSettingProxyCfCleanIP.Checked);
-
-        string cfCleanIP = string.Empty;
-        this.InvokeIt(() => cfCleanIP = CustomTextBoxSettingProxyCfCleanIP.Text.Trim());
-
-        if (CustomCheckBoxSettingProxyEnableFakeProxy.Checked)
-        {
-            // Use Fake Proxy DoH
-            // Start msg
-            string msgStart = $"Starting Fake Proxy server...{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStart, Color.Orange));
-
-            // Get Fake Proxy DoH Address
-            string dohUrl = string.Empty;
-            this.InvokeIt(() => dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text);
-
-            // Get Clean Ip
-            string dohCleanIP = string.Empty;
-            this.InvokeIt(() => dohCleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text);
-
-            // Get loopback
-            string loopback = IPAddress.Loopback.ToString();
-
-            // Check port
-            int fakeProxyPort = GetFakeProxyPortSetting();
-            bool isPortOk = GetListeningPort(fakeProxyPort, string.Empty, Color.Orange);
-            if (!isPortOk)
-            {
-                fakeProxyPort = NetworkTool.GetNextPort(fakeProxyPort);
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Trying Port {fakeProxyPort}...{NL}", Color.MediumSeaGreen));
-                bool isPort2Ok = GetListeningPort(fakeProxyPort, string.Empty, Color.Orange);
-                if (!isPort2Ok)
-                {
-                    fakeProxyPort = NetworkTool.GetNextPort(fakeProxyPort);
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Trying Port {fakeProxyPort}...{NL}", Color.MediumSeaGreen));
-                    bool isPort3Ok = GetListeningPort(fakeProxyPort, "Change Fake Proxy port from settings.", Color.IndianRed);
-                    if (!isPort3Ok)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            // Get Fake Proxy Scheme
-            string fakeProxyScheme = $"http://{loopback}:{fakeProxyPort}";
-
-            //============================== Start FakeProxy
-            // Kill if it's already running
-            ProcessManager.KillProcessByPID(PIDFakeProxy);
-
-            // Execute Fake Proxy
-            PIDFakeProxy = FakeProxyConsole.Execute(SecureDNS.ProxyServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
-            
-            // Wait for Fake Proxy
-            Task fakeWait = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    if (ProcessManager.FindProcessByPID(PIDFakeProxy)) break;
-                    await Task.Delay(100);
-                }
-            });
-            try { await fakeWait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
-
-            if (!ProcessManager.FindProcessByPID(PIDFakeProxy)) return false;
-
-            // Apply Fake DNS and White List Support to Fake Proxy
-            bool isFpOk = await ApplyFakeProxy(FakeProxyConsole);
-            if (!isFpOk) return false;
-
-            // Apply DPI Bypass (Fragment) Support to Fake Proxy
-            await ApplyPDpiChangesFakeProxy();
-
-            // Get killOnCpuUsage Setting
-            int killOnCpuUsage = GetKillOnCpuUsageSetting();
-
-            // Send Parent Process Command
-            string parentCommand = $"ParentProcess -PID={Environment.ProcessId}";
-            Debug.WriteLine(parentCommand);
-            await FakeProxyConsole.SendCommandAsync(parentCommand);
-
-            // Send Setting Command
-            string settingCommand = $"Setting -Port={fakeProxyPort} -MaxRequests=1000 -RequestTimeoutSec=0 -KillOnCpuUsage={killOnCpuUsage} -BlockPort80=True";
-            Debug.WriteLine(settingCommand);
-            bool isSettingSent = await FakeProxyConsole.SendCommandAsync(settingCommand);
-            if (!isSettingSent) return false;
-
-            // Start Fake Proxy
-            string startCommand = $"Start";
-            Debug.WriteLine(startCommand);
-            bool isStartSent = await FakeProxyConsole.SendCommandAsync(startCommand);
-            if (!isStartSent) return false;
-            //============================== End FakeProxy
-
-            bool isCfIpOk = await isCloudflareIpOk();
-            if (!isCfIpOk) return false;
-
-            // Apply DNS Program to Proxy Server
-            string dnsCommand = $"Programs Dns -Mode=DoH -TimeoutSec={timeoutSec} -DnsAddr={dohUrl} -DnsCleanIp={dohCleanIP} -ProxyScheme={fakeProxyScheme}";
-            if (changeCfIp && !string.IsNullOrEmpty(cfCleanIP))
-                dnsCommand += $" -CfCleanIp={cfCleanIP}";
-            Debug.WriteLine(dnsCommand);
-            bool isCmdSent = await ProxyConsole.SendCommandAsync(dnsCommand);
-            if (!isCmdSent) return false;
-
-            // End msg
-            string msgEnd = $"Fake Proxy Server activated. Port: {fakeProxyPort}{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgEnd, Color.MediumSeaGreen));
-
-            return true;
-        }
-        else
-        {
-            // Use System DNS
-            bool isCfIpOk = await isCloudflareIpOk();
-            if (!isCfIpOk) return false;
-
-            // Apply DNS Program to Proxy Server
-            string dnsCommand = $"Programs Dns -Mode=System -TimeoutSec={timeoutSec}";
-            if (changeCfIp && !string.IsNullOrEmpty(cfCleanIP))
-                dnsCommand += $" -CfCleanIp={cfCleanIP}";
-            Debug.WriteLine(dnsCommand);
-            return await ProxyConsole.SendCommandAsync(dnsCommand);
-        }
-
-        async Task<bool> isCloudflareIpOk()
-        {
-            // Add redirect all Cloudflare IPs to a clean IP
-            bool changeIp = false;
-            this.InvokeIt(() => changeIp = CustomCheckBoxSettingProxyCfCleanIP.Checked);
-
-            if (changeIp)
-            {
-                // Get CF Clean IP
-                string cleanIP = string.Empty;
-                this.InvokeIt(() => cleanIP = CustomTextBoxSettingProxyCfCleanIP.Text.Trim());
-
-                // Check CF IP is valid
-                bool isCleanIpValid = NetworkTool.IsIPv4Valid(cleanIP, out IPAddress? _);
-                if (!isCleanIpValid)
-                {
-                    // CF Clean IP is not valid
-                    string msg = $"Cloudflare clean IP is not valid.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    return false;
-                }
-
-                // Check IP is Clean
-                bool isClean1 = await NetworkTool.CanPing(cleanIP, timeoutSec * 1000);
-                bool isClean2 = await NetworkTool.CanTcpConnect(cleanIP, 443, timeoutSec * 1000);
-                if (!isClean1 || !isClean2)
-                {
-                    // CF Clean IP is not valid
-                    string msg = $"Cloudflare clean IP is not clean.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    return false;
-                }
-            }
-
-            return true;
-        }
-    }
-
-    public async Task<bool> ApplyPUpStreamProxy()
-    {
-        if (!CustomCheckBoxSettingProxyUpstream.Checked) return true;
-
-        // Get Upstream Settings
-        // Upstream Mode
-        string? upstreamModeString = null;
-        this.InvokeIt(() => upstreamModeString = CustomComboBoxSettingProxyUpstreamMode.SelectedItem as string);
-
-        // Check if Mode is empty
-        if (string.IsNullOrEmpty(upstreamModeString))
-        {
-            string msg = "Select the mode of upstream proxy." + NL;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            return false;
-        }
-
-        ProxyProgram.UpStreamProxy.Mode upstreamMode = ProxyProgram.UpStreamProxy.Mode.Disable;
-        if (upstreamModeString.Equals("HTTP"))
-            upstreamMode = ProxyProgram.UpStreamProxy.Mode.HTTP;
-        else if (upstreamModeString.Equals("SOCKS5"))
-            upstreamMode = ProxyProgram.UpStreamProxy.Mode.SOCKS5;
-
-        // Upstream Host
-        string upstreamHost = string.Empty;
-        this.InvokeIt(() => upstreamHost = CustomTextBoxSettingProxyUpstreamHost.Text);
-
-        // Check if Host is empty
-        if (string.IsNullOrWhiteSpace(upstreamHost))
-        {
-            string msg = "Upstream proxy host cannot be empty." + NL;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            return false;
-        }
-
-        // Upstream Port
-        int upstreamPort = -1;
-        this.InvokeIt(() => upstreamPort = Convert.ToInt32(CustomNumericUpDownSettingProxyUpstreamPort.Value));
-
-        // Get blocked domain
-        string blockedDomain = GetBlockedDomainSetting(out string _);
-        if (string.IsNullOrEmpty(blockedDomain)) return false;
-
-        // Get Upstream Proxy Scheme
-        string upstreamProxyScheme = string.Empty;
-        if (upstreamMode == ProxyProgram.UpStreamProxy.Mode.HTTP)
-            upstreamProxyScheme += "http";
-        if (upstreamMode == ProxyProgram.UpStreamProxy.Mode.SOCKS5)
-            upstreamProxyScheme += "socks5";
-        upstreamProxyScheme += $"://{upstreamHost}:{upstreamPort}";
-
-        // Check Upstream Proxy Works
-        bool isUpstreamProxyOk = await NetworkTool.IsWebsiteOnlineAsync($"https://{blockedDomain}", null, 5000, false, upstreamProxyScheme);
-        if (!isUpstreamProxyOk)
-        {
-            string msg = $"Upstream proxy cannot open {blockedDomain}." + NL;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            return false;
-        }
-
-        // Only apply to blocked IPs
-        bool onlyBlockedIPs = false;
-        this.InvokeIt(() => onlyBlockedIPs = CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Checked);
-
-        // Apply UpStream Proxy Program to Proxy Server
-        string command = $"Programs UpStreamProxy -Mode={upstreamMode} -Host={upstreamHost} -Port={upstreamPort} -OnlyApplyToBlockedIPs={onlyBlockedIPs}";
-        Debug.WriteLine(command);
-        return await ProxyConsole.SendCommandAsync(command);
-    }
-
-    public async Task<bool> ApplyPRules()
+    public async Task<bool> ApplyProxyRules()
     {
         if (CustomCheckBoxSettingProxyEnableRules.Checked)
         {
-            string command = $"Programs Rules -Mode=File -PathOrText=\"{SecureDNS.ProxyRulesPath}\"";
+            string command = $"Programs ProxyRules -Mode=File -PathOrText=\"{SecureDNS.ProxyRulesPath}\"";
             Debug.WriteLine(command);
             bool success = await ProxyConsole.SendCommandAsync(command);
             if (success) LastProxyRulesPath = SecureDNS.ProxyRulesPath;

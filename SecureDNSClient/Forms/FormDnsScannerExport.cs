@@ -10,7 +10,7 @@ namespace SecureDNSClient;
 
 public partial class FormDnsScannerExport : Form
 {
-    // Settings XML path
+    // AgnosticSettings XML path
     private static readonly string SettingsXmlPath = SecureDNS.SettingsXmlDnsScannerExport;
     private readonly Settings AppSettings;
     private List<Tuple<string, string, bool, int, bool, int, Tuple<bool, bool, bool, bool>>> ExportList = new();
@@ -34,7 +34,7 @@ public partial class FormDnsScannerExport : Form
         // Text
         Text = "Export Dns Scanner Data (Only Online Servers)";
 
-        // Initialize and load Settings
+        // Initialize and load AgnosticSettings
         if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
             AppSettings = new(this, SettingsXmlPath);
         else
@@ -220,10 +220,10 @@ public partial class FormDnsScannerExport : Form
             AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "CheckState");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
 
-            // Add Settings to save
+            // Add AgnosticSettings to save
             AppSettings.AddSelectedSettings(this);
 
-            // Save Application Settings
+            // Save Application AgnosticSettings
             await AppSettings.SaveAsync(SettingsXmlPath);
             IsExitDone = true;
 

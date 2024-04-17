@@ -41,11 +41,18 @@ namespace SecureDNSClientPortable
             {
                 MessageBox.Show(ex.Message);
             }
-            
-            Task.Delay(3000).Wait();
-            Close();
-            Environment.Exit(0);
-            Application.Exit();
+
+            try
+            {
+                Task.Delay(3000).Wait();
+                Close();
+                Environment.Exit(0);
+                Application.Exit();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
     }
 }

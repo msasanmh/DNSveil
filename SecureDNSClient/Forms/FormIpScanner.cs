@@ -9,7 +9,7 @@ namespace SecureDNSClient;
 
 public partial class FormIpScanner : Form
 {
-    // Settings XML path
+    // AgnosticSettings XML path
     private static readonly string SettingsXmlPath = SecureDNS.SettingsXmlIpScanner;
     private readonly Settings AppSettings;
 
@@ -43,7 +43,7 @@ public partial class FormIpScanner : Form
         CustomLabelCheckWebsite.SetToolTip(FormMain.MainToolTip, "Info", msgCheckWebsite);
         CustomTextBoxCheckWebsite.SetToolTip(FormMain.MainToolTip, "Info", msgCheckWebsite);
 
-        // Initialize and load Settings
+        // Initialize and load AgnosticSettings
         if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
             AppSettings = new(this, SettingsXmlPath);
         else
@@ -104,6 +104,8 @@ public partial class FormIpScanner : Form
         ClientSize = new(CustomButtonStartStop.Right + spaceRight, ClientSize.Height);
 
         CustomButtonStartStop.Text = "Start";
+
+        Controllers.SetDarkControl(this);
     }
 
     private void CustomButtonStartStop_Click(object sender, EventArgs e)
@@ -270,10 +272,10 @@ public partial class FormIpScanner : Form
             AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
 
-            // Add Settings to save
+            // Add AgnosticSettings to save
             AppSettings.AddSelectedSettings(this);
 
-            // Save Application Settings
+            // Save Application AgnosticSettings
             await AppSettings.SaveAsync(SettingsXmlPath);
 
             await Task.Run(async () =>

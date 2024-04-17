@@ -130,60 +130,70 @@ public partial class FormCustomServers : Form
 
     private async void FormCustomServers_Shown(object? sender, EventArgs e)
     {
-        LabelMain.Visible = false;
-        LabelMain.SendToBack();
-        SplitContainerMain.Visible = true;
-        ReadGroups(null, false);
+        try
+        {
+            LabelMain.Visible = false;
+            LabelMain.SendToBack();
+            SplitContainerMain.Visible = true;
+            ReadGroups(null, false);
 
-        // Setting Width Of Controls
-        await ScreenDPI.SettingWidthOfControls(this);
+            // Setting Width Of Controls
+            await ScreenDPI.SettingWidthOfControls(this);
 
-        // Fix Controls Location
-        int spaceBottom = 6, spaceRight = 6, spaceV = 6, spaceH = 6;
-        CustomDataGridViewGroups.Location = new Point(spaceRight, FormMain.LabelScreen.Height);
+            // Fix Controls Location
+            int spaceBottom = 6, spaceRight = 6, spaceV = 6, spaceH = 6;
+            CustomDataGridViewGroups.Location = new Point(spaceRight, FormMain.LabelScreen.Height);
 
-        CustomButtonExport.Left = CustomGroupBoxGroups.Width - CustomButtonExport.Width - spaceRight;
-        CustomButtonExport.Top = CustomGroupBoxGroups.Height - CustomButtonNewGroup.Height - spaceBottom;
+            CustomButtonExport.Left = CustomGroupBoxGroups.Width - CustomButtonExport.Width - spaceRight;
+            CustomButtonExport.Top = CustomGroupBoxGroups.Height - CustomButtonNewGroup.Height - spaceBottom;
 
-        CustomButtonImport.Left = CustomButtonExport.Left - CustomButtonImport.Width - spaceH;
-        CustomButtonImport.Top = CustomButtonExport.Top;
+            CustomButtonImport.Left = CustomButtonExport.Left - CustomButtonImport.Width - spaceH;
+            CustomButtonImport.Top = CustomButtonExport.Top;
 
-        CustomButtonNewGroup.Left = CustomDataGridViewGroups.Left;
-        CustomButtonNewGroup.Top = CustomButtonImport.Top;
-        CustomButtonNewGroup.Width = CustomButtonImport.Left - CustomButtonNewGroup.Left - spaceH;
+            CustomButtonNewGroup.Left = CustomDataGridViewGroups.Left;
+            CustomButtonNewGroup.Top = CustomButtonImport.Top;
+            CustomButtonNewGroup.Width = CustomButtonImport.Left - CustomButtonNewGroup.Left - spaceH;
 
-        CustomDataGridViewGroups.Width = CustomGroupBoxGroups.Width - (spaceH * 2);
-        CustomDataGridViewGroups.Height = CustomButtonNewGroup.Top - CustomDataGridViewGroups.Top - spaceV;
+            CustomDataGridViewGroups.Width = CustomGroupBoxGroups.Width - (spaceH * 2);
+            CustomDataGridViewGroups.Height = CustomButtonNewGroup.Top - CustomDataGridViewGroups.Top - spaceV;
 
-        CustomDataGridViewDNSs.Location = new Point(spaceRight, FormMain.LabelScreen.Height);
+            CustomDataGridViewDNSs.Location = new Point(spaceRight, FormMain.LabelScreen.Height);
 
-        CustomButtonModifyDNS.Left = CustomGroupBoxDNSs.Width - CustomButtonModifyDNS.Width - spaceRight;
-        CustomButtonModifyDNS.Top = CustomGroupBoxDNSs.Height - CustomButtonModifyDNS.Height - spaceBottom;
+            CustomButtonModifyDNS.Left = CustomGroupBoxDNSs.Width - CustomButtonModifyDNS.Width - spaceRight;
+            CustomButtonModifyDNS.Top = CustomGroupBoxDNSs.Height - CustomButtonModifyDNS.Height - spaceBottom;
 
-        CustomButtonAddServers.Left = CustomButtonModifyDNS.Left;
-        CustomButtonAddServers.Top = CustomButtonModifyDNS.Top - CustomButtonAddServers.Height - spaceV;
+            CustomButtonAddServers.Left = CustomButtonModifyDNS.Left;
+            CustomButtonAddServers.Top = CustomButtonModifyDNS.Top - CustomButtonAddServers.Height - spaceV;
 
-        CustomLabelDescription.Left = CustomDataGridViewDNSs.Left;
+            CustomLabelDescription.Left = CustomDataGridViewDNSs.Left;
 
-        CustomLabelDNS.Left = CustomLabelDescription.Left;
+            CustomLabelDNS.Left = CustomLabelDescription.Left;
 
-        CustomTextBoxDescription.Left = CustomLabelDescription.Right + (spaceH * 6);
-        CustomTextBoxDescription.Top = CustomButtonModifyDNS.Top;
-        CustomTextBoxDescription.Width = CustomButtonModifyDNS.Left - CustomTextBoxDescription.Left - spaceH;
+            CustomTextBoxDescription.Left = CustomLabelDescription.Right + (spaceH * 6);
+            CustomTextBoxDescription.Top = CustomButtonModifyDNS.Top;
+            CustomTextBoxDescription.Width = CustomButtonModifyDNS.Left - CustomTextBoxDescription.Left - spaceH;
 
-        CustomTextBoxDNS.Left = CustomTextBoxDescription.Left;
-        CustomTextBoxDNS.Top = CustomButtonAddServers.Top + (CustomButtonAddServers.Height - CustomTextBoxDNS.Height);
-        CustomTextBoxDNS.Width = CustomTextBoxDescription.Width;
+            CustomTextBoxDNS.Left = CustomTextBoxDescription.Left;
+            CustomTextBoxDNS.Top = CustomButtonAddServers.Top + (CustomButtonAddServers.Height - CustomTextBoxDNS.Height);
+            CustomTextBoxDNS.Width = CustomTextBoxDescription.Width;
 
-        CustomLabelDescription.Top = CustomTextBoxDescription.Top + 2;
+            CustomLabelDescription.Top = CustomTextBoxDescription.Top + 2;
 
-        CustomLabelDNS.Top = CustomTextBoxDNS.Top + 2;
+            CustomLabelDNS.Top = CustomTextBoxDNS.Top + 2;
 
-        CustomDataGridViewDNSs.Width = CustomGroupBoxDNSs.Width - (spaceH * 2);
-        CustomDataGridViewDNSs.Height = CustomButtonAddServers.Top - CustomDataGridViewDNSs.Top - spaceV;
+            CustomDataGridViewDNSs.Width = CustomGroupBoxDNSs.Width - (spaceH * 2);
+            CustomDataGridViewDNSs.Height = CustomButtonAddServers.Top - CustomDataGridViewDNSs.Top - spaceV;
 
-        int btnNewGroupWidth = TextRenderer.MeasureText(CustomButtonNewGroup.Text, Font).Width;
-        SplitContainerMain.SplitterDistance = btnNewGroupWidth + (CustomButtonExport.Width * 2) + (spaceRight * 2) + (spaceH * 2);
+            int btnNewGroupWidth = TextRenderer.MeasureText(CustomButtonNewGroup.Text, Font).Width;
+            SplitContainerMain.SplitterDistance = btnNewGroupWidth + (CustomButtonExport.Width * 2) + (spaceRight * 2) + (spaceH * 2);
+
+            Controllers.SetDarkControl(this);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("FormCustomServers_Shown: " + ex.Message);
+        }
+
     }
 
     private void FormCustomServers_Move(object? sender, EventArgs e)
@@ -242,7 +252,7 @@ public partial class FormCustomServers : Form
     private static XDocument CreateXmlCS()
     {
         XDocument doc = new();
-        XElement group = new("Settings");
+        XElement group = new("AgnosticSettings");
         group.Add(new XElement("CustomDnsList"));
         doc.Add(group);
         return doc;

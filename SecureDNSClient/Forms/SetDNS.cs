@@ -10,8 +10,9 @@ public partial class FormMain
 {
     private async Task SetDNS(List<string> nicNameList, bool unset = false, bool limitLog = false)
     {
-        string loopbackIP = IPAddress.Loopback.ToString();
-        
+        string loopbackIPv4 = IPAddress.Loopback.ToString();
+        string loopbackIPv6 = IPAddress.IPv6Loopback.ToString();
+
         bool isDnsSetOn = SetDnsOnNic_.IsDnsSet(nicNameList);
         if (!isDnsSetOn)
         {
@@ -26,7 +27,7 @@ public partial class FormMain
             string msgConnect = string.Empty;
             if (!IsConnected)
             {
-                msgConnect = "Connect first." + NL;
+                msgConnect = "Connect First." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
                 IsDNSSetting = false;
                 await UpdateStatusShortOnBoolsChanged();
@@ -34,7 +35,7 @@ public partial class FormMain
             }
             else if (!IsDNSConnected)
             {
-                msgConnect = "Wait until DNS gets online." + NL;
+                msgConnect = "Wait Until DNS Gets Online." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
                 IsDNSSetting = false;
                 await UpdateStatusShortOnBoolsChanged();
@@ -49,8 +50,8 @@ public partial class FormMain
                 return;
             }
 
-            // Show warning while connected using dnscrypt + proxy
-            if (ProcessManager.FindProcessByPID(PIDDNSCrypt) && CustomRadioButtonConnectDNSCrypt.Checked)
+            // Show warning while connected using upstream proxy
+            if (LastConnectMode == ConnectMode.ConnectToPopularServersWithProxy && !Program.IsStartup)
             {
                 string msg = "Set DNS while connected via proxy is not a good idea.\nYou may break the connection.\nContinue?";
                 DialogResult dr = CustomMessageBox.Show(this, msg, "Info", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
@@ -65,10 +66,6 @@ public partial class FormMain
             // Write Setting DNS to Log
             CustomRichTextBoxLog.AppendText($"Setting DNS...{NL}", Color.MediumSeaGreen);
 
-            string dnss = loopbackIP;
-            //if (LocalIP != null)
-            //    dnss += "," + LocalIP;
-
             bool setSuccess = false;
             LastNicNameList.Clear();
             for (int n = 0; n < nicNameList.Count; n++)
@@ -80,27 +77,42 @@ public partial class FormMain
                 if (!isNicOk || nic == null) continue;
 
                 // Set DNS
-                await SetDnsOnNic_.SetDns(nic, dnss);
-                setSuccess = true;
-                IsDNSSet = true;
-                DoesDNSSetOnce = true;
-                IsDnsFlushed = false;
-                IsDnsFullFlushed = false;
-
-                // Write Set DNS message to log
-                if (!limitLog)
+                await SetDnsOnNic_.SetDns(nic);
+                
+                isDnsSetOn = SetDnsOnNic_.IsDnsSet(nic);
+                if (isDnsSetOn)
                 {
-                    string msg1 = "Local DNS ";
-                    string msg2 = loopbackIP;
-                    string msg3 = " set to ";
-                    string msg4 = nicName + " (" + nic.Description + ")";
-                    if (!IsDisconnecting && !IsDisconnectingAll)
+                    setSuccess = true;
+                    IsDNSSet = true;
+                    DoesDNSSetOnce = true;
+                    IsDnsFlushed = false;
+                    IsDnsFullFlushed = false;
+
+                    // Write Set DNS message to log
+                    if (!limitLog)
                     {
-                        CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
-                        CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
-                        CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
-                        CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
+                        string msg1 = "Local DNS ";
+                        string msg2 = loopbackIPv4;
+                        if (nic.Supports(NetworkInterfaceComponent.IPv6))
+                            msg2 += $" And {loopbackIPv6}";
+                        string msg3 = " Set To ";
+                        string msg4 = nicName + " (" + nic.Description + ")";
+                        if (!IsDisconnecting && !IsDisconnectingAll)
+                        {
+                            CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
+                            CustomRichTextBoxLog.AppendText(msg2, Color.DodgerBlue);
+                            CustomRichTextBoxLog.AppendText(msg3, Color.LightGray);
+                            CustomRichTextBoxLog.AppendText(msg4 + NL, Color.DodgerBlue);
+                        }
                     }
+                }
+                else
+                {
+                    // Write Couldn't Set DNS to log
+                    string msg1 = "Couldn't Set DNS ";
+                    string msg2 = $"{nicName} ({nic.Description})";
+                    CustomRichTextBoxLog.AppendText(msg1, Color.IndianRed);
+                    CustomRichTextBoxLog.AppendText(msg2 + NL, Color.DodgerBlue);
                 }
             }
 
@@ -108,7 +120,7 @@ public partial class FormMain
             {
                 // Flush DNS
                 if (!Program.IsStartup)
-                    if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNS(true, true);
+                    if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNS(true, false, false, false, true);
 
                 // To See Status Immediately
                 await UpdateStatusLong();
@@ -137,24 +149,27 @@ public partial class FormMain
                 NetworkInterface? nic = NetworkTool.GetNICByName(nicName);
                 if (nic == null)
                 {
-                    string msgNicNotExist = $"Network Interface \"{nicName}\" does not exist or disabled.{NL}";
+                    string msgNicNotExist = $"Network Interface \"{nicName}\" Does Not Exist Or Disabled.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNicNotExist, Color.IndianRed));
                     continue;
                 }
 
                 // Unset DNS
                 await UnsetDNS(nic);
-                unsetSuccess = true;
 
                 isDnsSetOn = SetDnsOnNic_.IsDnsSet(nic);
                 if (!isDnsSetOn)
                 {
+                    unsetSuccess = true;
+
                     // Write Unset DNS message to log
                     if (!limitLog)
                     {
                         string msg1 = "Local DNS ";
-                        string msg2 = loopbackIP;
-                        string msg3 = " removed from ";
+                        string msg2 = loopbackIPv4;
+                        if (nic.Supports(NetworkInterfaceComponent.IPv6))
+                            msg2 += $" And {loopbackIPv6}";
+                        string msg3 = " Removed From ";
                         string msg4 = $"{nicName} ({nic.Description})";
 
                         CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
@@ -176,7 +191,7 @@ public partial class FormMain
             if (unsetSuccess)
             {
                 // Flush DNS
-                await FlushDNS(true, true);
+                await FlushDNS(true, false, false, false, true);
                 IsDnsFlushed = true;
 
                 // To See Status Immediately
@@ -196,7 +211,7 @@ public partial class FormMain
 
         if (string.IsNullOrEmpty(nicName))
         {
-            string msg = $"Select a Network Interface first.{NL}";
+            string msg = $"Select A Network Interface.{NL}";
             if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
             return false;
         }
@@ -204,14 +219,14 @@ public partial class FormMain
         NetworkInterface? nicOut = NetworkTool.GetNICByName(nicName);
         if (nicOut == null)
         {
-            string msgNicNotExist = $"Network Interface \"{nicName}\" does not exist or disabled.{NL}";
+            string msgNicNotExist = $"Network Interface \"{nicName}\" Does Not Exist Or Disabled.{NL}";
             if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNicNotExist, Color.IndianRed));
             return false;
         }
 
         if (nicOut.OperationalStatus != OperationalStatus.Up)
         {
-            string msgNotConnected = $"Network Adapter \"{nicOut.Name}\" is not Up and Running.{NL}";
+            string msgNotConnected = $"Network Adapter \"{nicOut.Name}\" Is Not Up And Running.{NL}";
             if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNotConnected, Color.IndianRed));
             return false;
         }
@@ -314,20 +329,20 @@ public partial class FormMain
         {
             string processName = "netsh";
             string processArgs1 = $"interface ipv4 delete dnsservers \"{nicName}\" all";
-            ProcessManager.ExecuteOnly(processName, processArgs1, true, true);
+            ProcessManager.ExecuteOnly(processName, null, processArgs1, true, true);
             bool unsetToDHCP = CustomRadioButtonSettingUnsetDnsToDhcp.Checked;
             if (unsetToDHCP)
             {
                 // DHCP
                 string processArgs2 = $"interface ipv4 set dnsservers \"{nicName}\" source=dhcp";
-                ProcessManager.ExecuteOnly(processName, processArgs2, true, true);
+                ProcessManager.ExecuteOnly(processName, null, processArgs2, true, true);
             }
             else
             {
                 // STATIC
                 string dns1 = CustomTextBoxSettingUnsetDns1.Text;
                 string processArgs2 = $"interface ipv4 set dnsservers \"{nicName}\" static {dns1} primary";
-                ProcessManager.ExecuteOnly(processName, processArgs2, true, true);
+                ProcessManager.ExecuteOnly(processName, null, processArgs2, true, true);
             }
         }
     }

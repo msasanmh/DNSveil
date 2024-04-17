@@ -1,74 +1,109 @@
 ﻿using MsmhToolsClass;
-using MsmhToolsClass.DnsTool;
 using System.Diagnostics;
-using System.Net;
 
 namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    private async Task ConnectToServersUsingProxy()
+    private async Task<bool> ConnectToServersUsingProxy()
     {
-        if (!CustomRadioButtonConnectDNSCrypt.Checked) return;
-        string? proxyScheme = CustomTextBoxHTTPProxy.Text;
-
-        void proxySchemeIncorrect()
-        {
-            string msgWrongProxy = "HTTP(S) proxy scheme must be like: \"https://myproxy.net:8080\"";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWrongProxy + NL, Color.IndianRed));
-        }
+        string proxyScheme = CustomTextBoxHTTPProxy.Text.ToLower().Trim();
 
         // Check if proxy scheme is correct
-        if (string.IsNullOrWhiteSpace(proxyScheme) || !proxyScheme.Contains("//") || proxyScheme.EndsWith('/'))
+        if (string.IsNullOrEmpty(proxyScheme) || (!proxyScheme.StartsWith("http://") && !proxyScheme.StartsWith("socks5://")))
         {
-            proxySchemeIncorrect();
-            return;
+            string msgWrongProxy = "Proxy scheme must be like: \"http://myproxy.net:8080\" or \"socks5://myproxy.net:8080\"";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWrongProxy + NL, Color.IndianRed));
+            return false;
         }
 
         // Get Host and Port of Proxy
         NetworkTool.GetUrlDetails(proxyScheme, 0, out _, out string host, out _, out _, out int port, out string _, out bool _);
 
-        // Convert proxy host to IP
-        string ipStr = string.Empty;
-        bool isIP = IPAddress.TryParse(host, out IPAddress? _);
-        if (isIP)
-            ipStr = host;
-        else
-            ipStr = GetIP.GetIpFromSystem(host);
-
         // Check if proxy works
-        if (!string.IsNullOrEmpty(ipStr))
+        string sampleRequest = "https://dns.google/dns-query?dns=AAABAAABAAAAAAABCGdvb2dsZQNjb20AAAEAAQ";
+        string headers = await NetworkTool.GetHeaders(sampleRequest, null, 5000, false, proxyScheme);
+        string[] header = headers.Split(NL, StringSplitOptions.RemoveEmptyEntries);
+        if (header.Length > 0) headers = header[0];
+        Color statusColor = headers.Contains("OK") ? Color.MediumSeaGreen : Color.IndianRed;
+        if (!string.IsNullOrEmpty(headers))
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Proxy Status: {headers}{NL}", statusColor));
+        if (statusColor.Equals(Color.IndianRed))
         {
-            bool isProxyOk = await NetworkTool.CanPing(ipStr, 15);
-            if (!isProxyOk)
-            {
-                string msgWrongProxy = $"Proxy doesn't work.";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWrongProxy + NL, Color.IndianRed));
-                return;
-            }
+            string msgProxy = $"Your Upstream Proxy Doesn't Work.";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy + NL, Color.IndianRed));
+            return false;
         }
 
-        // Check if config file exist
-        if (!File.Exists(SecureDNS.DNSCryptConfigPath))
-        {
-            string msg = "Error: Configuration file doesn't exist";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed));
-            return;
-        }
+        // DNSs
+        string dnss = "https://dns.google/dns-query,https://dns.cloudflare.com/dns-query";
+
+        // Local DNS Port
+        int dnsPort = 53;
+
+        // Get Insecure
+        bool insecure = CustomCheckBoxInsecure.Checked;
+
+        // Get Cloudflare Clean IPv4
+        string cfCleanIPv4 = GetCfCleanIpSetting();
 
         // Get Bootstrap IP & Port
-        IPAddress bootstrap = GetBootstrapSetting(out int bootstrapPort);
+        string bootstrapIP = GetBootstrapSetting(out int bootstrapPort).ToString();
 
-        // Edit DNSCrypt Config File
-        DNSCryptConfigEditor dnsCryptConfig = new(SecureDNS.DNSCryptConfigPath);
-        dnsCryptConfig.EditHTTPProxy(proxyScheme);
-        dnsCryptConfig.EditBootstrapDNS(bootstrap, bootstrapPort);
-        dnsCryptConfig.EditDnsCache(CustomCheckBoxSettingEnableCache.Checked);
+        // Kill DnsServer If It's Already Running
+        ProcessManager.KillProcessByPID(PIDDnsServer);
+        bool isCmdSent = false;
+        PIDDnsServer = DnsConsole.Execute(SecureDNS.AgnosticServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
+        await Task.Delay(50);
 
-        // Edit DNSCrypt Config File: Enable DoH
+        // Wait For DNS Server
+        Task wait1 = Task.Run(async () =>
+        {
+            while (true)
+            {
+                if (IsDisconnecting) break;
+                if (ProcessManager.FindProcessByPID(PIDDnsServer)) break;
+                await Task.Delay(50);
+            }
+        });
+        try { await wait1.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+
+        if (!ProcessManager.FindProcessByPID(PIDDnsServer))
+        {
+            string msg = $"Couldn't Start DNS Server. Try Again.{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+            ProcessManager.KillProcessByPID(PIDDnsServer);
+            return false;
+        }
+
+        // Update IsConnected Bool
+        IsConnected = true;
+
+        // Send DNS Profile
+        string command = "Profile UpstreamProxy_DNS";
+        isCmdSent = await DnsConsole.SendCommandAsync(command);
+        if (!isCmdSent) return false;
+
+        // Send DNS Settings
+        command = $"Setting -Port={dnsPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
+        command += $" -AllowInsecure={insecure} -DNSs={dnss} -CfCleanIP={cfCleanIPv4}";
+        command += $" -BootstrapIp={bootstrapIP} -BootstrapPort={bootstrapPort}";
+        command += $" -ProxyScheme={proxyScheme}";
+        isCmdSent = await DnsConsole.SendCommandAsync(command);
+        if (!isCmdSent) return false;
+
+        // Send DNS Rules
+        if (CustomCheckBoxSettingDnsEnableRules.Checked)
+        {
+            string dnsRulesCmd = $"Programs DnsRules -Mode=File -PathOrText=\"{SecureDNS.DnsRulesPath}\"";
+            isCmdSent = await DnsConsole.SendCommandAsync(dnsRulesCmd);
+            if (!isCmdSent) return false;
+        }
+
+        // DoH Server
         if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
         {
-            if (File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
+            if (File.Exists(SecureDNS.IssuerCertPath) && File.Exists(SecureDNS.IssuerKeyPath) && File.Exists(SecureDNS.CertPath) && File.Exists(SecureDNS.KeyPath))
             {
                 // Get DoH Port
                 int dohPort = GetDohPortSetting();
@@ -76,44 +111,86 @@ public partial class FormMain
                 // Set Connected DoH Port
                 ConnectedDohPort = dohPort;
 
-                dnsCryptConfig.EnableDoH(dohPort);
-                dnsCryptConfig.EditCertKeyPath(SecureDNS.KeyPath);
-                dnsCryptConfig.EditCertPath(SecureDNS.CertPath);
+                // Send DoH Profile
+                command = "Profile UpstreamProxy_DoH";
+                isCmdSent = await DnsConsole.SendCommandAsync(command);
+                if (!isCmdSent) return false;
+
+                // Send DoH Settings
+                command = $"Setting -Port={dohPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
+                command += $" -AllowInsecure={insecure} -DNSs={dnss} -CfCleanIP={cfCleanIPv4}";
+                command += $" -BootstrapIp={bootstrapIP} -BootstrapPort={bootstrapPort}";
+                command += $" -ProxyScheme={proxyScheme}";
+                isCmdSent = await DnsConsole.SendCommandAsync(command);
+                if (!isCmdSent) return false;
+
+                // Send SSL Settings
+                command = $"SSLSetting -Enable=True -RootCA_Path=\"{SecureDNS.IssuerCertPath}\" -RootCA_KeyPath=\"{SecureDNS.IssuerKeyPath}\" -Cert_Path=\"{SecureDNS.CertPath}\" -Cert_KeyPath=\"{SecureDNS.KeyPath}\"";
+                isCmdSent = await DnsConsole.SendCommandAsync(command);
+                if (!isCmdSent) return false;
+
+                // Send DNS Rules
+                if (CustomCheckBoxSettingDnsEnableRules.Checked)
+                {
+                    string dnsRulesCmd = $"Programs DnsRules -Mode=File -PathOrText=\"{SecureDNS.DnsRulesPath}\"";
+                    isCmdSent = await DnsConsole.SendCommandAsync(dnsRulesCmd);
+                    if (!isCmdSent) return false;
+                }
             }
-            else
-                dnsCryptConfig.DisableDoH();
         }
-        else
-            dnsCryptConfig.DisableDoH();
 
-        // Save DNSCrypt Config File
-        await dnsCryptConfig.WriteAsync();
+        // Send Write Requests To Log
+        isCmdSent = await DnsConsole.SendCommandAsync("Requests True");
+        if (!isCmdSent) return false;
 
-        // Args
-        string args = $"-config \"{SecureDNS.DNSCryptConfigPath}\"";
+        // Send Parent Process Command
+        command = $"ParentProcess -PID={Environment.ProcessId}";
+        isCmdSent = await DnsConsole.SendCommandAsync(command);
+        if (!isCmdSent) return false;
 
-        if (IsDisconnecting) return;
+        // Send Start Command
+        isCmdSent = await DnsConsole.SendCommandAsync("Start");
+        if (!isCmdSent) return false;
 
-        // Execute DNSCrypt
-        ProcessConsole pc = new();
-        PIDDNSCrypt = pc.Execute(SecureDNS.DNSCrypt, args, true, true, SecureDNS.CurrentPath, GetCPUPriority());
-        pc.StandardDataReceived -= Pc_StandardDataReceived;
-        pc.StandardDataReceived += Pc_StandardDataReceived;
-        void Pc_StandardDataReceived(object? sender, DataReceivedEventArgs e)
+        if (IsConnected)
         {
-            string? msg = e.Data;
-            if (msg != null)
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray));
+            string msgSuccess = $"DNS Server Executed.{NL}Waiting For DNS To Get Online...{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgSuccess, Color.MediumSeaGreen));
+
+            // Wait Until DNS Gets Online
+            Stopwatch sw = Stopwatch.StartNew();
+            Task wait3 = Task.Run(async () =>
+            {
+                while (!IsDNSConnected)
+                {
+                    if (IsDisconnecting) break;
+                    if (IsDNSConnected) break;
+                    if (!ProcessManager.FindProcessByPID(PIDDnsServer)) break;
+                    if (!IsInternetOnline) break;
+                    await UpdateBoolDnsOnce(1000, GetBlockedDomainSetting(out string _));
+                    await Task.Delay(25);
+                }
+            });
+            try { await wait3.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
+            sw.Stop();
+
+            if (IsDNSConnected)
+            {
+                msgSuccess = $"Successfully Got Online In {Math.Round(sw.Elapsed.TotalSeconds, 2)} Sec.{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgSuccess, Color.MediumSeaGreen));
+
+                return true;
+            }
         }
 
-        pc.ErrorDataReceived -= Pc_ErrorDataReceived;
-        pc.ErrorDataReceived += Pc_ErrorDataReceived;
-        void Pc_ErrorDataReceived(object? sender, DataReceivedEventArgs e)
-        {
-            string? msg = e.Data;
-            if (msg != null)
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.LightGray));
-        }
+        string msgFailed = "Error: Couldn't Start DNS Server!";
+        if (ProcessManager.FindProcessByPID(PIDDnsServer) && !IsDNSConnected)
+            msgFailed = "DNS Can't Get Online.";
+        if (IsDisconnecting) msgFailed = "Task Canceled.";
+        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailed + NL, Color.IndianRed));
+
+        ProcessManager.KillProcessByPID(PIDDnsServer);
+        return false;
     }
 
 }

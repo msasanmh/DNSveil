@@ -1,14 +1,12 @@
 using System.Diagnostics;
 using CustomControls;
 using System.Reflection;
-using System.Text;
 using System.Globalization;
 using Microsoft.Win32;
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
-using MsmhToolsWinFormsClass.Themes;
-using SecureDNSClient.DPIBasic;
 using System.Runtime.InteropServices;
+using System.Text;
 // https://github.com/msasanmh/SecureDNSClient
 
 namespace SecureDNSClient;
@@ -29,7 +27,15 @@ public partial class FormMain : Form
         // Start App Up Time Timer
         AppUpTime.Start();
 
-        // Save Log to File
+        // Write DNS Or DoH Requests To Log
+        DnsConsole.ErrorDataReceived += DnsConsole_ErrorDataReceived;
+        StopWatchWriteDnsOutputDelay.Start();
+
+        // Write Proxy Requests And Chunk Details To Log
+        ProxyConsole.ErrorDataReceived += ProxyConsole_ErrorDataReceived;
+        StopWatchWriteProxyOutputDelay.Start();
+
+        // Save Log To File
         CustomRichTextBoxLog.TextAppended += CustomRichTextBoxLog_TextAppended;
 
         Start();
@@ -52,7 +58,7 @@ public partial class FormMain : Form
         // Invariant Culture
         Info.SetCulture(CultureInfo.InvariantCulture);
 
-        // Add SDC Binaries to Windows Firewall if Firewall is Enabled
+        // Add SDC Binaries to Windows Firewall If Firewall Is Enabled
         AddOrUpdateFirewallRulesNoLog();
 
         // Label Main
@@ -64,6 +70,9 @@ public partial class FormMain : Form
         SplitContainerMain.Visible = false;
         LabelMain.Visible = true;
         LabelMain.BringToFront();
+
+        // Load Theme
+        await LoadTheme();
 
         // Label Screen to Fix Screen DPI
         LabelScreen.Text = "MSasanMH";
@@ -92,7 +101,6 @@ public partial class FormMain : Form
         if (Program.IsPortable) Text += " Portable";
         CustomButtonSetDNS.Enabled = false;
         CustomButtonSetProxy.Enabled = false;
-        CustomTextBoxHTTPProxy.Enabled = false;
         CustomTabControlSettings.HideTabHeader = true;
 
         // Set NotifyIcon Text
@@ -104,7 +112,7 @@ public partial class FormMain : Form
         // Move User Data and Certificate to the new location
         await MoveToNewLocation();
 
-        // Initialize and load Settings
+        // Initialize and Load Settings
         if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidXMLFile(SecureDNS.SettingsXmlPath))
             AppSettings = new(this, SecureDNS.SettingsXmlPath);
         else
@@ -116,16 +124,16 @@ public partial class FormMain : Form
         // Logics After Load Settings
         ProxyPort = GetProxyPortSetting(); // Load Proxy Port
         SplitContainerMain.BackColor = Color.IndianRed; // Drag Bar Color
-        CustomTextBoxHTTPProxy.Enabled = CustomRadioButtonConnectDNSCrypt.Checked; // Connect -> Method 4
+        CustomTextBoxHTTPProxy.Enabled = true; // Connect -> Method 4
         CustomCheckBoxSettingQcSetProxy.Enabled = CustomCheckBoxSettingQcStartProxyServer.Checked; // Setting -> Qc -> Set Proxy
         CustomTextBoxSettingProxyCfCleanIP.Enabled = CustomCheckBoxSettingProxyCfCleanIP.Checked; // Setting -> Share -> Advanced -> Cf Clean IP
 
-        // Convert Old Proxy Rules To New
+        // Convert Old Proxy ProxyRules To New
         OldProxyRulesToNew();
 
         // Initialize Status
         InitializeStatus(CustomDataGridViewStatus);
-
+        
         // Initialize NIC Status
         InitializeNicStatus(CustomDataGridViewNicStatus);
 
@@ -133,7 +141,7 @@ public partial class FormMain : Form
         bool successWrite = await WriteNecessaryFilesToDisk();
         if (!successWrite)
         {
-            string msgWB = $"Couldn't write binaries to disk.{NL}";
+            string msgWB = $"Couldn't Write Binaries To Disk.{NL}";
             msgWB += $"Restart Application.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWB, Color.IndianRed));
         }
@@ -146,7 +154,6 @@ public partial class FormMain : Form
         CheckUpdateAuto();
         LogClearAuto();
         UpdateBoolDnsDohAuto();
-        UpdateStatusVShortAuto();
         UpdateStatusShortAuto(); // 2
         SaveSettingsAuto();
 
@@ -214,23 +221,6 @@ public partial class FormMain : Form
         MonitorProcess.Start(true);
     }
 
-    private void CustomRichTextBoxLog_TextAppended(object? sender, EventArgs e)
-    {
-        if (sender is string text)
-        {
-            // Write to file
-            try
-            {
-                if (CustomCheckBoxSettingWriteLogWindowToFile.Checked)
-                    FileDirectory.AppendText(SecureDNS.LogWindowPath, text, new UTF8Encoding(false));
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Write Log to file: {ex.Message}");
-            }
-        }
-    }
-
     private void ShowLabelMain(string text)
     {
         this.InvokeIt(() =>
@@ -288,35 +278,21 @@ public partial class FormMain : Form
                 Hide();
                 return;
             }
+            else
+            {
+                if (Once)
+                {
+                    UpdateMinSizeOfStatus();
+                    Once = false;
+                }
+            }
 
             // Load Theme
-            await LoadTheme();
+            if (AppUpTime.ElapsedMilliseconds > 20000)
+                await LoadTheme();
 
             // Delete Log File on > 500KB
             DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
-
-            if (Once)
-            {
-                // Check If Another Proxy Is Set
-                await UpdateBools();
-                if (IsAnotherProxySet)
-                {
-                    string url = "https://www.google.com";
-                    bool canOpenUrl = await NetworkTool.IsWebsiteOnlineAsync(url, null, 5000, true);
-                    if (!canOpenUrl)
-                    {
-                        string msg = $"Another Proxy ({NetworkTool.GetSystemProxy()}) is set to your System and cannot open {url}";
-                        msg += $"{NL}Unset the Proxy?";
-                        DialogResult dr = CustomMessageBox.Show(this, msg, "A Proxy Is Set", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-                        if (dr == DialogResult.Yes)
-                        {
-                            // Unset The Proxy
-                            NetworkTool.UnsetProxy(false, true);
-                        }
-                        Once = false;
-                    }
-                }
-            }
         }
     }
 
@@ -349,49 +325,6 @@ public partial class FormMain : Form
             LabelMainStopWatch.Restart();
     }
 
-    private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
-    {
-        bool alertChanges = false;
-        this.InvokeIt(() => alertChanges = CustomCheckBoxSettingAlertDisplayChanges.Checked);
-
-        if (alertChanges)
-        {
-            if (ScreenDPI.GetSystemDpi() != 96)
-            {
-                using Graphics g = CreateGraphics();
-                PaintEventArgs args = new(g, DisplayRectangle);
-                OnPaint(args);
-                string msg = "Display Settings Changed.\n";
-                msg += "You may need restart the app to fix display blurriness.";
-                CustomMessageBox.Show(this, msg);
-            }
-        }
-
-        if (LabelMainStopWatch.IsRunning) HideLabelMain();
-    }
-
-    private async void SystemEvents_PowerModeChanged(object sender, PowerModeChangedEventArgs e)
-    {
-        // Reconnect After System Awake From Sleep
-        if (e.Mode == PowerModes.Resume)
-        {
-            Debug.WriteLine(e.Mode);
-            if (LastConnectMode == ConnectMode.ConnectToWorkingServers || LastConnectMode == ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI)
-            {
-                await UpdateBoolInternetAccess();
-                await UpdateBools(200);
-                if (!IsConnecting && !IsDisconnecting && !IsDisconnectingAll && !IsQuickConnectWorking &&
-                    IsInternetOnline && IsConnected && !IsDNSConnected)
-                {
-                    IsReconnecting = true;
-                    this.InvokeIt(() => CustomButtonReconnect.Enabled = false);
-                    await StartConnect(LastConnectMode, true);
-                    IsReconnecting = false;
-                }
-            }
-        }
-    }
-
     private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
     {
         UnsetDnsOnShutdown(e);
@@ -405,7 +338,7 @@ public partial class FormMain : Form
 
     private async void SecureDNSClient_CheckedChanged(object sender, EventArgs e)
     {
-        string msgCommandError = $"Couldn't send command to Proxy Server, try again.{NL}";
+        string msgCommandError = $"Couldn't Send Command To Proxy Server, Try Again.{NL}";
         if (sender is CustomCheckBox checkBoxR && checkBoxR.Name == CustomCheckBoxProxyEventShowRequest.Name)
         {
             UpdateProxyBools = false;
@@ -437,7 +370,7 @@ public partial class FormMain : Form
             UpdateProxyBools = false;
             if (checkBoxC.Checked)
             {
-                string command = "ChunkDetails True";
+                string command = "FragmentDetails True";
                 if (IsProxyActivated)
                 {
                     bool isSent = await ProxyConsole.SendCommandAsync(command);
@@ -447,7 +380,7 @@ public partial class FormMain : Form
             }
             else
             {
-                string command = "ChunkDetails False";
+                string command = "FragmentDetails False";
                 if (IsProxyActivated)
                 {
                     bool isSent = await ProxyConsole.SendCommandAsync(command);
@@ -480,14 +413,6 @@ public partial class FormMain : Form
         {
             UpdateApplyDpiBypassChangesButton();
         }
-    }
-
-    // Secure DNS -> Connect
-    private async void CustomRadioButtonConnectMode_CheckedChanged(object sender, EventArgs e)
-    {
-        // Connect to popular servers using proxy Textbox
-        this.InvokeIt(() => CustomTextBoxHTTPProxy.Enabled = CustomRadioButtonConnectDNSCrypt.Checked);
-        await UpdateStatusShortOnBoolsChanged();
     }
 
     // Secure DNS -> Set DNS
@@ -529,7 +454,7 @@ public partial class FormMain : Form
     {
         if (Program.IsStartup) return;
         if (!Visible) return;
-        if (AppUpTime.ElapsedMilliseconds < 10000) return; // Don't Do This On App Startup
+        if (AppUpTime.ElapsedMilliseconds < 20000) return; // Don't Do This On App Startup
         if (sender is not CustomCheckBox cb) return;
         this.InvokeIt(() => cb.Tag = "fired");
         UpdateApplyDpiBypassChangesButton();
@@ -652,9 +577,21 @@ public partial class FormMain : Form
             e.Cancel = true;
             Hide();
             //ShowInTaskbar = false; // Makes Titlebar white (I use Show and Hide instead)
-            NotifyIconMain.BalloonTipText = "Minimized to tray.";
-            NotifyIconMain.BalloonTipIcon = ToolTipIcon.Info;
-            NotifyIconMain.ShowBalloonTip(100);
+
+            string uid = string.Empty;
+            try
+            {
+                if (File.Exists(SecureDNS.UserIdPath))
+                    uid = File.ReadAllText(SecureDNS.UserIdPath);
+            }
+            catch (Exception) { }
+
+            if (string.IsNullOrEmpty(uid))
+            {
+                NotifyIconMain.BalloonTipText = "Minimized to tray.";
+                NotifyIconMain.BalloonTipIcon = ToolTipIcon.Info;
+                NotifyIconMain.ShowBalloonTip(100);
+            }
         }
         else
         {
@@ -710,16 +647,6 @@ public partial class FormMain : Form
     private void LinkLabelDNSLookup_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
     {
         OpenLinks.OpenUrl("https://github.com/ameshkov/dnslookup");
-    }
-
-    private void LinkLabelDNSProxy_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-    {
-        OpenLinks.OpenUrl("https://github.com/AdguardTeam/dnsproxy");
-    }
-
-    private void LinkLabelDNSCrypt_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-    {
-        OpenLinks.OpenUrl("https://github.com/DNSCrypt/dnscrypt-proxy");
     }
 
     private void LinkLabelGoodbyeDPI_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

@@ -1,15 +1,8 @@
 ﻿using CustomControls;
-using Microsoft.VisualBasic;
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass.Themes;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace SecureDNSClient;
 
@@ -29,7 +22,7 @@ public partial class FormMain
 
         FormProcessMonitor formProcessMonitor = new();
         formProcessMonitor.StartPosition = FormStartPosition.Manual;
-        formProcessMonitor.Location = new Point(MousePosition.X - formProcessMonitor.Width, MousePosition.Y - formProcessMonitor.Height);
+        formProcessMonitor.Location = new Point(MousePosition.X - formProcessMonitor.Width, Location.Y);
         formProcessMonitor.Show();
     }
 
@@ -81,7 +74,7 @@ public partial class FormMain
             void viewWorkingServers()
             {
                 FileDirectory.CreateEmptyFile(SecureDNS.WorkingServersPath);
-                int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.WorkingServersPath, false, false, SecureDNS.CurrentPath);
+                int notepad = ProcessManager.ExecuteOnly("notepad", null, SecureDNS.WorkingServersPath, false, false, SecureDNS.CurrentPath);
                 if (notepad == -1)
                 {
                     string msg = "Notepad is not installed on your system.";
@@ -294,6 +287,36 @@ public partial class FormMain
         await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port, true);
     }
 
+    private async void CustomButtonEnableDisableNicIPv6_Click(object sender, EventArgs e)
+    {
+        if (IsExiting) return;
+        if (CustomComboBoxNICs.SelectedItem == null) return;
+        string? nicName = CustomComboBoxNICs.SelectedItem.ToString();
+        if (string.IsNullOrEmpty(nicName)) return;
+
+        // Disable Button
+        CustomButtonEnableDisableNicIPv6.Enabled = false;
+
+        if (CustomButtonEnableDisableNicIPv6.Text.Contains("Enable"))
+        {
+            CustomButtonEnableDisableNicIPv6.Text = "Enabling...";
+            await NetworkTool.EnableNicIPv6(nicName);
+            await Task.Delay(500);
+        }
+        else
+        {
+            CustomButtonEnableDisableNicIPv6.Text = "Disabling...";
+            await NetworkTool.DisableNicIPv6(nicName);
+            await Task.Delay(500);
+        }
+
+        // Update NIC Status
+        await UpdateStatusNic();
+
+        // Enable Button
+        CustomButtonEnableDisableNicIPv6.Enabled = true;
+    }
+
     private async void CustomButtonEnableDisableNic_Click(object sender, EventArgs e)
     {
         if (IsExiting) return;
@@ -350,7 +373,7 @@ public partial class FormMain
         this.InvokeIt(() => CustomButtonUnsetAllDNSs.Enabled = false);
         this.InvokeIt(() => CustomButtonUnsetAllDNSs.Text = "Unsetting...");
         await UnsetAllDNSs(true);
-        await FlushDNS(true, true);
+        await FlushDNS(true, false, false, false, true);
         this.InvokeIt(() => CustomButtonUnsetAllDNSs.Text = "Unset All DNSs");
         this.InvokeIt(() => CustomButtonUnsetAllDNSs.Enabled = true);
         IsDNSUnsetting = false;
@@ -401,9 +424,7 @@ public partial class FormMain
         if (IsExiting) return;
         this.InvokeIt(() => CustomButtonPDpiApplyChanges.Text = "Applying");
         UpdateProxyBools = false;
-        if (ProcessManager.FindProcessByPID(PIDFakeProxy))
-            await ApplyPDpiChangesFakeProxy();
-        await ApplyPDpiChanges();
+        await ApplyProxyDpiChanges();
         UpdateProxyBools = true;
 
         await UpdateBoolProxy();
@@ -413,9 +434,7 @@ public partial class FormMain
         IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
         IsAnotherProxySet = isAnotherProxySet;
         CurrentSystemProxy = currentSystemProxy;
-        if (IsProxySet)
-            await SetProxyInternalAsync(); // Change Proxy HTTP <==> SOCKS
-        this.InvokeIt(() => CustomButtonPDpiApplyChanges.Text = "Apply DPI bypass changes");
+        this.InvokeIt(() => CustomButtonPDpiApplyChanges.Text = "Apply DPI Bypass Changes");
     }
 
     private async void CustomButtonPDpiCheck_Click(object sender, EventArgs e)
@@ -449,7 +468,7 @@ public partial class FormMain
         if (IsExiting) return;
         // Edit GoodbyeDPI Advanced Blacklist
         FileDirectory.CreateEmptyFile(SecureDNS.DPIBlacklistPath);
-        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.DPIBlacklistPath, false, false, SecureDNS.CurrentPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", null, SecureDNS.DPIBlacklistPath, false, false, SecureDNS.CurrentPath);
         if (notepad == -1)
         {
             string msg = "Notepad is not installed on your system.";
@@ -484,17 +503,21 @@ public partial class FormMain
             return;
         }
 
-        FormDnsScanner formDnsScanner = new();
-        formDnsScanner.StartPosition = FormStartPosition.CenterParent;
+        FormDnsScanner formDnsScanner = new()
+        {
+            StartPosition = FormStartPosition.CenterParent
+        };
         formDnsScanner.ShowDialog(this);
     }
 
     private void CustomButtonToolsDnsLookup_Click(object sender, EventArgs e)
     {
         if (IsExiting) return;
-        FormDnsLookup formDnsLookup = new();
-        formDnsLookup.StartPosition = FormStartPosition.Manual;
-        formDnsLookup.Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsDnsLookup.Top);
+        FormDnsLookup formDnsLookup = new()
+        {
+            StartPosition = FormStartPosition.Manual,
+            Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsDnsLookup.Top)
+        };
         formDnsLookup.Show(this);
     }
 
@@ -509,9 +532,11 @@ public partial class FormMain
             return;
         }
 
-        FormStampReader formStampReader = new();
-        formStampReader.StartPosition = FormStartPosition.Manual;
-        formStampReader.Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsStampReader.Top);
+        FormStampReader formStampReader = new()
+        {
+            StartPosition = FormStartPosition.Manual,
+            Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsStampReader.Top)
+        };
         formStampReader.Show();
     }
 
@@ -526,9 +551,11 @@ public partial class FormMain
             return;
         }
 
-        FormStampGenerator formStampGenerator = new();
-        formStampGenerator.StartPosition = FormStartPosition.Manual;
-        formStampGenerator.Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsStampGenerator.Top);
+        FormStampGenerator formStampGenerator = new()
+        {
+            StartPosition = FormStartPosition.Manual,
+            Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsStampGenerator.Top)
+        };
         formStampGenerator.Show();
     }
 
@@ -543,9 +570,11 @@ public partial class FormMain
             return;
         }
 
-        FormIpScanner formIpScanner = new();
-        formIpScanner.StartPosition = FormStartPosition.Manual;
-        formIpScanner.Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsIpScanner.Top);
+        FormIpScanner formIpScanner = new()
+        {
+            StartPosition = FormStartPosition.Manual,
+            Location = new Point(MousePosition.X + 50, MousePosition.Y - CustomButtonToolsIpScanner.Top)
+        };
         formIpScanner.Show();
     }
 
@@ -556,7 +585,7 @@ public partial class FormMain
         if (IsInAction(true, false, true, true, true, true, true, true, true, false, true, out _)) return;
         CustomButtonToolsFlushDns.Enabled = false;
         CustomButtonToolsFlushDns.Text = "Flushing...";
-        await FlushDnsOnExit(true);
+        await FlushDNS(true, true, false, false, true);
         if (!IsDNSSet) IsDnsFullFlushed = true;
         CustomButtonToolsFlushDns.Text = "Flush DNS";
         CustomButtonToolsFlushDns.Enabled = true;
@@ -575,9 +604,11 @@ public partial class FormMain
 
         string bootstrapIp = GetBootstrapSetting(out int bootstrapPort).ToString();
 
-        FormBenchmark formBenchmark = new(bootstrapIp, bootstrapPort);
-        formBenchmark.StartPosition = FormStartPosition.Manual;
-        formBenchmark.Location = new Point(MousePosition.X - CustomButtonBenchmark.Width, MousePosition.Y - CustomButtonBenchmark.Top);
+        FormBenchmark formBenchmark = new(bootstrapIp, bootstrapPort)
+        {
+            StartPosition = FormStartPosition.Manual,
+            Location = new Point(MousePosition.X - CustomButtonBenchmark.Width, MousePosition.Y - CustomButtonBenchmark.Top)
+        };
         formBenchmark.Show();
     }
 
@@ -637,12 +668,25 @@ public partial class FormMain
         }
     }
 
+    // Settings -> Connect
+    private void CustomButtonSettingDnsRules_Click(object sender, EventArgs e)
+    {
+        if (IsExiting) return;
+        FileDirectory.CreateEmptyFile(SecureDNS.DnsRulesPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", null, SecureDNS.DnsRulesPath, false, false, SecureDNS.CurrentPath);
+        if (notepad == -1)
+        {
+            string msg = "Notepad is not installed on your system.";
+            CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+        }
+    }
+
     // Settings -> Share -> Advanced
     private void CustomButtonSettingProxyRules_Click(object sender, EventArgs e)
     {
         if (IsExiting) return;
         FileDirectory.CreateEmptyFile(SecureDNS.ProxyRulesPath);
-        int notepad = ProcessManager.ExecuteOnly("notepad", SecureDNS.ProxyRulesPath, false, false, SecureDNS.CurrentPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", null, SecureDNS.ProxyRulesPath, false, false, SecureDNS.CurrentPath);
         if (notepad == -1)
         {
             string msg = "Notepad is not installed on your system.";
@@ -663,7 +707,7 @@ public partial class FormMain
 
         if (IsConnected)
         {
-            string msgConnected = "Disconnect first." + NL;
+            string msgConnected = "ManualDisconnect first." + NL;
             CustomRichTextBoxLog.AppendText(msgConnected, Color.IndianRed);
             return;
         }
