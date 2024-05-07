@@ -52,7 +52,6 @@ public partial class FormMain : Form
     private bool InternetOffline { get; set; } = true;
 
     // Check Servers
-    private readonly CheckDns ScanDns = new(false, false);
     private int NumberOfWorkingServers { get; set; } = 0;
     public static bool IsCheckingStarted { get; set; } = false;
     private static bool StopChecking { get; set; } = false;

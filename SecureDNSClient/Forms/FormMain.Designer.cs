@@ -332,6 +332,7 @@
             CustomButtonProcessMonitor = new CustomControls.CustomButton();
             SplitContainerMain = new SplitContainer();
             SplitContainerTop = new SplitContainer();
+            LinkLabelStNonbarbari = new LinkLabel();
             ((System.ComponentModel.ISupportInitialize)SplitContainerShareMain).BeginInit();
             SplitContainerShareMain.Panel1.SuspendLayout();
             SplitContainerShareMain.Panel2.SuspendLayout();
@@ -558,7 +559,7 @@
             CustomLabelProxySSLInfo.Margin = new Padding(3);
             CustomLabelProxySSLInfo.Name = "CustomLabelProxySSLInfo";
             CustomLabelProxySSLInfo.RoundedCorners = 0;
-            CustomLabelProxySSLInfo.Size = new Size(214, 17);
+            CustomLabelProxySSLInfo.Size = new Size(212, 15);
             CustomLabelProxySSLInfo.TabIndex = 147;
             CustomLabelProxySSLInfo.Text = "By Installing Root Certificate Authority.";
             CustomLabelProxySSLInfo.TextAlign = ContentAlignment.MiddleLeft;
@@ -590,7 +591,7 @@
             CustomLabelShareInfo.Location = new Point(13, 5);
             CustomLabelShareInfo.Name = "CustomLabelShareInfo";
             CustomLabelShareInfo.RoundedCorners = 0;
-            CustomLabelShareInfo.Size = new Size(319, 23);
+            CustomLabelShareInfo.Size = new Size(317, 21);
             CustomLabelShareInfo.TabIndex = 132;
             CustomLabelShareInfo.Text = "Share to other devices on the same network.";
             // 
@@ -723,7 +724,7 @@
             CustomLabelPDpiPresets.Location = new Point(318, 39);
             CustomLabelPDpiPresets.Name = "CustomLabelPDpiPresets";
             CustomLabelPDpiPresets.RoundedCorners = 0;
-            CustomLabelPDpiPresets.Size = new Size(49, 17);
+            CustomLabelPDpiPresets.Size = new Size(47, 15);
             CustomLabelPDpiPresets.TabIndex = 144;
             CustomLabelPDpiPresets.Text = "Presets:";
             // 
@@ -770,7 +771,7 @@
             CustomLabelPDpiBeforeSniChunks.Margin = new Padding(3);
             CustomLabelPDpiBeforeSniChunks.Name = "CustomLabelPDpiBeforeSniChunks";
             CustomLabelPDpiBeforeSniChunks.RoundedCorners = 0;
-            CustomLabelPDpiBeforeSniChunks.Size = new Size(110, 17);
+            CustomLabelPDpiBeforeSniChunks.Size = new Size(108, 15);
             CustomLabelPDpiBeforeSniChunks.TabIndex = 142;
             CustomLabelPDpiBeforeSniChunks.Text = "Chunks before SNI:";
             CustomLabelPDpiBeforeSniChunks.TextAlign = ContentAlignment.MiddleLeft;
@@ -802,7 +803,7 @@
             CustomLabelPDpiSniChunkMode.Margin = new Padding(3);
             CustomLabelPDpiSniChunkMode.Name = "CustomLabelPDpiSniChunkMode";
             CustomLabelPDpiSniChunkMode.RoundedCorners = 0;
-            CustomLabelPDpiSniChunkMode.Size = new Size(100, 17);
+            CustomLabelPDpiSniChunkMode.Size = new Size(98, 15);
             CustomLabelPDpiSniChunkMode.TabIndex = 141;
             CustomLabelPDpiSniChunkMode.Text = "SNI chunk mode:";
             CustomLabelPDpiSniChunkMode.TextAlign = ContentAlignment.MiddleLeft;
@@ -851,7 +852,7 @@
             CustomLabelPDpiSniChunks.Margin = new Padding(3);
             CustomLabelPDpiSniChunks.Name = "CustomLabelPDpiSniChunks";
             CustomLabelPDpiSniChunks.RoundedCorners = 0;
-            CustomLabelPDpiSniChunks.Size = new Size(73, 17);
+            CustomLabelPDpiSniChunks.Size = new Size(71, 15);
             CustomLabelPDpiSniChunks.TabIndex = 134;
             CustomLabelPDpiSniChunks.Text = "Chunks SNI:";
             CustomLabelPDpiSniChunks.TextAlign = ContentAlignment.MiddleLeft;
@@ -917,7 +918,7 @@
             CustomLabelProxySSLChangeSniInfo.Margin = new Padding(3);
             CustomLabelProxySSLChangeSniInfo.Name = "CustomLabelProxySSLChangeSniInfo";
             CustomLabelProxySSLChangeSniInfo.RoundedCorners = 0;
-            CustomLabelProxySSLChangeSniInfo.Size = new Size(303, 62);
+            CustomLabelProxySSLChangeSniInfo.Size = new Size(301, 60);
             CustomLabelProxySSLChangeSniInfo.TabIndex = 150;
             CustomLabelProxySSLChangeSniInfo.Text = "Some websites may break when this option is enabled.\r\n - You can use \"Proxy Rules\" to exclude them,\r\n - Or set a custom SNI per domain.\r\n - You can leave \"Default SNI\" empty to use original SNI.";
             // 
@@ -1039,7 +1040,7 @@
             CustomLabelShareRulesStatus.Location = new Point(4, 2);
             CustomLabelShareRulesStatus.Name = "CustomLabelShareRulesStatus";
             CustomLabelShareRulesStatus.RoundedCorners = 0;
-            CustomLabelShareRulesStatus.Size = new Size(177, 17);
+            CustomLabelShareRulesStatus.Size = new Size(175, 15);
             CustomLabelShareRulesStatus.TabIndex = 0;
             CustomLabelShareRulesStatus.Text = "Check ProxyRules for a domain:";
             // 
@@ -1322,7 +1323,7 @@
             CustomLabelSSLFragmentSize.Location = new Point(282, 88);
             CustomLabelSSLFragmentSize.Name = "CustomLabelSSLFragmentSize";
             CustomLabelSSLFragmentSize.RoundedCorners = 0;
-            CustomLabelSSLFragmentSize.Size = new Size(104, 17);
+            CustomLabelSSLFragmentSize.Size = new Size(102, 15);
             CustomLabelSSLFragmentSize.TabIndex = 10;
             CustomLabelSSLFragmentSize.Text = "SSL fragment size:";
             // 
@@ -1447,7 +1448,7 @@
             CustomLabelDPIModes.Location = new Point(11, 63);
             CustomLabelDPIModes.Name = "CustomLabelDPIModes";
             CustomLabelDPIModes.RoundedCorners = 0;
-            CustomLabelDPIModes.Size = new Size(77, 17);
+            CustomLabelDPIModes.Size = new Size(75, 15);
             CustomLabelDPIModes.TabIndex = 3;
             CustomLabelDPIModes.Text = "Select mode:";
             // 
@@ -1999,7 +2000,7 @@
             CustomLabelSelectNIC.Margin = new Padding(3);
             CustomLabelSelectNIC.Name = "CustomLabelSelectNIC";
             CustomLabelSelectNIC.RoundedCorners = 0;
-            CustomLabelSelectNIC.Size = new Size(147, 17);
+            CustomLabelSelectNIC.Size = new Size(144, 15);
             CustomLabelSelectNIC.TabIndex = 0;
             CustomLabelSelectNIC.Text = "Select a Network Interface";
             // 
@@ -2011,7 +2012,7 @@
             CustomComboBoxNICs.ForeColor = Color.White;
             CustomComboBoxNICs.FormattingEnabled = true;
             CustomComboBoxNICs.ItemHeight = 17;
-            CustomComboBoxNICs.Location = new Point(15, 38);
+            CustomComboBoxNICs.Location = new Point(15, 36);
             CustomComboBoxNICs.Margin = new Padding(10);
             CustomComboBoxNICs.Name = "CustomComboBoxNICs";
             CustomComboBoxNICs.RoundedCorners = 5;
@@ -2028,7 +2029,7 @@
             CustomLabelSetDnsSpacer1.BorderColor = Color.Blue;
             CustomLabelSetDnsSpacer1.FlatStyle = FlatStyle.Flat;
             CustomLabelSetDnsSpacer1.ForeColor = Color.White;
-            CustomLabelSetDnsSpacer1.Location = new Point(8, 74);
+            CustomLabelSetDnsSpacer1.Location = new Point(8, 72);
             CustomLabelSetDnsSpacer1.Margin = new Padding(3);
             CustomLabelSetDnsSpacer1.Name = "CustomLabelSetDnsSpacer1";
             CustomLabelSetDnsSpacer1.RoundedCorners = 0;
@@ -2040,7 +2041,7 @@
             // 
             CustomButtonUpdateNICs.BorderColor = Color.Blue;
             CustomButtonUpdateNICs.FlatStyle = FlatStyle.Flat;
-            CustomButtonUpdateNICs.Location = new Point(8, 100);
+            CustomButtonUpdateNICs.Location = new Point(8, 98);
             CustomButtonUpdateNICs.Name = "CustomButtonUpdateNICs";
             CustomButtonUpdateNICs.RoundedCorners = 5;
             CustomButtonUpdateNICs.SelectionColor = Color.LightBlue;
@@ -2054,7 +2055,7 @@
             // 
             CustomButtonFindActiveNic.BorderColor = Color.Blue;
             CustomButtonFindActiveNic.FlatStyle = FlatStyle.Flat;
-            CustomButtonFindActiveNic.Location = new Point(8, 133);
+            CustomButtonFindActiveNic.Location = new Point(8, 131);
             CustomButtonFindActiveNic.Name = "CustomButtonFindActiveNic";
             CustomButtonFindActiveNic.RoundedCorners = 5;
             CustomButtonFindActiveNic.SelectionColor = Color.LightBlue;
@@ -2068,7 +2069,7 @@
             // 
             CustomButtonEnableDisableNicIPv6.BorderColor = Color.Blue;
             CustomButtonEnableDisableNicIPv6.FlatStyle = FlatStyle.Flat;
-            CustomButtonEnableDisableNicIPv6.Location = new Point(8, 166);
+            CustomButtonEnableDisableNicIPv6.Location = new Point(8, 164);
             CustomButtonEnableDisableNicIPv6.Name = "CustomButtonEnableDisableNicIPv6";
             CustomButtonEnableDisableNicIPv6.RoundedCorners = 5;
             CustomButtonEnableDisableNicIPv6.SelectionColor = Color.LightBlue;
@@ -2082,7 +2083,7 @@
             // 
             CustomButtonEnableDisableNic.BorderColor = Color.Blue;
             CustomButtonEnableDisableNic.FlatStyle = FlatStyle.Flat;
-            CustomButtonEnableDisableNic.Location = new Point(8, 199);
+            CustomButtonEnableDisableNic.Location = new Point(8, 197);
             CustomButtonEnableDisableNic.Name = "CustomButtonEnableDisableNic";
             CustomButtonEnableDisableNic.RoundedCorners = 5;
             CustomButtonEnableDisableNic.SelectionColor = Color.LightBlue;
@@ -2099,7 +2100,7 @@
             CustomLabelSetDnsSpacer2.BorderColor = Color.Blue;
             CustomLabelSetDnsSpacer2.FlatStyle = FlatStyle.Flat;
             CustomLabelSetDnsSpacer2.ForeColor = Color.White;
-            CustomLabelSetDnsSpacer2.Location = new Point(8, 232);
+            CustomLabelSetDnsSpacer2.Location = new Point(8, 230);
             CustomLabelSetDnsSpacer2.Margin = new Padding(3);
             CustomLabelSetDnsSpacer2.Name = "CustomLabelSetDnsSpacer2";
             CustomLabelSetDnsSpacer2.RoundedCorners = 0;
@@ -2318,7 +2319,7 @@
             CustomLabelInfoDPIModes.Location = new Point(11, 8);
             CustomLabelInfoDPIModes.Name = "CustomLabelInfoDPIModes";
             CustomLabelInfoDPIModes.RoundedCorners = 0;
-            CustomLabelInfoDPIModes.Size = new Size(149, 40);
+            CustomLabelInfoDPIModes.Size = new Size(147, 38);
             CustomLabelInfoDPIModes.TabIndex = 20;
             CustomLabelInfoDPIModes.Text = "Light: MTN-AST-ASK\r\nMedium: MCI-SHT";
             // 
@@ -2389,7 +2390,7 @@
             CustomLabelDPIModesGoodbyeDPI.Location = new Point(11, 123);
             CustomLabelDPIModesGoodbyeDPI.Name = "CustomLabelDPIModesGoodbyeDPI";
             CustomLabelDPIModesGoodbyeDPI.RoundedCorners = 0;
-            CustomLabelDPIModesGoodbyeDPI.Size = new Size(120, 17);
+            CustomLabelDPIModesGoodbyeDPI.Size = new Size(118, 15);
             CustomLabelDPIModesGoodbyeDPI.TabIndex = 15;
             CustomLabelDPIModesGoodbyeDPI.Text = "Goodbye DPI modes:";
             // 
@@ -3278,7 +3279,7 @@
             CustomLabelSettingWorkingModeSetDohPort.Location = new Point(65, 180);
             CustomLabelSettingWorkingModeSetDohPort.Name = "CustomLabelSettingWorkingModeSetDohPort";
             CustomLabelSettingWorkingModeSetDohPort.RoundedCorners = 0;
-            CustomLabelSettingWorkingModeSetDohPort.Size = new Size(108, 17);
+            CustomLabelSettingWorkingModeSetDohPort.Size = new Size(106, 15);
             CustomLabelSettingWorkingModeSetDohPort.TabIndex = 5;
             CustomLabelSettingWorkingModeSetDohPort.Text = "Set local DoH port:";
             // 
@@ -3338,7 +3339,7 @@
             CustomLabelSettingInfoWorkingMode1.Location = new Point(50, 35);
             CustomLabelSettingInfoWorkingMode1.Name = "CustomLabelSettingInfoWorkingMode1";
             CustomLabelSettingInfoWorkingMode1.RoundedCorners = 0;
-            CustomLabelSettingInfoWorkingMode1.Size = new Size(396, 32);
+            CustomLabelSettingInfoWorkingMode1.Size = new Size(394, 30);
             CustomLabelSettingInfoWorkingMode1.TabIndex = 0;
             CustomLabelSettingInfoWorkingMode1.Text = "Legacy DNS Server: You can set and unset DNS easily.\r\nDNS Over HTTPS Server: You need to install certificate and set it manually.";
             // 
@@ -3591,7 +3592,7 @@
             CustomLabelSettingCheckDPIInfo.Location = new Point(15, 99);
             CustomLabelSettingCheckDPIInfo.Name = "CustomLabelSettingCheckDPIInfo";
             CustomLabelSettingCheckDPIInfo.RoundedCorners = 0;
-            CustomLabelSettingCheckDPIInfo.Size = new Size(259, 17);
+            CustomLabelSettingCheckDPIInfo.Size = new Size(257, 15);
             CustomLabelSettingCheckDPIInfo.TabIndex = 10;
             CustomLabelSettingCheckDPIInfo.Text = "A DNS based blocked website to check. https://";
             // 
@@ -3606,7 +3607,7 @@
             CustomLabelSettingCheckTimeout.Location = new Point(15, 25);
             CustomLabelSettingCheckTimeout.Name = "CustomLabelSettingCheckTimeout";
             CustomLabelSettingCheckTimeout.RoundedCorners = 0;
-            CustomLabelSettingCheckTimeout.Size = new Size(144, 17);
+            CustomLabelSettingCheckTimeout.Size = new Size(142, 15);
             CustomLabelSettingCheckTimeout.TabIndex = 2;
             CustomLabelSettingCheckTimeout.Text = "Check timeout (seconds):";
             // 
@@ -3685,7 +3686,7 @@
             CustomLabelSettingQcInfo.Location = new Point(12, 10);
             CustomLabelSettingQcInfo.Name = "CustomLabelSettingQcInfo";
             CustomLabelSettingQcInfo.RoundedCorners = 0;
-            CustomLabelSettingQcInfo.Size = new Size(172, 17);
+            CustomLabelSettingQcInfo.Size = new Size(170, 15);
             CustomLabelSettingQcInfo.TabIndex = 0;
             CustomLabelSettingQcInfo.Text = "Choose Quick Connect actions";
             // 
@@ -3700,7 +3701,7 @@
             CustomLabelSettingQcConnectMode.Location = new Point(12, 53);
             CustomLabelSettingQcConnectMode.Name = "CustomLabelSettingQcConnectMode";
             CustomLabelSettingQcConnectMode.RoundedCorners = 0;
-            CustomLabelSettingQcConnectMode.Size = new Size(71, 17);
+            CustomLabelSettingQcConnectMode.Size = new Size(69, 15);
             CustomLabelSettingQcConnectMode.TabIndex = 17;
             CustomLabelSettingQcConnectMode.Text = "Connect to:";
             // 
@@ -4003,7 +4004,7 @@
             CustomLabelSettingMaxServers.Location = new Point(50, 40);
             CustomLabelSettingMaxServers.Name = "CustomLabelSettingMaxServers";
             CustomLabelSettingMaxServers.RoundedCorners = 0;
-            CustomLabelSettingMaxServers.Size = new Size(225, 17);
+            CustomLabelSettingMaxServers.Size = new Size(223, 15);
             CustomLabelSettingMaxServers.TabIndex = 6;
             CustomLabelSettingMaxServers.Text = "Maximum number of servers to connect:";
             // 
@@ -4093,7 +4094,7 @@
             CustomLabelSettingUnsetDns2.Location = new Point(110, 140);
             CustomLabelSettingUnsetDns2.Name = "CustomLabelSettingUnsetDns2";
             CustomLabelSettingUnsetDns2.RoundedCorners = 0;
-            CustomLabelSettingUnsetDns2.Size = new Size(67, 17);
+            CustomLabelSettingUnsetDns2.Size = new Size(65, 15);
             CustomLabelSettingUnsetDns2.TabIndex = 3;
             CustomLabelSettingUnsetDns2.Text = "Secondary:";
             // 
@@ -4108,7 +4109,7 @@
             CustomLabelSettingUnsetDns1.Location = new Point(110, 105);
             CustomLabelSettingUnsetDns1.Name = "CustomLabelSettingUnsetDns1";
             CustomLabelSettingUnsetDns1.RoundedCorners = 0;
-            CustomLabelSettingUnsetDns1.Size = new Size(53, 17);
+            CustomLabelSettingUnsetDns1.Size = new Size(51, 15);
             CustomLabelSettingUnsetDns1.TabIndex = 2;
             CustomLabelSettingUnsetDns1.Text = "Primary:";
             // 
@@ -4223,7 +4224,7 @@
             CustomLabelSettingProxyKillRequestTimeout.Location = new Point(6, 65);
             CustomLabelSettingProxyKillRequestTimeout.Name = "CustomLabelSettingProxyKillRequestTimeout";
             CustomLabelSettingProxyKillRequestTimeout.RoundedCorners = 0;
-            CustomLabelSettingProxyKillRequestTimeout.Size = new Size(160, 17);
+            CustomLabelSettingProxyKillRequestTimeout.Size = new Size(158, 15);
             CustomLabelSettingProxyKillRequestTimeout.TabIndex = 55;
             CustomLabelSettingProxyKillRequestTimeout.Text = "Kill request on timeout (sec):";
             // 
@@ -4296,7 +4297,7 @@
             CustomLabelSettingProxyUpstreamPort.Location = new Point(330, 168);
             CustomLabelSettingProxyUpstreamPort.Name = "CustomLabelSettingProxyUpstreamPort";
             CustomLabelSettingProxyUpstreamPort.RoundedCorners = 0;
-            CustomLabelSettingProxyUpstreamPort.Size = new Size(34, 17);
+            CustomLabelSettingProxyUpstreamPort.Size = new Size(32, 15);
             CustomLabelSettingProxyUpstreamPort.TabIndex = 49;
             CustomLabelSettingProxyUpstreamPort.Text = "Port:";
             // 
@@ -4311,7 +4312,7 @@
             CustomLabelSettingProxyUpstreamHost.Location = new Point(113, 168);
             CustomLabelSettingProxyUpstreamHost.Name = "CustomLabelSettingProxyUpstreamHost";
             CustomLabelSettingProxyUpstreamHost.RoundedCorners = 0;
-            CustomLabelSettingProxyUpstreamHost.Size = new Size(37, 17);
+            CustomLabelSettingProxyUpstreamHost.Size = new Size(35, 15);
             CustomLabelSettingProxyUpstreamHost.TabIndex = 48;
             CustomLabelSettingProxyUpstreamHost.Text = "Host:";
             // 
@@ -4356,7 +4357,7 @@
             CustomLabelSettingProxyPort.Location = new Point(6, 25);
             CustomLabelSettingProxyPort.Name = "CustomLabelSettingProxyPort";
             CustomLabelSettingProxyPort.RoundedCorners = 0;
-            CustomLabelSettingProxyPort.Size = new Size(70, 17);
+            CustomLabelSettingProxyPort.Size = new Size(68, 15);
             CustomLabelSettingProxyPort.TabIndex = 42;
             CustomLabelSettingProxyPort.Text = "Proxy. Port:";
             // 
@@ -4387,7 +4388,7 @@
             CustomLabelSettingProxyHandleRequests.Location = new Point(161, 25);
             CustomLabelSettingProxyHandleRequests.Name = "CustomLabelSettingProxyHandleRequests";
             CustomLabelSettingProxyHandleRequests.RoundedCorners = 0;
-            CustomLabelSettingProxyHandleRequests.Size = new Size(137, 17);
+            CustomLabelSettingProxyHandleRequests.Size = new Size(135, 15);
             CustomLabelSettingProxyHandleRequests.TabIndex = 43;
             CustomLabelSettingProxyHandleRequests.Text = "Handle requests per sec:";
             // 
@@ -4519,7 +4520,7 @@
             CustomLabelSettingProxyRules.Location = new Point(22, 75);
             CustomLabelSettingProxyRules.Name = "CustomLabelSettingProxyRules";
             CustomLabelSettingProxyRules.RoundedCorners = 0;
-            CustomLabelSettingProxyRules.Size = new Size(233, 212);
+            CustomLabelSettingProxyRules.Size = new Size(231, 210);
             CustomLabelSettingProxyRules.TabIndex = 4;
             CustomLabelSettingProxyRules.Text = resources.GetString("CustomLabelSettingProxyRules.Text");
             // 
@@ -4622,7 +4623,7 @@
             CustomLabelSettingFakeProxyDohCleanIP.Location = new Point(20, 150);
             CustomLabelSettingFakeProxyDohCleanIP.Name = "CustomLabelSettingFakeProxyDohCleanIP";
             CustomLabelSettingFakeProxyDohCleanIP.RoundedCorners = 0;
-            CustomLabelSettingFakeProxyDohCleanIP.Size = new Size(102, 17);
+            CustomLabelSettingFakeProxyDohCleanIP.Size = new Size(100, 15);
             CustomLabelSettingFakeProxyDohCleanIP.TabIndex = 50;
             CustomLabelSettingFakeProxyDohCleanIP.Text = "The DoH clean IP:";
             // 
@@ -4637,7 +4638,7 @@
             CustomLabelSettingFakeProxyDohAddress.Location = new Point(20, 100);
             CustomLabelSettingFakeProxyDohAddress.Name = "CustomLabelSettingFakeProxyDohAddress";
             CustomLabelSettingFakeProxyDohAddress.RoundedCorners = 0;
-            CustomLabelSettingFakeProxyDohAddress.Size = new Size(90, 17);
+            CustomLabelSettingFakeProxyDohAddress.Size = new Size(88, 15);
             CustomLabelSettingFakeProxyDohAddress.TabIndex = 49;
             CustomLabelSettingFakeProxyDohAddress.Text = "A DoH address:";
             // 
@@ -4653,7 +4654,7 @@
             CustomLabelSettingFakeProxyInfo.Location = new Point(20, 10);
             CustomLabelSettingFakeProxyInfo.Name = "CustomLabelSettingFakeProxyInfo";
             CustomLabelSettingFakeProxyInfo.RoundedCorners = 0;
-            CustomLabelSettingFakeProxyInfo.Size = new Size(249, 23);
+            CustomLabelSettingFakeProxyInfo.Size = new Size(247, 21);
             CustomLabelSettingFakeProxyInfo.TabIndex = 48;
             CustomLabelSettingFakeProxyInfo.Text = "Fake Proxy is use to bypass a DoH.";
             // 
@@ -4706,7 +4707,7 @@
             CustomLabelUpdateAutoDelayMS.Location = new Point(50, 220);
             CustomLabelUpdateAutoDelayMS.Name = "CustomLabelUpdateAutoDelayMS";
             CustomLabelUpdateAutoDelayMS.RoundedCorners = 0;
-            CustomLabelUpdateAutoDelayMS.Size = new Size(156, 17);
+            CustomLabelUpdateAutoDelayMS.Size = new Size(154, 15);
             CustomLabelUpdateAutoDelayMS.TabIndex = 8;
             CustomLabelUpdateAutoDelayMS.Text = "Variables update delay (ms):";
             // 
@@ -4735,7 +4736,7 @@
             CustomLabelSettingCpuKillProxyRequests.Location = new Point(50, 260);
             CustomLabelSettingCpuKillProxyRequests.Name = "CustomLabelSettingCpuKillProxyRequests";
             CustomLabelSettingCpuKillProxyRequests.RoundedCorners = 0;
-            CustomLabelSettingCpuKillProxyRequests.Size = new Size(233, 17);
+            CustomLabelSettingCpuKillProxyRequests.Size = new Size(231, 15);
             CustomLabelSettingCpuKillProxyRequests.TabIndex = 6;
             CustomLabelSettingCpuKillProxyRequests.Text = "Kill Proxy requests when CPU is above (%):";
             // 
@@ -4822,7 +4823,7 @@
             CustomLabelSettingInfoCPU.Location = new Point(50, 35);
             CustomLabelSettingInfoCPU.Name = "CustomLabelSettingInfoCPU";
             CustomLabelSettingInfoCPU.RoundedCorners = 0;
-            CustomLabelSettingInfoCPU.Size = new Size(134, 17);
+            CustomLabelSettingInfoCPU.Size = new Size(132, 15);
             CustomLabelSettingInfoCPU.TabIndex = 0;
             CustomLabelSettingInfoCPU.Text = "Set processing priorities";
             // 
@@ -4897,7 +4898,7 @@
             CustomLabelSettingBootstrapDnsIP.Location = new Point(12, 10);
             CustomLabelSettingBootstrapDnsIP.Name = "CustomLabelSettingBootstrapDnsIP";
             CustomLabelSettingBootstrapDnsIP.RoundedCorners = 0;
-            CustomLabelSettingBootstrapDnsIP.Size = new Size(102, 17);
+            CustomLabelSettingBootstrapDnsIP.Size = new Size(100, 15);
             CustomLabelSettingBootstrapDnsIP.TabIndex = 3;
             CustomLabelSettingBootstrapDnsIP.Text = "Bootstrap DNS IP:";
             // 
@@ -4970,7 +4971,7 @@
             CustomLabelSettingFallbackDnsPort.Location = new Point(272, 60);
             CustomLabelSettingFallbackDnsPort.Name = "CustomLabelSettingFallbackDnsPort";
             CustomLabelSettingFallbackDnsPort.RoundedCorners = 0;
-            CustomLabelSettingFallbackDnsPort.Size = new Size(106, 17);
+            CustomLabelSettingFallbackDnsPort.Size = new Size(104, 15);
             CustomLabelSettingFallbackDnsPort.TabIndex = 12;
             CustomLabelSettingFallbackDnsPort.Text = "Fallback DNS Port:";
             // 
@@ -5028,7 +5029,7 @@
             CustomLabelSettingBootstrapDnsPort.Location = new Point(272, 10);
             CustomLabelSettingBootstrapDnsPort.Name = "CustomLabelSettingBootstrapDnsPort";
             CustomLabelSettingBootstrapDnsPort.RoundedCorners = 0;
-            CustomLabelSettingBootstrapDnsPort.Size = new Size(114, 17);
+            CustomLabelSettingBootstrapDnsPort.Size = new Size(112, 15);
             CustomLabelSettingBootstrapDnsPort.TabIndex = 8;
             CustomLabelSettingBootstrapDnsPort.Text = "Bootstrap DNS Port:";
             // 
@@ -5043,7 +5044,7 @@
             CustomLabelSettingFallbackDnsIP.Location = new Point(12, 60);
             CustomLabelSettingFallbackDnsIP.Name = "CustomLabelSettingFallbackDnsIP";
             CustomLabelSettingFallbackDnsIP.RoundedCorners = 0;
-            CustomLabelSettingFallbackDnsIP.Size = new Size(94, 17);
+            CustomLabelSettingFallbackDnsIP.Size = new Size(92, 15);
             CustomLabelSettingFallbackDnsIP.TabIndex = 10;
             CustomLabelSettingFallbackDnsIP.Text = "Fallback DNS IP:";
             // 
@@ -5107,6 +5108,7 @@
             // 
             TabPageAbout.BackColor = Color.Transparent;
             TabPageAbout.BackgroundImageLayout = ImageLayout.Stretch;
+            TabPageAbout.Controls.Add(LinkLabelStNonbarbari);
             TabPageAbout.Controls.Add(LinkLabelStWolfkingal2000);
             TabPageAbout.Controls.Add(CustomLabelAboutVersion);
             TabPageAbout.Controls.Add(PictureBoxFarvahar);
@@ -5203,9 +5205,9 @@
             CustomLabelAboutSpecialThanks.Location = new Point(446, 135);
             CustomLabelAboutSpecialThanks.Name = "CustomLabelAboutSpecialThanks";
             CustomLabelAboutSpecialThanks.RoundedCorners = 0;
-            CustomLabelAboutSpecialThanks.Size = new Size(83, 92);
+            CustomLabelAboutSpecialThanks.Size = new Size(83, 122);
             CustomLabelAboutSpecialThanks.TabIndex = 9;
-            CustomLabelAboutSpecialThanks.Text = "special thanks\r\n{\r\n\r\n\r\n\r\n}";
+            CustomLabelAboutSpecialThanks.Text = "special thanks\r\n{\r\n\r\n\r\n\r\n\r\n\r\n}";
             // 
             // LinkLabelGoodbyeDPI
             // 
@@ -5481,6 +5483,18 @@
             SplitContainerTop.Size = new Size(984, 400);
             SplitContainerTop.SplitterDistance = 779;
             SplitContainerTop.TabIndex = 0;
+            // 
+            // LinkLabelStNonbarbari
+            // 
+            LinkLabelStNonbarbari.AutoSize = true;
+            LinkLabelStNonbarbari.LinkBehavior = LinkBehavior.NeverUnderline;
+            LinkLabelStNonbarbari.Location = new Point(461, 214);
+            LinkLabelStNonbarbari.Name = "LinkLabelStNonbarbari";
+            LinkLabelStNonbarbari.Size = new Size(67, 15);
+            LinkLabelStNonbarbari.TabIndex = 14;
+            LinkLabelStNonbarbari.TabStop = true;
+            LinkLabelStNonbarbari.Text = "Nonbarbari";
+            LinkLabelStNonbarbari.LinkClicked += LinkLabelStNonbarbari_LinkClicked;
             // 
             // FormMain
             // 
@@ -5960,5 +5974,6 @@
         private CustomControls.CustomCheckBox CustomCheckBoxSettingDnsEnableRules;
         private CustomControls.CustomButton CustomButtonSettingDnsRules;
         private CustomControls.CustomCheckBox CustomCheckBoxDnsEventShowRequest;
+        private LinkLabel LinkLabelStNonbarbari;
     }
 }

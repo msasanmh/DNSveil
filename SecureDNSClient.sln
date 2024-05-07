@@ -20,6 +20,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SdcUninstaller", "SdcUninst
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleAppTest", "ConsoleAppTest\ConsoleAppTest.csproj", "{8BD77B3E-2850-4607-98B9-1E7D2A830C4A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDCLookup", "SDCLookup\SDCLookup.csproj", "{403B796D-A365-48A8-9695-349548CEAE1B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		All|Any CPU = All|Any CPU
@@ -159,6 +161,24 @@ Global
 		{8BD77B3E-2850-4607-98B9-1E7D2A830C4A}.Release|x64.Build.0 = Release|x64
 		{8BD77B3E-2850-4607-98B9-1E7D2A830C4A}.Release|x86.ActiveCfg = Release|x86
 		{8BD77B3E-2850-4607-98B9-1E7D2A830C4A}.Release|x86.Build.0 = Release|x86
+		{403B796D-A365-48A8-9695-349548CEAE1B}.All|Any CPU.ActiveCfg = Debug|Any CPU
+		{403B796D-A365-48A8-9695-349548CEAE1B}.All|Any CPU.Build.0 = Debug|Any CPU
+		{403B796D-A365-48A8-9695-349548CEAE1B}.All|x64.ActiveCfg = Debug|x64
+		{403B796D-A365-48A8-9695-349548CEAE1B}.All|x64.Build.0 = Debug|x64
+		{403B796D-A365-48A8-9695-349548CEAE1B}.All|x86.ActiveCfg = Debug|x86
+		{403B796D-A365-48A8-9695-349548CEAE1B}.All|x86.Build.0 = Debug|x86
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Debug|x64.ActiveCfg = Debug|x64
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Debug|x64.Build.0 = Debug|x64
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Debug|x86.ActiveCfg = Debug|x86
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Debug|x86.Build.0 = Debug|x86
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Release|x64.ActiveCfg = Release|x64
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Release|x64.Build.0 = Release|x64
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Release|x86.ActiveCfg = Release|x86
+		{403B796D-A365-48A8-9695-349548CEAE1B}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

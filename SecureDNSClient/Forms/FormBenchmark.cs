@@ -122,11 +122,11 @@ public partial class FormBenchmark : Form
         {
             // UDP
             if (IsExiting) return;
-            await ScanDns.CheckDnsAsync(host, $"udp://{BootstrapIp}:{BootstrapPort}", timeoutMS);
+            await ScanDns.CheckDnsExternalAsync(host, $"udp://{BootstrapIp}:{BootstrapPort}", timeoutMS);
             noSdcLatencyUdp = ScanDns.DnsLatency;
 
             if (IsExiting) return;
-            await ScanDns.CheckDnsAsync(host, $"udp://{IPAddress.Loopback}", timeoutMS);
+            await ScanDns.CheckDnsExternalAsync(host, $"udp://{IPAddress.Loopback}", timeoutMS);
             sdcLatencyUdp = ScanDns.DnsLatency;
 
             if (noSdcLatencyUdp != -1 && sdcLatencyUdp != -1)
@@ -151,11 +151,11 @@ public partial class FormBenchmark : Form
 
             // TCP
             if (IsExiting) return;
-            await ScanDns.CheckDnsAsync(host, $"tcp://{BootstrapIp}:{BootstrapPort}", timeoutMS);
+            await ScanDns.CheckDnsExternalAsync(host, $"tcp://{BootstrapIp}:{BootstrapPort}", timeoutMS);
             noSdcLatencyTcp = ScanDns.DnsLatency;
 
             if (IsExiting) return;
-            await ScanDns.CheckDnsAsync(host, $"tcp://{IPAddress.Loopback}", timeoutMS);
+            await ScanDns.CheckDnsExternalAsync(host, $"tcp://{IPAddress.Loopback}", timeoutMS);
             sdcLatencyTcp = ScanDns.DnsLatency;
 
             if (noSdcLatencyTcp != -1 && sdcLatencyTcp != -1)

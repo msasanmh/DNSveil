@@ -64,7 +64,7 @@ public class DnsMessage
         {
             result += Additionals.ToString();
         }
-        return result;
+        return result.Trim();
     }
 
     public static DnsMessage Read(byte[] buffer, DnsEnums.DnsProtocol dnsProtocol)

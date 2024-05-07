@@ -16,6 +16,12 @@
     <Compile Update="Forms\Connect.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\ConnectToFPUsingGoodbyeDPI.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\ConnectToFPUsingProxyDPI.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\ConnectToServersUsingProxy.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -79,6 +85,9 @@
     <Compile Update="Forms\Methods.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\NecessaryFiles.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\QuickConnect.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -104,12 +113,6 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\ShareViaProxy_SSLDecryption.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Forms\ConnectToFPUsingGoodbyeDPI.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Forms\ConnectToFPUsingProxyDPI.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\UpdateStatusAuto.cs">

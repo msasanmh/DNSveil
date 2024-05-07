@@ -16,7 +16,6 @@ internal static partial class Program
         public string Key { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
         public bool ValueBool { get; set; } = false;
-        public float ValueFloat { get; set; } = 0;
         public int ValueInt { get; set; } = 0;
         public Type Type { get; set; } = typeof(object);
     }

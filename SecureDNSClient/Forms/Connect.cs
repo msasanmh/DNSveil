@@ -36,7 +36,7 @@ public partial class FormMain
                 await UpdateStatusShortOnBoolsChanged();
 
                 // Create uid
-                //SecureDNS.GenerateUid(this);
+                SecureDNS.GenerateUid(this);
 
                 // Update NICs
                 await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
@@ -147,6 +147,13 @@ public partial class FormMain
         if (!Program.IsStartup) await NetworkTool.RestartNATDriver();
 
         // Check Plain DNS Port
+        List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
+        foreach (int pid in pids)
+        {
+            ProcessManager.KillProcessByPID(pid);
+            await Task.Delay(5);
+        }
+
         bool portDns = GetListeningPort(53, "You Need To Resolve The Conflict.", Color.IndianRed);
         if (!portDns)
         {
@@ -157,7 +164,10 @@ public partial class FormMain
         // Check DoH port if working mode is set to Plain DNS and DoH
         if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
         {
-            bool portDoH = GetListeningPort(GetDohPortSetting(), "You Need To Resolve The Conflict.", Color.IndianRed);
+            int dohPort = GetDohPortSetting();
+            pids = ProcessManager.GetProcessPidsByUsingPort(dohPort);
+            foreach (int pid in pids) ProcessManager.KillProcessByPID(pid);
+            bool portDoH = GetListeningPort(dohPort, "You Need To Resolve The Conflict.", Color.IndianRed);
             if (!portDoH)
             {
                 IsConnecting = false;

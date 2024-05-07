@@ -124,7 +124,7 @@ public partial class MsmhAgnosticServer
     private void Welcome()
     {
         // Event
-        string msgEvent = $"Server Starting On Port:{Settings_.ListenerPort}";
+        string msgEvent = $"Server Starting On Port: {Settings_.ListenerPort}";
         OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
         OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
     }
@@ -262,7 +262,14 @@ public partial class MsmhAgnosticServer
 
             // EndPoint
             IPEndPoint ipEndPoint = Settings_.ServerEndPoint;
-            
+
+            // Make Port Free
+            if (OperatingSystem.IsWindows())
+            {
+                List<int> pids = ProcessManager.GetProcessPidsByUsingPort(Settings_.ListenerPort);
+                foreach (int pid in pids) ProcessManager.KillProcessByPID(pid);
+            }
+
             // UDP
             UdpSocket_ = new(ipEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             if (ipEndPoint.Address.Equals(IPAddress.IPv6Any))
@@ -406,6 +413,7 @@ public partial class MsmhAgnosticServer
                 Debug.WriteLine(msgEventErr);
                 OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
                 TcpListener_?.Stop();
+                Stop();
             }
         }
     }

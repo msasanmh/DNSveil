@@ -50,7 +50,7 @@ public class DoHDns
                 };
 
                 Uri uri = uriBuilder.Uri;
-
+                
                 HttpRequest hr = new()
                 {
                     CT = CT,
@@ -65,14 +65,14 @@ public class DoHDns
                     ProxyPass = ProxyPass,
                 };
                 hr.Headers.Add("host", Reader.Host); // In Case Of Using Bootstrap
-
+                
                 HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
                 result = hrr.Data;
             }
             catch (Exception) { }
         });
         try { await task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMS), CT).ConfigureAwait(false); } catch (Exception) { }
-
+        
         return result;
     }
 }

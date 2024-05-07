@@ -136,7 +136,8 @@ public class ResourceRecord : IResourceRecord
                 if (currentPos + 2 > buffer.Length) return resourceRecords;
                 bool rrTypeBool = ByteArrayTool.TryConvertBytesToUInt16(buffer[currentPos..(currentPos + 2)], out ushort rrType);
                 if (!rrTypeBool) return resourceRecords;
-                resourceRecord.TYPE = (DnsEnums.RRType)Enum.Parse(typeof(DnsEnums.RRType), rrType.ToString());
+                resourceRecord.TYPE = DnsEnums.ParseRRType(rrType);
+                if (resourceRecord.TYPE.Equals(DnsEnums.RRType.Unknown)) return resourceRecords;
                 currentPos += 2;
                 pos += 2;
 
@@ -144,7 +145,8 @@ public class ResourceRecord : IResourceRecord
                 if (currentPos + 2 > buffer.Length) return resourceRecords;
                 bool rClassBool = ByteArrayTool.TryConvertBytesToUInt16(buffer[currentPos..(currentPos + 2)], out ushort rClass);
                 if (!rClassBool) return resourceRecords;
-                resourceRecord.CLASS = (DnsEnums.CLASS)Enum.Parse(typeof(DnsEnums.CLASS), rClass.ToString());
+                resourceRecord.CLASS = DnsEnums.ParseClass(rClass);
+                if (resourceRecord.CLASS.Equals(DnsEnums.CLASS.Unknown)) return resourceRecords;
                 currentPos += 2;
                 pos += 2;
 
@@ -169,8 +171,8 @@ public class ResourceRecord : IResourceRecord
                 int rdLengthInt = Convert.ToInt32(rdLength);
                 currentPos += rdLengthInt;
                 pos += rdLengthInt;
-
-                if (pos <= buffer.Length && rdLengthInt != 0 && resourceRecord.TimeToLive != 0)
+                
+                if (pos <= buffer.Length && rdLengthInt != 0)
                 {
                     resourceRecord.RecordBuffer = buffer[recordStartPos..pos];
                     resourceRecords.Add(resourceRecord);

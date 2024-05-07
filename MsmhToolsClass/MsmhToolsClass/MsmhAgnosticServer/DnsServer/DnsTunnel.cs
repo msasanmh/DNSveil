@@ -100,6 +100,7 @@ public class DnsTunnel
                             if (typeQ == DnsEnums.RRType.AAAA)
                             {
                                 dmR = DnsMessage.CreateResponse(dmQ, 1, 0, 0);
+                                dmR.Answers.AnswerRecords.Clear();
                                 dmR.Answers.AnswerRecords.Add(new AaaaRecord(addressQ, 60, dnsIp));
 
                                 bool isTryWriteSuccess = DnsMessage.TryWrite(dmR, out byte[] aBuffer);
@@ -118,6 +119,7 @@ public class DnsTunnel
                             if (typeQ == DnsEnums.RRType.A)
                             {
                                 dmR = DnsMessage.CreateResponse(dmQ, 1, 0, 0);
+                                dmR.Answers.AnswerRecords.Clear();
                                 dmR.Answers.AnswerRecords.Add(new ARecord(addressQ, 60, dnsIp));
 
                                 bool isTryWriteSuccess = DnsMessage.TryWrite(dmR, out byte[] aBuffer);

@@ -925,6 +925,9 @@ public partial class FormMain
             LinkLabelStWolfkingal2000.Left = LinkLabelStAlidxdydz.Left;
             LinkLabelStWolfkingal2000.Top = LinkLabelStAlidxdydz.Bottom + spaceV;
 
+            LinkLabelStNonbarbari.Left = LinkLabelStWolfkingal2000.Left;
+            LinkLabelStNonbarbari.Top = LinkLabelStWolfkingal2000.Bottom + spaceV;
+
             IsScreenHighDpiScaleApplied = true;
         });
     }

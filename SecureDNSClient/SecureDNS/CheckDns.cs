@@ -63,6 +63,46 @@ public class CheckDns
     }
 
     /// <summary>
+    /// Check DNS and get latency (ms) by external SDCLookup
+    /// </summary>
+    public async Task CheckDnsExternalAsync(string domain, string dnsServer, int timeoutMS)
+    {
+        DNS = dnsServer;
+        IsDnsOnline = false;
+        string args = $"-Domain={domain} -DNSs={dnsServer} -TimeoutMS={timeoutMS} -DoubleCheck=True";
+        string dnsLookupResult = await ProcessManager.ExecuteAsync(SecureDNS.SDCLookupPath, null, args, true, true, SecureDNS.BinaryDirPath);
+        if (!string.IsNullOrEmpty(dnsLookupResult))
+        {
+            try
+            {
+                List<string> lines = dnsLookupResult.ReplaceLineEndings().Split(Environment.NewLine).ToList();
+                if (lines.Count >= 2)
+                {
+                    bool isBool = bool.TryParse(lines[1].Trim(), out bool isDnsOnline);
+                    if (isBool) IsDnsOnline = isDnsOnline;
+
+                    bool isInt = int.TryParse(lines[0].Trim(), out int dnsLatency);
+                    if (isInt) DnsLatency = IsDnsOnline ? dnsLatency : -1;
+                }
+            }
+            catch (Exception) { }
+        }
+
+        IsGoogleSafeSearchEnabled = false;
+        IsBingSafeSearchEnabled = false;
+        IsYoutubeRestricted = false;
+        IsAdultFilter = false;
+        if (CheckForFilters && IsDnsOnline)
+        {
+            CheckDnsFilters(DNS, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter);
+            IsGoogleSafeSearchEnabled = isGoogleSafeSearch;
+            IsBingSafeSearchEnabled = isBingSafeSearch;
+            IsYoutubeRestricted = isYoutubeRestricted;
+            IsAdultFilter = isAdultFilter;
+        }
+    }
+
+    /// <summary>
     /// Check DNS And Get Latency (ms)
     /// </summary>
     public async Task CheckDnsAsync(string domain, string dnsServer, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort)
@@ -113,6 +153,7 @@ public class CheckDns
                     DnsMessage dmA = DnsMessage.Read(dmABuffer, DnsEnums.DnsProtocol.UDP);
                     if (dmA.IsSuccess)
                     {
+                        //Debug.WriteLine("==========-------------> " + dmA.ToString());
                         if (dmA.Header.AnswersCount > 0 && dmA.Answers.AnswerRecords.Count > 0)
                         {
                             for (int n = 0; n < dmA.Answers.AnswerRecords.Count; n++)

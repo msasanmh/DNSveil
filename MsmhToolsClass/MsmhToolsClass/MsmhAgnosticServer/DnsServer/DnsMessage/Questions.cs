@@ -69,12 +69,15 @@ public class Questions
 
                 if (!qTypeBool || !qClassBool) return questions;
 
-                DnsEnums.RRType typeEnum = (DnsEnums.RRType)Enum.Parse(typeof(DnsEnums.RRType), qType.ToString());
-                DnsEnums.CLASS classEnum = (DnsEnums.CLASS)Enum.Parse(typeof(DnsEnums.CLASS), qClass.ToString());
+                DnsEnums.RRType typeEnum = DnsEnums.ParseRRType(qType);
+                DnsEnums.CLASS classEnum = DnsEnums.ParseClass(qClass);
 
-                Question question = new(domain, qNamePosition, typeEnum, classEnum);
-                questions.QuestionRecords.Add(question);
-                questions.IsSuccess = true;
+                if (!typeEnum.Equals(DnsEnums.RRType.Unknown) && !classEnum.Equals(DnsEnums.CLASS.Unknown))
+                {
+                    Question question = new(domain, qNamePosition, typeEnum, classEnum);
+                    questions.QuestionRecords.Add(question);
+                    questions.IsSuccess = true;
+                }
             }
 
             return questions;

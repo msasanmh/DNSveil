@@ -151,15 +151,6 @@ public static partial class Program
                             bool isInt = int.TryParse(value.ToString(), out int n);
                             if (isInt && n >= DefaultPortMin && n <= DefaultPortMax)
                             {
-                                // Check Port
-                                bool isPortOpen = NetworkTool.IsPortOpen(n);
-
-                                if (isPortOpen)
-                                {
-                                    WriteToStdout($"Port {n} Is Occupied, Choose Another.");
-                                    continue;
-                                }
-
                                 port = n;
                                 WriteToStdout($"Port Set To {port}", ConsoleColor.Green);
                                 break;
@@ -1381,6 +1372,46 @@ public static partial class Program
                             if (!sf.AgnosticServer.IsRunning)
                             {
                                 WriteToStdout($"Starting {sf.Name}...", ConsoleColor.Cyan);
+
+                                // Check For Duplicate Ports
+                                bool isTheSamePort = false;
+                                foreach (ServerProfile sfPort in ServerProfiles)
+                                    if (!sf.Name.Equals(sfPort.Name) && sfPort.Settings != null)
+                                        if (sf.Settings.ListenerPort == sfPort.Settings.ListenerPort)
+                                        {
+                                            isTheSamePort = true;
+                                            break;
+                                        }
+
+                                if (isTheSamePort)
+                                {
+                                    WriteToStdout($"Cannot Use One Port For Multiple Servers.", ConsoleColor.Red);
+                                    continue;
+                                }
+
+                                // Kill PIDs
+                                if (OperatingSystem.IsWindows())
+                                {
+                                    List<int> pids = ProcessManager.GetProcessPidsByUsingPort(sf.Settings.ListenerPort);
+                                    if (pids.Any())
+                                    {
+                                        foreach (int pid in pids) ProcessManager.KillProcessByPID(pid);
+                                        await Task.Delay(5);
+                                    }
+                                }
+
+                                // Check Port
+                                bool isPortOpen = NetworkTool.IsPortOpen(sf.Settings.ListenerPort);
+
+                                if (isPortOpen)
+                                {
+                                    WriteToStdout($"Port {sf.Settings.ListenerPort} Is Occupied, Choose Another.", ConsoleColor.Red);
+                                    continue;
+                                }
+
+                                sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
+                                sf.AgnosticServer.OnRequestReceived += ProxyServer_OnRequestReceived;
+
                                 if (sf.SettingsSSL != null) await sf.AgnosticServer.EnableSSL(sf.SettingsSSL);
                                 if (sf.Fragment != null) sf.AgnosticServer.EnableFragment(sf.Fragment);
                                 if (sf.DnsRules != null) sf.AgnosticServer.EnableDnsRules(sf.DnsRules);
@@ -1389,8 +1420,6 @@ public static partial class Program
                                 await Task.Delay(50);
                                 if (sf.AgnosticServer.IsRunning)
                                 {
-                                    sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
-                                    sf.AgnosticServer.OnRequestReceived += ProxyServer_OnRequestReceived;
                                     if (sf.Fragment != null)
                                     {
                                         sf.Fragment.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
@@ -1400,7 +1429,13 @@ public static partial class Program
                                     flushNeeded = true;
                                 }
                                 else
+                                {
+                                    CountRequests = 0;
+                                    sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
+                                    if (sf.Fragment != null)
+                                        sf.Fragment.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
                                     WriteToStdout($"Couldn't Start {sf.Name}", ConsoleColor.Red);
+                                }
                             }
                             else WriteToStdout($"{sf.Name} Already Started", ConsoleColor.Gray);
                         }
@@ -1419,6 +1454,7 @@ public static partial class Program
                 else if (input.ToLower().Equals(Key.Common.Stop.ToLower()))
                 {
                     // Stop
+                    CountRequests = 0;
                     foreach (ServerProfile sf in ServerProfiles)
                     {
                         if (sf.AgnosticServer != null && sf.Settings != null && !string.IsNullOrEmpty(sf.Name))
@@ -1427,6 +1463,11 @@ public static partial class Program
                             if (sf.AgnosticServer.IsRunning)
                             {
                                 WriteToStdout($"Stopping {sf.Name}...", ConsoleColor.Cyan);
+
+                                sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
+                                if (sf.Fragment != null)
+                                    sf.Fragment.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
+
                                 sf.AgnosticServer.Stop();
                                 await Task.Delay(50);
                                 if (!sf.AgnosticServer.IsRunning)

@@ -60,6 +60,7 @@ public static partial class Program
     private static readonly Stopwatch StopWatchShowChunkDetails = new();
 
     private static bool WriteRequestsToLog { get; set; } = false;
+    private static uint CountRequests { get; set; } = 0;
     private static bool WriteFragmentDetailsToLog { get; set; } = false;
     private static int ParentPID { get; set; } = -1;
 
@@ -68,8 +69,9 @@ public static partial class Program
         if (WriteRequestsToLog)
             if (sender is string msg)
             {
+                CountRequests++;
                 if (!StopWatchShowRequests.IsRunning) StopWatchShowRequests.Start();
-                if (StopWatchShowRequests.ElapsedMilliseconds > 50)
+                if (CountRequests < 5 || StopWatchShowRequests.ElapsedMilliseconds > 40)
                 {
                     WriteToStderr(msg, ConsoleColor.DarkGray, false);
 

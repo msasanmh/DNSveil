@@ -39,6 +39,7 @@ public class SecureDNS
     public static readonly string BinaryDirPath = GetFullPath(CurrentPath, "binary");
     public static readonly string DnsLookup = GetFullPath(CurrentPath, "binary", "dnslookup.exe");
     public static readonly string RandomPath = GetRandomPath();
+    public static readonly string SDCLookupPath = GetFullPath(CurrentPath, "binary", "SDCLookup.exe");
     public static readonly string AgnosticServerPath = GetFullPath(CurrentPath, "binary", "SDCAgnosticServer.exe");
     public static readonly string GoodbyeDpi = GetFullPath(CurrentPath, "binary", "goodbyedpi.exe");
     public static readonly string WinDivert = GetFullPath(CurrentPath, "binary", "WinDivert.dll");
@@ -76,6 +77,7 @@ public class SecureDNS
         }
     }
 
+    public static readonly string FirstRun = GetFullPath(UserDataDirPath, "FirstRun.txt");
     public static readonly string SettingsXmlPath = GetFullPath(UserDataDirPath, appNameWithoutExtension + ".xml"); // AgnosticSettings XML path
     public static readonly string SettingsXmlDnsLookup = GetFullPath(UserDataDirPath, "DnsLookupSettings.xml");
     public static readonly string SettingsXmlIpScanner = GetFullPath(UserDataDirPath, "IpScannerSettings.xml");
@@ -131,6 +133,8 @@ public class SecureDNS
     public static readonly string FirewallRule_SdcOut = "SDC OUT";
     public static readonly string FirewallRule_SdcDnsLookupIn = "SDC DnsLookup IN";
     public static readonly string FirewallRule_SdcDnsLookupOut = "SDC DnsLookup OUT";
+    public static readonly string FirewallRule_SdcSDCLookupIn = "SDC SDCLookup IN";
+    public static readonly string FirewallRule_SdcSDCLookupOut = "SDC SDCLookup OUT";
     public static readonly string FirewallRule_SdcAgnosticServerIn = "SDC AgnosticServer IN";
     public static readonly string FirewallRule_SdcAgnosticServerOut = "SDC AgnosticServer OUT";
     public static readonly string FirewallRule_SdcGoodbyeDpiIn = "SDC GoodbyeDpi IN";

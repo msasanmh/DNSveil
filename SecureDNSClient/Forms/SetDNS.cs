@@ -328,22 +328,27 @@ public partial class FormMain
         foreach (string nicName in LastNicNameList)
         {
             string processName = "netsh";
-            string processArgs1 = $"interface ipv4 delete dnsservers \"{nicName}\" all";
-            ProcessManager.ExecuteOnly(processName, null, processArgs1, true, true);
+            string processArgsIPv4 = $"interface ipv4 delete dnsservers \"{nicName}\" all";
+            string processArgsIPv6 = $"interface ipv6 delete dnsservers \"{nicName}\" all";
+            ProcessManager.ExecuteOnly(processName, null, processArgsIPv4, true, true);
+            ProcessManager.ExecuteOnly(processName, null, processArgsIPv6, true, true);
             bool unsetToDHCP = CustomRadioButtonSettingUnsetDnsToDhcp.Checked;
             if (unsetToDHCP)
             {
                 // DHCP
-                string processArgs2 = $"interface ipv4 set dnsservers \"{nicName}\" source=dhcp";
-                ProcessManager.ExecuteOnly(processName, null, processArgs2, true, true);
+                processArgsIPv4 = $"interface ipv4 set dnsservers \"{nicName}\" source=dhcp";
+                ProcessManager.ExecuteOnly(processName, null, processArgsIPv4, true, true);
             }
             else
             {
                 // STATIC
                 string dns1 = CustomTextBoxSettingUnsetDns1.Text;
-                string processArgs2 = $"interface ipv4 set dnsservers \"{nicName}\" static {dns1} primary";
-                ProcessManager.ExecuteOnly(processName, null, processArgs2, true, true);
+                processArgsIPv4 = $"interface ipv4 set dnsservers \"{nicName}\" static {dns1} primary";
+                ProcessManager.ExecuteOnly(processName, null, processArgsIPv4, true, true);
             }
+
+            processArgsIPv6 = $"interface ipv6 set dnsservers \"{nicName}\" source=dhcp";
+            ProcessManager.ExecuteOnly(processName, null, processArgsIPv6, true, true);
         }
     }
 }

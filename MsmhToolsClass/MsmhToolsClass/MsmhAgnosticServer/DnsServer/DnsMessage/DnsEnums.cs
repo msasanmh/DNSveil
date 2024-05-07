@@ -129,6 +129,7 @@ public class DnsEnums
     /// </summary>
     public enum RRType : ushort
     {
+        Unknown = 0,
         /// <summary>
         /// A host address
         /// </summary>
@@ -412,12 +413,233 @@ public class DnsEnums
         DLV = 32769
     }
 
+    public static RRType ParseRRType(ushort n)
+    {
+        return n switch
+        {
+            1 => RRType.A,
+            2 => RRType.NS,
+            3 => RRType.MD,
+            4 => RRType.MF,
+            5 => RRType.CNAME,
+            6 => RRType.SOA,
+            7 => RRType.MB,
+            8 => RRType.MG,
+            9 => RRType.MR,
+            10 => RRType.NULL,
+            11 => RRType.WKS,
+            12 => RRType.PTR,
+            13 => RRType.HINFO,
+            14 => RRType.MINFO,
+            15 => RRType.MX,
+            16 => RRType.TEXT,
+            17 => RRType.RP,
+            18 => RRType.AFSDB,
+            19 => RRType.X25,
+            20 => RRType.ISDN,
+            21 => RRType.RT,
+            22 => RRType.NSAP,
+            23 => RRType.NSAPPTR,
+            24 => RRType.SIG,
+            25 => RRType.KEY,
+            26 => RRType.PX,
+            27 => RRType.GPOS,
+            28 => RRType.AAAA,
+            29 => RRType.LOC,
+            30 => RRType.NXT,
+            31 => RRType.EID,
+            32 => RRType.NIMLOC,
+            33 => RRType.SRV,
+            34 => RRType.ATMA,
+            35 => RRType.NAPTR,
+            36 => RRType.KX,
+            37 => RRType.CERT,
+            38 => RRType.A6,
+            39 => RRType.DNAME,
+            40 => RRType.SINK,
+            41 => RRType.OPT,
+            42 => RRType.APL,
+            43 => RRType.DS,
+            44 => RRType.SSHFP,
+            45 => RRType.IPSECKEY,
+            46 => RRType.RRSIG,
+            47 => RRType.NSEC,
+            48 => RRType.DNSKEY,
+            49 => RRType.DHCID,
+            50 => RRType.NSEC3,
+            51 => RRType.NSEC3PARAM,
+            52 => RRType.TLSA,
+            53 => RRType.SMIMEA,
+            55 => RRType.HIP,
+            56 => RRType.NINFO,
+            57 => RRType.RKEY,
+            58 => RRType.TALINK,
+            59 => RRType.CDS,
+            60 => RRType.CDNSKEY,
+            61 => RRType.OPENPGPKEY,
+            62 => RRType.CSYNC,
+            63 => RRType.ZONEMD,
+            64 => RRType.SVCB,
+            65 => RRType.HTTPS,
+            99 => RRType.SPF,
+            100 => RRType.UINFO,
+            101 => RRType.UID,
+            102 => RRType.GID,
+            103 => RRType.UNSPEC,
+            104 => RRType.NID,
+            105 => RRType.L32,
+            106 => RRType.L64,
+            107 => RRType.LP,
+            108 => RRType.EUI48,
+            109 => RRType.EUI64,
+            249 => RRType.TKEY,
+            250 => RRType.TSIG,
+            251 => RRType.IXFR,
+            252 => RRType.AXFR,
+            253 => RRType.MAILB,
+            254 => RRType.MAILA,
+            255 => RRType.ANY,
+            256 => RRType.URI,
+            257 => RRType.CAA,
+            258 => RRType.AVC,
+            259 => RRType.DOA,
+            260 => RRType.AMTRELAY,
+            32768 => RRType.TA,
+            32769 => RRType.DLV,
+            _ => RRType.Unknown
+        };
+    }
+
+    public static RRType ParseRRType(string rrType)
+    {
+        rrType = rrType.ToUpper();
+        return rrType switch
+        {
+            nameof(RRType.A) => RRType.A,
+            nameof(RRType.NS) => RRType.NS,
+            nameof(RRType.MD) => RRType.MD,
+            nameof(RRType.MF) => RRType.MF,
+            nameof(RRType.CNAME) => RRType.CNAME,
+            nameof(RRType.SOA) => RRType.SOA,
+            nameof(RRType.MB) => RRType.MB,
+            nameof(RRType.MG) => RRType.MG,
+            nameof(RRType.MR) => RRType.MR,
+            nameof(RRType.NULL) => RRType.NULL,
+            nameof(RRType.WKS) => RRType.WKS,
+            nameof(RRType.PTR) => RRType.PTR,
+            nameof(RRType.HINFO) => RRType.HINFO,
+            nameof(RRType.MINFO) => RRType.MINFO,
+            nameof(RRType.MX) => RRType.MX,
+            nameof(RRType.TEXT) => RRType.TEXT,
+            nameof(RRType.RP) => RRType.RP,
+            nameof(RRType.AFSDB) => RRType.AFSDB,
+            nameof(RRType.X25) => RRType.X25,
+            nameof(RRType.ISDN) => RRType.ISDN,
+            nameof(RRType.RT) => RRType.RT,
+            nameof(RRType.NSAP) => RRType.NSAP,
+            nameof(RRType.NSAPPTR) => RRType.NSAPPTR,
+            nameof(RRType.SIG) => RRType.SIG,
+            nameof(RRType.KEY) => RRType.KEY,
+            nameof(RRType.PX) => RRType.PX,
+            nameof(RRType.GPOS) => RRType.GPOS,
+            nameof(RRType.AAAA) => RRType.AAAA,
+            nameof(RRType.LOC) => RRType.LOC,
+            nameof(RRType.NXT) => RRType.NXT,
+            nameof(RRType.EID) => RRType.EID,
+            nameof(RRType.NIMLOC) => RRType.NIMLOC,
+            nameof(RRType.SRV) => RRType.SRV,
+            nameof(RRType.ATMA) => RRType.ATMA,
+            nameof(RRType.NAPTR) => RRType.NAPTR,
+            nameof(RRType.KX) => RRType.KX,
+            nameof(RRType.CERT) => RRType.CERT,
+            nameof(RRType.A6) => RRType.A6,
+            nameof(RRType.DNAME) => RRType.DNAME,
+            nameof(RRType.SINK) => RRType.SINK,
+            nameof(RRType.OPT) => RRType.OPT,
+            nameof(RRType.APL) => RRType.APL,
+            nameof(RRType.DS) => RRType.DS,
+            nameof(RRType.SSHFP) => RRType.SSHFP,
+            nameof(RRType.IPSECKEY) => RRType.IPSECKEY,
+            nameof(RRType.RRSIG) => RRType.RRSIG,
+            nameof(RRType.NSEC) => RRType.NSEC,
+            nameof(RRType.DNSKEY) => RRType.DNSKEY,
+            nameof(RRType.DHCID) => RRType.DHCID,
+            nameof(RRType.NSEC3) => RRType.NSEC3,
+            nameof(RRType.NSEC3PARAM) => RRType.NSEC3PARAM,
+            nameof(RRType.TLSA) => RRType.TLSA,
+            nameof(RRType.SMIMEA) => RRType.SMIMEA,
+            nameof(RRType.HIP) => RRType.HIP,
+            nameof(RRType.NINFO) => RRType.NINFO,
+            nameof(RRType.RKEY) => RRType.RKEY,
+            nameof(RRType.TALINK) => RRType.TALINK,
+            nameof(RRType.CDS) => RRType.CDS,
+            nameof(RRType.CDNSKEY) => RRType.CDNSKEY,
+            nameof(RRType.OPENPGPKEY) => RRType.OPENPGPKEY,
+            nameof(RRType.CSYNC) => RRType.CSYNC,
+            nameof(RRType.ZONEMD) => RRType.ZONEMD,
+            nameof(RRType.SVCB) => RRType.SVCB,
+            nameof(RRType.HTTPS) => RRType.HTTPS,
+            nameof(RRType.SPF) => RRType.SPF,
+            nameof(RRType.UINFO) => RRType.UINFO,
+            nameof(RRType.UID) => RRType.UID,
+            nameof(RRType.GID) => RRType.GID,
+            nameof(RRType.UNSPEC) => RRType.UNSPEC,
+            nameof(RRType.NID) => RRType.NID,
+            nameof(RRType.L32) => RRType.L32,
+            nameof(RRType.L64) => RRType.L64,
+            nameof(RRType.LP) => RRType.LP,
+            nameof(RRType.EUI48) => RRType.EUI48,
+            nameof(RRType.EUI64) => RRType.EUI64,
+            nameof(RRType.TKEY) => RRType.TKEY,
+            nameof(RRType.TSIG) => RRType.TSIG,
+            nameof(RRType.IXFR) => RRType.IXFR,
+            nameof(RRType.AXFR) => RRType.AXFR,
+            nameof(RRType.MAILB) => RRType.MAILB,
+            nameof(RRType.MAILA) => RRType.MAILA,
+            nameof(RRType.ANY) => RRType.ANY,
+            nameof(RRType.URI) => RRType.URI,
+            nameof(RRType.CAA) => RRType.CAA,
+            nameof(RRType.AVC) => RRType.AVC,
+            nameof(RRType.DOA) => RRType.DOA,
+            nameof(RRType.AMTRELAY) => RRType.AMTRELAY,
+            nameof(RRType.TA) => RRType.TA,
+            nameof(RRType.DLV) => RRType.DLV,
+            _ => RRType.Unknown
+        };
+    }
+
     public enum CLASS : ushort
     {
+        Unknown = 0,
         IN = 1, // The Internet system
         CS = 2, // The CSNET class (Obsolete - used only for examples in some obsolete RFCs)
         CH = 3, // The Chaos system
         HS = 4, // Hesiod [Dyer 87]
+    }
+
+    public static CLASS ParseClass(ushort n)
+    {
+        return n switch
+        {
+            1 => CLASS.IN,
+            2 => CLASS.CS,
+            3 => CLASS.CH,
+            4 => CLASS.HS,
+            _ => CLASS.Unknown
+        };
+    }
+
+    public static CLASS ParseClass(string qClass)
+    {
+        qClass = qClass.ToUpper();
+        return qClass switch
+        {
+            nameof(CLASS.IN) => CLASS.IN,
+            nameof(CLASS.CS) => CLASS.CS,
+            nameof(CLASS.CH) => CLASS.CH,
+            nameof(CLASS.HS) => CLASS.HS,
+            _ => CLASS.Unknown
+        };
     }
 
 }

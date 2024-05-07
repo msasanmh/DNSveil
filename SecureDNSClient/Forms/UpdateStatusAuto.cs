@@ -407,11 +407,13 @@ public partial class FormMain
             // DNS
             if (IsInternetOnline)
             {
-                string dnsServer = $"udp://{IPAddress.Loopback}:53";
-                await ScanDns.CheckDnsAsync(host, dnsServer, timeoutMS);
-                if (ScanDns.DnsLatency > 40)
-                    await ScanDns.CheckDnsAsync(host, dnsServer, timeoutMS);
-                LocalDnsLatency = ScanDns.DnsLatency;
+                CheckDns checkDns = new(false, false);
+                string udpServer = $"udp://{IPAddress.Loopback}:53";
+                string tcpServer = $"tcp://{IPAddress.Loopback}:53";
+                await checkDns.CheckDnsExternalAsync(host, udpServer, timeoutMS);
+                if (checkDns.DnsLatency > 9)
+                    await checkDns.CheckDnsExternalAsync(host, tcpServer, timeoutMS);
+                LocalDnsLatency = checkDns.DnsLatency;
                 IsDNSConnected = LocalDnsLatency != -1;
             }
             else
@@ -434,11 +436,12 @@ public partial class FormMain
             // DoH
             if (IsInternetOnline)
             {
+                CheckDns checkDns = new(false, false);
                 string dohServer = $"https://{IPAddress.Loopback}:{ConnectedDohPort}/dns-query";
-                await ScanDns.CheckDnsAsync(host, dohServer, timeoutMS);
-                if (ScanDns.DnsLatency > 80)
-                    await ScanDns.CheckDnsAsync(host, dohServer, timeoutMS);
-                LocalDohLatency = ScanDns.DnsLatency;
+                await checkDns.CheckDnsExternalAsync(host, dohServer, timeoutMS);
+                if (checkDns.DnsLatency > 50)
+                    await checkDns.CheckDnsExternalAsync(host, dohServer, timeoutMS);
+                LocalDohLatency = checkDns.DnsLatency;
                 IsDoHConnected = LocalDohLatency != -1;
             }
             else
@@ -900,7 +903,7 @@ public partial class FormMain
             await Task.Delay(delay);
 
             // Update Status LocalDnsLatency
-            string statusLocalDnsLatency = LocalDnsLatency != -1 ? $"{LocalDnsLatency} ms" : "-1";
+            string statusLocalDnsLatency = LocalDnsLatency == 0 ? $"<1 ms" : LocalDnsLatency != -1 ? $"{LocalDnsLatency} ms" : "-1";
             Color colorStatusLocalDnsLatency = LocalDnsLatency != -1 ? Color.MediumSeaGreen : Color.IndianRed;
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[3].Cells[1].Style.ForeColor = colorStatusLocalDnsLatency);
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[3].Cells[1].Value = statusLocalDnsLatency);
@@ -914,7 +917,7 @@ public partial class FormMain
             await Task.Delay(delay);
 
             // Update Status LocalDohLatency
-            string statusLocalDoHLatency = LocalDohLatency != -1 ? $"{LocalDohLatency} ms" : "-1";
+            string statusLocalDoHLatency = LocalDohLatency == 0 ? $"<1 ms" : LocalDohLatency != -1 ? $"{LocalDohLatency} ms" : "-1";
             Color colorStatusLocalDoHLatency = LocalDohLatency != -1 ? Color.MediumSeaGreen : Color.IndianRed;
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[5].Cells[1].Style.ForeColor = colorStatusLocalDoHLatency);
             this.InvokeIt(() => CustomDataGridViewStatus.Rows[5].Cells[1].Value = statusLocalDoHLatency);

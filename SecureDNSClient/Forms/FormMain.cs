@@ -6,7 +6,6 @@ using Microsoft.Win32;
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
 using System.Runtime.InteropServices;
-using System.Text;
 // https://github.com/msasanmh/SecureDNSClient
 
 namespace SecureDNSClient;
@@ -133,7 +132,7 @@ public partial class FormMain : Form
 
         // Initialize Status
         InitializeStatus(CustomDataGridViewStatus);
-        
+
         // Initialize NIC Status
         InitializeNicStatus(CustomDataGridViewNicStatus);
 
@@ -168,7 +167,7 @@ public partial class FormMain : Form
         bool closedNormally = await DoesAppClosedNormallyAsync();
         if (!closedNormally)
         {
-            string msg = $"Last time App didn't close normally!{NL}";
+            string msg = $"Last Time App Didn't Close Normally!{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
         }
         AppClosedNormally(false);
@@ -578,15 +577,7 @@ public partial class FormMain : Form
             Hide();
             //ShowInTaskbar = false; // Makes Titlebar white (I use Show and Hide instead)
 
-            string uid = string.Empty;
-            try
-            {
-                if (File.Exists(SecureDNS.UserIdPath))
-                    uid = File.ReadAllText(SecureDNS.UserIdPath);
-            }
-            catch (Exception) { }
-
-            if (string.IsNullOrEmpty(uid))
+            if (!File.Exists(SecureDNS.FirstRun))
             {
                 NotifyIconMain.BalloonTipText = "Minimized to tray.";
                 NotifyIconMain.BalloonTipIcon = ToolTipIcon.Info;
@@ -664,4 +655,8 @@ public partial class FormMain : Form
         OpenLinks.OpenUrl("https://github.com/wolfkingal2000");
     }
 
+    private void LinkLabelStNonbarbari_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+    {
+        OpenLinks.OpenUrl("https://github.com/nonbarbari");
+    }
 }
