@@ -5,7 +5,7 @@
 ![GitHub](https://img.shields.io/github/license/msasanmh/SecureDNSClient)
 ![GitHub release (with filter)](https://img.shields.io/github/v/release/msasanmh/SecureDNSClient?link=https%3A%2F%2Fgithub.com%2Fmsasanmh%2FSecureDNSClient%2Freleases%2Flatest)
 
-**A Secure DNS Client.** Using: _Msmh Agnostic Server_, _[DNSLookup](https://github.com/ameshkov/dnslookup)_ and _[GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI)_. (Windows only)
+**A Secure DNS Client.** Using: _[Msmh Agnostic Server](https://github.com/msasanmh/MsmhAgnosticServer)_, _[DNSLookup](https://github.com/ameshkov/dnslookup)_ and _[GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI)_. (Windows only)
 
 Client implementation: _DNSCrypt, DNS-Over-Https, DNS-Over-TLS, DNS-Over-UDP and DNS-Over-TCP._<br>
 Server implementation: _DNS-Over-Https, DNS-Over-UDP and DNS-Over-TCP._
