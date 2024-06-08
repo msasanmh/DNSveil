@@ -7,7 +7,7 @@
 
 **A Secure DNS Client.** Using: _[Msmh Agnostic Server](https://github.com/msasanmh/MsmhAgnosticServer)_, _[DNSLookup](https://github.com/ameshkov/dnslookup)_ and _[GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI)_. (Windows only)
 
-Client implementation: _DNSCrypt, DNS-Over-Https, DNS-Over-TLS, DNS-Over-UDP and DNS-Over-TCP._<br>
+Client implementation: _DNSCrypt, Anonymized DNSCrypt, DNS-Over-Https, DNS-Over-TLS, DNS-Over-UDP and DNS-Over-TCP._<br>
 Server implementation: _DNS-Over-Https, DNS-Over-UDP and DNS-Over-TCP._
 
 - *Find and use fastest secure DNS servers.*
@@ -18,11 +18,11 @@ Server implementation: _DNS-Over-Https, DNS-Over-UDP and DNS-Over-TCP._
 
 **Requirements:** `.Net Destop Runtime 6` and `ASP.NET Core Runtime 6`<br><br>
 For x64:<br>
-First install [.Net Destop Runtime x64 v6.0.29](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.29-windows-x64-installer)<br>
-Then install [ASP.NET Core Runtime x64 v6.0.29](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.29-windows-x64-installer)<br><br>
+First install [.Net Destop Runtime x64 v6.0.31](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.31-windows-x64-installer)<br>
+Then install [ASP.NET Core Runtime x64 v6.0.31](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.31-windows-x64-installer)<br><br>
 For x86:<br>
-First install [.Net Destop Runtime x86 v6.0.29](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.29-windows-x86-installer)<br>
-Then install [ASP.NET Core Runtime x86 v6.0.29](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.29-windows-x86-installer)<br><br>
+First install [.Net Destop Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.31-windows-x86-installer)<br>
+Then install [ASP.NET Core Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.31-windows-x86-installer)<br><br>
 [Microsoft .NET 6.0 Runtime Page](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)<br>
 
 **Download:**<br>
