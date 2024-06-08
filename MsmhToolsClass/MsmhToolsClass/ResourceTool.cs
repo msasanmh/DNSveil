@@ -11,10 +11,12 @@ public class ResourceTool
         try
         {
             resourcePath = assembly.GetManifestResourceNames().Single(str => str.EndsWith(resourcePath));
-            using Stream? resource = assembly.GetManifestResourceStream(resourcePath);
-            using FileStream file = new(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            if (resource != null)
-                resource.CopyTo(file);
+            using Stream? stream = assembly.GetManifestResourceStream(resourcePath);
+            if (stream != null)
+            {
+                using FileStream file = new(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                stream.CopyTo(file);
+            }
             else
                 Debug.WriteLine("WriteResourceToFile: Copy to disk faild, resource was null.");
         }
@@ -41,10 +43,12 @@ public class ResourceTool
         try
         {
             resourcePath = assembly.GetManifestResourceNames().Single(str => str.EndsWith(resourcePath));
-            using Stream? resource = assembly.GetManifestResourceStream(resourcePath);
-            using FileStream file = new(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            if (resource != null)
-                await resource.CopyToAsync(file);
+            using Stream? stream = assembly.GetManifestResourceStream(resourcePath);
+            if (stream != null)
+            {
+                using FileStream file = new(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                await stream.CopyToAsync(file);
+            }
             else
                 Debug.WriteLine("WriteResourceToFile: Copy to disk faild, resource was null.");
         }
@@ -117,14 +121,41 @@ public class ResourceTool
             return string.Empty;
         }
     }
+
+    public static async Task<byte[]> GetResourceBinFileAsync(string path, Assembly assembly)
+    {
+        try
+        {
+            if (ResourceExists(path, assembly))
+            {
+                // Format: "{Namespace}.{Folder}.{filename}.{Extension}"
+                path = assembly.GetManifestResourceNames().Single(str => str.EndsWith(path));
+                using Stream? stream = assembly.GetManifestResourceStream(path);
+                if (stream != null)
+                {
+                    using MemoryStream ms = new();
+                    await stream.CopyToAsync(ms);
+                    return ms.ToArray();
+                }
+                else return Array.Empty<byte>();
+            }
+            else return Array.Empty<byte>();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("GetResourceBinFileAsync: " + ex.Message);
+            return Array.Empty<byte>();
+        }
+    }
     //-----------------------------------------------------------------------------------
     public static bool ResourceExists(string resourceName, Assembly assembly)
     {
         try
         {
             string[] resourceNames = assembly.GetManifestResourceNames();
-            Debug.WriteLine("Resource Exist: " + resourceNames.Contains(resourceName));
-            return resourceNames.Contains(resourceName);
+            bool exist = resourceNames.Contains(resourceName);
+            if (!exist) Debug.WriteLine("ResourceExists: False");
+            return exist;
         }
         catch (Exception ex)
         {

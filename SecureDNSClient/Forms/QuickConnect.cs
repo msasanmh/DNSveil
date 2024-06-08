@@ -456,7 +456,7 @@ public partial class FormMain
 
             async Task<bool> runSetProxy()
             {
-                SetProxy(false, false);
+                await SetProxyAsync(false, false);
 
                 // Wait for Proxy to get Set
                 QuickConnectTimeout.Restart();
@@ -665,7 +665,7 @@ public partial class FormMain
                 else if (startProxy != IsProxyActivated) msgNotifyUser += $"Couldn't Start Proxy Server.{NL}";
                 else if (setProxy != IsProxySet)
                 {
-                    SetProxy();
+                    await SetProxyAsync();
                     await Task.Delay(500);
                     // Update bool IsProxySet
                     IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
@@ -782,7 +782,7 @@ public partial class FormMain
         // Unset Proxy
         if (unsetProxy && IsProxySet)
         {
-            SetProxy(true);
+            await SetProxyAsync(true);
 
             // Wait
             QuickConnectTimeout.Restart();

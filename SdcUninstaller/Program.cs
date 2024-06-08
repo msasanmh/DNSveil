@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Microsoft.Win32.TaskScheduler;
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
+using Task = System.Threading.Tasks.Task;
 
 namespace SdcUninstaller;
 
@@ -27,7 +28,7 @@ internal static class Program
     ///  The main entry point for the application.
     /// </summary>
     [STAThread]
-    static void Main()
+    static async Task Main()
     {
         try
         {
@@ -36,10 +37,10 @@ internal static class Program
             ShowWindow(handle, SW_HIDE);
 
             // Kill Processes
-            ProcessManager.KillProcessByName("SDCAgnosticServer", true);
-            ProcessManager.KillProcessByName("dnslookup", true);
-            ProcessManager.KillProcessByName("goodbyedpi", true);
-            ProcessManager.KillProcessByName("SecureDNSClient", true);
+            await ProcessManager.KillProcessByNameAsync("SDCAgnosticServer", true);
+            await ProcessManager.KillProcessByNameAsync("dnslookup", true);
+            await ProcessManager.KillProcessByNameAsync("goodbyedpi", true);
+            await ProcessManager.KillProcessByNameAsync("SecureDNSClient", true);
 
             // Remove Startup
             ActivateWindowsStartup(false);

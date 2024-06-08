@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
 	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <Version>$(VersionPrefix)3.0.4</Version>
+    <Version>$(VersionPrefix)3.2.0</Version>
     <Copyright>MSasanMH</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>AnyCPU;x64;x86</Platforms>

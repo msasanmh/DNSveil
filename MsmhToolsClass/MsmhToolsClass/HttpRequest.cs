@@ -145,6 +145,7 @@ public class HttpRequest
     public Uri? URI { get; set; }
     public byte[] DataToSend { get; set; } = Array.Empty<byte>();
     public HttpMethod Method { get; set; } = HttpMethod.Get;
+    public bool IsHttp3 { get; set; } = false;
     public string ContentType { get; set; } = string.Empty;
     /// <summary>
     /// Default is "Other"
@@ -468,6 +469,12 @@ public class HttpRequest
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {hr.Authorization.BearerToken}");
                 }
 
+                if (hr.IsHttp3) // Only Windows 11 Above
+                {
+                    httpClient.DefaultRequestVersion = HttpVersion.Version30;
+                    httpClient.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                }
+                
                 HttpResponseMessage response = await httpClient.SendAsync(message, hr.CT).ConfigureAwait(false);
 
                 hrr.IsSuccess = response.IsSuccessStatusCode;

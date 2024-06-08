@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Management;
 using System.Management.Automation;
 using System.Net;
+using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -75,15 +76,15 @@ public static class NetworkTool
     /// </summary>
     /// <param name="ip"></param>
     /// <returns></returns>
-    public static string IpToHost(string ip, out string baseHost)
+    public static async Task<(string Host, string BaseHost)> IpToHostAsync(string ip)
     {
         string result = string.Empty;
-        baseHost = string.Empty;
-        if (!OperatingSystem.IsWindows()) return result;
-        if (!IsInternetAlive()) return result; // nslookup takes time when there is no internet access
+        string baseHost = string.Empty;
+        if (!OperatingSystem.IsWindows()) return (result, baseHost);
+        if (!await IsInternetAliveByNicAsync()) return (result, baseHost); // nslookup takes time when there is no internet access
 
-        string content = ProcessManager.Execute(out _, "nslookup", null, ip, true, true);
-        if (string.IsNullOrEmpty(content)) return result;
+        string content = await ProcessManager.ExecuteAsync("nslookup", null, ip, true, true);
+        if (string.IsNullOrEmpty(content)) return (result, baseHost);
         content = content.ToLower();
         string[] split = content.Split(Environment.NewLine);
         for (int n = 0; n < split.Length; n++)
@@ -100,7 +101,7 @@ public static class NetworkTool
             }
         }
 
-        return result;
+        return (result, baseHost);
     }
 
     /// <summary>
@@ -1085,15 +1086,16 @@ public static class NetworkTool
     /// <summary>
     /// Is DNS Set to 127.0.0.1 - Using Nslookup (Windows Only)
     /// </summary>
-    public static bool IsDnsSetToLocal(out string host, out string ip)
+    public static async Task<(bool IsSet, string Host, string IP)> IsDnsSetToLocalAsync()
     {
         bool result = false;
-        host = ip = string.Empty;
-        if (!OperatingSystem.IsWindows()) return result;
-        if (!IsInternetAlive()) return result; // nslookup takes time when there is no internet access
+        string host = string.Empty, ip = string.Empty;
+        if (!OperatingSystem.IsWindows()) return (result, host, ip);
+        if (!await IsInternetAliveByNicAsync()) return (result, host, ip); // nslookup takes time when there is no internet access
 
-        string content = ProcessManager.Execute(out _, "nslookup", null, "0.0.0.0", true, true);
-        if (string.IsNullOrEmpty(content)) return result;
+        string content = await ProcessManager.ExecuteAsync("nslookup", null, "0.0.0.0", true, true);
+        //string content = ProcessManager.Execute(out _, "nslookup", null, "0.0.0.0", true, true);
+        if (string.IsNullOrEmpty(content)) return (result, host, ip);
         content = content.ToLower();
         string[] split = content.Split(Environment.NewLine);
         for (int n = 0; n < split.Length; n++)
@@ -1113,7 +1115,7 @@ public static class NetworkTool
                 if (ip.Equals(IPAddress.IPv6Loopback.ToString())) result = true;
             }
         }
-        return result;
+        return (result, host, ip);
     }
 
     /// <summary>
@@ -1162,10 +1164,18 @@ public static class NetworkTool
     /// <summary>
     /// Check Internet Access Based On NIC Send And Receive
     /// </summary>
-    public static bool IsInternetAlive()
+    public static async Task<bool> IsInternetAliveByNicAsync(IPAddress? ip = null, int timeoutMS = 2000)
     {
         try
         {
+            ip ??= CultureInfo.InstalledUICulture switch
+            {
+                { Name: string n } when n.ToLower().StartsWith("fa") => IPAddress.Parse("8.8.8.8"), // Iran
+                { Name: string n } when n.ToLower().StartsWith("ru") => IPAddress.Parse("77.88.8.7"), // Russia
+                { Name: string n } when n.ToLower().StartsWith("zh") => IPAddress.Parse("223.6.6.6"), // China
+                _ => IPAddress.Parse("1.1.1.1") // Others
+            };
+
             // Only recognizes changes related to Internet adapters
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
             for (int n = 0; n < nics.Length; n++)
@@ -1177,7 +1187,21 @@ public static class NetworkTool
                     if (nic.OperationalStatus == OperationalStatus.Up)
                     {
                         IPInterfaceStatistics statistics = nic.GetIPStatistics();
-                        if (statistics.BytesReceived > 0 && statistics.BytesSent > 0) return true;
+                        long bytesSent1 = statistics.BytesSent;
+                        long bytesReceived1 = statistics.BytesReceived;
+
+                        try
+                        {
+                            using Ping ping = new();
+                            await ping.SendPingAsync(ip, timeoutMS);
+                        }
+                        catch (Exception) { }
+
+                        statistics = nic.GetIPStatistics();
+                        long bytesSent2 = statistics.BytesSent;
+                        long bytesReceived2 = statistics.BytesReceived;
+
+                        if (bytesSent2 > bytesSent1 && bytesReceived2 > bytesReceived1) return true;
                     }
                 }
             }
@@ -1207,41 +1231,6 @@ public static class NetworkTool
 
             Ping ping = new();
             PingReply reply = await ping.SendPingAsync(ip, timeoutMS);
-            ping.Dispose();
-            return reply.Status == IPStatus.Success;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Check Internet Access Based On Pinging A DNS IP
-    /// </summary>
-    public static async Task<bool> IsInternetAliveAsync(string? ipStr = null, int timeoutMS = 1000)
-    {
-        try
-        {
-            ipStr ??= CultureInfo.InstalledUICulture switch
-            {
-                { Name: string n } when n.ToLower().StartsWith("fa") => "8.8.8.8", // Iran
-                { Name: string n } when n.ToLower().StartsWith("zh") => "77.88.8.7", // Russia
-                { Name: string n } when n.ToLower().StartsWith("zh") => "223.6.6.6", // China
-                _ => "1.1.1.1" // Others
-            };
-
-            Ping ping = new();
-            PingReply? reply;
-            bool isIp = IsIp(ipStr, out IPAddress? ip);
-
-            if (isIp && ip != null)
-                reply = await ping.SendPingAsync(ip, timeoutMS);
-            else
-                reply = await ping.SendPingAsync(ipStr, timeoutMS);
-
-            if (reply == null) return false;
-
             ping.Dispose();
             return reply.Status == IPStatus.Success;
         }
@@ -1657,15 +1646,40 @@ public static class NetworkTool
         try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
     }
 
-    public static async Task<bool> CanTcpConnect(string host, int port, int timeoutMS)
+    public static async Task<bool> CanTcpConnect(IPAddress ip, int port, int timeoutMS)
     {
-        var task = Task.Run(() =>
+        var task = Task.Run(async () =>
         {
             try
             {
-                using TcpClient client = new(host, port);
+                IPEndPoint ep = new(ip, port);
+                using TcpClient client = new();
                 client.SendTimeout = timeoutMS;
                 client.ReceiveTimeout = timeoutMS;
+                client.Client.NoDelay = true;
+                await client.Client.ConnectAsync(ep).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        });
+
+        try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
+    }
+
+    public static async Task<bool> CanTcpConnect(string host, int port, int timeoutMS)
+    {
+        var task = Task.Run(async () =>
+        {
+            try
+            {
+                using TcpClient client = new();
+                client.SendTimeout = timeoutMS;
+                client.ReceiveTimeout = timeoutMS;
+                client.Client.NoDelay = true;
+                await client.Client.ConnectAsync(host, port).ConfigureAwait(false);
                 return true;
             }
             catch (Exception)
@@ -1677,13 +1691,34 @@ public static class NetworkTool
         try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
     }
 
-    public static async Task<bool> CanUdpConnect(string host, int port, int timeoutMS)
+    public static async Task<bool> CanUdpConnect(IPAddress ip, int port, int timeoutMS)
     {
-        var task = Task.Run(() =>
+        var task = Task.Run(async () =>
         {
             try
             {
-                using UdpClient client = new(host, port);
+                IPEndPoint ep = new(ip, port);
+                using UdpClient client = new();
+                await client.Client.ConnectAsync(ep).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        });
+
+        try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
+    }
+
+    public static async Task<bool> CanUdpConnect(string host, int port, int timeoutMS)
+    {
+        var task = Task.Run(async () =>
+        {
+            try
+            {
+                using UdpClient client = new();
+                await client.Client.ConnectAsync(host, port).ConfigureAwait(false);
                 return true;
             }
             catch (Exception)

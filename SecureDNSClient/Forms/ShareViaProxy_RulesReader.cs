@@ -109,7 +109,7 @@ public partial class FormMain
 
                                 string bootstrapIP = GetBootstrapSetting(out int bootstrapPort).ToString();
                                 string uncensoredDns = IsDNSConnected ? $"udp://{IPAddress.Loopback}" : $"tcp://{bootstrapIP}:{bootstrapPort}";
-                                bool isSmart = await checkDns.CheckAsSmartDns(uncensoredDns, prr.DnsCustomDomain, dns);
+                                bool isSmart = await checkDns.CheckAsSmartDnsAsync(uncensoredDns, prr.DnsCustomDomain, dns);
 
                                 this.InvokeIt(() => log.AppendText($"Act As Smart DNS: "));
                                 this.InvokeIt(() => log.AppendText($"{isSmart}{NL}", Color.DodgerBlue));

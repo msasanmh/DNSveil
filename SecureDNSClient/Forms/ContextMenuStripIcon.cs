@@ -2,6 +2,7 @@
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass.Themes;
 using SecureDNSClient.DPIBasic;
+using System.Diagnostics;
 
 namespace SecureDNSClient;
 
@@ -169,10 +170,10 @@ public partial class FormMain
         await StartProxy();
     }
 
-    private void ProxySet_Click(object? sender, EventArgs e)
+    private async void ProxySet_Click(object? sender, EventArgs e)
     {
         if (IsExiting) return;
-        SetProxy();
+        await SetProxyAsync();
     }
 
     private async void QcToUserSetting_Click(object? sender, EventArgs e)
@@ -290,16 +291,17 @@ public partial class FormMain
             if (IsGoodbyeDPIBasicActive || IsGoodbyeDPIAdvancedActive)
             {
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating GoodbyeDPI...{NL}", Color.LightGray));
-                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
-                ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
-
+                
                 // Wait
                 Task wait = Task.Run(async () =>
                 {
                     while (true)
                     {
-                        if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic) &&
-                            !ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced)) break;
+                        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBasic);
+                        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIAdvanced);
+                        IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
+                        IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
+                        if (!IsGoodbyeDPIBasicActive && !IsGoodbyeDPIAdvancedActive) break;
                         await Task.Delay(100);
                     }
                 });
@@ -311,14 +313,15 @@ public partial class FormMain
             {
                 IsDisconnecting = true;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating GoodbyeDPI Bypass...{NL}", Color.LightGray));
-                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
-
+                
                 // Wait
                 Task wait = Task.Run(async () =>
                 {
                     while (true)
                     {
-                        if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass)) break;
+                        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
+                        IsBypassGoodbyeDpiActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass);
+                        if (!IsBypassGoodbyeDpiActive) break;
                         await Task.Delay(100);
                     }
                 });
@@ -331,13 +334,16 @@ public partial class FormMain
             if (IsProxySet)
             {
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Unsetting Proxy...{NL}", Color.LightGray));
-                NetworkTool.UnsetProxy(false, true);
-
+                
                 // Wait
                 Task wait = Task.Run(async () =>
                 {
                     while (true)
                     {
+                        NetworkTool.UnsetProxy(false, true);
+                        IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
+                        IsAnotherProxySet = isAnotherProxySet;
+                        CurrentSystemProxy = currentSystemProxy;
                         if (!IsProxySet) break;
                         await Task.Delay(100);
                     }
@@ -350,14 +356,15 @@ public partial class FormMain
             {
                 IsProxyDeactivating = true;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Deactivating Proxy...{NL}", Color.LightGray));
-                ProcessManager.KillProcessByPID(PIDProxyServer);
-
+                
                 // Wait
                 Task wait = Task.Run(async () =>
                 {
                     while (true)
                     {
-                        if (!ProcessManager.FindProcessByPID(PIDProxyServer)) break;
+                        await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
+                        IsProxyActivated = ProcessManager.FindProcessByPID(PIDProxyServer);
+                        if (!IsProxyActivated) break;
                         await Task.Delay(100);
                     }
                 });
@@ -371,13 +378,14 @@ public partial class FormMain
             {
                 IsDisconnecting = true;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Disconnecting...{NL}", Color.LightGray));
-                await Task.Run(async () => await KillAll());
-
+                
                 // Wait
                 Task wait = Task.Run(async () =>
                 {
                     while (true)
                     {
+                        await Task.Run(async () => await KillAllAsync());
+                        IsConnected = ProcessManager.FindProcessByPID(PIDDnsServer);
                         if (!IsConnected && !IsConnecting) break;
                         await Task.Delay(100);
                     }
@@ -398,13 +406,23 @@ public partial class FormMain
             }
         }
 
+        Stopwatch sw = Stopwatch.StartNew();
         while (true)
         {
             await Task.WhenAll(dc(), dcDns());
             await UpdateBools();
             await UpdateBoolProxy();
-            if (IsEverythingDisconnected()) break;
+            bool isEverythingDisconnected = IsEverythingDisconnected(out string debug);
+            if (isEverythingDisconnected) break;
+
+            if (!sw.IsRunning) sw.Start();
+            if (sw.ElapsedMilliseconds > 10000)
+            {
+                await LogToDebugFileAsync(debug);
+                break;
+            }
         }
+        if (sw.IsRunning) sw.Stop();
 
         // Flush DNS On Exit
         if (DoesDNSSetOnce)

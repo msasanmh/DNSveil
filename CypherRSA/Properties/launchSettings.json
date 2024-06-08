@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CypherTool": {
+      "commandName": "Project",
+      "commandLineArgs": "generate"
+    }
+  }
+}

@@ -14,6 +14,10 @@ internal static partial class Program
     {
         try
         {
+            // e.g. (If Contains Space Must Be In Double Quotation ")
+            // -Domain=google.com -DNSs=dns1,dns2 -TimeoutMS=5000 -DoubleCheck=True
+            // -Domain=google.com -DNSs="dns 1, dns 2" -TimeoutMS=5000 -DoubleCheck=True
+
             // Title
             string title = $"SDC Lookup v{Assembly.GetExecutingAssembly().GetName().Version}";
             if (OperatingSystem.IsWindows()) Console.Title = title;
@@ -25,7 +29,7 @@ internal static partial class Program
             DnsEnums.RRType rrType = DnsEnums.RRType.A;
             DnsEnums.CLASS qClass = DnsEnums.CLASS.IN;
             List<string> dnss = new();
-            int timeoutMS = 5000;
+            int timeoutMS = 10000;
             bool insecure = false;
             IPAddress bootstrapIP = IPAddress.None;
             int bootstrapPort = 0;
@@ -51,7 +55,7 @@ internal static partial class Program
                     if (kv.IsSuccess) qClass = DnsEnums.ParseClass(kv.ValueString);
 
                     kv = GetValue(arg, Key.DNSs, typeof(string));
-                    if (kv.IsSuccess) dnss = kv.ValueString.Split(',').ToList();
+                    if (kv.IsSuccess) dnss = kv.ValueString.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList();
 
                     kv = GetValue(arg, Key.TimeoutMS, typeof(int));
                     if (kv.IsSuccess) timeoutMS = kv.ValueInt;
@@ -85,7 +89,7 @@ internal static partial class Program
             }
 
             string result = string.Empty;
-
+            Debug.WriteLine(dnss.ToString(Environment.NewLine));
             if (!string.IsNullOrEmpty(domain) && dnss.Count > 0)
             {
                 bool hasLocalIp = false;

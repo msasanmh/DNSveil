@@ -8,12 +8,19 @@ using SecureDNSClient.DPIBasic;
 using System.Diagnostics;
 using System.Net;
 using System.Reflection;
+using System.Text;
 using Task = System.Threading.Tasks.Task;
 
 namespace SecureDNSClient;
 
 public partial class FormMain
 {
+    private async Task LogToDebugFileAsync(string message)
+    {
+        message = $"[{DateTime.Now:yyyy/MM/dd HH:mm:ss}] {message}";
+        await FileDirectory.AppendTextLineAsync(SecureDNS.ErrorLogPath, message, new UTF8Encoding(false));
+    }
+
     private async Task LoadTheme()
     {
         if (!IsThemeApplied || !IsScreenHighDpiScaleApplied)
@@ -52,19 +59,52 @@ public partial class FormMain
         }
     }
 
-    public bool IsEverythingDisconnected()
+    public bool IsEverythingDisconnected(out string stat)
     {
-        return !IsCheckingStarted && !IsQuickConnecting &&
-               !IsConnected && !IsConnecting &&
-               !ProcessManager.FindProcessByPID(PIDDnsServer) &&
-               !ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass) &&
-               !ProcessManager.FindProcessByPID(PIDProxyServer) &&
-               !ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic) &&
-               !ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced) &&
-               !IsDNSSet && !IsDNSSetting &&
-               !IsProxyActivated && !IsProxyActivating && !IsProxyRunning &&
-               !IsProxySet &&
-               !IsGoodbyeDPIBasicActive && !IsGoodbyeDPIAdvancedActive;
+        bool isCheckingStarted = IsCheckingStarted;
+        bool isQuickConnecting = IsQuickConnecting;
+        bool isConnected = IsConnected;
+        bool isConnecting = IsConnecting;
+        bool isDnsServerActive = ProcessManager.FindProcessByPID(PIDDnsServer);
+        bool isGoodbyeDpiBypassActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass);
+        bool isProxyServerActive = ProcessManager.FindProcessByPID(PIDProxyServer);
+        bool isGoodbyeDpiBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
+        bool isGoodbyeDpiAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
+        bool isDNSSet = IsDNSSet;
+        bool isDNSSetting = IsDNSSetting;
+        bool isProxyActivated = IsProxyActivated;
+        bool isProxyActivating = IsProxyActivating;
+        bool isProxyRunning = IsProxyRunning;
+        bool isProxySet = IsProxySet;
+        
+        string debug = $"{NL}IsEverythingDisconnected:{NL}";
+        debug += $"{nameof(isCheckingStarted)}: {isCheckingStarted}{NL}";
+        debug += $"{nameof(isQuickConnecting)}: {isQuickConnecting}{NL}";
+        debug += $"{nameof(isConnected)}: {isConnected}{NL}";
+        debug += $"{nameof(isConnecting)}: {isConnecting}{NL}";
+        debug += $"{nameof(isDnsServerActive)}: {isDnsServerActive}{NL}";
+        debug += $"{nameof(isGoodbyeDpiBypassActive)}: {isGoodbyeDpiBypassActive}{NL}";
+        debug += $"{nameof(isProxyServerActive)}: {isProxyServerActive}{NL}";
+        debug += $"{nameof(isGoodbyeDpiBasicActive)}: {isGoodbyeDpiBasicActive}{NL}";
+        debug += $"{nameof(isGoodbyeDpiAdvancedActive)}: {isGoodbyeDpiAdvancedActive}{NL}";
+        debug += $"{nameof(isDNSSet)}: {isDNSSet}{NL}";
+        debug += $"{nameof(isDNSSetting)}: {isDNSSetting}{NL}";
+        debug += $"{nameof(isProxyActivated)}: {isProxyActivated}{NL}";
+        debug += $"{nameof(isProxyActivating)}: {isProxyActivating}{NL}";
+        debug += $"{nameof(isProxyRunning)}: {isProxyRunning}{NL}";
+        debug += $"{nameof(isProxySet)}: {isProxySet}{NL}";
+        stat = debug;
+
+        return !isCheckingStarted && !isQuickConnecting &&
+               !isConnected && !isConnecting &&
+               !isDnsServerActive &&
+               !isGoodbyeDpiBypassActive &&
+               !isProxyServerActive &&
+               !isGoodbyeDpiBasicActive &&
+               !isGoodbyeDpiAdvancedActive &&
+               !isDNSSet && !isDNSSetting &&
+               !isProxyActivated && !isProxyActivating && !isProxyRunning &&
+               !isProxySet;
     }
 
     public async void GetAppReady()
@@ -210,6 +250,7 @@ public partial class FormMain
             td.Triggers.Add(new LogonTrigger()); // Trigger at Logon
             td.Actions.Add(appPath, appArgs);
             td.Principal.RunLevel = TaskRunLevel.Highest;
+            td.Settings.Compatibility = TaskCompatibility.V2_1; // Win 7 Above
             td.Settings.Enabled = active;
             td.Settings.AllowDemandStart = true;
             td.Settings.DisallowStartIfOnBatteries = false;
@@ -386,20 +427,19 @@ public partial class FormMain
 
         try
         {
-            bool bootstrapCondition = AppUpTime.Elapsed < TimeSpan.FromSeconds(30) && !IsConnected && !IsDNSConnected;
+            bool pingCondition = AppUpTime.Elapsed < TimeSpan.FromSeconds(30) && !IsConnected && !IsDNSConnected;
+            IPAddress bootstrapIP = GetBootstrapSetting(out _);
 
-            if (bootstrapCondition)
+            if (pingCondition)
             {
-                IPAddress bootstrapIP = GetBootstrapSetting(out _);
                 isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
             }
             else
             {
-                isAlive = NetworkTool.IsInternetAlive();
+                isAlive = await NetworkTool.IsInternetAliveByNicAsync(bootstrapIP, timeoutMS);
                 if (!isAlive)
                 {
-                    // Read Bootstrap If Internet Is Not Based On Adapter
-                    IPAddress bootstrapIP = GetBootstrapSetting(out _);
+                    // Read Ping If Internet Is Not Based On Adapter
                     isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
                 }
             }
@@ -412,6 +452,7 @@ public partial class FormMain
             {
                 string msgNet = $"There Is No Internet Connectivity.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNet, Color.IndianRed));
+                await LogToDebugFileAsync(NL + msgNet + NL);
             }
             return false;
         }
@@ -509,28 +550,28 @@ public partial class FormMain
                ProcessManager.FindProcessByName("goodbyedpi");
     }
 
-    private static async Task KillAll(bool killByName = false)
+    private static async Task KillAllAsync(bool killByName = false)
     {
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
             try
             {
                 if (killByName)
                 {
-                    ProcessManager.KillProcessByName("SDCLookup");
-                    ProcessManager.KillProcessByName("SDCAgnosticServer");
-                    ProcessManager.KillProcessByName("dnslookup");
-                    ProcessManager.KillProcessByName("goodbyedpi");
+                    await ProcessManager.KillProcessByNameAsync("SDCLookup");
+                    await ProcessManager.KillProcessByNameAsync("SDCAgnosticServer");
+                    await ProcessManager.KillProcessByNameAsync("dnslookup");
+                    await ProcessManager.KillProcessByNameAsync("goodbyedpi");
                 }
                 else
                 {
-                    ProcessManager.KillProcessByName("SDCLookup");
-                    ProcessManager.KillProcessByName("dnslookup");
-                    ProcessManager.KillProcessByPID(PIDDnsServer);
-                    ProcessManager.KillProcessByPID(PIDProxyServer);
-                    ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
-                    ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
-                    ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+                    await ProcessManager.KillProcessByNameAsync("SDCLookup");
+                    await ProcessManager.KillProcessByNameAsync("dnslookup");
+                    await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
+                    await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
+                    await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBasic);
+                    await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIAdvanced);
+                    await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
                 }
             }
             catch (Exception ex)
@@ -560,8 +601,8 @@ public partial class FormMain
     {
         dns = dns.Trim();
         StringComparison sc = StringComparison.OrdinalIgnoreCase;
-        if (dns.StartsWith("tcp://", sc) || dns.StartsWith("udp://", sc) || dns.StartsWith("http://", sc) || dns.StartsWith("https://", sc) ||
-            dns.StartsWith("tls://", sc) || dns.StartsWith("quic://", sc) || dns.StartsWith("h3://", sc) || dns.StartsWith("sdns://", sc))
+        if (dns.StartsWith("udp://", sc) || dns.StartsWith("tcp://", sc) || dns.StartsWith("http://", sc) || dns.StartsWith("https://", sc) ||
+            dns.StartsWith("h3://", sc) || dns.StartsWith("tls://", sc) || dns.StartsWith("quic://", sc) || dns.StartsWith("sdns://", sc))
             return true;
         else
             return isPlainDnsWithUnusualPort(dns);
@@ -570,15 +611,8 @@ public partial class FormMain
         {
             if (dns.Contains(':'))
             {
-                string[] split = dns.Split(':');
-                string ip = split[0];
-                string port = split[1];
-                if (NetworkTool.IsIPv4Valid(ip, out IPAddress? _))
-                {
-                    bool isPortValid = int.TryParse(port, out int outPort);
-                    if (isPortValid && outPort >= 1 && outPort <= 65535)
-                        return true;
-                }
+                NetworkTool.GetUrlDetails(dns, 53, out _, out string ipStr, out _, out _, out int port, out _, out _);
+                if (NetworkTool.IsIp(ipStr, out _)) return port >= 1 && port <= 65535;
             }
             return false;
         }
@@ -944,7 +978,7 @@ public partial class FormMain
         }
     }
 
-    public void OldProxyRulesToNew()
+    public async void OldProxyRulesToNew()
     {
         try
         {
@@ -952,22 +986,22 @@ public partial class FormMain
             if (!File.Exists(SecureDNS.ProxyRulesPath)) start = true;
             else
             {
-                string content = File.ReadAllText(SecureDNS.ProxyRulesPath);
+                string content = await File.ReadAllTextAsync(SecureDNS.ProxyRulesPath);
                 if (content.Length < 5) start = true;
             }
             if (!start) return;
 
             List<string> blackListList = new();
-            blackListList.LoadFromFile(SecureDNS.BlackWhiteListPath, true, true);
+            await blackListList.LoadFromFileAsync(SecureDNS.BlackWhiteListPath, true, true);
 
             List<string> fakeDnsList = new();
-            fakeDnsList.LoadFromFile(SecureDNS.FakeDnsRulesPath, true, true);
+            await fakeDnsList.LoadFromFileAsync(SecureDNS.FakeDnsRulesPath, true, true);
 
             List<string> fakeSniList = new();
-            fakeSniList.LoadFromFile(SecureDNS.FakeSniRulesPath, true, true);
+            await fakeSniList.LoadFromFileAsync(SecureDNS.FakeSniRulesPath, true, true);
 
             List<string> dontBypassList = new();
-            dontBypassList.LoadFromFile(SecureDNS.DontBypassListPath, true, true);
+            await dontBypassList.LoadFromFileAsync(SecureDNS.DontBypassListPath, true, true);
 
             // Create ProxyRules
             List<string> proxyRules = new();
@@ -1134,7 +1168,7 @@ public partial class FormMain
             if (proxyRules.Any())
             {
                 // Save ProxyRules To File
-                proxyRules.SaveToFile(SecureDNS.ProxyRulesPath);
+                await proxyRules.SaveToFileAsync(SecureDNS.ProxyRulesPath);
 
                 // Enable ProxyRules CheckBox
                 this.InvokeIt(() => CustomCheckBoxSettingProxyEnableRules.Checked = true);

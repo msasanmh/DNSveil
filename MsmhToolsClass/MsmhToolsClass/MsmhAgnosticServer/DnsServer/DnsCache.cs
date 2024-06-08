@@ -43,7 +43,7 @@ public class DnsCache
         {
             bool canCache = CanCache(dmR);
             //Debug.WriteLine("CAN CACHE: " + canCache);
-            if (canCache) return Caches.TryAdd(dmQ.Questions.ToString(), dmR);
+            if (canCache) return Caches.TryAdd(dmQ.Questions.ToString(), AddTTL(dmR));
             else return false;
         }
         catch (Exception)
@@ -76,6 +76,43 @@ public class DnsCache
         catch (Exception) { }
     }
 
+    private static DnsMessage AddTTL(DnsMessage dmR)
+    {
+        try
+        {
+            // Only For DNS Messages With TTL < 3 (It's A Fix For Smart DNS Servers Which Sends RR Records With TTL 0)
+            uint ttl = 60;
+            modifyTTL(dmR.Answers.AnswerRecords);
+            modifyTTL(dmR.Authorities.AuthorityRecords);
+            modifyTTL(dmR.Additionals.AdditionalRecords);
+            return dmR;
+
+            void modifyTTL(List<IResourceRecord> rrs)
+            {
+                try
+                {
+                    foreach (ResourceRecord rr in rrs.Cast<ResourceRecord>())
+                    {
+                        if (rr.TimeToLive < 3)
+                        {
+                            rr.TimeToLive = ttl;
+                            rr.TTLDateTime = DateTime.UtcNow;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("DnsMessage AddTTL modifyTTL: " + ex.Message);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsMessage AddTTL: " + ex.Message);
+            return dmR;
+        }
+    }
+
     private static DnsMessage CreateFromCache(DnsMessage dmQ, DnsMessage dmR)
     {
         try
@@ -89,49 +126,56 @@ public class DnsCache
 
             void modifyTTL(List<IResourceRecord> rrs)
             {
-                uint newTTL = 0;
-                foreach (ResourceRecord rr in rrs.Cast<ResourceRecord>())
+                try
                 {
-                    try
+                    uint newTTL = 0;
+                    foreach (ResourceRecord rr in rrs.Cast<ResourceRecord>())
                     {
-                        //Debug.WriteLine("-=-==-= " + rr.TTLDateTime);
-                        //Debug.WriteLine("-=-==-= " + rr.TimeToLive);
-
-                        if (newTTL != 0)
+                        try
                         {
+                            //Debug.WriteLine("-=-==-= " + rr.TTLDateTime);
+                            //Debug.WriteLine("-=-==-= " + rr.TimeToLive);
+
+                            if (newTTL != 0)
+                            {
+                                rr.TTLDateTime = DateTime.UtcNow;
+                                rr.TimeToLive = newTTL;
+                            }
+
+                            if (newTTL == 0 && rr.TimeToLive > 0)
+                            {
+                                double ttlDifferDouble = (DateTime.UtcNow - rr.TTLDateTime).TotalSeconds;
+                                //Debug.WriteLine("----------- " + ttlDifferDouble);
+                                uint ttlDiffer = ttlDifferDouble > 0 ? Convert.ToUInt32(ttlDifferDouble) : 0;
+                                if (rr.TimeToLive > ttlDiffer)
+                                {
+                                    rr.TimeToLive -= ttlDiffer;
+                                    rr.TTLDateTime = DateTime.UtcNow;
+                                    //newTTL = rr.TimeToLive; // Sometimes TTLs Are Different
+                                }
+                                else
+                                {
+                                    rr.TimeToLive = 0;
+                                    rr.TTLDateTime = DateTime.UtcNow;
+                                }
+                            }
+
+                            if (rr.TimeToLive <= 0) dmR.IsSuccess = false;
+
+                            //Debug.WriteLine("-=-==-= " + rr.TTLDateTime);
+                            //Debug.WriteLine("-=-==-= " + rr.TimeToLive);
+                        }
+                        catch (Exception)
+                        {
+                            rr.TimeToLive = 0;
                             rr.TTLDateTime = DateTime.UtcNow;
-                            rr.TimeToLive = newTTL;
+                            dmR.IsSuccess = false;
                         }
-
-                        if (newTTL == 0 && rr.TimeToLive > 0)
-                        {
-                            double ttlDifferDouble = (DateTime.UtcNow - rr.TTLDateTime).TotalSeconds;
-                            //Debug.WriteLine("----------- " + ttlDifferDouble);
-                            uint ttlDiffer = ttlDifferDouble > 0 ? Convert.ToUInt32(ttlDifferDouble) : 0;
-                            if (rr.TimeToLive > ttlDiffer)
-                            {
-                                rr.TimeToLive -= ttlDiffer;
-                                rr.TTLDateTime = DateTime.UtcNow;
-                                //newTTL = rr.TimeToLive; // Sometimes TTLs Are Different
-                            }
-                            else
-                            {
-                                rr.TimeToLive = 0;
-                                rr.TTLDateTime = DateTime.UtcNow;
-                            }
-                        }
-
-                        if (rr.TimeToLive <= 0) dmR.IsSuccess = false;
-
-                        //Debug.WriteLine("-=-==-= " + rr.TTLDateTime);
-                        //Debug.WriteLine("-=-==-= " + rr.TimeToLive);
                     }
-                    catch (Exception)
-                    {
-                        rr.TimeToLive = 0;
-                        rr.TTLDateTime = DateTime.UtcNow;
-                        dmR.IsSuccess = false;
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("DnsMessage CreateFromCache modifyTTL: " + ex.Message);
                 }
             }
         }

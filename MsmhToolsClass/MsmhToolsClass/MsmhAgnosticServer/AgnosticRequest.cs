@@ -34,6 +34,7 @@ public class AgnosticResult
     public byte[] FirstBuffer { get; internal set; } = Array.Empty<byte>();
     public RequestProtocol Protocol { get; internal set; } = RequestProtocol.Unknown;
     public string SNI { get; internal set; } = string.Empty; // If RequestProtocol Is SniProxy
+    public string DoHPath { get; internal set; } = string.Empty; // If RequestProtocol Is DoH
 }
 
 public class AgnosticRequest
@@ -124,8 +125,20 @@ public class AgnosticRequest
                         HttpRequestResult hrResult = HttpRequest.Read(firstBuffer);
                         if (hrResult.IsSuccess)
                         {
-                            if (hrResult.ContentType.Equals(MsmhAgnosticServer.DnsMessageContentType))
+                            if (hrResult.ContentType.Equals(MsmhAgnosticServer.DnsMessageContentType)) // DoH Request
                             {
+                                string dohPath = hrResult.RawURL;
+                                try
+                                {
+                                    int start = dohPath.IndexOf('/');
+                                    if (start != -1 && dohPath.Length > start) dohPath = dohPath[(start + 1)..];
+                                    int middle = dohPath.IndexOf('/');
+                                    if (middle != -1 && middle > start) dohPath = dohPath[..middle];
+                                    int end = dohPath.IndexOf("?dns=");
+                                    if (end != -1 && end > start) dohPath = dohPath[..end];
+                                }
+                                catch (Exception) { }
+
                                 if (hrResult.Method == HttpMethod.Get && hrResult.RawURL.Contains("dns=", StringComparison.InvariantCultureIgnoreCase))
                                 {
                                     // DoH Get Method
@@ -140,6 +153,7 @@ public class AgnosticRequest
                                             ar.Ssl_Stream = Ssl_Stream;
                                             ar.FirstBuffer = base64QueryBuffer;
                                             ar.Protocol = RequestProtocol.DoH;
+                                            ar.DoHPath = dohPath;
                                         }
                                     }
                                 }
@@ -150,9 +164,10 @@ public class AgnosticRequest
                                     ar.Ssl_Stream = Ssl_Stream;
                                     ar.FirstBuffer = hrResult.PayLoad;
                                     ar.Protocol = RequestProtocol.DoH;
+                                    ar.DoHPath = dohPath;
                                 }
                             }
-                            else
+                            else // Proxy HTTP/S Request
                             {
                                 ar.Socket = Tcp_Client.Client;
                                 ar.FirstBuffer = firstBuffer;

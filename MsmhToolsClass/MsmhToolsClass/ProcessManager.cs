@@ -406,21 +406,7 @@ public static class ProcessManager
         return result;
     }
     //-----------------------------------------------------------------------------------
-    public static void KillProcessByName(string processName, bool killEntireProcessTree = false)
-    {
-        try
-        {
-            Process[] processes = Process.GetProcessesByName(processName);
-            for (int n = 0; n < processes.Length; n++)
-                processes[n].Kill(killEntireProcessTree);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-        }
-    }
-    //-----------------------------------------------------------------------------------
-    public static void KillProcessByPID(int pid, bool killEntireProcessTree = false)
+    public static async Task KillProcessByPidAsync(int pid, bool killEntireProcessTree = false)
     {
         try
         {
@@ -428,7 +414,34 @@ public static class ProcessManager
             {
                 using Process process = Process.GetProcessById(pid);
                 process.Kill(killEntireProcessTree);
+
+                if (FindProcessByPID(pid) && OperatingSystem.IsWindows())
+                {
+                    string taskKillArgs = $"/F /PID {pid}";
+                    if (killEntireProcessTree) taskKillArgs += " /T";
+                    await ExecuteAsync("taskkill", null, taskKillArgs, true, true);
+
+                    if (FindProcessByPID(pid))
+                    {
+                        string wmicArgs = $"process where processid=\"{pid}\" delete";
+                        await ExecuteAsync("wmic", null, wmicArgs, true, true);
+                    }
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+    //-----------------------------------------------------------------------------------
+    public static async Task KillProcessByNameAsync(string processName, bool killEntireProcessTree = false)
+    {
+        try
+        {
+            Process[] processes = Process.GetProcessesByName(processName);
+            for (int n = 0; n < processes.Length; n++)
+                await KillProcessByPidAsync(processes[n].Id, killEntireProcessTree);
         }
         catch (Exception ex)
         {
@@ -442,6 +455,7 @@ public static class ProcessManager
     public static int GetFirstPidByName(string processName)
     {
         int pid = -1;
+
         Process[] processes = Process.GetProcessesByName(processName);
         if (processes.Any()) pid = processes[0].Id;
 
@@ -473,7 +487,7 @@ public static class ProcessManager
                 for (int n = 0; n < lines.Count; n++)
                 {
                     string line = lines[n].Trim();
-                    if (!string.IsNullOrEmpty(line) && line.Contains($":{port} ") && !line.Contains("FIN_WAIT_2"))
+                    if (!string.IsNullOrEmpty(line) && line.Contains($":{port} ") && !line.Contains("ESTABLISHED") && !line.Contains("FIN_WAIT_2"))
                     {
                         string[] splitLine = line.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                         

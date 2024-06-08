@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <_LastSelectedProfileId>D:\PPWin\SecureDNSClient\SecureDNSClient\Properties\PublishProfiles\X86.pubxml</_LastSelectedProfileId>
+    <_LastSelectedProfileId>D:\PPWin\SecureDNSClient\SecureDNSClient\Properties\PublishProfiles\X64.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="Forms\Buttons.cs">
@@ -31,10 +31,19 @@
     <Compile Update="Forms\ContextMenuStripIcon.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\CustomServers.cs">
+    <Compile Update="Forms\Debug.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\DnsServersBuiltIn.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\DnsServersCustom.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\DefaultSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Forms\DnsServersSubscription.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\EnumsAndStructs.cs">

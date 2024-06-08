@@ -86,6 +86,10 @@ public class SecureDNS
     public static readonly string UserIdPath = GetFullPath(UserDataDirPath, "uid.txt");
     public static readonly string DnsRulesPath = GetFullPath(UserDataDirPath, "DnsRules.txt");
     public static readonly string ProxyRulesPath = GetFullPath(UserDataDirPath, "ProxyRules.txt");
+    public static readonly string BuiltInServersSecureUpdateUrl = "https://github.com/msasanmh/SecureDNSClient/raw/main/Subs/sdc-secure.txt";
+    public static readonly string BuiltInServersSecurePath = GetFullPath(UserDataDirPath, "BuiltInServers_Secure.txt");
+    public static readonly string BuiltInServersInsecureUpdateUrl = "https://github.com/msasanmh/SecureDNSClient/raw/main/Subs/sdc-insecure.txt";
+    public static readonly string BuiltInServersInsecurePath = GetFullPath(UserDataDirPath, "BuiltInServers_Insecure.txt");
     public static readonly string CustomServersPath = GetFullPath(UserDataDirPath, "CustomServers.txt");
     public static readonly string CustomServersXmlPath = GetFullPath(UserDataDirPath, "CustomServers.xml");
     public static readonly string WorkingServersPath = GetFullPath(UserDataDirPath, "CustomServers_Working.txt");
@@ -145,6 +149,10 @@ public class SecureDNS
     public static readonly string FirewallRule_SdcWinDivert32Out = "SDC WinDivert32 OUT";
     public static readonly string FirewallRule_SdcWinDivert64In = "SDC WinDivert64 IN";
     public static readonly string FirewallRule_SdcWinDivert64Out = "SDC WinDivert64 OUT";
+
+    // SDC Admin
+    public static readonly string SDCPublicKey = Path.GetFullPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "SDCPublicKey.bin"));
+    public static readonly string SDCPrivateKey = Path.GetFullPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "SDCPrivateKey.bin"));
 
     private static string GetFileNameWithoutExtension(string path)
     {
@@ -380,160 +388,6 @@ public class SecureDNS
         }
 
         return "99.99.99";
-    }
-
-    public static async Task<string> HostToCompanyOffline(string host)
-    {
-        string company = "Couldn't retrieve information.";
-
-        try
-        {
-            if (!string.IsNullOrWhiteSpace(host))
-            {
-                string? fileContent = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.HostToCompany.txt", Assembly.GetExecutingAssembly()); // Load From Embedded Resource
-                if (!string.IsNullOrWhiteSpace(fileContent))
-                {
-                    List<string> split = fileContent.SplitToLines();
-                    for (int n = 0; n < split.Count; n++)
-                    {
-                        string hostToCom = split[n];
-                        if (hostToCom.Contains(host))
-                        {
-                            string com = hostToCom.Split('|')[1];
-                            if (!string.IsNullOrWhiteSpace(com))
-                            {
-                                company = com;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("SecureDNS HostToCompanyOffline: " + ex.Message);
-        }
-
-        return company;
-    }
-
-    public static async Task<string> UrlToCompanyOffline(string url)
-    {
-        NetworkTool.GetUrlDetails(url, 53, out _, out string host, out _, out _, out int _, out string _, out bool _);
-        return await HostToCompanyOffline(host);
-    }
-
-    public static async Task<string> StampToCompanyOffline(string stampUrl)
-    {
-        string company = "Couldn't retrieve information.";
-
-        try
-        {
-            DNSCryptStampReader stamp = new(stampUrl);
-            if (stamp != null)
-            {
-                if (!string.IsNullOrEmpty(stamp.Host))
-                    company = await HostToCompanyOffline(stamp.Host);
-                else if (!stamp.IP.Equals(IPAddress.None))
-                    company = await HostToCompanyOffline(stamp.IP.ToString());
-                else if (!string.IsNullOrEmpty(stamp.ProviderName))
-                    company = await HostToCompanyOffline(stamp.ProviderName);
-                else
-                    company = await HostToCompanyOffline(stampUrl);
-            }
-            else
-                company = await HostToCompanyOffline(stampUrl);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("SecureDNS StampToCompanyOffline: " + ex.Message);
-        }
-
-        return company;
-    }
-
-    public static async Task<string> UrlToCompanyAsync(string url, string? proxyScheme = null)
-    {
-        string company = "Couldn't Retrieve Information.";
-        NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out _, out int _, out string _, out bool _);
-        if (!string.IsNullOrWhiteSpace(host))
-        {
-            IPAddress ip = GetIP.GetIpFromSystem(host);
-            string? companyFull;
-            if (!ip.Equals(IPAddress.None))
-            {
-                if (proxyScheme == null)
-                    companyFull = await NetworkTool.IpToCompanyAsync(ip.ToString());
-                else
-                    companyFull = await NetworkTool.IpToCompanyAsync(ip.ToString(), proxyScheme);
-                if (!string.IsNullOrWhiteSpace(companyFull))
-                {
-                    company = string.Empty;
-                    string[] split = companyFull.Split(" ");
-                    for (int n = 0; n < split.Length; n++)
-                    {
-                        string s = split[n];
-                        if (n != 0)
-                            company += s + " ";
-                    }
-                    company = company.Trim();
-                }
-            }
-        }
-
-        return company;
-    }
-
-    // HostToCompany file Generator
-    private static List<object> HostToCompanyList = new();
-    public static async Task HostToCompanyAsync(string hostsFilePath)
-    {
-        HostToCompanyList.Clear();
-        string outPath = Path.Combine(CurrentPath, "HostToCompany.txt");
-
-        if (File.Exists(outPath))
-        {
-            string content = File.ReadAllText(outPath);
-            if (content.Length > 0)
-            {
-                List<string> split = content.SplitToLines();
-                for (int n = 0; n < split.Count; n++)
-                {
-                    object hostToCom = split[n];
-                    HostToCompanyList.Add(hostToCom);
-                }
-            }
-        }
-
-        //string? fileContent = Resource.GetResourceTextFile("SecureDNSClient.DoH-Servers.txt"); // Load from Embedded Resource
-        string? fileContent = File.ReadAllText(hostsFilePath);
-
-        if (!string.IsNullOrWhiteSpace(fileContent))
-        {
-            List<string> dnsList = fileContent.SplitToLines().RemoveDuplicates();
-            int dnsCount = dnsList.Count;
-            for (int n = 0; n < dnsCount; n++)
-            {
-                string dns = dnsList[n];
-                string company = await UrlToCompanyAsync(dns);
-                if (!company.Contains("Couldn't retrieve information."))
-                {
-                    NetworkTool.GetUrlDetails(dns, 443, out _, out string host, out _, out _, out int _, out string _, out bool _);
-                    object hostToCom = host + "|" + company;
-                    HostToCompanyList.Add(hostToCom);
-                    Debug.WriteLine(hostToCom);
-                }
-            }
-            // Remove Duplicates
-            HostToCompanyList = HostToCompanyList.RemoveDuplicates();
-            // Sort List
-            HostToCompanyList.Sort();
-            await Task.Delay(500);
-            // Save IpToCompany to file
-            HostToCompanyList.SaveToFile(outPath);
-            Debug.WriteLine("File Saved.");
-        }
     }
 
 }

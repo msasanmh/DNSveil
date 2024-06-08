@@ -1,90 +1,91 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsClass.MsmhAgnosticServer;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    private async Task WriteSavedServersDelayToLog()
+    private async Task WriteSavedServersDelayToLogAsync()
     {
-        List<string> savedDnsList = SavedDnsList.ToList();
-        if (savedDnsList.Any() && !IsCheckingStarted && !IsConnecting && !IsDisconnecting)
+        try
         {
-            if (!IsInternetOnline) return;
-
-            if (savedDnsList.Count > 1)
+            List<string> savedDnsList = SavedDnsList.ToList();
+            if (savedDnsList.Any() && !IsCheckingStarted && !IsConnecting && !IsDisconnecting)
             {
-                // Get blocked domain
-                string blockedDomain = GetBlockedDomainSetting(out string blockedDomainNoWww);
-                if (string.IsNullOrEmpty(blockedDomain)) return;
+                if (!IsInternetOnline) return;
 
-                // Get Check timeout value
-                decimal timeoutSec = 1;
-                this.InvokeIt(() => timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value);
-                int timeoutMS = decimal.ToInt32(timeoutSec * 1000);
-                if (timeoutMS < 500) timeoutMS = 1000;
-
-                // Add start msg
-                string msgStart = $"{NL}Contains {savedDnsList.Count} servers:{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStart, Color.LightGray));
-
-                // Get insecure state
-                bool insecure = CustomCheckBoxInsecure.Checked;
-
-                await Task.Run(async () =>
+                if (savedDnsList.Count > 0)
                 {
-                    var lists = savedDnsList.SplitToLists(3);
-                    int nt = 1;
+                    // Get blocked domain
+                    string blockedDomain = GetBlockedDomainSetting(out string blockedDomainNoWww);
+                    if (string.IsNullOrEmpty(blockedDomain)) return;
 
-                    for (int n = 0; n < lists.Count; n++)
+                    // Get Check timeout value
+                    decimal timeoutSec = 1;
+                    this.InvokeIt(() => timeoutSec = CustomNumericUpDownSettingCheckTimeout.Value);
+                    int timeoutMS = decimal.ToInt32(timeoutSec * 1000);
+                    if (timeoutMS < 500) timeoutMS = 1000;
+
+                    // Add start msg
+                    string plural = savedDnsList.Count > 1 ? "s" : string.Empty;
+                    string msgStart = $"{NL}Contains {savedDnsList.Count} Server{plural}:{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStart, Color.LightGray));
+
+                    // Get insecure state
+                    bool insecure = CustomCheckBoxInsecure.Checked;
+
+                    await Task.Run(async () =>
                     {
-                        if (IsCheckingStarted || IsConnecting || IsDisconnecting) break;
+                        var lists = savedDnsList.SplitToLists(3);
+                        int nt = 1;
 
-                        List<string> list = lists[n];
-                        var parallelLoopResult = Parallel.For(0, list.Count, async i =>
+                        for (int n = 0; n < lists.Count; n++)
                         {
-                            await getDelay(i, nt++);
-                        });
+                            if (IsCheckingStarted || IsConnecting || IsDisconnecting) break;
 
-                        await Task.Run(async () =>
-                        {
-                            while (!parallelLoopResult.IsCompleted)
+                            List<string> list = lists[n];
+                            var parallelLoopResult = Parallel.For(0, list.Count, async i =>
                             {
-                                if (parallelLoopResult.IsCompleted)
-                                    return Task.CompletedTask;
-                                await Task.Delay(500);
-                            }
-                            return Task.CompletedTask;
-                        });
+                                await getDelay(i, nt++);
+                            });
+
+                            await Task.Run(async () =>
+                            {
+                                while (!parallelLoopResult.IsCompleted)
+                                {
+                                    if (parallelLoopResult.IsCompleted) return Task.CompletedTask;
+                                    await Task.Delay(500);
+                                }
+                                return Task.CompletedTask;
+                            });
+                        }
+                    });
+
+                    async Task getDelay(int n, int nt)
+                    {
+                        string dns = savedDnsList[n];
+
+                        // Get Status and Latency
+                        CheckDns checkDns = new(insecure, false);
+                        CheckDns.CheckDnsResult cdr = await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
+
+                        string msg = $"DNS {nt}: {cdr.DnsLatency} ms.{NL}";
+                        Color color = (cdr.DnsLatency == -1) ? Color.IndianRed : Color.MediumSeaGreen;
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, color));
+                        await Task.Delay(10);
                     }
-                });
-
-                async Task getDelay(int n, int nt)
-                {
-                    string dns = savedDnsList[n];
-
-                    // Get Status and Latency
-                    CheckDns checkDns = new(insecure, false);
-                    await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
-
-                    string msg = $"DNS {nt}: {checkDns.DnsLatency} ms.{NL}";
-                    Color color = (checkDns.DnsLatency == -1) ? Color.IndianRed : Color.MediumSeaGreen;
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, color));
-                    await Task.Delay(10);
                 }
             }
             else
             {
-                string msg = $"There is only one saved server.{NL}";
+                string msg = $"There Is No Saved Server.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
             }
         }
-        else
+        catch (Exception ex)
         {
-            string msg = $"There is no saved server.{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+            Debug.WriteLine("SavedDnsServers WriteSavedServersDelayToLogAsync: " + ex.Message);
         }
     }
 
@@ -92,76 +93,60 @@ public partial class FormMain
     {
         await Task.Run(async () =>
         {
-            FileDirectory.CreateEmptyFile(SecureDNS.SavedEncodedDnsPath);
-
-            List<string> savedEncodedDnsList = new();
-            savedEncodedDnsList.LoadFromFile(SecureDNS.SavedEncodedDnsPath, true, true);
-            savedEncodedDnsList = savedEncodedDnsList.Distinct().ToList();
-
-            if (savedEncodedDnsList.Any())
+            try
             {
-                List<ReadDnsResult> rdrList = new();
+                FileDirectory.CreateEmptyFile(SecureDNS.SavedEncodedDnsPath);
 
-                // Get Built-In Servers
-                string xmlContentBuiltIn = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
-                if (XmlTool.IsValidXML(xmlContentBuiltIn))
-                {
-                    List<ReadDnsResult> rdrListBuiltIn = await ReadCustomServersXml(xmlContentBuiltIn, new CheckRequest { CheckMode = CheckMode.BuiltIn }, false);
-                    if (rdrListBuiltIn.Any()) rdrList = rdrList.Concat(rdrListBuiltIn).ToList();
-                }
-                
-                // Get Custom Servers
-                if (XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath))
-                {
-                    List<ReadDnsResult> rdrListCustom = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, new CheckRequest { CheckMode = CheckMode.CustomServers });
-                    if (rdrListCustom.Any()) rdrList = rdrList.Concat(rdrListCustom).ToList();
-                }
+                List<string> savedEncodedDnsList = new();
+                await savedEncodedDnsList.LoadFromFileAsync(SecureDNS.SavedEncodedDnsPath, true, true);
+                savedEncodedDnsList = savedEncodedDnsList.Distinct().ToList();
 
-                if (rdrList.Any())
+                if (savedEncodedDnsList.Any())
                 {
-                    // DeDup Dns List
-                    rdrList = rdrList.DistinctBy(x => x.DNS).ToList();
-
-                    for (int n = 0; n < savedEncodedDnsList.Count; n++)
+                    List<string> dnss = await BuiltInDecryptAsync(savedEncodedDnsList);
+                    for (int n = 0; n < dnss.Count; n++)
                     {
-                        string encodedDns = savedEncodedDnsList[n];
-                        for (int i = 0; i < rdrList.Count; i++)
-                        {
-                            ReadDnsResult rdr = rdrList[i];
-                            if (EncodingTool.GetSHA512(rdr.DNS).Equals(encodedDns))
-                            {
-                                SavedDnsList.Add(rdr.DNS);
-                                WorkingDnsList.Add(new DnsInfo { DNS = rdr.DNS, Latency = 0, CheckMode = CheckMode.SavedServers});
-                                break;
-                            }
-                        }
+                        string dns = dnss[n];
+                        SavedDnsList.Add(dns);
+                        WorkingDnsList.Add(new DnsInfo { DNS = dns, Latency = 0, CheckMode = CheckMode.SavedServers });
                     }
 
                     // Update Status Long
                     await UpdateStatusLong();
 
+                    // DeDup
                     SavedDnsList = SavedDnsList.Distinct().ToList();
                 }
-            }
 
-            SavedDnsUpdateAuto();
+                SavedDnsUpdateAuto();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("SavedDnsServers SavedDnsLoad: " + ex.Message);
+            }
         });
     }
 
     private async void SavedDnsUpdateAuto()
     {
-        await Task.Delay(2000);
-        await SavedDnsUpdate();
-        System.Timers.Timer savedDnsUpdateTimer = new();
-        savedDnsUpdateTimer.Interval = TimeSpan.FromMinutes(60).TotalMilliseconds;
-        savedDnsUpdateTimer.Elapsed += async (s, e) =>
+        try
         {
-            await SavedDnsUpdate();
-        };
-        savedDnsUpdateTimer.Start();
+            await Task.Delay(2000);
+            await SavedDnsUpdateAsync();
+            System.Timers.Timer savedDnsUpdateTimer = new();
+            savedDnsUpdateTimer.Interval = TimeSpan.FromMinutes(60).TotalMilliseconds;
+            savedDnsUpdateTimer.Elapsed += async (s, e) =>
+            {
+                await SavedDnsUpdateAsync();
+            };
+            savedDnsUpdateTimer.Start();
+        }
+        catch (Exception) { }
     }
 
-    private async Task SavedDnsUpdate()
+    private bool UpdateWorkingServers => !(IsCheckedCustomServers && WorkingDnsList.Count > 0);
+
+    private async Task SavedDnsUpdateAsync()
     {
         try
         {
@@ -177,9 +162,6 @@ public partial class FormMain
                 }
             });
             try { await waitNet.WaitAsync(TimeSpan.FromMinutes(1)); } catch (Exception) { }
-
-            // Update Working Servers?
-            bool updateWorkingServers = true;
 
             // Get blocked domain
             string blockedDomain = GetBlockedDomainSetting(out string blockedDomainNoWww);
@@ -200,7 +182,6 @@ public partial class FormMain
             CheckDns checkDns = new(insecure, false);
 
             List<string> newSavedDnsList = new();
-            List<string> newSavedEncodedDnsList = new();
             List<DnsInfo> newWorkingDnsList = new();
 
             // Check saved dns servers can work
@@ -222,13 +203,19 @@ public partial class FormMain
 
                         await Parallel.ForEachAsync(list, async (dns, cancellationToken) =>
                         {
-                            await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS + 500);
-                            if (checkDns.IsDnsOnline)
+                            CheckDns.CheckDnsResult cdr = await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS + 500);
+                            if (cdr.IsDnsOnline)
                             {
-                                newSavedDnsList.Add(dns);
-                                newSavedEncodedDnsList.Add(EncodingTool.GetSHA512(dns));
-                                if (updateWorkingServers)
-                                    newWorkingDnsList.Add(new DnsInfo { DNS = dns, Latency = checkDns.DnsLatency, CheckMode = CheckMode.SavedServers });
+                                lock (newSavedDnsList)
+                                {
+                                    newSavedDnsList.Add(dns);
+                                }
+                                
+                                lock (newWorkingDnsList)
+                                {
+                                    if (UpdateWorkingServers)
+                                        newWorkingDnsList.Add(new DnsInfo { DNS = dns, Latency = cdr.DnsLatency, CheckMode = CheckMode.SavedServers });
+                                }
                             }
                         });
                     }
@@ -241,10 +228,10 @@ public partial class FormMain
                 SavedDnsList = new(newSavedDnsList);
 
                 SavedEncodedDnsList.Clear();
-                SavedEncodedDnsList = new(newSavedEncodedDnsList);
-                SavedEncodedDnsList.SaveToFile(SecureDNS.SavedEncodedDnsPath);
+                SavedEncodedDnsList = new(await BuiltInEncryptAsync(newSavedDnsList));
+                await SavedEncodedDnsList.SaveToFileAsync(SecureDNS.SavedEncodedDnsPath);
 
-                if (updateWorkingServers && !IsCheckingStarted)
+                if (UpdateWorkingServers && !IsCheckingStarted)
                 {
                     // Add
                     WorkingDnsList = new(WorkingDnsList.Concat(newWorkingDnsList));
@@ -265,11 +252,12 @@ public partial class FormMain
             if (builtInMode)
             {
                 // Get Built-In Servers
-                string xmlContentBuiltIn = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
-                if (XmlTool.IsValidXML(xmlContentBuiltIn))
+                CheckRequest checkRequest = new() { CheckMode = CheckMode.BuiltIn };
+                rdrList = await ReadBuiltInServersAsync(checkRequest, false, true);
+                if (insecure)
                 {
-                    List<ReadDnsResult> rdrListBuiltIn = await ReadCustomServersXml(xmlContentBuiltIn, new CheckRequest { CheckMode = CheckMode.BuiltIn }, false);
-                    if (rdrListBuiltIn.Any()) rdrList = rdrListBuiltIn;
+                    List<ReadDnsResult> rdrListInsecure = await ReadBuiltInServersAsync(checkRequest, true, true);
+                    if (rdrListInsecure.Any()) rdrList.AddRange(rdrListInsecure);
                 }
             }
             else
@@ -277,19 +265,19 @@ public partial class FormMain
                 // Get Custom Servers
                 if (XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath))
                 {
-                    List<ReadDnsResult> rdrListCustom = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, new CheckRequest { CheckMode = CheckMode.CustomServers });
-                    if (rdrListCustom.Any()) rdrList = rdrListCustom;
+                    rdrList = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, new CheckRequest { CheckMode = CheckMode.CustomServers });
                 }
 
                 // If There is no Custom Servers Get Built-In
                 if (!rdrList.Any())
                 {
                     // Get Built-In Servers
-                    string xmlContentBuiltIn = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.DNS-Servers.sdcs", Assembly.GetExecutingAssembly());
-                    if (XmlTool.IsValidXML(xmlContentBuiltIn))
+                    CheckRequest checkRequest = new() { CheckMode = CheckMode.BuiltIn };
+                    rdrList = await ReadBuiltInServersAsync(checkRequest, false, true);
+                    if (insecure)
                     {
-                        List<ReadDnsResult> rdrListBuiltIn = await ReadCustomServersXml(xmlContentBuiltIn, new CheckRequest { CheckMode = CheckMode.BuiltIn }, false);
-                        if (rdrListBuiltIn.Any()) rdrList = rdrListBuiltIn;
+                        List<ReadDnsResult> rdrListInsecure = await ReadBuiltInServersAsync(checkRequest, true, true);
+                        if (rdrListInsecure.Any()) rdrList.AddRange(rdrListInsecure);
                     }
                 }
             }
@@ -315,17 +303,16 @@ public partial class FormMain
                         if (!matchRules) continue;
 
                         // Get Status and Latency
-                        await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
+                        CheckDns.CheckDnsResult cdr = await checkDns.CheckDnsAsync(blockedDomainNoWww, dns, timeoutMS);
 
-                        if (checkDns.IsDnsOnline)
+                        if (cdr.IsDnsOnline)
                         {
                             if (!newSavedDnsList.Contains(dns))
                             {
                                 newSavedDnsList.Add(dns);
-                                newSavedEncodedDnsList.Add(EncodingTool.GetSHA512(dns));
 
-                                if (updateWorkingServers)
-                                    newWorkingDnsList.Add(new DnsInfo { DNS = dns, Latency = checkDns.DnsLatency, CheckMode = CheckMode.SavedServers });
+                                if (UpdateWorkingServers)
+                                    newWorkingDnsList.Add(new DnsInfo { DNS = dns, Latency = cdr.DnsLatency, CheckMode = CheckMode.SavedServers });
 
                                 currentServers++;
                                 if (currentServers >= maxServers) break;
@@ -341,10 +328,10 @@ public partial class FormMain
                 SavedDnsList = new(newSavedDnsList);
 
                 SavedEncodedDnsList.Clear();
-                SavedEncodedDnsList = new(newSavedEncodedDnsList);
-                SavedEncodedDnsList.SaveToFile(SecureDNS.SavedEncodedDnsPath);
+                SavedEncodedDnsList = new(await BuiltInEncryptAsync(newSavedDnsList));
+                await SavedEncodedDnsList.SaveToFileAsync(SecureDNS.SavedEncodedDnsPath);
 
-                if (updateWorkingServers && !IsCheckingStarted)
+                if (UpdateWorkingServers && !IsCheckingStarted)
                 {
                     // Add
                     WorkingDnsList = WorkingDnsList.Concat(newWorkingDnsList).ToList();
@@ -361,7 +348,7 @@ public partial class FormMain
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("SavedDnsUpdate: " + ex.Message);
+            Debug.WriteLine("SavedDnsServers SavedDnsUpdate: " + ex.Message);
         }
     }
 

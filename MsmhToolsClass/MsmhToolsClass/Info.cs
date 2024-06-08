@@ -1,5 +1,4 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Globalization;
@@ -27,21 +26,37 @@ public static class Info
 
     public static string GetAppGUID()
     {
-        Assembly assembly = Assembly.GetExecutingAssembly();
-        GuidAttribute attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
-        return attribute.Value;
+        try
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            GuidAttribute attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
+            return attribute.Value;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info GetAppGUID: " + ex.Message);
+            return string.Empty;
+        }
     }
 
     public static string GetUniqueIdString(bool getEncodedId)
     {
-        string idPrincipal = Environment.MachineName + Environment.UserName;
-        string idDateTime = DateTime.UtcNow.ToString("yyyyMMddHHmmssfffffff", CultureInfo.InvariantCulture);
-        string idInt1 = $"{Guid.NewGuid().GetHashCode()}";
-        if (idInt1.StartsWith('-')) idInt1 = idInt1.Replace("-", string.Empty);
-        string idInt2 = $"{BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0)}";
-        if (idInt2.StartsWith('-')) idInt2 = idInt2.Replace("-", string.Empty);
-        string result = idPrincipal + idDateTime + idInt1 + idInt2;
-        return getEncodedId ? EncodingTool.GetSHA512(result).ToLower() : result;
+        try
+        {
+            string idPrincipal = Environment.MachineName + Environment.UserName;
+            string idDateTime = DateTime.UtcNow.ToString("yyyyMMddHHmmssfffffff", CultureInfo.InvariantCulture);
+            string idInt1 = $"{Guid.NewGuid().GetHashCode()}";
+            if (idInt1.StartsWith('-')) idInt1 = idInt1.Replace("-", string.Empty);
+            string idInt2 = $"{BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0)}";
+            if (idInt2.StartsWith('-')) idInt2 = idInt2.Replace("-", string.Empty);
+            string result = idPrincipal + idDateTime + idInt1 + idInt2;
+            return getEncodedId ? EncodingTool.GetSHA512(result).ToLower() : result;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info GetUniqueIdString: " + ex.Message);
+            return "0123456789";
+        }
     }
 
     public static int GetUniqueIdInt()
@@ -64,27 +79,50 @@ public static class Info
     /// </returns>
     public static int VersionCompare(string newVersion, string oldVersion)
     {
-        Version versionNew = new(newVersion);
-        Version versionOld = new(oldVersion);
-        int result = versionNew.CompareTo(versionOld);
-        if (result > 0) return 1; // versionNew is greater
-        else if (result < 0) return -1; // versionOld is greater
-        else return 0; // versions are equal
+        try
+        {
+            Version versionNew = new(newVersion);
+            Version versionOld = new(oldVersion);
+            int result = versionNew.CompareTo(versionOld);
+            if (result > 0) return 1; // versionNew is greater
+            else if (result < 0) return -1; // versionOld is greater
+            else return 0; // versions are equal
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info VersionCompare: " + ex.Message);
+            return 0;
+        }
     }
 
     public static void SetCulture(CultureInfo cultureInfo)
     {
-        Thread.CurrentThread.CurrentCulture = cultureInfo;
-        CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-        CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+        try
+        {
+            Thread.CurrentThread.CurrentCulture = cultureInfo;
+            CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+            CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info SetCulture: " + ex.Message);
+        }
     }
 
     public static bool IsRunningOnWindows
     {
         get
         {
-            OSPlatform platform = GetPlatform();
-            return platform == OSPlatform.Windows;
+            try
+            {
+                OSPlatform platform = GetPlatform();
+                return platform == OSPlatform.Windows;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Info IsRunningOnWindows: " + ex.Message);
+                return false;
+            }
         }
     }
 
@@ -92,8 +130,16 @@ public static class Info
     {
         get
         {
-            OSPlatform platform = GetPlatform();
-            return platform == OSPlatform.Linux;
+            try
+            {
+                OSPlatform platform = GetPlatform();
+                return platform == OSPlatform.Linux;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Info IsRunningOnLinux: " + ex.Message);
+                return false;
+            }
         }
     }
 
@@ -101,18 +147,34 @@ public static class Info
     {
         get
         {
-            OSPlatform platform = GetPlatform();
-            return platform == OSPlatform.OSX;
+            try
+            {
+                OSPlatform platform = GetPlatform();
+                return platform == OSPlatform.OSX;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Info IsRunningOnMac: " + ex.Message);
+                return false;
+            }
         }
     }
 
     private static OSPlatform GetPlatform()
     {
-        // Current versions of Mono report MacOSX platform as Unix
-        return Environment.OSVersion.Platform == PlatformID.MacOSX || (Environment.OSVersion.Platform == PlatformID.Unix && Directory.Exists("/Applications") && Directory.Exists("/System") && Directory.Exists("/Users"))
-             ? OSPlatform.OSX
-             : Environment.OSVersion.Platform == PlatformID.Unix
-             ? OSPlatform.Linux
-             : OSPlatform.Windows;
+        try
+        {
+            // Current Versions Of Mono Report MacOSX Platform As Unix
+            return Environment.OSVersion.Platform == PlatformID.MacOSX || (Environment.OSVersion.Platform == PlatformID.Unix && Directory.Exists("/Applications") && Directory.Exists("/System") && Directory.Exists("/Users"))
+                 ? OSPlatform.OSX
+                 : Environment.OSVersion.Platform == PlatformID.Unix
+                 ? OSPlatform.Linux
+                 : OSPlatform.Windows;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info GetPlatform: " + ex.Message);
+            return OSPlatform.Windows;
+        }
     }
 }

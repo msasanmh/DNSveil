@@ -11,14 +11,7 @@ namespace MsmhToolsClass.MsmhAgnosticServer;
 
 public partial class MsmhAgnosticServer
 {
-    //======================================= Fragment Support: Static
-    public static AgnosticProgram.Fragment StaticFragmentProgram { get; set; } = new();
-    public void EnableStaticFragment(AgnosticProgram.Fragment fragmentProgram)
-    {
-        StaticFragmentProgram = fragmentProgram;
-    }
-
-    //--- Constant
+    //======================================= Fragment Support
     public AgnosticProgram.Fragment FragmentProgram = new();
     public void EnableFragment(AgnosticProgram.Fragment fragmentProgram)
     {
@@ -39,9 +32,17 @@ public partial class MsmhAgnosticServer
         ProxyRulesProgram = proxyRules;
     }
 
+    //======================================= DnsLimit Support
+    public AgnosticProgram.DnsLimit DnsLimitProgram = new();
+    public void EnableDnsLimit(AgnosticProgram.DnsLimit dnsLimit)
+    {
+        DnsLimitProgram = dnsLimit;
+    }
+
     // ====================================== Const
     internal static readonly int MaxDataSize = 65536;
     internal static readonly string DnsMessageContentType = "application/dns-message";
+    internal static readonly string ODnsMessageContentType = "application/oblivious-dns-message";
     internal static readonly int DNS_HEADER_LENGTH = 12;
     internal static readonly SslProtocols SSL_Protocols = SslProtocols.None | SslProtocols.Tls12 | SslProtocols.Tls13;
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "<Pending>")]
@@ -166,7 +167,7 @@ public partial class MsmhAgnosticServer
         if (CpuUsage >= 95f)
         {
             try { Environment.Exit(0); } catch (Exception) { }
-            ProcessManager.KillProcessByPID(Environment.ProcessId);
+            await ProcessManager.KillProcessByPidAsync(Environment.ProcessId);
         }
     }
 
@@ -235,7 +236,7 @@ public partial class MsmhAgnosticServer
     }
 
     public int ListeningPort => Settings_.ListenerPort;
-    public bool IsFragmentActive => FragmentProgram.FragmentMode != AgnosticProgram.Fragment.Mode.Disable || StaticFragmentProgram.FragmentMode != AgnosticProgram.Fragment.Mode.Disable;
+    public bool IsFragmentActive => FragmentProgram.FragmentMode != AgnosticProgram.Fragment.Mode.Disable;
     public bool IsFakeSniActive => SettingsSSL_.EnableSSL && SettingsSSL_.ChangeSni;
     public int ActiveProxyTunnels => TunnelManager_.Count;
     public int MaxRequests => Settings_.MaxRequests;
@@ -267,7 +268,10 @@ public partial class MsmhAgnosticServer
             if (OperatingSystem.IsWindows())
             {
                 List<int> pids = ProcessManager.GetProcessPidsByUsingPort(Settings_.ListenerPort);
-                foreach (int pid in pids) ProcessManager.KillProcessByPID(pid);
+                foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
+                await Task.Delay(5);
+                pids = ProcessManager.GetProcessPidsByUsingPort(Settings_.ListenerPort);
+                foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
             }
 
             // UDP
@@ -477,7 +481,7 @@ public partial class MsmhAgnosticServer
             aResult.Protocol == RequestProtocol.DoH)
         {
             // ===== Process DNS
-            await DnsTunnel.Process(aResult, DnsRulesProgram, DnsCaches, Settings_, OnRequestReceived);
+            await DnsTunnel.Process(aResult, DnsRulesProgram, DnsLimitProgram, DnsCaches, Settings_, OnRequestReceived);
             aRequest.Disconnect();
         }
         else
@@ -560,7 +564,7 @@ public partial class MsmhAgnosticServer
                 if (e.Buffer.Length > 0)
                 {
                     if (t.Req.ApplyFragment)
-                        Send(e.Buffer, t);
+                        await SendAsync(e.Buffer, t);
                     else
                         await t.RemoteClient.SendAsync(e.Buffer).ConfigureAwait(false);
 
@@ -642,35 +646,22 @@ public partial class MsmhAgnosticServer
         }
     }
 
-    private void Send(byte[] data, ProxyTunnel t)
+    private async Task SendAsync(byte[] data, ProxyTunnel t)
     {
         try
         {
             if (t.RemoteClient.Socket_ != null && t.RemoteClient.Socket_.Connected)
             {
-                if (FragmentProgram.FragmentMode == AgnosticProgram.Fragment.Mode.Disable)
+                AgnosticProgram.Fragment bp = FragmentProgram;
+                bp.DestHostname = t.Req.Address;
+                bp.DestPort = t.Req.Port;
+                if (bp.FragmentMode == AgnosticProgram.Fragment.Mode.Program)
                 {
-                    // Static
-                    AgnosticProgram.Fragment bp = StaticFragmentProgram;
-                    bp.DestHostname = t.Req.Address;
-                    bp.DestPort = t.Req.Port;
-                    if (bp.FragmentMode == AgnosticProgram.Fragment.Mode.Program)
-                    {
-                        AgnosticProgram.Fragment.ProgramMode programMode = new(data, t.RemoteClient.Socket_);
-                        programMode.Send(bp);
-                    }
-                    else
-                        t.RemoteClient.Socket_.Send(data);
+                    AgnosticProgram.Fragment.ProgramMode programMode = new(data, t.RemoteClient.Socket_);
+                    await programMode.SendAsync(bp);
                 }
                 else
-                {
-                    // Const
-                    AgnosticProgram.Fragment bp = FragmentProgram;
-                    bp.DestHostname = t.Req.Address;
-                    bp.DestPort = t.Req.Port;
-                    AgnosticProgram.Fragment.ProgramMode programMode = new(data, t.RemoteClient.Socket_);
-                    programMode.Send(bp);
-                }
+                    await t.RemoteClient.Socket_.SendAsync(data, SocketFlags.None).ConfigureAwait(false);
             }
         }
         catch (Exception ex)

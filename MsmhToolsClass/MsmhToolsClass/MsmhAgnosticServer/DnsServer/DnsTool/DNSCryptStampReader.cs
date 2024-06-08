@@ -48,25 +48,26 @@ public class DNSCryptStampReader
         Unknown
     }
 
-    private struct StampProtocolName
+    private readonly struct StampProtocolName
     {
-        public static string PlainDNS = "Plain DNS";
-        public static string DnsCrypt = "DNSCrypt";
-        public static string DoH = "DNS-Over-HTTPS";
-        public static string DoT = "DNS-Over-TLS";
-        public static string DoQ = "DNS-Over-Quic";
-        public static string ObliviousDohTarget = "Oblivious DoH Target";
-        public static string AnonymizedDNSCryptRelay = "Anonymized DNSCrypt Relay";
-        public static string ObliviousDohRelay = "Oblivious DoH Relay";
-        public static string Unknown = "Unknown";
+        public static readonly string PlainDNS = "Plain DNS";
+        public static readonly string DnsCrypt = "DNSCrypt";
+        public static readonly string DoH = "DNS-Over-HTTPS";
+        public static readonly string DoT = "DNS-Over-TLS";
+        public static readonly string DoQ = "DNS-Over-Quic";
+        public static readonly string ObliviousDohTarget = "Oblivious DoH Target";
+        public static readonly string AnonymizedDNSCryptRelay = "Anonymized DNSCrypt Relay";
+        public static readonly string ObliviousDohRelay = "Oblivious DoH Relay";
+        public static readonly string Unknown = "Unknown";
     }
 
     public DNSCryptStampReader(string stamp)
     {
         if (string.IsNullOrEmpty(stamp)) return;
+        stamp = stamp.Trim();
         Stamp = stamp;
 
-        if (stamp.StartsWith("sdns://"))
+        if (stamp.StartsWith("sdns://", StringComparison.OrdinalIgnoreCase))
         {
             try
             {

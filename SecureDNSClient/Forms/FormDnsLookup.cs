@@ -153,13 +153,13 @@ public partial class FormDnsLookup : Form
     private async void CustomButtonLookup_Click(object sender, EventArgs e)
     {
         // Kill previous task
-        if (PID != -1) ProcessManager.KillProcessByPID(PID);
+        if (PID != -1) await ProcessManager.KillProcessByPidAsync(PID);
 
         CustomTextBoxResult.Text = string.Empty;
 
         if (!File.Exists(SecureDNS.DnsLookup))
         {
-            CustomTextBoxResult.Text = "Binary is missing.";
+            CustomTextBoxResult.Text = "Binary Is Missing.";
             return;
         }
 
@@ -169,13 +169,13 @@ public partial class FormDnsLookup : Form
 
         if (!FormMain.IsDnsProtocolSupported(dns))
         {
-            CustomTextBoxResult.Text = "DNS is not supported.";
+            CustomTextBoxResult.Text = "DNS Is Not Supported.";
             return;
         }
 
         if (CustomRadioButtonSourceSDC.Checked && !FormMain.IsDNSConnected)
         {
-            CustomTextBoxResult.Text = "SDC is not Online.";
+            CustomTextBoxResult.Text = "SDC Is Not Online.";
             return;
         }
 
@@ -183,7 +183,7 @@ public partial class FormDnsLookup : Form
 
         if (string.IsNullOrEmpty(domain) || string.IsNullOrWhiteSpace(domain))
         {
-            CustomTextBoxResult.Text = "Domain field is empty.";
+            CustomTextBoxResult.Text = "Domain Field Is Empty.";
             return;
         }
 
@@ -294,10 +294,7 @@ public partial class FormDnsLookup : Form
             process.Kill();
             PID = -1;
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
     }
 
     private async void FormDnsLookup_FormClosing(object sender, FormClosingEventArgs e)

@@ -597,10 +597,10 @@ public partial class FormMain
             CustomCheckBoxSettingProtocolDoH.Location = new Point(15, 25);
 
             spaceV = 20;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Left = CustomCheckBoxSettingProtocolDoH.Left;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Top = CustomCheckBoxSettingProtocolDoH.Bottom + spaceV;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.Left = CustomCheckBoxSettingProtocolDoH.Left;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.Top = CustomCheckBoxSettingProtocolDoH.Bottom + spaceV;
 
-            CustomCheckBoxSettingProtocolTLS.Left = CustomCheckBoxSettingProtocolDNSCryptRelay.Right + spaceHH;
+            CustomCheckBoxSettingProtocolTLS.Left = CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.Right + spaceHH;
             CustomCheckBoxSettingProtocolTLS.Top = CustomCheckBoxSettingProtocolDoH.Top;
 
             CustomCheckBoxSettingProtocolDoQ.Left = CustomCheckBoxSettingProtocolTLS.Left;
@@ -687,14 +687,17 @@ public partial class FormMain
             catch (Exception) { }
 
             //// Settings Connect
-            spaceV = 50;
+            spaceV = 40;
             CustomLabelSettingMaxServers.Location = new Point(spaceHH, 50);
 
             CustomNumericUpDownSettingMaxServers.Left = CustomLabelSettingMaxServers.Right + spaceH2;
             CustomNumericUpDownSettingMaxServers.Top = CustomLabelSettingMaxServers.Top - 2;
 
-            CustomCheckBoxDnsEventShowRequest.Left = CustomLabelSettingMaxServers.Left;
-            CustomCheckBoxDnsEventShowRequest.Top = CustomLabelSettingMaxServers.Bottom + spaceV;
+            CustomCheckBoxSettingConnectRetry.Left = CustomLabelSettingMaxServers.Left;
+            CustomCheckBoxSettingConnectRetry.Top = CustomLabelSettingMaxServers.Bottom + spaceV;
+
+            CustomCheckBoxDnsEventShowRequest.Left = CustomCheckBoxSettingConnectRetry.Left;
+            CustomCheckBoxDnsEventShowRequest.Top = CustomCheckBoxSettingConnectRetry.Bottom + spaceV;
 
             CustomCheckBoxSettingDnsEnableRules.Left = CustomCheckBoxDnsEventShowRequest.Left;
             CustomCheckBoxSettingDnsEnableRules.Top = CustomCheckBoxDnsEventShowRequest.Bottom + spaceV;

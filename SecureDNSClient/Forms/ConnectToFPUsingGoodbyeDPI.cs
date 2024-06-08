@@ -55,7 +55,7 @@ public partial class FormMain
         }
 
         // Kill GoodbyeDPI If It's Already Running
-        ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
 
         // Create Blacklist File For GoodbyeDPI
         File.WriteAllText(SecureDNS.DPIBlacklistFPPath, dohHost);
@@ -69,7 +69,7 @@ public partial class FormMain
         PIDGoodbyeDPIBypass = ProcessManager.ExecuteOnly(SecureDNS.GoodbyeDpi, null, args, true, true, SecureDNS.BinaryDirPath, GetCPUPriority());
 
         // Wait For GoodbyeDPIBypass
-        Task wait2 = Task.Run(async () =>
+        Task wait0 = Task.Run(async () =>
         {
             while (true)
             {
@@ -78,7 +78,7 @@ public partial class FormMain
                 await Task.Delay(50);
             }
         });
-        try { await wait2.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+        try { await wait0.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
 
         if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
         {
@@ -93,7 +93,7 @@ public partial class FormMain
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(gDpiMsg, Color.Orange));
 
         // Kill DnsServer If It's Already Running
-        ProcessManager.KillProcessByPID(PIDDnsServer);
+        await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
         bool isCmdSent = false;
         PIDDnsServer = DnsConsole.Execute(SecureDNS.AgnosticServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
         await Task.Delay(50);
@@ -114,7 +114,7 @@ public partial class FormMain
         {
             string msg = $"Couldn't Start DNS Server. Try Again.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            ProcessManager.KillProcessByPID(PIDDnsServer);
+            await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
             return false;
         }
 
@@ -181,12 +181,32 @@ public partial class FormMain
         isCmdSent = await DnsConsole.SendCommandAsync("Start");
         if (!isCmdSent) return false;
 
-        if (IsConnected)
+        // Wait For Confirm Msg
+        bool confirmed = false;
+        Task wait2 = Task.Run(async () =>
+        {
+            while (true)
+            {
+                if (IsDisconnecting) break;
+                if (!ProcessManager.FindProcessByPID(PIDDnsServer)) break;
+                if (DnsConsole.GetStdoutBag.Contains("Confirmed"))
+                {
+                    confirmed = true;
+                    break;
+                }
+                await Task.Delay(25);
+            }
+        });
+        try { await wait2.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
+
+        GetBlockedDomainSetting(out string blockedDomainNoWww);
+        if (IsConnected && confirmed)
         {
             string msgSuccess = $"DNS Server Executed.{NL}Bypassing...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgSuccess, Color.MediumSeaGreen));
 
             // Wait Until DNS Gets Online
+            int timeoutMS = 1000;
             Stopwatch sw = Stopwatch.StartNew();
             Task wait3 = Task.Run(async () =>
             {
@@ -197,8 +217,14 @@ public partial class FormMain
                     if (!ProcessManager.FindProcessByPID(PIDDnsServer)) break;
                     if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass)) break;
                     if (!IsInternetOnline) break;
-                    await UpdateBoolDnsOnce(1000, GetBlockedDomainSetting(out string _));
+
+                    List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
+                    foreach (int pid in pids) if (pid != PIDDnsServer) await ProcessManager.KillProcessByPidAsync(pid);
+
+                    await UpdateBoolDnsOnce(timeoutMS, blockedDomainNoWww);
                     await Task.Delay(25);
+                    timeoutMS += 500;
+                    if (timeoutMS > 10000) timeoutMS = 10000;
                 }
             });
             try { await wait3.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
@@ -208,19 +234,22 @@ public partial class FormMain
             {
                 msgSuccess = $"Successfully Bypassed In {Math.Round(sw.Elapsed.TotalSeconds, 2)} Sec.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgSuccess, Color.MediumSeaGreen));
+                await LogToDebugFileAsync(msgSuccess);
 
                 return true;
             }
         }
 
         string msgFailed = "Error: Couldn't Start DNS Server!";
-        if (ProcessManager.FindProcessByPID(PIDDnsServer) && !IsDNSConnected)
-            msgFailed = "DNS Can't Get Online. Bypass Failed.";
+        if (!confirmed) msgFailed = "Couldn't Get Confirm Message From Console.";
+        else if (ProcessManager.FindProcessByPID(PIDDnsServer) && !IsDNSConnected)
+            msgFailed = $"DNS Can't Get Online (Check Domain: {blockedDomainNoWww}). Bypass Failed.";
         if (IsDisconnecting) msgFailed = "Task Canceled.";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailed + NL, Color.IndianRed));
+        await LogToDebugFileAsync(msgFailed);
 
-        ProcessManager.KillProcessByPID(PIDDnsServer);
-        ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+        await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
+        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
         return false;
     }
 }

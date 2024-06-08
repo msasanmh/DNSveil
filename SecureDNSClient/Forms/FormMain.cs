@@ -26,6 +26,12 @@ public partial class FormMain : Form
         // Start App Up Time Timer
         AppUpTime.Start();
 
+        // Write Debug Info About DNS Server To Log
+        DnsConsole.StandardDataReceived += DnsConsole_StandardDataReceived;
+
+        // Write Debug Info About Proxy Server To Log
+        ProxyConsole.StandardDataReceived += ProxyConsole_StandardDataReceived;
+
         // Write DNS Or DoH Requests To Log
         DnsConsole.ErrorDataReceived += DnsConsole_ErrorDataReceived;
         StopWatchWriteDnsOutputDelay.Start();
@@ -50,6 +56,9 @@ public partial class FormMain : Form
 
     private async void Start()
     {
+        // App Beta Stat
+        bool isBeta = false;
+
         // Startup MSG
         string msgStartup = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss} Initializing...{NL}";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStartup, Color.Gray));
@@ -98,6 +107,7 @@ public partial class FormMain : Form
 
         Text = $"{productName} {archText} v{productVersion}";
         if (Program.IsPortable) Text += " Portable";
+        if (isBeta) Text += " Beta";
         CustomButtonSetDNS.Enabled = false;
         CustomButtonSetProxy.Enabled = false;
         CustomTabControlSettings.HideTabHeader = true;
@@ -113,10 +123,13 @@ public partial class FormMain : Form
 
         // Initialize and Load Settings
         if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidXMLFile(SecureDNS.SettingsXmlPath))
+        {
+            await DefaultSettingsAsync();
             AppSettings = new(this, SecureDNS.SettingsXmlPath);
+        }
         else
         {
-            DefaultSettings();
+            await DefaultSettingsAsync();
             AppSettings = new(this);
         }
 
@@ -176,7 +189,7 @@ public partial class FormMain : Form
         {
             string msg = $"Killing Leftovers...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
-            await KillAll(true);
+            await KillAllAsync(true);
         }
 
         if (IsDNSSet)
@@ -275,6 +288,7 @@ public partial class FormMain : Form
             if (Program.IsStartup)
             {
                 Hide();
+                Opacity = 0;
                 return;
             }
             else
@@ -290,8 +304,9 @@ public partial class FormMain : Form
             if (AppUpTime.ElapsedMilliseconds > 20000)
                 await LoadTheme();
 
-            // Delete Log File on > 500KB
+            // Delete Log Files On > 500KB
             DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
+            DeleteFileOnSize(SecureDNS.ErrorLogPath, 500);
         }
     }
 
@@ -436,7 +451,18 @@ public partial class FormMain : Form
 
     private void CustomCheckBoxPDpiEnableFragment_CheckedChanged(object sender, EventArgs e)
     {
+        if (sender is not CustomCheckBox cb) return;
         UpdateApplyDpiBypassChangesButton();
+
+        // Open Fragment Options
+        if (cb.Checked)
+        {
+            try
+            {
+                this.InvokeIt(() => CustomTabControlShareDpiBypassOptions.SelectedIndex = 0);
+            }
+            catch (Exception) { }
+        }
     }
 
     private void CustomNumericUpDownPDpiFragment_ValueChanged(object sender, EventArgs e)
@@ -469,6 +495,16 @@ public partial class FormMain : Form
         this.InvokeIt(() => cb.Text = "Enable SSL Decryption");
         this.InvokeIt(() => cb.Enabled = true);
         UpdateApplyDpiBypassChangesButton();
+
+        // Open SSL Decryption Options
+        if (cb.Checked)
+        {
+            try
+            {
+                this.InvokeIt(() => CustomTabControlShareDpiBypassOptions.SelectedIndex = 1);
+            }
+            catch (Exception) { }
+        }
     }
 
     private void CustomCheckBoxProxySSLChangeSni_CheckedChanged(object sender, EventArgs e)

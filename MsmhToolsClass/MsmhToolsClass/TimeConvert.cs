@@ -287,7 +287,17 @@ public class TimeConvert
         return PrefixSign(s);
     }
 
-    private string PrefixSign(string time) => TotalMilliseconds >= 0 ? time : $"-{time.RemoveChar('-')}";
+    private string PrefixSign(string time)
+    {
+        try
+        {
+            return TotalMilliseconds >= 0 ? time : $"-{time.Remove(time.IndexOf('-'), 1)}";
+        }
+        catch (Exception)
+        {
+            return time;
+        }
+    }
 
     public string ToDisplayString()
     {

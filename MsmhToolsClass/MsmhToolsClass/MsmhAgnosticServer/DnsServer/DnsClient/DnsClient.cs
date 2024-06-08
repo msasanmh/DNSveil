@@ -20,6 +20,7 @@ public class DnsClient
             if (fromProtocol == DnsEnums.DnsProtocol.UDP && toProtocol == DnsEnums.DnsProtocol.DoT)
                 return AddTcpMessageLength(buffer);
             // UDP => DNSCrypt = Same
+            // UDP => AnonymizedDNSCrypt = Same
 
             // TCP => UDP
             else if (fromProtocol == DnsEnums.DnsProtocol.TCP && toProtocol == DnsEnums.DnsProtocol.UDP)
@@ -32,16 +33,9 @@ public class DnsClient
             // TCP => DNSCrypt
             else if (fromProtocol == DnsEnums.DnsProtocol.TCP && toProtocol == DnsEnums.DnsProtocol.DnsCrypt)
                 return RemoveTcpMessageLength(buffer);
-
-            // DoH => UDP = Same
-            // DoH => TCP
-            else if (fromProtocol == DnsEnums.DnsProtocol.DoH && toProtocol == DnsEnums.DnsProtocol.TCP)
-                return AddTcpMessageLength(buffer);
-            // DoH => DoH = Same
-            // DoH => DoT
-            else if (fromProtocol == DnsEnums.DnsProtocol.DoH && toProtocol == DnsEnums.DnsProtocol.DoT)
-                return AddTcpMessageLength(buffer);
-            // DoH => DNSCrypt = Same
+            // TCP => AnonymizedDNSCrypt
+            else if (fromProtocol == DnsEnums.DnsProtocol.TCP && toProtocol == DnsEnums.DnsProtocol.AnonymizedDNSCrypt)
+                return RemoveTcpMessageLength(buffer);
 
             // DoT => UDP
             else if (fromProtocol == DnsEnums.DnsProtocol.DoT && toProtocol == DnsEnums.DnsProtocol.UDP)
@@ -54,6 +48,20 @@ public class DnsClient
             // DoT => DNSCrypt
             else if (fromProtocol == DnsEnums.DnsProtocol.DoT && toProtocol == DnsEnums.DnsProtocol.DnsCrypt)
                 return RemoveTcpMessageLength(buffer);
+            // DoT => AnonymizedDNSCrypt
+            else if (fromProtocol == DnsEnums.DnsProtocol.DoT && toProtocol == DnsEnums.DnsProtocol.AnonymizedDNSCrypt)
+                return RemoveTcpMessageLength(buffer);
+
+            // DoH => UDP = Same
+            // DoH => TCP
+            else if (fromProtocol == DnsEnums.DnsProtocol.DoH && toProtocol == DnsEnums.DnsProtocol.TCP)
+                return AddTcpMessageLength(buffer);
+            // DoH => DoH = Same
+            // DoH => DoT
+            else if (fromProtocol == DnsEnums.DnsProtocol.DoH && toProtocol == DnsEnums.DnsProtocol.DoT)
+                return AddTcpMessageLength(buffer);
+            // DoH => DNSCrypt = Same
+            // DoH => AnonymizedDNSCrypt = Same
 
             // DNSCrypt => UDP = Same
             // DNSCrypt => TCP
@@ -64,6 +72,18 @@ public class DnsClient
             else if (fromProtocol == DnsEnums.DnsProtocol.DnsCrypt && toProtocol == DnsEnums.DnsProtocol.DoT)
                 return AddTcpMessageLength(buffer);
             // DNSCrypt => DNSCrypt = Same
+            // DNSCrypt => AnonymizedDNSCrypt = Same
+
+            // AnonymizedDNSCrypt => UDP = Same
+            // AnonymizedDNSCrypt => TCP
+            else if (fromProtocol == DnsEnums.DnsProtocol.AnonymizedDNSCrypt && toProtocol == DnsEnums.DnsProtocol.TCP)
+                return AddTcpMessageLength(buffer);
+            // AnonymizedDNSCrypt => DoH = Same
+            // AnonymizedDNSCrypt => DoT
+            else if (fromProtocol == DnsEnums.DnsProtocol.AnonymizedDNSCrypt && toProtocol == DnsEnums.DnsProtocol.DoT)
+                return AddTcpMessageLength(buffer);
+            // AnonymizedDNSCrypt => DNSCrypt = Same
+            // AnonymizedDNSCrypt => AnonymizedDNSCrypt = Same
             else return buffer;
 
             static byte[] AddTcpMessageLength(byte[] buffer)
@@ -95,13 +115,13 @@ public class DnsClient
             if (dnsServer.ToLower().Equals("system"))
             {
                 // Convert Buffer ListenerProtocol To System Protocol
-                queryBuffer = ConvertQueryBufferProtocol(queryBuffer, bufferProtocol, SystemDns.Protocol);
+                queryBuffer = ConvertQueryBufferProtocol(queryBuffer, bufferProtocol, SystemDnsClient.Protocol);
 
-                SystemDns systemDns = new(queryBuffer, timeoutMS, ct);
+                SystemDnsClient systemDns = new(queryBuffer, timeoutMS, ct);
                 result = await systemDns.GetResponseAsync();
 
                 // Convert System Protocol To Buffer ListenerProtocol
-                return ConvertQueryBufferProtocol(result, SystemDns.Protocol, bufferProtocol);
+                return ConvertQueryBufferProtocol(result, SystemDnsClient.Protocol, bufferProtocol);
             }
 
             // From Servers
@@ -114,28 +134,33 @@ public class DnsClient
             
             if (dnsReader.Protocol == DnsEnums.DnsProtocol.UDP)
             {
-                UdpPlainDns udpPlainDns = new(queryBuffer, dnsReader, timeoutMS, ct);
-                result = await udpPlainDns.GetResponseAsync().ConfigureAwait(false);
+                UdpPlainClient udpPlainClient = new(queryBuffer, dnsReader, timeoutMS, ct);
+                result = await udpPlainClient.GetResponseAsync().ConfigureAwait(false);
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.TCP)
             {
-                TcpPlainDns tcpPlainDns = new(queryBuffer, dnsReader, timeoutMS, ct, proxyScheme, proxyUser, proxyPass);
-                result = await tcpPlainDns.GetResponseAsync().ConfigureAwait(false);
-            }
-            else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoH)
-            {
-                DoHDns doHDns = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, ct, proxyScheme, proxyUser, proxyPass);
-                result = await doHDns.GetResponseAsync().ConfigureAwait(false);
+                TcpPlainClient tcpPlainClient = new(queryBuffer, dnsReader, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
+                result = await tcpPlainClient.GetResponseAsync().ConfigureAwait(false);
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoT)
             {
-                DoTDns doTDns = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, ct, proxyScheme, proxyUser, proxyPass);
-                result = await doTDns.GetResponseAsync().ConfigureAwait(false);
+                DoTClient doTClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
+                result = await doTClient.GetResponseAsync().ConfigureAwait(false);
             }
-            else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DnsCrypt)
+            else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoH)
             {
-                DNSCryptDns dnsCryptDns = new(queryBuffer, dnsReader, timeoutMS, ct, proxyScheme, proxyUser, proxyPass);
-                result = await dnsCryptDns.GetResponseAsync().ConfigureAwait(false);
+                DoHClient doHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
+                result = await doHClient.GetResponseAsync().ConfigureAwait(false);
+            }
+            else if (dnsReader.Protocol == DnsEnums.DnsProtocol.ObliviousDohTarget) // Not Implemented Yet
+            {
+                ODoHClient oDoHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
+                result = await oDoHClient.GetResponseAsync().ConfigureAwait(false);
+            }
+            else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DnsCrypt || dnsReader.Protocol == DnsEnums.DnsProtocol.AnonymizedDNSCrypt)
+            {
+                DNSCryptClient dnsCryptClient = new(queryBuffer, dnsReader, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
+                result = await dnsCryptClient.GetResponseAsync().ConfigureAwait(false);
             }
 
             //sw.Stop();

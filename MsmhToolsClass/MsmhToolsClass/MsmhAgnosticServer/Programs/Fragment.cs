@@ -54,7 +54,7 @@ public partial class AgnosticProgram
                 Socket = socket;
             }
 
-            public void Send(Fragment bp)
+            public async Task SendAsync(Fragment bp)
             {
                 try
                 {
@@ -70,49 +70,61 @@ public partial class AgnosticProgram
                     if (sniChunks <= 0) sniChunks = 1;
                     if (sniChunks > Data.Length) sniChunks = Data.Length;
 
-                    //Test(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
+                    //await TestAsync(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
 
                     if (bp.DPIChunkMode == ChunkMode.AllExtensions)
-                        SendDataInFragmentAllExtensions(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
+                        await SendDataInFragmentAllExtensionsAsync(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
                     else if (bp.DPIChunkMode == ChunkMode.SniExtension)
-                        SendDataInFragmentSniExtension(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
+                        await SendDataInFragmentSniExtensionAsync(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
                     else if (bp.DPIChunkMode == ChunkMode.SNI)
-                        SendDataInFragmentSNI(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
+                        await SendDataInFragmentSNIAsync(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
                 }
                 catch (Exception) { }
             }
 
-            private static void Test(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, Fragment bp)
+            private static async Task TestAsync(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, Fragment bp)
             {
-                Debug.WriteLine("Send Data in TEST");
+                //Debug.WriteLine("Send Data in TEST");
                 // Create packets
                 List<byte[]> packets = new();
                 packets.Clear();
 
-                SniModifire sniModifire = new(data);
-                if (sniModifire.HasSni)
+                SniReader sniReader = new(data);
+                if (sniReader.HasSniExtension)
                 {
+                    int paddingSize = 2;
+                    if (sniReader.HasSniPaddingExtension) paddingSize = 0;
+
+                    SniModifire sniModifire = new(sniReader, paddingSize);
+                    Debug.WriteLine($"------ {sniReader.HasSniExtension} L1: {sniReader.Data.Length} L2: {sniModifire.ModifiedData.Length}");
+
+                    SniReader sniReader2 = new(sniModifire.ModifiedData);
+                    Debug.WriteLine($"------ S1: {sniReader.HasSniPaddingExtension} S2: {sniReader2.HasSniPaddingExtension} R2: {sniReader2.ReasonPhrase}");
+
                     packets.Add(sniModifire.ModifiedData);
-                    SendPackets(sniModifire.ModifiedData, socket, bp, packets);
+                    await SendPacketsAsync(sniModifire.ModifiedData, socket, bp, packets, string.Empty);
                 }
                 else
                 {
                     packets.Add(data);
-                    SendPackets(data, socket, bp, packets);
+                    await SendPacketsAsync(data, socket, bp, packets, string.Empty);
                 }
-
             }
 
-            private static void SendDataInFragmentAllExtensions(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, Fragment bp)
+            private static async Task SendDataInFragmentAllExtensionsAsync(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, Fragment bp)
             {
-                //Debug.WriteLine("SendDataInFragmentAllExtensions");
+                //Debug.WriteLine("SendDataInFragmentAllExtensionsAsync");
                 // Create packets
                 List<byte[]> packets = new();
-                packets.Clear();
+                string serverName = string.Empty;
 
                 try
                 {
+                    packets.Clear();
                     SniReader sniReader = new(data);
+
+                    // Set Server Name For Event
+                    if (sniReader.HasSni && sniReader.SniList.Count > 0) serverName = sniReader.SniList[0].ServerName;
 
                     if (beforeSniChunks == 1 && sniChunks == 1)
                     {
@@ -120,48 +132,29 @@ public partial class AgnosticProgram
                     }
                     else
                     {
-                        if (sniReader.HasTlsExtensions)
+                        if (sniReader.HasTlsExtensions && sniReader.AllExtensions.Data.Length > 0)
                         {
-                            int prevIndex;
-                            int pos = 0;
-                            SniReader.TlsExtensions allExtensions = sniReader.AllExtensions;
+                            int sniStartIndex = sniReader.AllExtensions.StartIndex;
+                            int sniEndIndex = sniReader.AllExtensions.StartIndex + sniReader.AllExtensions.Length;
 
-                            pos += allExtensions.StartIndex;
-                            prevIndex = pos - allExtensions.StartIndex;
-
-                            // Create packet before SNI
-                            int beforeSniLength = allExtensions.StartIndex - prevIndex;
-                            if (beforeSniLength > 0)
+                            // Create Packet Before SNI
+                            if (sniStartIndex > 0)
                             {
-                                byte[] beforeSNI = new byte[beforeSniLength];
-                                Buffer.BlockCopy(data, prevIndex, beforeSNI, 0, beforeSniLength);
-
+                                byte[] beforeSNI = data[..sniStartIndex];
                                 List<byte[]> chunkedbeforeSNI = ChunkDataNormal(beforeSNI, beforeSniChunks, offset);
-                                packets = packets.Concat(chunkedbeforeSNI).ToList();
-                                //Debug.WriteLine($"{prevIndex} ======> {beforeSniLength}");
+                                packets.AddRange(chunkedbeforeSNI);
                             }
 
-                            // Create SNI packet
-                            List<byte[]> chunkedSNI = ChunkDataNormal(allExtensions.Data, sniChunks, offset);
-                            packets = packets.Concat(chunkedSNI).ToList();
+                            // Create SNI Packet
+                            byte[] sni = data[sniStartIndex..sniEndIndex];
+                            List<byte[]> chunkedSNI = ChunkDataNormal(sni, sniChunks, offset);
+                            packets.AddRange(chunkedSNI);
 
-                            //Debug.WriteLine($"{beforeSniLength} ====== {sni.SniStartIndex}");
-                            //Debug.WriteLine($"{sni.SniStartIndex} ======> {sni.SniStartIndex + sni.SniLength}");
-                            Debug.WriteLine("==-----== " + (sniReader.AllExtensions.StartIndex + sniReader.AllExtensions.Length) + " of " + data.Length);
-                            pos = allExtensions.StartIndex + allExtensions.Length;
-
-                            // Create packet after SNI
-                            if (pos < data.Length)
+                            // Create Packet After SNI
+                            if (data.Length > sniEndIndex)
                             {
-                                int afterSniStartIndex = pos;
-                                int afterSniLength = data.Length - pos;
-                                byte[] afterSni = new byte[afterSniLength];
-                                Buffer.BlockCopy(data, afterSniStartIndex, afterSni, 0, afterSniLength);
+                                byte[] afterSni = data[sniEndIndex..];
                                 packets.Add(afterSni);
-
-                                //Debug.WriteLine($"{sni.SniStartIndex + sni.SniLength} ====== {afterSniStartIndex}");
-                                //Debug.WriteLine($"{afterSniStartIndex} ======> {afterSniStartIndex + afterSniLength}");
-                                //Debug.WriteLine($"{afterSniStartIndex + afterSniLength} ====== {data.Length}");
                             }
                         }
                         else
@@ -172,20 +165,23 @@ public partial class AgnosticProgram
                 }
                 catch (Exception) { }
 
-                SendPackets(data, socket, bp, packets);
+                await SendPacketsAsync(data, socket, bp, packets, serverName);
             }
 
-            private static void SendDataInFragmentSniExtension(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, Fragment bp)
+            private static async Task SendDataInFragmentSniExtensionAsync(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, Fragment bp)
             {
-                //Debug.WriteLine("SendDataInFragmentSniExtension");
+                //Debug.WriteLine("SendDataInFragmentSniExtensionAsync");
                 // Create packets
                 List<byte[]> packets = new();
-                packets.Clear();
+                string serverName = string.Empty;
 
                 try
                 {
+                    packets.Clear();
                     SniReader sniReader = new(data);
-                    if (sniReader.SniExtensionList.Count > 1) Debug.WriteLine($"=======================> We Have {sniReader.SniExtensionList.Count} SNI Extensions.");
+
+                    // Set Server Name For Event
+                    if (sniReader.HasSni && sniReader.SniList.Count > 0) serverName = sniReader.SniList[0].ServerName;
 
                     if (beforeSniChunks == 1 && sniChunks == 1)
                     {
@@ -193,55 +189,32 @@ public partial class AgnosticProgram
                     }
                     else
                     {
-                        if (sniReader.HasSniExtension)
+                        if (sniReader.HasSniExtension && sniReader.SniExtensionList.Count > 0)
                         {
-                            int prevIndex;
-                            int pos = 0;
-                            for (int n = 0; n < sniReader.SniExtensionList.Count; n++)
+                            SniReader.SniExtension sniF = sniReader.SniExtensionList[0];
+                            SniReader.SniExtension sniL = sniReader.SniExtensionList[^1];
+
+                            int sniStartIndex = sniF.StartIndex;
+                            int sniEndIndex = sniL.StartIndex + sniL.Length;
+
+                            // Create Packet Before SNI
+                            if (sniStartIndex > 0)
                             {
-                                SniReader.SniExtension sniExtension = sniReader.SniExtensionList[n];
+                                byte[] beforeSNI = data[..sniStartIndex];
+                                List<byte[]> chunkedbeforeSNI = ChunkDataNormal(beforeSNI, beforeSniChunks, offset);
+                                packets.AddRange(chunkedbeforeSNI);
+                            }
 
-                                pos += sniExtension.StartIndex;
-                                prevIndex = pos - sniExtension.StartIndex;
+                            // Create SNI Packet
+                            byte[] sni = data[sniStartIndex..sniEndIndex];
+                            List<byte[]> chunkedSNI = ChunkDataNormal(sni, sniChunks, offset);
+                            packets.AddRange(chunkedSNI);
 
-                                // Create packet before SNI
-                                int beforeSniLength = sniExtension.StartIndex - prevIndex;
-                                if (beforeSniLength > 0)
-                                {
-                                    byte[] beforeSNI = new byte[beforeSniLength];
-                                    Buffer.BlockCopy(data, prevIndex, beforeSNI, 0, beforeSniLength);
-
-                                    List<byte[]> chunkedbeforeSNI = ChunkDataNormal(beforeSNI, beforeSniChunks, offset);
-                                    packets = packets.Concat(chunkedbeforeSNI).ToList();
-                                    //Debug.WriteLine($"{prevIndex} ======> {beforeSniLength}");
-                                }
-
-                                // Create SNI packet
-                                List<byte[]> chunkedSNI = ChunkDataNormal(sniExtension.Data, sniChunks, offset);
-                                packets = packets.Concat(chunkedSNI).ToList();
-
-                                //Debug.WriteLine($"{beforeSniLength} ====== {sni.SniStartIndex}");
-                                //Debug.WriteLine($"{sni.SniStartIndex} ======> {sni.SniStartIndex + sni.SniLength}");
-
-                                pos = sniExtension.StartIndex + sniExtension.Length;
-
-                                // Last round
-                                if (n == sniReader.SniExtensionList.Count - 1)
-                                {
-                                    // Create packet after SNI
-                                    if (pos < data.Length)
-                                    {
-                                        int afterSniStartIndex = pos;
-                                        int afterSniLength = data.Length - pos;
-                                        byte[] afterSni = new byte[afterSniLength];
-                                        Buffer.BlockCopy(data, afterSniStartIndex, afterSni, 0, afterSniLength);
-                                        packets.Add(afterSni);
-
-                                        //Debug.WriteLine($"{sni.SniStartIndex + sni.SniLength} ====== {afterSniStartIndex}");
-                                        //Debug.WriteLine($"{afterSniStartIndex} ======> {afterSniStartIndex + afterSniLength}");
-                                        //Debug.WriteLine($"{afterSniStartIndex + afterSniLength} ====== {data.Length}");
-                                    }
-                                }
+                            // Create Packet After SNI
+                            if (data.Length > sniEndIndex)
+                            {
+                                byte[] afterSni = data[sniEndIndex..];
+                                packets.Add(afterSni);
                             }
                         }
                         else
@@ -252,20 +225,20 @@ public partial class AgnosticProgram
                 }
                 catch (Exception) { }
 
-                SendPackets(data, socket, bp, packets);
+                await SendPacketsAsync(data, socket, bp, packets, serverName);
             }
 
-            private static void SendDataInFragmentSNI(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, Fragment bp)
+            private static async Task SendDataInFragmentSNIAsync(byte[] data, Socket socket, int beforeSniChunks, int sniChunks, int offset, Fragment bp)
             {
-                //Debug.WriteLine("SendDataInFragmentSNI");
+                //Debug.WriteLine("SendDataInFragmentSNIAsync");
                 // Create packets
                 List<byte[]> packets = new();
-                packets.Clear();
-
+                string serverName = string.Empty;
+                
                 try
                 {
+                    packets.Clear();
                     SniReader sniReader = new(data);
-                    if (sniReader.SniList.Count > 1) Debug.WriteLine($"=======================> We Have {sniReader.SniList.Count} SNIs.");
 
                     if (beforeSniChunks == 1 && sniChunks == 1)
                     {
@@ -273,55 +246,35 @@ public partial class AgnosticProgram
                     }
                     else
                     {
-                        if (sniReader.HasSni)
+                        if (sniReader.HasSni && sniReader.SniList.Count > 0)
                         {
-                            int prevIndex;
-                            int pos = 0;
-                            for (int n = 0; n < sniReader.SniList.Count; n++)
+                            SniReader.SNI sniF = sniReader.SniList[0];
+                            SniReader.SNI sniL = sniReader.SniList[^1];
+
+                            // Set Server Name For Event
+                            serverName = sniF.ServerName;
+
+                            int sniStartIndex = sniF.StartIndex;
+                            int sniEndIndex = sniL.StartIndex + sniL.Length;
+
+                            // Create Packet Before SNI
+                            if (sniStartIndex > 0)
                             {
-                                SniReader.SNI sni = sniReader.SniList[n];
+                                byte[] beforeSNI = data[..sniStartIndex];
+                                List<byte[]> chunkedbeforeSNI = ChunkDataNormal(beforeSNI, beforeSniChunks, offset);
+                                packets.AddRange(chunkedbeforeSNI);
+                            }
 
-                                pos += sni.StartIndex;
-                                prevIndex = pos - sni.StartIndex;
+                            // Create SNI Packet
+                            byte[] sni = data[sniStartIndex..sniEndIndex];
+                            List<byte[]> chunkedSNI = ChunkDataNormal(sni, sniChunks, offset);
+                            packets.AddRange(chunkedSNI);
 
-                                // Create packet before SNI
-                                int beforeSniLength = sni.StartIndex - prevIndex;
-                                if (beforeSniLength > 0)
-                                {
-                                    byte[] beforeSNI = new byte[beforeSniLength];
-                                    Buffer.BlockCopy(data, prevIndex, beforeSNI, 0, beforeSniLength);
-
-                                    List<byte[]> chunkedbeforeSNI = ChunkDataNormal(beforeSNI, beforeSniChunks, offset);
-                                    packets = packets.Concat(chunkedbeforeSNI).ToList();
-                                    //Debug.WriteLine($"{prevIndex} ======> {beforeSniLength}");
-                                }
-
-                                // Create SNI packet
-                                List<byte[]> chunkedSNI = ChunkDataNormal(sni.Data, sniChunks, offset);
-                                packets = packets.Concat(chunkedSNI).ToList();
-
-                                //Debug.WriteLine($"{beforeSniLength} ====== {sni.SniStartIndex}");
-                                //Debug.WriteLine($"{sni.SniStartIndex} ======> {sni.SniStartIndex + sni.SniLength}");
-
-                                pos = sni.StartIndex + sni.Length;
-
-                                // Last round
-                                if (n == sniReader.SniList.Count - 1)
-                                {
-                                    // Create packet after SNI
-                                    if (pos < data.Length)
-                                    {
-                                        int afterSniStartIndex = pos;
-                                        int afterSniLength = data.Length - pos;
-                                        byte[] afterSni = new byte[afterSniLength];
-                                        Buffer.BlockCopy(data, afterSniStartIndex, afterSni, 0, afterSniLength);
-                                        packets.Add(afterSni);
-
-                                        //Debug.WriteLine($"{sni.SniStartIndex + sni.SniLength} ====== {afterSniStartIndex}");
-                                        //Debug.WriteLine($"{afterSniStartIndex} ======> {afterSniStartIndex + afterSniLength}");
-                                        //Debug.WriteLine($"{afterSniStartIndex + afterSniLength} ====== {data.Length}");
-                                    }
-                                }
+                            // Create Packet After SNI
+                            if (data.Length > sniEndIndex)
+                            {
+                                byte[] afterSni = data[sniEndIndex..];
+                                packets.Add(afterSni);
                             }
                         }
                         else
@@ -332,7 +285,7 @@ public partial class AgnosticProgram
                 }
                 catch (Exception) { }
 
-                SendPackets(data, socket, bp, packets);
+                await SendPacketsAsync(data, socket, bp, packets, serverName);
             }
 
             private static List<byte[]> ChunkDataNormal(byte[] data, int chunks, int offset)
@@ -341,99 +294,53 @@ public partial class AgnosticProgram
                 // Create chunk packets
                 Random random = new();
                 List<byte[]> chunkPackets = new();
-                chunkPackets.Clear();
 
-                int prevIndex;
-                int nn = 0;
-                int sum = 0;
-                for (int n = 0; n < data.Length; n++)
+                try
                 {
-                    try
+                    chunkPackets.Clear();
+
+                    int prevIndex;
+                    int nn = 0;
+                    int sum = 0;
+                    for (int n = 0; n < data.Length; n++)
                     {
-                        // Anti Pattern Fragment Size
-                        int fragmentSize = data.Length / chunks;
-
-                        int fragmentSizeOut = random.Next(fragmentSize - offset, fragmentSize + offset);
-                        if (fragmentSizeOut <= 0) fragmentSizeOut = 1;
-                        if (fragmentSizeOut > data.Length) fragmentSizeOut = data.Length;
-                        nn += fragmentSizeOut;
-
-                        if (nn > data.Length)
+                        try
                         {
-                            fragmentSizeOut = data.Length - (nn - fragmentSizeOut);
+                            // Anti Pattern Fragment Size
+                            int fragmentSize = data.Length / chunks;
+
+                            int fragmentSizeOut = random.Next(fragmentSize - offset, fragmentSize + offset);
+                            if (fragmentSizeOut <= 0) fragmentSizeOut = 1;
+                            if (fragmentSizeOut > data.Length) fragmentSizeOut = data.Length;
+                            nn += fragmentSizeOut;
+
+                            if (nn > data.Length)
+                            {
+                                fragmentSizeOut = data.Length - (nn - fragmentSizeOut);
+                                //Debug.WriteLine(fragmentSizeOut);
+                            }
                             //Debug.WriteLine(fragmentSizeOut);
+
+                            sum += fragmentSizeOut;
+                            byte[] fragmentData = new byte[fragmentSizeOut];
+                            prevIndex = sum - fragmentSizeOut;
+                            Buffer.BlockCopy(data, prevIndex, fragmentData, 0, fragmentSizeOut);
+                            chunkPackets.Add(fragmentData);
+
+                            if (sum >= data.Length) break;
                         }
-                        //Debug.WriteLine(fragmentSizeOut);
-
-                        sum += fragmentSizeOut;
-                        byte[] fragmentData = new byte[fragmentSizeOut];
-                        prevIndex = sum - fragmentSizeOut;
-                        Buffer.BlockCopy(data, prevIndex, fragmentData, 0, fragmentSizeOut);
-                        chunkPackets.Add(fragmentData);
-
-                        if (sum >= data.Length) break;
-                    }
-                    catch (Exception ex)
-                    {
-                        chunkPackets.Clear();
-                        string msgEvent = $"Error, Creating normal packets: {ex.Message}";
-                        Debug.WriteLine(msgEvent);
-                        return chunkPackets;
+                        catch (Exception ex)
+                        {
+                            chunkPackets.Clear();
+                            string msgEvent = $"Error, Creating Normal Packets: {ex.Message}";
+                            Debug.WriteLine(msgEvent);
+                            return chunkPackets;
+                        }
                     }
                 }
-
-                return chunkPackets;
-            }
-
-            private static List<byte[]> ChunkDataNormal2(byte[] data, int fragmentSize)
-            {
-                Debug.WriteLine("ChunkDataNormal2");
-                // Create chunk packets
-                List<byte[]> chunkPackets = new();
-                chunkPackets.Clear();
-
-                var fragments = data.Chunk(fragmentSize);
-                for (int n = 0; n < fragments.Count(); n++)
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        byte[] fragment = fragments.ToArray()[n];
-                        chunkPackets.Add(fragment);
-                    }
-                    catch (Exception ex)
-                    {
-                        chunkPackets.Clear();
-                        string msgEvent = $"Error, Creating normal2 packets: {ex.Message}";
-                        Debug.WriteLine(msgEvent);
-                        return chunkPackets;
-                    }
-                }
-
-                return chunkPackets;
-            }
-
-            private static List<byte[]> ChunkDataNormal3(byte[] data, int fragmentSize)
-            {
-                Debug.WriteLine("ChunkDataNormal3");
-                // Create chunk packets
-                List<byte[]> chunkPackets = new();
-                chunkPackets.Clear();
-
-                var fragments = ChunkViaMemory(data, fragmentSize);
-                for (int n = 0; n < fragments.Count(); n++)
-                {
-                    try
-                    {
-                        byte[] fragment = fragments.ToArray()[n].ToArray();
-                        chunkPackets.Add(fragment);
-                    }
-                    catch (Exception ex)
-                    {
-                        chunkPackets.Clear();
-                        string msgEvent = $"Error, Creating normal3 packets: {ex.Message}";
-                        Debug.WriteLine(msgEvent);
-                        return chunkPackets;
-                    }
+                    Debug.WriteLine("Fragment ChunkDataNormal: " + ex.Message);
                 }
 
                 return chunkPackets;
@@ -449,10 +356,11 @@ public partial class AgnosticProgram
 
                 // Create chunk packets
                 List<byte[]> packets = new();
-                packets.Clear();
-
+                
                 try
                 {
+                    packets.Clear();
+
                     fragmentChunks = Math.Min(fragmentChunks, data.Length);
                     List<int> indices;
                     if (fragmentChunks < data.Length)
@@ -500,43 +408,51 @@ public partial class AgnosticProgram
                 return packets;
             }
 
-            private static void SendPackets(byte[] data, Socket socket, Fragment bp, List<byte[]> packets)
+            private static async Task SendPacketsAsync(byte[] data, Socket socket, Fragment bp, List<byte[]> packets, string serverName)
             {
-                // Check packets
-                int allLength = 0;
-                for (int i = 0; i < packets.Count; i++)
-                    allLength += packets[i].Length;
-
-                if (allLength != data.Length)
+                try
                 {
-                    Debug.WriteLine($"{allLength} == {data.Length}, Chunks: {packets.Count}");
-                    packets.Clear();
-                    return;
-                }
+                    // Check packets
+                    int allLength = 0;
+                    for (int i = 0; i < packets.Count; i++)
+                        allLength += packets[i].Length;
 
-                // Send packets
-                for (int i = 0; i < packets.Count; i++)
-                {
-                    try
+                    if (allLength != data.Length)
                     {
-                        byte[] fragmentData = packets[i];
-                        if (socket == null) return;
-                        socket.Send(fragmentData);
-                        if (bp.FragmentDelay > 0)
-                            Task.Delay(bp.FragmentDelay).Wait();
-                    }
-                    catch (Exception ex)
-                    {
-                        string msgEvent = $"Error, Send Packets: {ex.Message}";
-                        Debug.WriteLine(msgEvent);
+                        Debug.WriteLine($"{allLength} == {data.Length}, Chunks: {packets.Count}");
+                        packets.Clear();
                         return;
                     }
-                }
 
-                string chunkDetailsEvent = $"{bp.DestHostname}:{bp.DestPort} Length: {data.Length}";
-                if (packets.Count > 1)
-                    chunkDetailsEvent += $", Chunks: {packets.Count}";
-                bp.OnChunkDetailsReceived?.Invoke(chunkDetailsEvent, EventArgs.Empty);
+                    // Send packets
+                    for (int i = 0; i < packets.Count; i++)
+                    {
+                        try
+                        {
+                            byte[] fragmentData = packets[i];
+                            if (socket == null) return;
+                            await socket.SendAsync(fragmentData, SocketFlags.None);
+                            if (bp.FragmentDelay > 0) await Task.Delay(bp.FragmentDelay);
+                        }
+                        catch (Exception ex)
+                        {
+                            string msgEvent = $"Error, Send Packets: {ex.Message}";
+                            Debug.WriteLine(msgEvent);
+                            return;
+                        }
+                    }
+
+                    if (packets.Count > 1 && !string.IsNullOrEmpty(serverName))
+                    {
+                        string chunkDetailsEvent = $"{bp.DestHostname}:{bp.DestPort} Length: {data.Length}, Chunks: {packets.Count}";
+                        chunkDetailsEvent += $", SNI: {serverName}";
+                        bp.OnChunkDetailsReceived?.Invoke(chunkDetailsEvent, EventArgs.Empty);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Fragment SendPacketsAsync: " + ex.Message);
+                }
             }
         }
 
@@ -555,20 +471,6 @@ public partial class AgnosticProgram
             catch (Exception) { }
 
             return new List<int>(indicesSet);
-        }
-
-        private static IEnumerable<Memory<T>> ChunkViaMemory<T>(T[] data, int size)
-        {
-            var chunks = data.Length / size;
-            for (int i = 0; i < chunks; i++)
-            {
-                yield return data.AsMemory(i * size, size);
-            }
-            var leftOver = data.Length % size;
-            if (leftOver > 0)
-            {
-                yield return data.AsMemory(chunks * size, leftOver);
-            }
         }
 
     }

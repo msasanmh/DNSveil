@@ -1,12 +1,16 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using Process = System.Diagnostics.Process;
+using ThreadState = System.Diagnostics.ThreadState;
 
 namespace MsmhToolsClass;
 
 public class ProcessConsole
 {
     private string Stdout { get; set; } = string.Empty;
+    private ConcurrentBag<string> StdoutBag { get; set; } = new();
     private string Stderr { get; set; } = string.Empty;
+    private ConcurrentBag<string> StderrBag { get; set; } = new();
     private int Pid { get; set; } = -1;
     public Process? Process_ { get; set; }
     public event EventHandler<DataReceivedEventArgs>? StandardDataReceived;
@@ -15,7 +19,35 @@ public class ProcessConsole
     public ProcessConsole() { }
 
     public string GetStdout => Stdout;
+    public ConcurrentBag<string> GetStdoutBag
+    {
+        get
+        {
+            try
+            {
+                return new ConcurrentBag<string>(StdoutBag);
+            }
+            catch (Exception)
+            {
+                return new ConcurrentBag<string>();
+            }
+        }
+    }
     public string GetStderr => Stderr;
+    public ConcurrentBag<string> GetStderrBag
+    {
+        get
+        {
+            try
+            {
+                return new ConcurrentBag<string>(StderrBag);
+            }
+            catch (Exception)
+            {
+                return new ConcurrentBag<string>();
+            }
+        }
+    }
     public int GetPid => Pid;
 
     /// <summary>
@@ -25,6 +57,10 @@ public class ProcessConsole
     {
         try
         {
+            // Clear Bags
+            StdoutBag.Clear();
+            StderrBag.Clear();
+
             int pid;
             // Create process
             Process_ = new();
@@ -84,6 +120,8 @@ public class ProcessConsole
             Process_.BeginOutputReadLine();
             Process_.BeginErrorReadLine();
 
+            GC.KeepAlive(Process_);
+
             Pid = pid;
             return pid;
         }
@@ -101,6 +139,9 @@ public class ProcessConsole
         {
             Stdout = msg;
             StandardDataReceived?.Invoke(this, e);
+
+            // Add To Bag
+            StdoutBag.Add(msg);
         }
     }
 
@@ -111,6 +152,9 @@ public class ProcessConsole
         {
             Stderr = msg;
             ErrorDataReceived?.Invoke(this, e);
+
+            // Add To Bag
+            StderrBag.Add(msg);
         }
     }
 
@@ -119,27 +163,43 @@ public class ProcessConsole
     /// </summary>
     /// <param name="command">Command</param>
     /// <returns>Returns True if success</returns>
-    public async Task<bool> SendCommandAsync(string command, int delayMS = 10, int timeoutSec = 5)
+    public async Task<bool> SendCommandAsync(string command, int delayMS = 200, int timeoutSec = 15)
     {
+        bool isSent = false;
+
         try
         {
             if (Process_ != null && ProcessManager.FindProcessByPID(GetPid))
             {
-                Task<bool> timeout = Task.Run(async () =>
+                Task wait = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        int n1 = GetStdoutBag.Count;
+                        await Task.Delay(delayMS);
+                        int n2 = GetStdoutBag.Count;
+                        if (n1 == n2) break;
+                    }
+                });
+                try { await wait.WaitAsync(CancellationToken.None); } catch (Exception) { }
+
+
+                Task timeout = Task.Run(async () =>
                 {
                     await Process_.StandardInput.WriteLineAsync(command);
-                    if (delayMS > 0) await Task.Delay(delayMS);
-                    return true;
+                    isSent = true;
                 });
                 try { await timeout.WaitAsync(TimeSpan.FromSeconds(timeoutSec)); } catch (Exception) { }
-                return timeout.Result;
             }
-            return false;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return false;
+            //Debug.WriteLine("SendCommandAsync: " + command);
+            Debug.WriteLine("SendCommandAsync: " + ex.Message);
+            isSent = false;
         }
+
+        return isSent;
     }
 
 }

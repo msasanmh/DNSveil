@@ -420,6 +420,19 @@ namespace CustomControls
             catch (Exception) { }
         }
 
+        public string GetLastLine()
+        {
+            string lastLine = string.Empty;
+
+            try
+            {
+                richTextBox.InvokeIt(() => lastLine = richTextBox.Lines.Where(x => !string.IsNullOrWhiteSpace(x)).Last());
+            }
+            catch (Exception) { }
+
+            return lastLine;
+        }
+
         public CustomRichTextBox() : base()
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint |

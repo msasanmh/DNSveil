@@ -30,6 +30,8 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormDnsScanner));
             SplitContainerMain = new SplitContainer();
+            CustomButtonDnssFromURLs = new CustomControls.CustomButton();
+            CustomRadioButtonDnssFromURLs = new CustomControls.CustomRadioButton();
             CustomCheckBoxCheckInsecure = new CustomControls.CustomCheckBox();
             CustomCheckBoxClearExportData = new CustomControls.CustomCheckBox();
             CustomCheckBoxSmartDNS = new CustomControls.CustomCheckBox();
@@ -42,11 +44,11 @@
             CustomLabelBootstrapIp = new CustomControls.CustomLabel();
             CustomNumericUpDownDnsTimeout = new CustomControls.CustomNumericUpDown();
             CustomLabelDnsTimeout = new CustomControls.CustomLabel();
-            CustomLabelDnsBrowse = new CustomControls.CustomLabel();
+            CustomLabelDnssFromFiles = new CustomControls.CustomLabel();
             CustomButtonScan = new CustomControls.CustomButton();
-            CustomButtonDnsBrowse = new CustomControls.CustomButton();
+            CustomButtonDnssFromFiles = new CustomControls.CustomButton();
             CustomRadioButtonCustomServers = new CustomControls.CustomRadioButton();
-            CustomRadioButtonDnsBrowse = new CustomControls.CustomRadioButton();
+            CustomRadioButtonDnssFromFiles = new CustomControls.CustomRadioButton();
             CustomTextBoxDnsUrl = new CustomControls.CustomTextBox();
             CustomRadioButtonDnsUrl = new CustomControls.CustomRadioButton();
             CustomRichTextBoxLog = new CustomControls.CustomRichTextBox();
@@ -67,6 +69,8 @@
             // 
             // SplitContainerMain.Panel1
             // 
+            SplitContainerMain.Panel1.Controls.Add(CustomButtonDnssFromURLs);
+            SplitContainerMain.Panel1.Controls.Add(CustomRadioButtonDnssFromURLs);
             SplitContainerMain.Panel1.Controls.Add(CustomCheckBoxCheckInsecure);
             SplitContainerMain.Panel1.Controls.Add(CustomCheckBoxClearExportData);
             SplitContainerMain.Panel1.Controls.Add(CustomCheckBoxSmartDNS);
@@ -79,22 +83,51 @@
             SplitContainerMain.Panel1.Controls.Add(CustomLabelBootstrapIp);
             SplitContainerMain.Panel1.Controls.Add(CustomNumericUpDownDnsTimeout);
             SplitContainerMain.Panel1.Controls.Add(CustomLabelDnsTimeout);
-            SplitContainerMain.Panel1.Controls.Add(CustomLabelDnsBrowse);
+            SplitContainerMain.Panel1.Controls.Add(CustomLabelDnssFromFiles);
             SplitContainerMain.Panel1.Controls.Add(CustomButtonScan);
-            SplitContainerMain.Panel1.Controls.Add(CustomButtonDnsBrowse);
+            SplitContainerMain.Panel1.Controls.Add(CustomButtonDnssFromFiles);
             SplitContainerMain.Panel1.Controls.Add(CustomRadioButtonCustomServers);
-            SplitContainerMain.Panel1.Controls.Add(CustomRadioButtonDnsBrowse);
+            SplitContainerMain.Panel1.Controls.Add(CustomRadioButtonDnssFromFiles);
             SplitContainerMain.Panel1.Controls.Add(CustomTextBoxDnsUrl);
             SplitContainerMain.Panel1.Controls.Add(CustomRadioButtonDnsUrl);
-            SplitContainerMain.Panel1MinSize = 200;
+            SplitContainerMain.Panel1MinSize = 250;
             // 
             // SplitContainerMain.Panel2
             // 
             SplitContainerMain.Panel2.Controls.Add(CustomRichTextBoxLog);
             SplitContainerMain.Panel2MinSize = 200;
-            SplitContainerMain.Size = new Size(584, 561);
-            SplitContainerMain.SplitterDistance = 242;
+            SplitContainerMain.Size = new Size(684, 561);
+            SplitContainerMain.SplitterDistance = 290;
             SplitContainerMain.TabIndex = 0;
+            // 
+            // CustomButtonDnssFromURLs
+            // 
+            CustomButtonDnssFromURLs.BorderColor = Color.Blue;
+            CustomButtonDnssFromURLs.FlatStyle = FlatStyle.Flat;
+            CustomButtonDnssFromURLs.Location = new Point(136, 74);
+            CustomButtonDnssFromURLs.Name = "CustomButtonDnssFromURLs";
+            CustomButtonDnssFromURLs.RoundedCorners = 5;
+            CustomButtonDnssFromURLs.SelectionColor = Color.LightBlue;
+            CustomButtonDnssFromURLs.Size = new Size(75, 23);
+            CustomButtonDnssFromURLs.TabIndex = 34;
+            CustomButtonDnssFromURLs.Text = "Browse";
+            CustomButtonDnssFromURLs.UseVisualStyleBackColor = true;
+            CustomButtonDnssFromURLs.Click += CustomButtonDnssFromURLs_Click;
+            // 
+            // CustomRadioButtonDnssFromURLs
+            // 
+            CustomRadioButtonDnssFromURLs.BackColor = Color.DimGray;
+            CustomRadioButtonDnssFromURLs.BorderColor = Color.Blue;
+            CustomRadioButtonDnssFromURLs.CheckColor = Color.Blue;
+            CustomRadioButtonDnssFromURLs.ForeColor = Color.White;
+            CustomRadioButtonDnssFromURLs.Location = new Point(12, 78);
+            CustomRadioButtonDnssFromURLs.Name = "CustomRadioButtonDnssFromURLs";
+            CustomRadioButtonDnssFromURLs.SelectionColor = Color.LightBlue;
+            CustomRadioButtonDnssFromURLs.Size = new Size(118, 17);
+            CustomRadioButtonDnssFromURLs.TabIndex = 33;
+            CustomRadioButtonDnssFromURLs.Text = "DNSs From URLs:";
+            CustomRadioButtonDnssFromURLs.UseVisualStyleBackColor = false;
+            CustomRadioButtonDnssFromURLs.CheckedChanged += CustomRadioButton_CheckedChanged;
             // 
             // CustomCheckBoxCheckInsecure
             // 
@@ -105,7 +138,7 @@
             CustomCheckBoxCheckInsecure.Checked = true;
             CustomCheckBoxCheckInsecure.CheckState = CheckState.Checked;
             CustomCheckBoxCheckInsecure.ForeColor = Color.White;
-            CustomCheckBoxCheckInsecure.Location = new Point(387, 134);
+            CustomCheckBoxCheckInsecure.Location = new Point(487, 134);
             CustomCheckBoxCheckInsecure.Name = "CustomCheckBoxCheckInsecure";
             CustomCheckBoxCheckInsecure.SelectionColor = Color.LightBlue;
             CustomCheckBoxCheckInsecure.Size = new Size(174, 17);
@@ -122,7 +155,7 @@
             CustomCheckBoxClearExportData.Checked = true;
             CustomCheckBoxClearExportData.CheckState = CheckState.Checked;
             CustomCheckBoxClearExportData.ForeColor = Color.White;
-            CustomCheckBoxClearExportData.Location = new Point(387, 111);
+            CustomCheckBoxClearExportData.Location = new Point(487, 111);
             CustomCheckBoxClearExportData.Name = "CustomCheckBoxClearExportData";
             CustomCheckBoxClearExportData.SelectionColor = Color.LightBlue;
             CustomCheckBoxClearExportData.Size = new Size(184, 17);
@@ -136,7 +169,7 @@
             CustomCheckBoxSmartDNS.BorderColor = Color.Blue;
             CustomCheckBoxSmartDNS.CheckColor = Color.Blue;
             CustomCheckBoxSmartDNS.ForeColor = Color.White;
-            CustomCheckBoxSmartDNS.Location = new Point(12, 102);
+            CustomCheckBoxSmartDNS.Location = new Point(12, 149);
             CustomCheckBoxSmartDNS.Name = "CustomCheckBoxSmartDNS";
             CustomCheckBoxSmartDNS.SelectionColor = Color.LightBlue;
             CustomCheckBoxSmartDNS.Size = new Size(232, 17);
@@ -149,7 +182,7 @@
             CustomButtonExport.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomButtonExport.BorderColor = Color.Blue;
             CustomButtonExport.FlatStyle = FlatStyle.Flat;
-            CustomButtonExport.Location = new Point(471, 78);
+            CustomButtonExport.Location = new Point(571, 78);
             CustomButtonExport.Name = "CustomButtonExport";
             CustomButtonExport.RoundedCorners = 5;
             CustomButtonExport.SelectionColor = Color.LightBlue;
@@ -167,7 +200,7 @@
             CustomLabelSmartDnsStatus.BorderColor = Color.Blue;
             CustomLabelSmartDnsStatus.FlatStyle = FlatStyle.Flat;
             CustomLabelSmartDnsStatus.ForeColor = Color.White;
-            CustomLabelSmartDnsStatus.Location = new Point(115, 129);
+            CustomLabelSmartDnsStatus.Location = new Point(115, 176);
             CustomLabelSmartDnsStatus.Name = "CustomLabelSmartDnsStatus";
             CustomLabelSmartDnsStatus.RoundedCorners = 0;
             CustomLabelSmartDnsStatus.Size = new Size(118, 17);
@@ -178,7 +211,7 @@
             // 
             CustomButtonSmartDnsSelect.BorderColor = Color.Blue;
             CustomButtonSmartDnsSelect.FlatStyle = FlatStyle.Flat;
-            CustomButtonSmartDnsSelect.Location = new Point(32, 125);
+            CustomButtonSmartDnsSelect.Location = new Point(32, 172);
             CustomButtonSmartDnsSelect.Name = "CustomButtonSmartDnsSelect";
             CustomButtonSmartDnsSelect.RoundedCorners = 5;
             CustomButtonSmartDnsSelect.SelectionColor = Color.LightBlue;
@@ -193,7 +226,7 @@
             CustomNumericUpDownBootstrapPort.BackColor = Color.DimGray;
             CustomNumericUpDownBootstrapPort.BorderColor = Color.Blue;
             CustomNumericUpDownBootstrapPort.BorderStyle = BorderStyle.FixedSingle;
-            CustomNumericUpDownBootstrapPort.Location = new Point(311, 163);
+            CustomNumericUpDownBootstrapPort.Location = new Point(311, 210);
             CustomNumericUpDownBootstrapPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownBootstrapPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownBootstrapPort.Name = "CustomNumericUpDownBootstrapPort";
@@ -210,7 +243,7 @@
             CustomLabelBootstrapPort.BorderColor = Color.Blue;
             CustomLabelBootstrapPort.FlatStyle = FlatStyle.Flat;
             CustomLabelBootstrapPort.ForeColor = Color.White;
-            CustomLabelBootstrapPort.Location = new Point(220, 165);
+            CustomLabelBootstrapPort.Location = new Point(220, 212);
             CustomLabelBootstrapPort.Name = "CustomLabelBootstrapPort";
             CustomLabelBootstrapPort.RoundedCorners = 0;
             CustomLabelBootstrapPort.Size = new Size(88, 17);
@@ -226,10 +259,10 @@
             CustomTextBoxBootstrapIpPort.BorderColor = Color.Blue;
             CustomTextBoxBootstrapIpPort.BorderSize = 1;
             CustomTextBoxBootstrapIpPort.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxBootstrapIpPort.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxBootstrapIpPort.Font = new Font("Segoe UI", 9F);
             CustomTextBoxBootstrapIpPort.ForeColor = Color.White;
             CustomTextBoxBootstrapIpPort.HideSelection = true;
-            CustomTextBoxBootstrapIpPort.Location = new Point(104, 163);
+            CustomTextBoxBootstrapIpPort.Location = new Point(104, 210);
             CustomTextBoxBootstrapIpPort.MaxLength = 32767;
             CustomTextBoxBootstrapIpPort.Multiline = false;
             CustomTextBoxBootstrapIpPort.Name = "CustomTextBoxBootstrapIpPort";
@@ -253,7 +286,7 @@
             CustomLabelBootstrapIp.BorderColor = Color.Blue;
             CustomLabelBootstrapIp.FlatStyle = FlatStyle.Flat;
             CustomLabelBootstrapIp.ForeColor = Color.White;
-            CustomLabelBootstrapIp.Location = new Point(12, 165);
+            CustomLabelBootstrapIp.Location = new Point(12, 212);
             CustomLabelBootstrapIp.Name = "CustomLabelBootstrapIp";
             CustomLabelBootstrapIp.RoundedCorners = 0;
             CustomLabelBootstrapIp.Size = new Size(88, 17);
@@ -267,7 +300,7 @@
             CustomNumericUpDownDnsTimeout.BorderStyle = BorderStyle.FixedSingle;
             CustomNumericUpDownDnsTimeout.DecimalPlaces = 1;
             CustomNumericUpDownDnsTimeout.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
-            CustomNumericUpDownDnsTimeout.Location = new Point(106, 202);
+            CustomNumericUpDownDnsTimeout.Location = new Point(106, 249);
             CustomNumericUpDownDnsTimeout.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownDnsTimeout.Minimum = new decimal(new int[] { 5, 0, 0, 65536 });
             CustomNumericUpDownDnsTimeout.Name = "CustomNumericUpDownDnsTimeout";
@@ -284,34 +317,34 @@
             CustomLabelDnsTimeout.BorderColor = Color.Blue;
             CustomLabelDnsTimeout.FlatStyle = FlatStyle.Flat;
             CustomLabelDnsTimeout.ForeColor = Color.White;
-            CustomLabelDnsTimeout.Location = new Point(15, 204);
+            CustomLabelDnsTimeout.Location = new Point(15, 251);
             CustomLabelDnsTimeout.Name = "CustomLabelDnsTimeout";
             CustomLabelDnsTimeout.RoundedCorners = 0;
             CustomLabelDnsTimeout.Size = new Size(85, 17);
             CustomLabelDnsTimeout.TabIndex = 9;
             CustomLabelDnsTimeout.Text = "Timeout (Sec):";
             // 
-            // CustomLabelDnsBrowse
+            // CustomLabelDnssFromFiles
             // 
-            CustomLabelDnsBrowse.AutoSize = true;
-            CustomLabelDnsBrowse.BackColor = Color.DimGray;
-            CustomLabelDnsBrowse.Border = false;
-            CustomLabelDnsBrowse.BorderColor = Color.Blue;
-            CustomLabelDnsBrowse.FlatStyle = FlatStyle.Flat;
-            CustomLabelDnsBrowse.ForeColor = Color.White;
-            CustomLabelDnsBrowse.Location = new Point(168, 44);
-            CustomLabelDnsBrowse.Name = "CustomLabelDnsBrowse";
-            CustomLabelDnsBrowse.RoundedCorners = 0;
-            CustomLabelDnsBrowse.Size = new Size(93, 17);
-            CustomLabelDnsBrowse.TabIndex = 7;
-            CustomLabelDnsBrowse.Text = "No file selected.";
+            CustomLabelDnssFromFiles.AutoSize = true;
+            CustomLabelDnssFromFiles.BackColor = Color.DimGray;
+            CustomLabelDnssFromFiles.Border = false;
+            CustomLabelDnssFromFiles.BorderColor = Color.Blue;
+            CustomLabelDnssFromFiles.FlatStyle = FlatStyle.Flat;
+            CustomLabelDnssFromFiles.ForeColor = Color.White;
+            CustomLabelDnssFromFiles.Location = new Point(217, 44);
+            CustomLabelDnssFromFiles.Name = "CustomLabelDnssFromFiles";
+            CustomLabelDnssFromFiles.RoundedCorners = 0;
+            CustomLabelDnssFromFiles.Size = new Size(93, 17);
+            CustomLabelDnssFromFiles.TabIndex = 7;
+            CustomLabelDnssFromFiles.Text = "No file selected.";
             // 
             // CustomButtonScan
             // 
             CustomButtonScan.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CustomButtonScan.BorderColor = Color.Blue;
             CustomButtonScan.FlatStyle = FlatStyle.Flat;
-            CustomButtonScan.Location = new Point(471, 45);
+            CustomButtonScan.Location = new Point(571, 45);
             CustomButtonScan.Name = "CustomButtonScan";
             CustomButtonScan.RoundedCorners = 5;
             CustomButtonScan.SelectionColor = Color.LightBlue;
@@ -321,19 +354,19 @@
             CustomButtonScan.UseVisualStyleBackColor = true;
             CustomButtonScan.Click += CustomButtonScan_Click;
             // 
-            // CustomButtonDnsBrowse
+            // CustomButtonDnssFromFiles
             // 
-            CustomButtonDnsBrowse.BorderColor = Color.Blue;
-            CustomButtonDnsBrowse.FlatStyle = FlatStyle.Flat;
-            CustomButtonDnsBrowse.Location = new Point(87, 40);
-            CustomButtonDnsBrowse.Name = "CustomButtonDnsBrowse";
-            CustomButtonDnsBrowse.RoundedCorners = 5;
-            CustomButtonDnsBrowse.SelectionColor = Color.LightBlue;
-            CustomButtonDnsBrowse.Size = new Size(75, 23);
-            CustomButtonDnsBrowse.TabIndex = 4;
-            CustomButtonDnsBrowse.Text = "Browse";
-            CustomButtonDnsBrowse.UseVisualStyleBackColor = true;
-            CustomButtonDnsBrowse.Click += CustomButtonDnsBrowse_Click;
+            CustomButtonDnssFromFiles.BorderColor = Color.Blue;
+            CustomButtonDnssFromFiles.FlatStyle = FlatStyle.Flat;
+            CustomButtonDnssFromFiles.Location = new Point(136, 40);
+            CustomButtonDnssFromFiles.Name = "CustomButtonDnssFromFiles";
+            CustomButtonDnssFromFiles.RoundedCorners = 5;
+            CustomButtonDnssFromFiles.SelectionColor = Color.LightBlue;
+            CustomButtonDnssFromFiles.Size = new Size(75, 23);
+            CustomButtonDnssFromFiles.TabIndex = 4;
+            CustomButtonDnssFromFiles.Text = "Browse";
+            CustomButtonDnssFromFiles.UseVisualStyleBackColor = true;
+            CustomButtonDnssFromFiles.Click += CustomButtonDnssFromFiles_Click;
             // 
             // CustomRadioButtonCustomServers
             // 
@@ -341,28 +374,29 @@
             CustomRadioButtonCustomServers.BorderColor = Color.Blue;
             CustomRadioButtonCustomServers.CheckColor = Color.Blue;
             CustomRadioButtonCustomServers.ForeColor = Color.White;
-            CustomRadioButtonCustomServers.Location = new Point(12, 72);
+            CustomRadioButtonCustomServers.Location = new Point(12, 113);
             CustomRadioButtonCustomServers.Name = "CustomRadioButtonCustomServers";
             CustomRadioButtonCustomServers.SelectionColor = Color.LightBlue;
             CustomRadioButtonCustomServers.Size = new Size(136, 17);
             CustomRadioButtonCustomServers.TabIndex = 3;
             CustomRadioButtonCustomServers.Text = "Custom DNS Servers";
             CustomRadioButtonCustomServers.UseVisualStyleBackColor = false;
+            CustomRadioButtonCustomServers.CheckedChanged += CustomRadioButton_CheckedChanged;
             // 
-            // CustomRadioButtonDnsBrowse
+            // CustomRadioButtonDnssFromFiles
             // 
-            CustomRadioButtonDnsBrowse.BackColor = Color.DimGray;
-            CustomRadioButtonDnsBrowse.BorderColor = Color.Blue;
-            CustomRadioButtonDnsBrowse.CheckColor = Color.Blue;
-            CustomRadioButtonDnsBrowse.ForeColor = Color.White;
-            CustomRadioButtonDnsBrowse.Location = new Point(12, 42);
-            CustomRadioButtonDnsBrowse.Name = "CustomRadioButtonDnsBrowse";
-            CustomRadioButtonDnsBrowse.SelectionColor = Color.LightBlue;
-            CustomRadioButtonDnsBrowse.Size = new Size(73, 17);
-            CustomRadioButtonDnsBrowse.TabIndex = 2;
-            CustomRadioButtonDnsBrowse.Text = "DNS List:";
-            CustomRadioButtonDnsBrowse.UseVisualStyleBackColor = false;
-            CustomRadioButtonDnsBrowse.CheckedChanged += CustomRadioButtonDnsBrowse_CheckedChanged;
+            CustomRadioButtonDnssFromFiles.BackColor = Color.DimGray;
+            CustomRadioButtonDnssFromFiles.BorderColor = Color.Blue;
+            CustomRadioButtonDnssFromFiles.CheckColor = Color.Blue;
+            CustomRadioButtonDnssFromFiles.ForeColor = Color.White;
+            CustomRadioButtonDnssFromFiles.Location = new Point(12, 42);
+            CustomRadioButtonDnssFromFiles.Name = "CustomRadioButtonDnssFromFiles";
+            CustomRadioButtonDnssFromFiles.SelectionColor = Color.LightBlue;
+            CustomRadioButtonDnssFromFiles.Size = new Size(118, 17);
+            CustomRadioButtonDnssFromFiles.TabIndex = 2;
+            CustomRadioButtonDnssFromFiles.Text = "DNSs From Files:";
+            CustomRadioButtonDnssFromFiles.UseVisualStyleBackColor = false;
+            CustomRadioButtonDnssFromFiles.CheckedChanged += CustomRadioButtonDnssFromFiles_CheckedChanged;
             // 
             // CustomTextBoxDnsUrl
             // 
@@ -374,7 +408,7 @@
             CustomTextBoxDnsUrl.BorderColor = Color.Blue;
             CustomTextBoxDnsUrl.BorderSize = 1;
             CustomTextBoxDnsUrl.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxDnsUrl.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxDnsUrl.Font = new Font("Segoe UI", 9F);
             CustomTextBoxDnsUrl.ForeColor = Color.White;
             CustomTextBoxDnsUrl.HideSelection = true;
             CustomTextBoxDnsUrl.Location = new Point(66, 10);
@@ -385,7 +419,7 @@
             CustomTextBoxDnsUrl.RoundedCorners = 0;
             CustomTextBoxDnsUrl.ScrollBars = ScrollBars.None;
             CustomTextBoxDnsUrl.ShortcutsEnabled = true;
-            CustomTextBoxDnsUrl.Size = new Size(506, 23);
+            CustomTextBoxDnsUrl.Size = new Size(606, 23);
             CustomTextBoxDnsUrl.TabIndex = 0;
             CustomTextBoxDnsUrl.TextAlign = HorizontalAlignment.Left;
             CustomTextBoxDnsUrl.Texts = "";
@@ -421,7 +455,7 @@
             CustomRichTextBoxLog.DetectUrls = false;
             CustomRichTextBoxLog.Dock = DockStyle.Fill;
             CustomRichTextBoxLog.EnableAutoDragDrop = false;
-            CustomRichTextBoxLog.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomRichTextBoxLog.Font = new Font("Segoe UI", 9F);
             CustomRichTextBoxLog.ForeColor = Color.White;
             CustomRichTextBoxLog.HideSelection = false;
             CustomRichTextBoxLog.Location = new Point(0, 0);
@@ -438,7 +472,7 @@
             CustomRichTextBoxLog.SelectionLength = 0;
             CustomRichTextBoxLog.SelectionStart = 0;
             CustomRichTextBoxLog.ShortcutsEnabled = true;
-            CustomRichTextBoxLog.Size = new Size(584, 315);
+            CustomRichTextBoxLog.Size = new Size(684, 267);
             CustomRichTextBoxLog.TabIndex = 0;
             CustomRichTextBoxLog.Texts = "";
             CustomRichTextBoxLog.UnderlinedStyle = false;
@@ -450,7 +484,7 @@
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
-            ClientSize = new Size(584, 561);
+            ClientSize = new Size(684, 561);
             Controls.Add(SplitContainerMain);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
@@ -474,11 +508,11 @@
         private CustomControls.CustomRichTextBox CustomRichTextBoxLog;
         private CustomControls.CustomRadioButton CustomRadioButtonDnsUrl;
         private CustomControls.CustomRadioButton CustomRadioButtonCustomServers;
-        private CustomControls.CustomRadioButton CustomRadioButtonDnsBrowse;
+        private CustomControls.CustomRadioButton CustomRadioButtonDnssFromFiles;
         private CustomControls.CustomTextBox CustomTextBoxDnsUrl;
-        private CustomControls.CustomButton CustomButtonDnsBrowse;
+        private CustomControls.CustomButton CustomButtonDnssFromFiles;
         private CustomControls.CustomButton CustomButtonScan;
-        private CustomControls.CustomLabel CustomLabelDnsBrowse;
+        private CustomControls.CustomLabel CustomLabelDnssFromFiles;
         private CustomControls.CustomLabel CustomLabelDnsTimeout;
         private CustomControls.CustomNumericUpDown CustomNumericUpDownDnsTimeout;
         private CustomControls.CustomTextBox CustomTextBoxBootstrapIpPort;
@@ -491,5 +525,7 @@
         private CustomControls.CustomCheckBox CustomCheckBoxSmartDNS;
         private CustomControls.CustomCheckBox CustomCheckBoxClearExportData;
         private CustomControls.CustomCheckBox CustomCheckBoxCheckInsecure;
+        private CustomControls.CustomRadioButton CustomRadioButtonDnssFromURLs;
+        private CustomControls.CustomButton CustomButtonDnssFromURLs;
     }
 }

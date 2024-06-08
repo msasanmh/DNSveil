@@ -18,7 +18,15 @@ public static partial class Program
                 input = input.Trim();
 
                 // Comment
-                if (input.ToLower().StartsWith('/')) return;
+                if (input.ToLower().StartsWith("//")) return;
+
+                // Exit
+                else if (input.ToLower().Equals(Key.Common.Exit.ToLower()))
+                {
+                    await WriteToStdoutAsync("Exiting...");
+                    Environment.Exit(0);
+                    await ProcessManager.KillProcessByPidAsync(Environment.ProcessId);
+                }
 
                 // Clear Screen - Stop Writing
                 else if (input.ToLower().Equals(Key.Common.C.ToLower()))
@@ -31,7 +39,7 @@ public static partial class Program
                     }
                     catch (Exception ex)
                     {
-                        WriteToStdout($"Error Console: {ex.Message}");
+                        await WriteToStdoutAsync($"Error Console: {ex.Message}");
                     }
                 }
 
@@ -44,23 +52,24 @@ public static partial class Program
                     }
                     catch (Exception ex)
                     {
-                        WriteToStdout($"Error Console: {ex.Message}");
+                        await WriteToStdoutAsync($"Error Console: {ex.Message}");
                     }
                 }
 
                 // Get Help
                 else if (input.ToLower().Equals("/?") || input.ToLower().Equals("/h") || input.ToLower().Equals("-h") ||
                          input.ToLower().Equals("help") || input.ToLower().Equals("/help") || input.ToLower().Equals("-help"))
-                    Help.GetHelp();
+                    await Help.GetHelpAsync();
 
                 // Get Help Programs
                 else if (input.ToLower().StartsWith("help program"))
                 {
                     string prefix = "help program";
-                    if (input.ToLower().Equals($"{prefix} {Key.Programs.Fragment.Name.ToLower()}")) Help.GetHelpFragment();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.DnsRules.Name.ToLower()}")) Help.GetHelpDnsRules();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.ProxyRules.Name.ToLower()}")) Help.GetHelpProxyRules();
-                    else Help.GetHelpPrograms();
+                    if (input.ToLower().Equals($"{prefix} {Key.Programs.Fragment.Name.ToLower()}")) await Help.GetHelpFragmentAsync();
+                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.DnsRules.Name.ToLower()}")) await Help.GetHelpDnsRulesAsync();
+                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.ProxyRules.Name.ToLower()}")) await Help.GetHelpProxyRulesAsync();
+                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.DnsLimit.Name.ToLower()}")) await Help.GetHelpDnsLimitAsync();
+                    else await Help.GetHelpProgramsAsync();
                 }
 
                 // Load Commands
@@ -74,15 +83,15 @@ public static partial class Program
                     if (split.Length > 1)
                     {
                         Profile = split[1];
-                        ShowProfileMsg();
+                        await ShowProfileMsgAsync();
                     }
-                    else WriteToStdout($"Wrong Profile Name", ConsoleColor.DarkRed);
+                    else await WriteToStdoutAsync($"Wrong Profile Name", ConsoleColor.DarkRed);
                 }
 
                 // Check Profile Name
                 else if (string.IsNullOrEmpty(Profile.Trim()))
                 {
-                    WriteToStdout($"Set Profile Name First. Command: Profile <ProfileName>", ConsoleColor.Cyan);
+                    await WriteToStdoutAsync($"Set Profile Name First. Command: Profile <ProfileName>", ConsoleColor.Cyan);
                     return;
                 }
 
@@ -93,18 +102,18 @@ public static partial class Program
                     if (split.Length > 1)
                     {
                         string profile = split[1];
-                        MainDetails(profile);
+                        await MainDetailsAsync(profile);
                     }
-                    else WriteToStdout($"Wrong Profile Name", ConsoleColor.DarkRed);
+                    else await WriteToStdoutAsync($"Wrong Profile Name", ConsoleColor.DarkRed);
                 }
 
                 // Get Status Human Read
                 else if (input.ToLower().Equals(Key.Common.Status.ToLower()))
-                    ShowStatus();
+                    await ShowStatusAsync();
 
                 // Flush DNS
                 else if (input.ToLower().Equals(Key.Common.Flush.ToLower()))
-                    FlushDns();
+                    await FlushDnsAsync();
 
                 // Parent Process
                 else if (input.ToLower().StartsWith(Key.ParentProcess.Name.ToLower()))
@@ -118,7 +127,7 @@ public static partial class Program
                     if (!isValueOk) return;
 
                     ParentPID = pid;
-                    ShowParentProcessMsg();
+                    await ShowParentProcessMsgAsync();
                 }
 
                 // AgnosticSettings
@@ -152,15 +161,15 @@ public static partial class Program
                             if (isInt && n >= DefaultPortMin && n <= DefaultPortMax)
                             {
                                 port = n;
-                                WriteToStdout($"Port Set To {port}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Port Set To {port}", ConsoleColor.Green);
                                 break;
                             }
                             else
                             {
                                 if (isInt)
-                                    WriteToStdout($"Port Number Must Be Between {DefaultPortMin} and {DefaultPortMax}", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Port Number Must Be Between {DefaultPortMin} and {DefaultPortMax}", ConsoleColor.Red);
                                 else
-                                    WriteToStdout("Error Parsing The Int Number!", ConsoleColor.Red);
+                                    await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                             }
                         }
 
@@ -176,7 +185,7 @@ public static partial class Program
                             else if (workingModeStr.Equals(nameof(AgnosticSettings.WorkingMode.DnsAndProxy).ToLower()))
                                 workingMode = AgnosticSettings.WorkingMode.DnsAndProxy;
 
-                            WriteToStdout($"Working Mode Set to {workingMode}", ConsoleColor.Green);
+                            await WriteToStdoutAsync($"Working Mode Set to {workingMode}", ConsoleColor.Green);
                             break;
                         }
 
@@ -188,15 +197,15 @@ public static partial class Program
                             if (isInt && n >= DefaultMaxRequestsMin && n <= DefaultMaxRequestsMax)
                             {
                                 maxRequests = n;
-                                WriteToStdout($"Maximum Requests Set to {maxRequests}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Maximum Requests Set to {maxRequests}", ConsoleColor.Green);
                                 break;
                             }
                             else
                             {
                                 if (isInt)
-                                    WriteToStdout($"Maximum Requests Must Be Between {DefaultMaxRequestsMin} and {DefaultMaxRequestsMax}", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Maximum Requests Must Be Between {DefaultMaxRequestsMin} and {DefaultMaxRequestsMax}", ConsoleColor.Red);
                                 else
-                                    WriteToStdout("Error Parsing The Int Number!", ConsoleColor.Red);
+                                    await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                             }
                         }
 
@@ -208,15 +217,15 @@ public static partial class Program
                             if (isInt && n >= DefaultDnsTimeoutSecMin && n <= DefaultDnsTimeoutSecMax)
                             {
                                 dnsTimeoutSec = n;
-                                WriteToStdout($"Dns Timeout Set to {dnsTimeoutSec} Seconds", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Dns Timeout Set to {dnsTimeoutSec} Seconds", ConsoleColor.Green);
                                 break;
                             }
                             else
                             {
                                 if (isInt)
-                                    WriteToStdout($"Dns Timeout Must Be Between {DefaultDnsTimeoutSecMin} and {DefaultDnsTimeoutSecMax}", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Dns Timeout Must Be Between {DefaultDnsTimeoutSecMin} and {DefaultDnsTimeoutSecMax}", ConsoleColor.Red);
                                 else
-                                    WriteToStdout("Error Parsing The Int Number!", ConsoleColor.Red);
+                                    await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                             }
                         }
 
@@ -230,15 +239,15 @@ public static partial class Program
                                 if (isInt && n >= DefaultProxyTimeoutSecMin && n <= DefaultProxyTimeoutSecMax)
                                 {
                                     proxyTimeoutSec = n;
-                                    WriteToStdout($"Proxy Timeout Set to {proxyTimeoutSec} Seconds", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"Proxy Timeout Set to {proxyTimeoutSec} Seconds", ConsoleColor.Green);
                                     break;
                                 }
                                 else
                                 {
                                     if (isInt)
-                                        WriteToStdout($"Proxy Timeout Must Be Between {DefaultProxyTimeoutSecMin} and {DefaultProxyTimeoutSecMax}", ConsoleColor.Red);
+                                        await WriteToStdoutAsync($"Proxy Timeout Must Be Between {DefaultProxyTimeoutSecMin} and {DefaultProxyTimeoutSecMax}", ConsoleColor.Red);
                                     else
-                                        WriteToStdout("Error Parsing The Int Number!", ConsoleColor.Red);
+                                        await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                                 }
                             }
 
@@ -250,15 +259,15 @@ public static partial class Program
                                 if (isFloat && f >= DefaultKillOnCpuUsageMin && f <= DefaultKillOnCpuUsageMax)
                                 {
                                     killOnCpuUsage = f;
-                                    WriteToStdout($"Kill On Cpu Usage Set to {killOnCpuUsage}%", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"Kill On Cpu Usage Set to {killOnCpuUsage}%", ConsoleColor.Green);
                                     break;
                                 }
                                 else
                                 {
                                     if (isFloat)
-                                        WriteToStdout($"Percentage Must Be Between {DefaultKillOnCpuUsageMin} and {DefaultKillOnCpuUsageMax}", ConsoleColor.Red);
+                                        await WriteToStdoutAsync($"Percentage Must Be Between {DefaultKillOnCpuUsageMin} and {DefaultKillOnCpuUsageMax}", ConsoleColor.Red);
                                     else
-                                        WriteToStdout("Error Parsing The Float Number!", ConsoleColor.Red);
+                                        await WriteToStdoutAsync("Error Parsing The Float Number!", ConsoleColor.Red);
                                 }
                             }
 
@@ -269,7 +278,7 @@ public static partial class Program
                                 bool b = Convert.ToBoolean(value);
 
                                 blockPort80 = b;
-                                WriteToStdout($"Block Port 80: {blockPort80}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Block Port 80: {blockPort80}", ConsoleColor.Green);
                                 break;
                             }
                         }
@@ -281,7 +290,7 @@ public static partial class Program
                             bool b = Convert.ToBoolean(value);
 
                             allowInsecure = b;
-                            WriteToStdout($"Allow Insecure: {allowInsecure}", ConsoleColor.Green);
+                            await WriteToStdoutAsync($"Allow Insecure: {allowInsecure}", ConsoleColor.Green);
                             break;
                         }
 
@@ -299,7 +308,7 @@ public static partial class Program
                                 dnss.AddRange(dnssArray);
                             }
 
-                            WriteToStdout($"DNS Addresses Set. Count: {dnss.Count}", ConsoleColor.Green);
+                            await WriteToStdoutAsync($"DNS Addresses Set. Count: {dnss.Count}", ConsoleColor.Green);
                             break;
                         }
 
@@ -318,9 +327,9 @@ public static partial class Program
                             }
 
                             if (!string.IsNullOrEmpty(cloudflareCleanIP))
-                                WriteToStdout($"Cloudflare Clean IP Set To: {cloudflareCleanIP}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Cloudflare Clean IP Set To: {cloudflareCleanIP}", ConsoleColor.Green);
                             else
-                                WriteToStdout($"Cloudflare Clean IP Disabled", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Cloudflare Clean IP Disabled", ConsoleColor.Green);
                             break;
                         }
 
@@ -338,7 +347,7 @@ public static partial class Program
                                 if (isIp) bootstrapIp = getBootstrapIp;
                             }
 
-                            WriteToStdout($"Bootstrap IP Set To: {bootstrapIp}", ConsoleColor.Green);
+                            await WriteToStdoutAsync($"Bootstrap IP Set To: {bootstrapIp}", ConsoleColor.Green);
                             break;
                         }
 
@@ -350,15 +359,15 @@ public static partial class Program
                             if (isInt && n >= 1 && n <= 65535)
                             {
                                 bootstrapPort = n;
-                                WriteToStdout($"Bootstrap Port Set to {bootstrapPort}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Bootstrap Port Set to {bootstrapPort}", ConsoleColor.Green);
                                 break;
                             }
                             else
                             {
                                 if (isInt)
-                                    WriteToStdout("Bootstrap Port Must Be Between 1 and 65535", ConsoleColor.Red);
+                                    await WriteToStdoutAsync("Bootstrap Port Must Be Between 1 and 65535", ConsoleColor.Red);
                                 else
-                                    WriteToStdout("Error Parsing The Int Number!", ConsoleColor.Red);
+                                    await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                             }
                         }
 
@@ -370,9 +379,9 @@ public static partial class Program
                             proxyScheme = proxyScheme.Trim();
 
                             if (!string.IsNullOrEmpty(proxyScheme))
-                                WriteToStdout($"Upstream Proxy Scheme Set To: {proxyScheme}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Upstream Proxy Scheme Set To: {proxyScheme}", ConsoleColor.Green);
                             else
-                                WriteToStdout("Upstream Proxy Scheme Disabled", ConsoleColor.Green);
+                                await WriteToStdoutAsync("Upstream Proxy Scheme Disabled", ConsoleColor.Green);
                             break;
                         }
 
@@ -386,9 +395,9 @@ public static partial class Program
                                 proxyUser = proxyUser.Trim();
 
                                 if (!string.IsNullOrEmpty(proxyUser))
-                                    WriteToStdout($"Upstream Proxy Username Set To: {proxyUser}", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"Upstream Proxy Username Set To: {proxyUser}", ConsoleColor.Green);
                                 else
-                                    WriteToStdout("Upstream Proxy Username Set To: None", ConsoleColor.Green);
+                                    await WriteToStdoutAsync("Upstream Proxy Username Set To: None", ConsoleColor.Green);
                                 break;
                             }
 
@@ -400,9 +409,9 @@ public static partial class Program
                                 proxyPass = proxyPass.Trim();
 
                                 if (!string.IsNullOrEmpty(proxyPass))
-                                    WriteToStdout($"Upstream Proxy Password Set To: {proxyPass}", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"Upstream Proxy Password Set To: {proxyPass}", ConsoleColor.Green);
                                 else
-                                    WriteToStdout("Upstream Proxy Password Set To: None", ConsoleColor.Green);
+                                    await WriteToStdoutAsync("Upstream Proxy Password Set To: None", ConsoleColor.Green);
                                 break;
                             }
 
@@ -413,7 +422,7 @@ public static partial class Program
                                 bool b = Convert.ToBoolean(value);
 
                                 applyUpstreamOnlyToBlockedIps = b;
-                                WriteToStdout($"Apply Upstream Only To Blocked IPs: {applyUpstreamOnlyToBlockedIps}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Apply Upstream Only To Blocked IPs: {applyUpstreamOnlyToBlockedIps}", ConsoleColor.Green);
                                 break;
                             }
                         }
@@ -504,7 +513,7 @@ public static partial class Program
                         settings.ApplyUpstreamOnlyToBlockedIps = applyUpstreamOnlyToBlockedIps;
                     }
 
-                    ShowSettingsMsg(settings);
+                    await ShowSettingsMsgAsync(settings);
                 }
 
                 // SSLSetting
@@ -528,7 +537,7 @@ public static partial class Program
                             object value = await ConsoleTools.ReadValueAsync(msgRV, enable, typeof(bool));
                             enable = Convert.ToBoolean(value);
 
-                            WriteToStdout($"Enable Set to {enable}", ConsoleColor.Green);
+                            await WriteToStdoutAsync($"Enable Set to {enable}", ConsoleColor.Green);
                             break;
                         }
 
@@ -552,7 +561,7 @@ public static partial class Program
                                     if (!File.Exists(path))
                                     {
                                         string msgNotExist = $"{path}\nFile Not Exist.";
-                                        WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                        await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
                                         continue;
                                     }
                                     else
@@ -583,7 +592,7 @@ public static partial class Program
                                         if (!File.Exists(path))
                                         {
                                             string msgNotExist = $"{path}\nFile Not Exist.";
-                                            WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                            await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
                                             continue;
                                         }
                                         else
@@ -613,7 +622,7 @@ public static partial class Program
                                     if (!File.Exists(path))
                                     {
                                         string msgNotExist = $"{path}\nFile Not Exist.";
-                                        WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                        await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
                                         continue;
                                     }
                                     else
@@ -644,7 +653,7 @@ public static partial class Program
                                         if (!File.Exists(path))
                                         {
                                             string msgNotExist = $"{path}\nFile Not Exist.";
-                                            WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                            await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
                                             continue;
                                         }
                                         else
@@ -663,7 +672,7 @@ public static partial class Program
                                 object value = await ConsoleTools.ReadValueAsync(msgRV, changeSni, typeof(bool));
                                 changeSni = Convert.ToBoolean(value);
 
-                                WriteToStdout($"ChangeSni Set to {changeSni}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"ChangeSni Set to {changeSni}", ConsoleColor.Green);
                                 break;
                             }
 
@@ -678,11 +687,11 @@ public static partial class Program
                                     if (!string.IsNullOrEmpty(defaultSniOut))
                                     {
                                         defaultSni = defaultSniOut;
-                                        WriteToStdout($"DefaultSni Set to {defaultSni}", ConsoleColor.Green);
+                                        await WriteToStdoutAsync($"DefaultSni Set to {defaultSni}", ConsoleColor.Green);
                                         break;
                                     }
 
-                                    WriteToStdout($"DefaultSni Set to Empty", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"DefaultSni Set to Empty", ConsoleColor.Green);
                                     break;
                                 }
                             }
@@ -727,7 +736,7 @@ public static partial class Program
                         DefaultSni = defaultSni
                     };
 
-                    ShowSettingsSSLMsg(settingsSSL);
+                    await ShowSettingsSSLMsgAsync(settingsSSL);
                 }
 
                 // Programs
@@ -737,11 +746,12 @@ public static partial class Program
                     msg += $"{Key.Programs.Fragment.Name}\n";
                     msg += $"{Key.Programs.DnsRules.Name}\n";
                     msg += $"{Key.Programs.ProxyRules.Name}\n";
+                    msg += $"{Key.Programs.DnsLimit.Name}\n";
 
                     // Interactive Mode
                     if (input.ToLower().Equals(Key.Programs.Name.ToLower()))
                     {
-                        WriteToStdout(msg, ConsoleColor.Cyan);
+                        await WriteToStdoutAsync(msg, ConsoleColor.Cyan);
 
                         while (true)
                         {
@@ -750,7 +760,7 @@ public static partial class Program
                             programName = valueP.ToString() ?? string.Empty;
                             if (string.IsNullOrEmpty(programName) || string.IsNullOrWhiteSpace(programName))
                             {
-                                WriteToStdout($"Exited From {Key.Programs.Name}.");
+                                await WriteToStdoutAsync($"Exited From {Key.Programs.Name}.");
                                 break;
                             }
 
@@ -761,7 +771,7 @@ public static partial class Program
                                 msgAm += $"{Key.Programs.Fragment.Mode.Program.Name}\n";
                                 msgAm += $"{Key.Programs.Fragment.Mode.Disable}\n";
 
-                                WriteToStdout(msgAm, ConsoleColor.Cyan);
+                                await WriteToStdoutAsync(msgAm, ConsoleColor.Cyan);
 
                                 string modeStr = Key.Programs.Fragment.Mode.Disable;
                                 AgnosticProgram.Fragment.Mode mode = AgnosticProgram.Fragment.Mode.Disable;
@@ -776,7 +786,7 @@ public static partial class Program
                                         mode = AgnosticProgram.Fragment.Mode.Disable;
                                     else
                                     {
-                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
+                                        await WriteToStdoutAsync("Wrong Mode.", ConsoleColor.Red);
                                         continue;
                                     }
                                     break;
@@ -803,7 +813,7 @@ public static partial class Program
                                         }
                                         else
                                         {
-                                            WriteToStdout($"Chunks Number Must Be Between {DefaultFragmentBeforeSniChunksMin} and {DefaultFragmentBeforeSniChunksMax}", ConsoleColor.Red);
+                                            await WriteToStdoutAsync($"Chunks Number Must Be Between {DefaultFragmentBeforeSniChunksMin} and {DefaultFragmentBeforeSniChunksMax}", ConsoleColor.Red);
                                             continue;
                                         }
                                     }
@@ -814,7 +824,7 @@ public static partial class Program
                                     msgAm += $"{Key.Programs.Fragment.Mode.Program.ChunkMode.SniExtension}\n";
                                     msgAm += $"{Key.Programs.Fragment.Mode.Program.ChunkMode.AllExtensions}\n";
 
-                                    WriteToStdout(msgAm, ConsoleColor.Cyan);
+                                    await WriteToStdoutAsync(msgAm, ConsoleColor.Cyan);
 
                                     modeStr = Key.Programs.Fragment.Mode.Program.ChunkMode.SNI;
                                     msgRV = $"Enter One Of Modes (Default: {chunkMode}):";
@@ -830,7 +840,7 @@ public static partial class Program
                                             chunkMode = AgnosticProgram.Fragment.ChunkMode.AllExtensions;
                                         else
                                         {
-                                            WriteToStdout("Wrong Mode.", ConsoleColor.Red);
+                                            await WriteToStdoutAsync("Wrong Mode.", ConsoleColor.Red);
                                             continue;
                                         }
                                         break;
@@ -849,7 +859,7 @@ public static partial class Program
                                         }
                                         else
                                         {
-                                            WriteToStdout($"Chunks Number Must Be Between {DefaultFragmentSniChunksMin} and {DefaultFragmentSniChunksMax}", ConsoleColor.Red);
+                                            await WriteToStdoutAsync($"Chunks Number Must Be Between {DefaultFragmentSniChunksMin} and {DefaultFragmentSniChunksMax}", ConsoleColor.Red);
                                             continue;
                                         }
                                     }
@@ -867,7 +877,7 @@ public static partial class Program
                                         }
                                         else
                                         {
-                                            WriteToStdout($"Chunks Number Must Be Between {DefaultFragmentAntiPatternOffsetMin} and {DefaultFragmentAntiPatternOffsetMin}", ConsoleColor.Red);
+                                            await WriteToStdoutAsync($"Chunks Number Must Be Between {DefaultFragmentAntiPatternOffsetMin} and {DefaultFragmentAntiPatternOffsetMin}", ConsoleColor.Red);
                                             continue;
                                         }
                                     }
@@ -885,7 +895,7 @@ public static partial class Program
                                         }
                                         else
                                         {
-                                            WriteToStdout($"Fragment Delay Must Be Between {DefaultFragmentFragmentDelayMin} and {DefaultFragmentFragmentDelayMax} Milliseconds", ConsoleColor.Red);
+                                            await WriteToStdoutAsync($"Fragment Delay Must Be Between {DefaultFragmentFragmentDelayMin} and {DefaultFragmentFragmentDelayMax} Milliseconds", ConsoleColor.Red);
                                             continue;
                                         }
                                     }
@@ -894,7 +904,7 @@ public static partial class Program
                                 AgnosticProgram.Fragment FragmentStaticProgram = new();
                                 FragmentStaticProgram.Set(mode, beforeSniChunks, chunkMode, sniChunks, antiPatternOffset, fragmentDelay);
 
-                                ShowFragmentMsg(FragmentStaticProgram);
+                                await ShowFragmentMsgAsync(FragmentStaticProgram);
                             }
 
                             // Dns Rules
@@ -905,7 +915,7 @@ public static partial class Program
                                 msgAm += $"{Key.Programs.DnsRules.Mode.Text}\n";
                                 msgAm += $"{Key.Programs.DnsRules.Mode.Disable}\n";
 
-                                WriteToStdout(msgAm, ConsoleColor.Cyan);
+                                await WriteToStdoutAsync(msgAm, ConsoleColor.Cyan);
 
                                 string modeStr = Key.Programs.DnsRules.Mode.Disable;
                                 AgnosticProgram.DnsRules.Mode mode = AgnosticProgram.DnsRules.Mode.Disable;
@@ -922,7 +932,7 @@ public static partial class Program
                                         mode = AgnosticProgram.DnsRules.Mode.Disable;
                                     else
                                     {
-                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
+                                        await WriteToStdoutAsync("Wrong Mode.", ConsoleColor.Red);
                                         continue;
                                     }
                                     break;
@@ -948,7 +958,7 @@ public static partial class Program
                                             if (!File.Exists(filePathOrText))
                                             {
                                                 string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
-                                                WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                                await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
                                                 continue;
                                             }
                                             else break;
@@ -975,7 +985,7 @@ public static partial class Program
                                 AgnosticProgram.DnsRules dnsRulesProgram = new();
                                 dnsRulesProgram.Set(mode, filePathOrText);
 
-                                ShowDnsRulesMsg(dnsRulesProgram);
+                                await ShowDnsRulesMsgAsync(dnsRulesProgram);
                             }
 
                             // ProxyRules
@@ -986,7 +996,7 @@ public static partial class Program
                                 msgAm += $"{Key.Programs.ProxyRules.Mode.Text}\n";
                                 msgAm += $"{Key.Programs.ProxyRules.Mode.Disable}\n";
 
-                                WriteToStdout(msgAm, ConsoleColor.Cyan);
+                                await WriteToStdoutAsync(msgAm, ConsoleColor.Cyan);
 
                                 string modeStr = Key.Programs.ProxyRules.Mode.Disable;
                                 AgnosticProgram.ProxyRules.Mode mode = AgnosticProgram.ProxyRules.Mode.Disable;
@@ -1003,7 +1013,7 @@ public static partial class Program
                                         mode = AgnosticProgram.ProxyRules.Mode.Disable;
                                     else
                                     {
-                                        WriteToStdout("Wrong Mode.", ConsoleColor.Red);
+                                        await WriteToStdoutAsync("Wrong Mode.", ConsoleColor.Red);
                                         continue;
                                     }
                                     break;
@@ -1029,7 +1039,7 @@ public static partial class Program
                                             if (!File.Exists(filePathOrText))
                                             {
                                                 string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
-                                                WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                                await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
                                                 continue;
                                             }
                                             else break;
@@ -1056,12 +1066,118 @@ public static partial class Program
                                 AgnosticProgram.ProxyRules proxyRulesProgram = new();
                                 proxyRulesProgram.Set(mode, filePathOrText);
 
-                                ShowProxyRulesMsg(proxyRulesProgram);
+                                await ShowProxyRulesMsgAsync(proxyRulesProgram);
+                            }
+
+                            // Dns Limit
+                            else if (programName.ToLower().Equals(Key.Programs.DnsLimit.Name.ToLower()))
+                            {
+                                bool enable = false;
+                                bool disablePlain = false;
+                                AgnosticProgram.DnsLimit.LimitDoHPathsMode mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.Disable;
+                                string filePathOrText = string.Empty;
+
+                                string msgRV = $"Enable {Key.Programs.DnsLimit.Name} Program (Default: False):";
+                                while (true)
+                                {
+                                    object value = await ConsoleTools.ReadValueAsync(msgRV, enable, typeof(bool));
+                                    enable = Convert.ToBoolean(value);
+
+                                    await WriteToStdoutAsync($"Enable {Key.Programs.DnsLimit.Name} Set to {enable}", ConsoleColor.Green);
+                                    break;
+                                }
+
+                                if (enable)
+                                {
+                                    msgRV = $"Disable Plain DNS (Default: False):";
+                                    while (true)
+                                    {
+                                        object value = await ConsoleTools.ReadValueAsync(msgRV, disablePlain, typeof(bool));
+                                        disablePlain = Convert.ToBoolean(value);
+
+                                        await WriteToStdoutAsync($"Disable Plain DNS Set to {disablePlain}", ConsoleColor.Green);
+                                        break;
+                                    }
+
+                                    string msgAm = $"Available {Key.Programs.DnsLimit.DoHPathLimitMode.Name} Modes:\n\n";
+                                    msgAm += $"{Key.Programs.DnsLimit.DoHPathLimitMode.File}\n";
+                                    msgAm += $"{Key.Programs.DnsLimit.DoHPathLimitMode.Text}\n";
+                                    msgAm += $"{Key.Programs.DnsLimit.DoHPathLimitMode.Disable}\n";
+
+                                    await WriteToStdoutAsync(msgAm, ConsoleColor.Cyan);
+
+                                    string modeStr = Key.Programs.DnsLimit.DoHPathLimitMode.Disable;
+                                    msgRV = $"Enter One Of Modes (Default: {mode}):";
+                                    while (true)
+                                    {
+                                        object value = await ConsoleTools.ReadValueAsync(msgRV, modeStr, typeof(string));
+                                        modeStr = value.ToString() ?? string.Empty;
+                                        if (modeStr.ToLower().Equals(Key.Programs.DnsLimit.DoHPathLimitMode.File.ToLower()))
+                                            mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.File;
+                                        else if (modeStr.ToLower().Equals(Key.Programs.DnsLimit.DoHPathLimitMode.Text.ToLower()))
+                                            mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.Text;
+                                        else if (modeStr.ToLower().Equals(Key.Programs.DnsLimit.DoHPathLimitMode.Disable.ToLower()))
+                                            mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.Disable;
+                                        else
+                                        {
+                                            await WriteToStdoutAsync("Wrong Mode.", ConsoleColor.Red);
+                                            continue;
+                                        }
+                                        break;
+                                    }
+
+                                    if (mode == AgnosticProgram.DnsLimit.LimitDoHPathsMode.File)
+                                    {
+                                        while (true)
+                                        {
+                                            msgRV = $"Enter The Path Of {mode} (Default: Cancel):";
+                                            object valuePath = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
+                                            filePathOrText = valuePath.ToString() ?? string.Empty;
+                                            if (string.IsNullOrEmpty(filePathOrText))
+                                            {
+                                                mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.Disable;
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                filePathOrText = Path.GetFullPath(filePathOrText);
+                                                if (!File.Exists(filePathOrText))
+                                                {
+                                                    string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
+                                                    await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
+                                                    continue;
+                                                }
+                                                else break;
+                                            }
+                                        }
+                                    }
+
+                                    if (mode == AgnosticProgram.DnsLimit.LimitDoHPathsMode.Text)
+                                    {
+                                        msgRV = $"Enter {Key.Programs.DnsLimit.DoHPathLimitMode.Name} As Text (Default: Cancel):";
+                                        msgRV += "\n    e.g. dns-query\\nUserName1";
+                                        object valueText = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
+                                        filePathOrText = valueText.ToString() ?? string.Empty;
+                                        if (string.IsNullOrEmpty(filePathOrText))
+                                        {
+                                            mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.Disable;
+                                        }
+                                        else
+                                        {
+                                            filePathOrText = filePathOrText.Replace(@"\n", Environment.NewLine);
+                                        }
+                                    }
+                                }
+
+                                AgnosticProgram.DnsLimit dnsLimitProgram = new();
+                                dnsLimitProgram.Set(enable, disablePlain, mode, filePathOrText);
+
+                                await ShowDnsLimitMsgAsync(dnsLimitProgram);
                             }
 
                             else
                             {
-                                WriteToStdout("Wrong Program Name.", ConsoleColor.Red);
+                                await WriteToStdoutAsync("Wrong Program Name.", ConsoleColor.Red);
                                 continue;
                             }
                         }
@@ -1154,7 +1270,7 @@ public static partial class Program
                             AgnosticProgram.Fragment fragmentStaticProgram = new();
                             fragmentStaticProgram.Set(mode, beforeSniChunks, chunkMode, sniChunks, antiPatternOffset, fragmentDelay);
 
-                            ShowFragmentMsg(fragmentStaticProgram);
+                            await ShowFragmentMsgAsync(fragmentStaticProgram);
                         }
 
                         // DnsRules
@@ -1204,7 +1320,7 @@ public static partial class Program
                                 if (!File.Exists(pathOrText))
                                 {
                                     string msgNotExist = $"{pathOrText}\nFile Not Exist.";
-                                    WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                    await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
                                     return;
                                 }
                             }
@@ -1217,7 +1333,7 @@ public static partial class Program
                             AgnosticProgram.DnsRules dnsRulesProgram = new();
                             dnsRulesProgram.Set(mode, pathOrText);
 
-                            ShowDnsRulesMsg(dnsRulesProgram);
+                            await ShowDnsRulesMsgAsync(dnsRulesProgram);
                         }
 
                         // ProxyRules
@@ -1267,7 +1383,7 @@ public static partial class Program
                                 if (!File.Exists(pathOrText))
                                 {
                                     string msgNotExist = $"{pathOrText}\nFile Not Exist.";
-                                    WriteToStdout(msgNotExist, ConsoleColor.Red);
+                                    await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
                                     return;
                                 }
                             }
@@ -1280,7 +1396,94 @@ public static partial class Program
                             AgnosticProgram.ProxyRules proxyRulesProgram = new();
                             proxyRulesProgram.Set(mode, pathOrText);
 
-                            ShowProxyRulesMsg(proxyRulesProgram);
+                            await ShowProxyRulesMsgAsync(proxyRulesProgram);
+                        }
+
+                        // Dns Limit
+                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.DnsLimit.Name.ToLower()}"))
+                        {
+                            // Programs DnsLimit -Enable=m -DisablePlain=m -DoHPathLimitMode=m -PathOrText="m"
+
+                            // Get Enable
+                            bool enable = false;
+                            string key = Key.Programs.DnsLimit.Enable;
+                            isValueOk = ConsoleTools.TryGetValueByKey(input, key, true, false, out string value);
+                            if (!isValueOk) return;
+                            isValueOk = ConsoleTools.TryGetBool(key, value, true, out bool valueBool);
+                            if (!isValueOk) return;
+                            enable = valueBool;
+
+                            // Get DisablePlain
+                            bool disablePlain = false;
+                            if (enable)
+                            {
+                                key = Key.Programs.DnsLimit.DisablePlain;
+                                isValueOk = ConsoleTools.TryGetValueByKey(input, key, true, false, out value);
+                                if (!isValueOk) return;
+                                isValueOk = ConsoleTools.TryGetBool(key, value, true, out valueBool);
+                                if (!isValueOk) return;
+                                disablePlain = valueBool;
+                            }
+                            
+                            // Get ModeStr
+                            string modeStr = Key.Programs.DnsLimit.DoHPathLimitMode.Disable;
+                            if (enable)
+                            {
+                                key = Key.Programs.DnsLimit.DoHPathLimitMode.Name;
+                                isValueOk = ConsoleTools.TryGetValueByKey(input, key, true, false, out value);
+                                if (!isValueOk) return;
+
+                                KeyValues modes = new();
+                                modes.Add(Key.Programs.DnsLimit.DoHPathLimitMode.File, true, false, typeof(string));
+                                modes.Add(Key.Programs.DnsLimit.DoHPathLimitMode.Text, true, false, typeof(string));
+                                modes.Add(Key.Programs.DnsLimit.DoHPathLimitMode.Disable, true, false, typeof(string));
+
+                                isValueOk = ConsoleTools.TryGetString(key, value, true, modes, out value);
+                                if (!isValueOk) return;
+                                modeStr = value;
+                            }
+                            
+                            // Get -DoHPathLimitMode
+                            AgnosticProgram.DnsLimit.LimitDoHPathsMode mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.Disable;
+                            if (modeStr.ToLower().Equals(Key.Programs.DnsLimit.DoHPathLimitMode.File.ToLower()))
+                                mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.File;
+                            else if (modeStr.ToLower().Equals(Key.Programs.DnsLimit.DoHPathLimitMode.Text.ToLower()))
+                                mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.Text;
+                            else if (modeStr.ToLower().Equals(Key.Programs.DnsLimit.DoHPathLimitMode.Disable.ToLower()))
+                                mode = AgnosticProgram.DnsLimit.LimitDoHPathsMode.Disable;
+
+                            // Get -PathOrText
+                            string pathOrText = string.Empty;
+                            key = Key.Programs.DnsLimit.PathOrText;
+                            if (mode != AgnosticProgram.DnsLimit.LimitDoHPathsMode.Disable)
+                            {
+                                isValueOk = ConsoleTools.TryGetValueByKey(input, key, true, true, out value);
+                                if (!isValueOk) return;
+                                isValueOk = ConsoleTools.TryGetString(key, value, true, out value);
+                                if (!isValueOk) return;
+                                pathOrText = value;
+                            }
+
+                            if (mode == AgnosticProgram.DnsLimit.LimitDoHPathsMode.File)
+                            {
+                                pathOrText = Path.GetFullPath(pathOrText);
+                                if (!File.Exists(pathOrText))
+                                {
+                                    string msgNotExist = $"{pathOrText}\nFile Not Exist.";
+                                    await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
+                                    return;
+                                }
+                            }
+
+                            if (mode == AgnosticProgram.DnsLimit.LimitDoHPathsMode.Text)
+                            {
+                                pathOrText = pathOrText.Replace(@"\n", Environment.NewLine);
+                            }
+
+                            AgnosticProgram.DnsLimit dnsLimitProgram = new();
+                            dnsLimitProgram.Set(enable, disablePlain, mode, pathOrText);
+
+                            await ShowDnsLimitMsgAsync(dnsLimitProgram);
                         }
 
                     }
@@ -1298,13 +1501,13 @@ public static partial class Program
                             if (sf.AgnosticServer.IsRunning && sf.Settings.Working_Mode == AgnosticSettings.WorkingMode.DnsAndProxy)
                             {
                                 sf.AgnosticServer.KillAll();
-                                WriteToStdout($"Done. Killed All Requests Of {sf.Name}.", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Done. Killed All Requests Of {sf.Name}.", ConsoleColor.Green);
                                 killed = true;
                             }
                         }
                     }
 
-                    if (!killed) WriteToStdout($"There Is No Running Server.", ConsoleColor.Green);
+                    if (!killed) await WriteToStdoutAsync($"There Is No Running Server.", ConsoleColor.Green);
                 }
 
                 // Write Requests To Log: True
@@ -1312,7 +1515,7 @@ public static partial class Program
                 {
                     // WriteRequests True
                     WriteRequestsToLog = true;
-                    WriteToStdout($"WriteRequestsToLog: True", ConsoleColor.Green);
+                    await WriteToStdoutAsync($"WriteRequestsToLog: True", ConsoleColor.Green);
 
                     // Save Command To List
                     string baseCmd = Key.Common.Requests;
@@ -1325,7 +1528,7 @@ public static partial class Program
                 {
                     // WriteRequests False
                     WriteRequestsToLog = false;
-                    WriteToStdout($"WriteRequestsToLog: False", ConsoleColor.Green);
+                    await WriteToStdoutAsync($"WriteRequestsToLog: False", ConsoleColor.Green);
 
                     // Save Command To List
                     string baseCmd = Key.Common.Requests;
@@ -1338,7 +1541,7 @@ public static partial class Program
                 {
                     // ChunkDetails True
                     WriteFragmentDetailsToLog = true;
-                    WriteToStdout($"WriteFragmentDetailsToLog: True", ConsoleColor.Green);
+                    await WriteToStdoutAsync($"WriteFragmentDetailsToLog: True", ConsoleColor.Green);
 
                     // Save Command To List
                     string baseCmd = Key.Common.FragmentDetails;
@@ -1351,7 +1554,7 @@ public static partial class Program
                 {
                     // ChunkDetails False
                     WriteFragmentDetailsToLog = false;
-                    WriteToStdout($"WriteFragmentDetailsToLog: False", ConsoleColor.Green);
+                    await WriteToStdoutAsync($"WriteFragmentDetailsToLog: False", ConsoleColor.Green);
 
                     // Save Command To List
                     string baseCmd = Key.Common.FragmentDetails;
@@ -1359,19 +1562,20 @@ public static partial class Program
                     LoadCommands.AddOrUpdateCommand(baseCmd, cmd);
                 }
 
-                // Start Proxy Server
+                // Start Server
                 else if (input.ToLower().Equals(Key.Common.Start.ToLower()))
                 {
                     // Start
+                    bool confirmed = false;
                     bool flushNeeded = false;
                     foreach (ServerProfile sf in ServerProfiles)
                     {
                         if (sf.AgnosticServer != null && sf.Settings != null && !string.IsNullOrEmpty(sf.Name))
                         {
-                            WriteToStdout(string.Empty);
+                            await WriteToStdoutAsync(string.Empty);
                             if (!sf.AgnosticServer.IsRunning)
                             {
-                                WriteToStdout($"Starting {sf.Name}...", ConsoleColor.Cyan);
+                                await WriteToStdoutAsync($"Starting {sf.Name}...", ConsoleColor.Cyan);
 
                                 // Check For Duplicate Ports
                                 bool isTheSamePort = false;
@@ -1385,7 +1589,7 @@ public static partial class Program
 
                                 if (isTheSamePort)
                                 {
-                                    WriteToStdout($"Cannot Use One Port For Multiple Servers.", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Cannot Use One Port For Multiple Servers.", ConsoleColor.Red);
                                     continue;
                                 }
 
@@ -1393,11 +1597,10 @@ public static partial class Program
                                 if (OperatingSystem.IsWindows())
                                 {
                                     List<int> pids = ProcessManager.GetProcessPidsByUsingPort(sf.Settings.ListenerPort);
-                                    if (pids.Any())
-                                    {
-                                        foreach (int pid in pids) ProcessManager.KillProcessByPID(pid);
-                                        await Task.Delay(5);
-                                    }
+                                    foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
+                                    await Task.Delay(5);
+                                    pids = ProcessManager.GetProcessPidsByUsingPort(sf.Settings.ListenerPort);
+                                    foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
                                 }
 
                                 // Check Port
@@ -1405,7 +1608,7 @@ public static partial class Program
 
                                 if (isPortOpen)
                                 {
-                                    WriteToStdout($"Port {sf.Settings.ListenerPort} Is Occupied, Choose Another.", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Port {sf.Settings.ListenerPort} Is Occupied, Choose Another.", ConsoleColor.Red);
                                     continue;
                                 }
 
@@ -1416,6 +1619,7 @@ public static partial class Program
                                 if (sf.Fragment != null) sf.AgnosticServer.EnableFragment(sf.Fragment);
                                 if (sf.DnsRules != null) sf.AgnosticServer.EnableDnsRules(sf.DnsRules);
                                 if (sf.ProxyRules != null) sf.AgnosticServer.EnableProxyRules(sf.ProxyRules);
+                                if (sf.DnsLimit != null) sf.AgnosticServer.EnableDnsLimit(sf.DnsLimit);
                                 sf.AgnosticServer.Start(sf.Settings);
                                 await Task.Delay(50);
                                 if (sf.AgnosticServer.IsRunning)
@@ -1425,8 +1629,11 @@ public static partial class Program
                                         sf.Fragment.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
                                         sf.Fragment.OnChunkDetailsReceived += FragmentStaticProgram_OnChunkDetailsReceived;
                                     }
-                                    WriteToStdout($"{sf.Name} Started", ConsoleColor.Green);
-                                    flushNeeded = true;
+                                    await WriteToStdoutAsync($"{sf.Name} Started", ConsoleColor.Green);
+                                    confirmed = true;
+
+                                    if (sf.Settings.Working_Mode == AgnosticSettings.WorkingMode.DnsAndProxy)
+                                        flushNeeded = true;
                                 }
                                 else
                                 {
@@ -1434,23 +1641,28 @@ public static partial class Program
                                     sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
                                     if (sf.Fragment != null)
                                         sf.Fragment.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
-                                    WriteToStdout($"Couldn't Start {sf.Name}", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Couldn't Start {sf.Name}", ConsoleColor.Red);
                                 }
                             }
-                            else WriteToStdout($"{sf.Name} Already Started", ConsoleColor.Gray);
+                            else await WriteToStdoutAsync($"{sf.Name} Already Started", ConsoleColor.Gray);
                         }
                     }
 
                     if (flushNeeded)
                     {
-                        WriteToStdout(string.Empty);
-                        WriteToStdout("Flushing System DNS...", ConsoleColor.Cyan);
+                        await WriteToStdoutAsync(string.Empty);
+                        await WriteToStdoutAsync("Flushing System DNS...", ConsoleColor.Cyan);
                         ProcessManager.ExecuteOnly("ipconfig", null, "/flushdns", true, true);
-                        WriteToStdout("System DNS Flushed", ConsoleColor.Green);
+                        await WriteToStdoutAsync("System DNS Flushed", ConsoleColor.Green);
+                    }
+
+                    if (confirmed)
+                    {
+                        await WriteToStdoutAsync("Confirmed", ConsoleColor.Green);
                     }
                 }
 
-                // Stop Proxy Server
+                // Stop Server
                 else if (input.ToLower().Equals(Key.Common.Stop.ToLower()))
                 {
                     // Stop
@@ -1459,10 +1671,10 @@ public static partial class Program
                     {
                         if (sf.AgnosticServer != null && sf.Settings != null && !string.IsNullOrEmpty(sf.Name))
                         {
-                            WriteToStdout(string.Empty);
+                            await WriteToStdoutAsync(string.Empty);
                             if (sf.AgnosticServer.IsRunning)
                             {
-                                WriteToStdout($"Stopping {sf.Name}...", ConsoleColor.Cyan);
+                                await WriteToStdoutAsync($"Stopping {sf.Name}...", ConsoleColor.Cyan);
 
                                 sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
                                 if (sf.Fragment != null)
@@ -1471,22 +1683,43 @@ public static partial class Program
                                 sf.AgnosticServer.Stop();
                                 await Task.Delay(50);
                                 if (!sf.AgnosticServer.IsRunning)
-                                    WriteToStdout($"{sf.Name} Stopped", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"{sf.Name} Stopped", ConsoleColor.Green);
                                 else
-                                    WriteToStdout($"Couldn't Stop {sf.Name}", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Couldn't Stop {sf.Name}", ConsoleColor.Red);
                             }
-                            else WriteToStdout($"{sf.Name} Already Stopped", ConsoleColor.Gray);
+                            else await WriteToStdoutAsync($"{sf.Name} Already Stopped", ConsoleColor.Gray);
+                        }
+                    }
+                }
+
+                // Update Server Programs Settings
+                else if (input.ToLower().Equals(Key.Common.Update.ToLower()))
+                {
+                    // Update
+                    foreach (ServerProfile sf in ServerProfiles)
+                    {
+                        if (sf.AgnosticServer != null && sf.Settings != null && !string.IsNullOrEmpty(sf.Name))
+                        {
+                            await WriteToStdoutAsync(string.Empty);
+                            await WriteToStdoutAsync($"Updating {sf.Name}...", ConsoleColor.Cyan);
+
+                            if (sf.Fragment != null) sf.AgnosticServer.EnableFragment(sf.Fragment);
+                            if (sf.DnsRules != null) sf.AgnosticServer.EnableDnsRules(sf.DnsRules);
+                            if (sf.ProxyRules != null) sf.AgnosticServer.EnableProxyRules(sf.ProxyRules);
+                            if (sf.DnsLimit != null) sf.AgnosticServer.EnableDnsLimit(sf.DnsLimit);
+
+                            await WriteToStdoutAsync($"{sf.Name} Updated", ConsoleColor.Green);
                         }
                     }
                 }
 
                 // Save Commands
                 else if (input.ToLower().Equals(Key.Common.Save.ToLower()))
-                    SaveCommandsToFile();
+                    await SaveCommandsToFileAsync();
 
                 // Wrong Command
                 else if (input.Length > 0)
-                    WriteToStdout("Wrong Command. Type \"Help\" To Get More Info.", ConsoleColor.Red);
+                    await WriteToStdoutAsync("Wrong Command. Type \"Help\" To Get More Info.", ConsoleColor.Red);
             });
         }
         catch (Exception ex)

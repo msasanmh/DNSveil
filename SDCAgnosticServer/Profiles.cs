@@ -12,6 +12,7 @@ public class ServerProfile
     public AgnosticProgram.Fragment? Fragment { get; set; }
     public AgnosticProgram.DnsRules? DnsRules { get; set; }
     public AgnosticProgram.ProxyRules? ProxyRules { get; set; }
+    public AgnosticProgram.DnsLimit? DnsLimit { get; set; }
 }
 
 public static partial class Program
@@ -50,6 +51,11 @@ public static partial class Program
                     {
                         existServerProfile.ProxyRules = serverProfile.ProxyRules;
                         existServerProfile.AgnosticServer.EnableProxyRules(existServerProfile.ProxyRules);
+                    }
+                    if (serverProfile.DnsLimit != null)
+                    {
+                        existServerProfile.DnsLimit = serverProfile.DnsLimit;
+                        existServerProfile.AgnosticServer.EnableDnsLimit(existServerProfile.DnsLimit);
                     }
                 }
             }

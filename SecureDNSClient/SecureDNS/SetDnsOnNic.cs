@@ -213,6 +213,9 @@ public class SetDnsOnNic
 
         ActiveNICs activeNICsOut = new();
 
+        isDnsSetOn = false;
+        activeNICs = activeNICsOut;
+
         bool isAnyDnsSet = false;
         List<NetworkTool.NICResult> nics = NICs.ToList();
         for (int n = 0; n < nics.Count; n++)
@@ -221,12 +224,7 @@ public class SetDnsOnNic
             if (nicR.IsDnsSetToLoopback) isAnyDnsSet = true;
             if (nicR.IsUpAndRunning) activeNICsOut.NICs.Add(nicR.NIC_Name);
         }
-
-        if (!isAnyDnsSet)
-        {
-            isAnyDnsSet = NetworkTool.IsDnsSetToLocal(out _, out _);
-        }
-
+        
         bool isDnsSetOnOut = false;
         try
         {

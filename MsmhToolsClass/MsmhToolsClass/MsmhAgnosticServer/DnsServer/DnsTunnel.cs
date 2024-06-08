@@ -5,7 +5,7 @@ namespace MsmhToolsClass.MsmhAgnosticServer;
 
 public class DnsTunnel
 {
-    public static async Task Process(AgnosticResult aResult, AgnosticProgram.DnsRules dnsRulesProgram, DnsCache dnsCaches, AgnosticSettings settings, EventHandler<EventArgs>? onRequestReceived)
+    public static async Task Process(AgnosticResult aResult, AgnosticProgram.DnsRules dnsRulesProgram, AgnosticProgram.DnsLimit dnsLimitProgram, DnsCache dnsCaches, AgnosticSettings settings, EventHandler<EventArgs>? onRequestReceived)
     {
         DnsEnums.DnsProtocol dnsProtocol = aResult.Protocol switch
         {
@@ -17,6 +17,33 @@ public class DnsTunnel
         
         // Event
         string msgReqEvent = $"[{aResult.Local_EndPoint.Address}] [{dnsProtocol}] ";
+
+        if (dnsProtocol == DnsEnums.DnsProtocol.Unknown)
+        {
+            msgReqEvent += "Request Denied - Unsupported Protocol";
+            onRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
+            return;
+        }
+
+        // Apply DnsLimit Program
+        if (dnsLimitProgram.EnableDnsLimit)
+        {
+            AgnosticProgram.DnsLimit.DnsLimitResult dlr = dnsLimitProgram.Get(dnsProtocol, aResult.DoHPath);
+
+            if (dlr.IsPlainDnsDisable)
+            {
+                msgReqEvent += "Request Denied - Protocol Is Blocked By DnsLimit Program";
+                onRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
+                return;
+            }
+
+            if (!dlr.IsDoHPathAllowed)
+            {
+                msgReqEvent += $"Request Denied - DoH Path Is Blocked By DnsLimit Program (Path: {aResult.DoHPath})";
+                onRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
+                return;
+            }
+        }
 
         // Create Request
         DnsMessage dmQ = DnsMessage.Read(aResult.FirstBuffer, dnsProtocol);

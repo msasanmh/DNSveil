@@ -1,5 +1,6 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 /*
@@ -67,7 +68,7 @@ namespace CustomControls
 
             addWidth ??= 0;
             addHeight ??= 0;
-
+            
             int iconOffset = 5;
             int buttonOffset = 5;
             int testLabelOffset = iconOffset;
@@ -193,13 +194,13 @@ namespace CustomControls
 
             mHeight += 1; // Additional Height
             Size = new(mWidth + Convert.ToInt32(addWidth), mHeight + Convert.ToInt32(addHeight));
-
+            
             int radius = RoundedCorners;
             int diameter = radius * 2;
             Rectangle rec = new(0, 0, Width, Height);
             if (radius > 0)
             {
-                Size = new(mWidth + (diameter * 2), mHeight + (diameter * 2));
+                Size = new(Size.Width + (diameter * 2), Size.Height + (diameter * 2));
                 rec = new(0, 0, Width, Height);
                 GraphicsPath path = new();
                 path.AddArc(rec.X, rec.Y, radius, radius, 180, 90);

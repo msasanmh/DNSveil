@@ -2,30 +2,34 @@
 using MsmhToolsClass.MsmhAgnosticServer;
 using System.Diagnostics;
 using System.Net;
+using System.Runtime.ConstrainedExecution;
 
 namespace SecureDNSClient;
 
 public class CheckDns
 {
-    public bool IsDnsOnline { get; private set; } = false;
+    public class CheckDnsResult
+    {
+        public bool IsDnsOnline { get; internal set; } = false;
 
-    /// <summary>
-    /// Returns -1 if DNS fail
-    /// </summary>
-    public int DnsLatency { get; private set; } = -1;
-    public bool IsGoogleSafeSearchEnabled { get; private set; } = false;
-    public bool IsBingSafeSearchEnabled { get; private set; } = false;
-    public bool IsYoutubeRestricted { get; private set; } = false;
-    public bool IsAdultFilter { get; private set; } = false;
-    public string AdultDomainToCheck { get; set; } = "pornhub.com";
+        /// <summary>
+        /// Returns -1 If DNS Fail
+        /// </summary>
+        public int DnsLatency { get; internal set; } = -1;
+        public bool IsGoogleSafeSearchEnabled { get; internal set; } = false;
+        public bool IsBingSafeSearchEnabled { get; internal set; } = false;
+        public bool IsYoutubeRestricted { get; internal set; } = false;
+        public bool IsAdultFilter { get; internal set; } = false;
+    }
+
+    private string AdultDomainToCheck { get; set; } = "pornhub.com";
     private List<IPAddress> GoogleSafeSearchIpList { get; set; } = new();
     private List<IPAddress> BingSafeSearchIpList { get; set; } = new();
     private List<IPAddress> YoutubeRestrictIpList { get; set; } = new();
     private List<IPAddress> AdultIpList { get; set; } = new();
     private string DNS = string.Empty;
-
-    public bool Insecure { get; private set; } = false;
-    public bool CheckForFilters { get; private set; } = false;
+    private bool Insecure { get; set; } = false;
+    private bool CheckForFilters { get; set; } = false;
     private readonly int TimeoutMS = 10000;
 
     /// <summary>
@@ -40,36 +44,44 @@ public class CheckDns
     /// <summary>
     /// Check DNS and get latency (ms)
     /// </summary>
-    public async Task CheckDnsAsync(string domain, string dnsServer, int timeoutMS)
+    public async Task<CheckDnsResult> CheckDnsAsync(string domain, string dnsServer, int timeoutMS)
     {
         DNS = dnsServer;
-        IsDnsOnline = false;
         DnsLookupResult dlr = await CheckDnsWorkAsync(domain, DNS, timeoutMS, IPAddress.None, 0).ConfigureAwait(false);
-        IsDnsOnline = dlr.IsDnsOnline;
-        DnsLatency = IsDnsOnline ? dlr.Latency : -1;
+        bool isDnsOnline = dlr.IsDnsOnline;
+        int dnsLatency = isDnsOnline ? dlr.Latency : -1;
 
-        IsGoogleSafeSearchEnabled = false;
-        IsBingSafeSearchEnabled = false;
-        IsYoutubeRestricted = false;
-        IsAdultFilter = false;
-        if (CheckForFilters && IsDnsOnline)
+        bool isGoogleSafeSearchEnabled = false, isBingSafeSearchEnabled = false;
+        bool isYoutubeRestricted = false, isAdultFilter = false;
+        if (CheckForFilters && isDnsOnline)
         {
-            CheckDnsFilters(DNS, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter);
-            IsGoogleSafeSearchEnabled = isGoogleSafeSearch;
-            IsBingSafeSearchEnabled = isBingSafeSearch;
-            IsYoutubeRestricted = isYoutubeRestricted;
-            IsAdultFilter = isAdultFilter;
+            var (IsGoogleSafeSearch, IsBingSafeSearch, IsYoutubeRestricted, IsAdultFilter) = await CheckDnsFiltersAsync(DNS);
+            isGoogleSafeSearchEnabled = IsGoogleSafeSearch;
+            isBingSafeSearchEnabled = IsBingSafeSearch;
+            isYoutubeRestricted = IsYoutubeRestricted;
+            isAdultFilter = IsAdultFilter;
         }
+
+        return new CheckDnsResult
+        {
+            IsDnsOnline = isDnsOnline,
+            DnsLatency = dnsLatency,
+            IsGoogleSafeSearchEnabled = isGoogleSafeSearchEnabled,
+            IsBingSafeSearchEnabled = isBingSafeSearchEnabled,
+            IsYoutubeRestricted = isYoutubeRestricted,
+            IsAdultFilter = isAdultFilter
+        };
     }
 
     /// <summary>
     /// Check DNS and get latency (ms) by external SDCLookup
     /// </summary>
-    public async Task CheckDnsExternalAsync(string domain, string dnsServer, int timeoutMS)
+    public async Task<CheckDnsResult> CheckDnsExternalAsync(string domain, string dnsServer, int timeoutMS)
     {
         DNS = dnsServer;
-        IsDnsOnline = false;
-        string args = $"-Domain={domain} -DNSs={dnsServer} -TimeoutMS={timeoutMS} -DoubleCheck=True";
+        bool isDnsOnline = false;
+        int dnsLatency = -1;
+        string args = $"-Domain={domain} -DNSs=\"{dnsServer}\" -TimeoutMS={timeoutMS} -DoubleCheck=True";
         string dnsLookupResult = await ProcessManager.ExecuteAsync(SecureDNS.SDCLookupPath, null, args, true, true, SecureDNS.BinaryDirPath);
         if (!string.IsNullOrEmpty(dnsLookupResult))
         {
@@ -78,53 +90,68 @@ public class CheckDns
                 List<string> lines = dnsLookupResult.ReplaceLineEndings().Split(Environment.NewLine).ToList();
                 if (lines.Count >= 2)
                 {
-                    bool isBool = bool.TryParse(lines[1].Trim(), out bool isDnsOnline);
-                    if (isBool) IsDnsOnline = isDnsOnline;
+                    bool isBool = bool.TryParse(lines[1].Trim(), out bool isDnsOnlineValue);
+                    if (isBool) isDnsOnline = isDnsOnlineValue;
 
-                    bool isInt = int.TryParse(lines[0].Trim(), out int dnsLatency);
-                    if (isInt) DnsLatency = IsDnsOnline ? dnsLatency : -1;
+                    bool isInt = int.TryParse(lines[0].Trim(), out int dnsLatencyValue);
+                    if (isInt) dnsLatency = isDnsOnline ? dnsLatencyValue : -1;
                 }
             }
             catch (Exception) { }
         }
 
-        IsGoogleSafeSearchEnabled = false;
-        IsBingSafeSearchEnabled = false;
-        IsYoutubeRestricted = false;
-        IsAdultFilter = false;
-        if (CheckForFilters && IsDnsOnline)
+        bool isGoogleSafeSearchEnabled = false, isBingSafeSearchEnabled = false;
+        bool isYoutubeRestricted = false, isAdultFilter = false;
+        if (CheckForFilters && isDnsOnline)
         {
-            CheckDnsFilters(DNS, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter);
-            IsGoogleSafeSearchEnabled = isGoogleSafeSearch;
-            IsBingSafeSearchEnabled = isBingSafeSearch;
-            IsYoutubeRestricted = isYoutubeRestricted;
-            IsAdultFilter = isAdultFilter;
+            var (IsGoogleSafeSearch, IsBingSafeSearch, IsYoutubeRestricted, IsAdultFilter) = await CheckDnsFiltersAsync(DNS);
+            isGoogleSafeSearchEnabled = IsGoogleSafeSearch;
+            isBingSafeSearchEnabled = IsBingSafeSearch;
+            isYoutubeRestricted = IsYoutubeRestricted;
+            isAdultFilter = IsAdultFilter;
         }
+
+        return new CheckDnsResult
+        {
+            IsDnsOnline = isDnsOnline,
+            DnsLatency = dnsLatency,
+            IsGoogleSafeSearchEnabled = isGoogleSafeSearchEnabled,
+            IsBingSafeSearchEnabled = isBingSafeSearchEnabled,
+            IsYoutubeRestricted = isYoutubeRestricted,
+            IsAdultFilter = isAdultFilter
+        };
     }
 
     /// <summary>
     /// Check DNS And Get Latency (ms)
     /// </summary>
-    public async Task CheckDnsAsync(string domain, string dnsServer, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort)
+    public async Task<CheckDnsResult> CheckDnsAsync(string domain, string dnsServer, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort)
     {
         DNS = dnsServer;
-        IsDnsOnline = false;
         DnsLookupResult dlr = await CheckDnsWorkAsync(domain, DNS, timeoutMS, bootstrapIP, bootstrapPort).ConfigureAwait(false);
-        IsDnsOnline = dlr.IsDnsOnline;
-        DnsLatency = IsDnsOnline ? dlr.Latency : -1;
+        bool isDnsOnline = dlr.IsDnsOnline;
+        int dnsLatency = isDnsOnline ? dlr.Latency : -1;
 
-        IsGoogleSafeSearchEnabled = false;
-        IsBingSafeSearchEnabled = false;
-        IsYoutubeRestricted = false;
-        IsAdultFilter = false;
-        if (CheckForFilters && IsDnsOnline)
+        bool isGoogleSafeSearchEnabled = false, isBingSafeSearchEnabled = false;
+        bool isYoutubeRestricted = false, isAdultFilter = false;
+        if (CheckForFilters && isDnsOnline)
         {
-            CheckDnsFilters(DNS, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter);
-            IsGoogleSafeSearchEnabled = isGoogleSafeSearch;
-            IsBingSafeSearchEnabled = isBingSafeSearch;
-            IsYoutubeRestricted = isYoutubeRestricted;
-            IsAdultFilter = isAdultFilter;
+            var (IsGoogleSafeSearch, IsBingSafeSearch, IsYoutubeRestricted, IsAdultFilter) = await CheckDnsFiltersAsync(DNS);
+            isGoogleSafeSearchEnabled = IsGoogleSafeSearch;
+            isBingSafeSearchEnabled = IsBingSafeSearch;
+            isYoutubeRestricted = IsYoutubeRestricted;
+            isAdultFilter = IsAdultFilter;
         }
+
+        return new CheckDnsResult
+        {
+            IsDnsOnline = isDnsOnline,
+            DnsLatency = dnsLatency,
+            IsGoogleSafeSearchEnabled = isGoogleSafeSearchEnabled,
+            IsBingSafeSearchEnabled = isBingSafeSearchEnabled,
+            IsYoutubeRestricted = isYoutubeRestricted,
+            IsAdultFilter = isAdultFilter
+        };
     }
 
     private class DnsLookupResult
@@ -185,7 +212,7 @@ public class CheckDns
 
     //================================= Check Dns as SmartDns
 
-    public async Task<bool> CheckAsSmartDns(string uncensoredDns, string domain, string? dns = null)
+    public async Task<bool> CheckAsSmartDnsAsync(string uncensoredDns, string domain, string? dns = null)
     {
         if (!string.IsNullOrEmpty(dns)) DNS = dns;
 
@@ -202,13 +229,15 @@ public class CheckDns
             for (int n = 0; n < realDomainIPs.Count; n++)
             {
                 IPAddress realDomainIP = realDomainIPs[n];
-                NetworkTool.IpToHost(realDomainIP.ToString(), out string realHost);
+                var ipToHost1 = await NetworkTool.IpToHostAsync(realDomainIP.ToString());
+                string realHost = ipToHost1.BaseHost;
                 if (string.IsNullOrEmpty(realHost)) continue;
                 for (int n2 = 0; n2 < domainIPs.Count; n2++)
                 {
 
                     IPAddress domainIP = domainIPs[n2];
-                    NetworkTool.IpToHost(domainIP.ToString(), out string host);
+                    var ipToHost2 = await NetworkTool.IpToHostAsync(domainIP.ToString());
+                    string host = ipToHost2.BaseHost;
                     if (string.IsNullOrEmpty(host)) continue;
                     if (NetworkTool.IsLocalIP(domainIP.ToString())) continue;
 
@@ -256,7 +285,7 @@ public class CheckDns
 
     //================================= Generate IPs
 
-    public async Task GenerateGoogleSafeSearchIpsAsync(string uncensoredDns)
+    public async Task<int> GenerateGoogleSafeSearchIpsAsync(string uncensoredDns)
     {
         if (!GoogleSafeSearchIpList.Any())
         {
@@ -264,9 +293,10 @@ public class CheckDns
             GoogleSafeSearchIpList = await GetARecordIPsAsync(websiteSS, uncensoredDns).ConfigureAwait(false);
             Debug.WriteLine("Google Safe Search IPs Generated, Count: " + GoogleSafeSearchIpList.Count);
         }
+        return GoogleSafeSearchIpList.Count;
     }
 
-    public async Task GenerateBingSafeSearchIpsAsync(string uncensoredDns)
+    public async Task<int> GenerateBingSafeSearchIpsAsync(string uncensoredDns)
     {
         if (!BingSafeSearchIpList.Any())
         {
@@ -274,9 +304,10 @@ public class CheckDns
             BingSafeSearchIpList = await GetARecordIPsAsync(websiteSS, uncensoredDns).ConfigureAwait(false);
             Debug.WriteLine("Bing Safe Search IPs Generated, Count: " + BingSafeSearchIpList.Count);
         }
+        return BingSafeSearchIpList.Count;
     }
 
-    public async Task GenerateYoutubeRestrictIpsAsync(string uncensoredDns)
+    public async Task<int> GenerateYoutubeRestrictIpsAsync(string uncensoredDns)
     {
         if (!YoutubeRestrictIpList.Any())
         {
@@ -288,9 +319,10 @@ public class CheckDns
             YoutubeRestrictIpList = youtubeR.Concat(youtubeRM).ToList();
             Debug.WriteLine("Youtube Restrict IPs Generated, Count: " + YoutubeRestrictIpList.Count);
         }
+        return YoutubeRestrictIpList.Count;
     }
 
-    public async Task GenerateAdultDomainIpsAsync(string uncensoredDns)
+    public async Task<int> GenerateAdultDomainIpsAsync(string uncensoredDns)
     {
         if (!AdultIpList.Any())
         {
@@ -298,16 +330,17 @@ public class CheckDns
             AdultIpList = await GetARecordIPsAsync(websiteAD, uncensoredDns).ConfigureAwait(false);
             Debug.WriteLine("Adult IPs Generated, Count: " + AdultIpList.Count);
         }
+        return AdultIpList.Count;
     }
 
     //================================= Check DNS Filters
 
-    private void CheckDnsFilters(string dnsServer, out bool isGoogleSafeSearch, out bool isBingSafeSearch, out bool isYoutubeRestricted, out bool isAdultFilter)
+    private async Task<(bool IsGoogleSafeSearch, bool IsBingSafeSearch, bool IsYoutubeRestricted, bool IsAdultFilter)> CheckDnsFiltersAsync(string dnsServer)
     {
-        bool isGoogleSafeSearchOut = false; isGoogleSafeSearch = false;
-        bool isBingSafeSearchOut = false; isBingSafeSearch = false;
-        bool isYoutubeRestrictedOut = false; isYoutubeRestricted = false;
-        bool isAdultFilterOut = false; isAdultFilter = false;
+        bool isGoogleSafeSearchOut = false;
+        bool isBingSafeSearchOut = false;
+        bool isYoutubeRestrictedOut = false;
+        bool isAdultFilterOut = false;
 
         Task task = Task.Run(async () =>
         {
@@ -347,12 +380,9 @@ public class CheckDns
             }
         });
 
-        try { task.Wait(); } catch (Exception) { }
+        try { await task.WaitAsync(CancellationToken.None); } catch (Exception) { }
 
-        isGoogleSafeSearch = isGoogleSafeSearchOut;
-        isBingSafeSearch = isBingSafeSearchOut;
-        isYoutubeRestricted = isYoutubeRestrictedOut;
-        isAdultFilter = isAdultFilterOut;
+        return (isGoogleSafeSearchOut, isBingSafeSearchOut, isYoutubeRestrictedOut, isAdultFilterOut);
     }
 
     private async Task<List<IPAddress>> GetARecordIPsAsync(string domain, string dnsServer)

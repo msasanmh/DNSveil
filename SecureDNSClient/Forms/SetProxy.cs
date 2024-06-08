@@ -6,7 +6,7 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    private async void SetProxy(bool unset = false, bool limitLog = false)
+    private async Task SetProxyAsync(bool unset = false, bool limitLog = false)
     {
         if (IsAnotherProxySet)
         {

@@ -15,6 +15,7 @@ using System.Drawing;
 using System.Net.Sockets;
 using System.Collections.Specialized;
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace MsmhToolsClass;
 
@@ -52,7 +53,7 @@ public static class ExtensionsMethods
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ExtensionsMethods TryUpdate: " + ex.Message);
+            Debug.WriteLine("ExtensionsMethods AddOrUpdate: " + ex.Message);
             return default;
         }
     }
@@ -104,6 +105,79 @@ public static class ExtensionsMethods
         return result;
     }
     //-----------------------------------------------------------------------------------
+    public static string CapitalizeFirstLetter(this string s, CultureInfo? ci = null)
+    {
+        try
+        {
+            StringInfo si = new(s);
+            ci ??= CultureInfo.CurrentCulture;
+
+            if (si.LengthInTextElements > 0)
+            {
+                s = si.SubstringByTextElements(0, 1).ToUpper(ci);
+            }
+
+            if (si.LengthInTextElements > 1)
+            {
+                s += si.SubstringByTextElements(1);
+            }
+        }
+        catch (Exception) { }
+
+        return s;
+    }
+    //-----------------------------------------------------------------------------------
+    public static string RemoveChar(this string value, char charToRemove)
+    {
+        try
+        {
+            char[] array = new char[value.Length];
+            int arrayIndex = 0;
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                char ch = value[i];
+                if (ch != charToRemove)
+                {
+                    array[arrayIndex++] = ch;
+                }
+            }
+
+            return new string(array, 0, arrayIndex);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("RemoveChar 1: " + ex.Message);
+            return value;
+        }
+    }
+
+    public static string RemoveChar(this string value, params char[] charsToRemove)
+    {
+        try
+        {
+            HashSet<char> h = new(charsToRemove);
+            char[] array = new char[value.Length];
+            int arrayIndex = 0;
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                char ch = value[i];
+                if (!h.Contains(ch))
+                {
+                    array[arrayIndex++] = ch;
+                }
+            }
+
+            return new string(array, 0, arrayIndex);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("RemoveChar 2: " + ex.Message);
+            return value;
+        }
+    }
+    //-----------------------------------------------------------------------------------
     public static string TrimStart(this string source, string value)
     {
         string result = source;
@@ -134,9 +208,16 @@ public static class ExtensionsMethods
     //-----------------------------------------------------------------------------------
     public static bool IsConnected(this Socket socket, SelectMode selectMode = SelectMode.SelectRead)
     {
-        bool part1 = socket.Poll(1000, selectMode);
-        bool part2 = socket.Available == 0;
-        return !part1 || !part2;
+        try
+        {
+            bool part1 = socket.Poll(1000, selectMode);
+            bool part2 = socket.Available == 0;
+            return !part1 || !part2;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
     //-----------------------------------------------------------------------------------
     public static async Task SaveAsync(this XDocument xDocument, string xmlFilePath)
@@ -156,24 +237,45 @@ public static class ExtensionsMethods
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"XDocument SaveAsync Extension: {ex.Message}");
+            Debug.WriteLine("ExtensionsMethods SaveAsync: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
-    public static TimeSpan Round(this TimeSpan timeSpan, int precision)
+    public static string ToString<T>(this List<T> list, char separator)
     {
-        return TimeSpan.FromSeconds(Math.Round(timeSpan.TotalSeconds, precision));
+        string result = string.Empty;
+
+        try
+        {
+            if (list.Count > 0) result = string.Join(separator, list);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods ToString<T> Char: " + ex.Message);
+        }
+
+        return result;
     }
     //-----------------------------------------------------------------------------------
     public static string ToString<T>(this List<T> list, string separator)
     {
         string result = string.Empty;
-        for (int n = 0; n < list.Count; n++)
+
+        try
         {
-            T t = list[n];
-            result += $"{t}{separator}";
+            //for (int n = 0; n < list.Count; n++)
+            //{
+            //    T t = list[n];
+            //    result += $"{t}{separator}";
+            //}
+            //if (result.EndsWith(separator)) result = result.TrimEnd(separator);
+            if (list.Count > 0) result = string.Join(separator, list);
         }
-        if (result.EndsWith(separator)) result = result.TrimEnd(separator);
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods ToString<T> String: " + ex.Message);
+        }
+
         return result;
     }
     //-----------------------------------------------------------------------------------
@@ -204,154 +306,115 @@ public static class ExtensionsMethods
     {
         // Original non-optimized version: return source.Replace("\r\r\n", "\n").Replace("\r\n", "\n").Replace('\r', '\n').Replace('\u2028', '\n').Split('\n');
         List<string> lines = new();
-        int start = 0;
-        int max = s.Length;
-        int i = 0;
-        while (i < max)
+
+        try
         {
-            var ch = s[i];
-            if (ch == '\r')
+            int start = 0;
+            int max = s.Length;
+            int i = 0;
+            while (i < max)
             {
-                if (i < s.Length - 2 && s[i + 1] == '\r' && s[i + 2] == '\n') // \r\r\n
+                var ch = s[i];
+                if (ch == '\r')
                 {
+                    if (i < s.Length - 2 && s[i + 1] == '\r' && s[i + 2] == '\n') // \r\r\n
+                    {
+                        if (start < i)
+                            lines.Add(s[start..i]); // s[start..i] = s.Substring(start, i - start)
+                        i += 3;
+                        start = i;
+                        continue;
+                    }
+
+                    if (i < s.Length - 1 && s[i + 1] == '\n') // \r\n
+                    {
+                        if (start < i)
+                            lines.Add(s[start..i]);
+                        i += 2;
+                        start = i;
+                        continue;
+                    }
+
                     if (start < i)
-                        lines.Add(s[start..i]); // s[start..i] = s.Substring(start, i - start)
-                    i += 3;
+                        lines.Add(s[start..i]);
+                    i++;
                     start = i;
                     continue;
                 }
 
-                if (i < s.Length - 1 && s[i + 1] == '\n') // \r\n
+                if (ch == '\n' || ch == '\u2028')
                 {
                     if (start < i)
                         lines.Add(s[start..i]);
-                    i += 2;
+                    i++;
                     start = i;
                     continue;
                 }
 
-                if (start < i)
-                    lines.Add(s[start..i]);
                 i++;
-                start = i;
-                continue;
             }
 
-            if (ch == '\n' || ch == '\u2028')
-            {
-                if (start < i)
-                    lines.Add(s[start..i]);
-                i++;
-                start = i;
-                continue;
-            }
-
-            i++;
+            if (start < i) lines.Add(s[start..i]);
         }
-
-        if (start < i)
-            lines.Add(s[start..i]);
-        return lines;
-    }
-
-    public static List<string> SplitToLines(this string s, int maxCount)
-    {
-        var lines = new List<string>();
-        int start = 0;
-        int max = Math.Min(maxCount, s.Length);
-        int i = 0;
-        while (i < max)
+        catch (Exception ex)
         {
-            var ch = s[i];
-            if (ch == '\r')
-            {
-                if (i < s.Length - 2 && s[i + 1] == '\r' && s[i + 2] == '\n') // \r\r\n
-                {
-                    lines.Add(start < i ? s[start..i] : string.Empty);
-                    i += 3;
-                    start = i;
-                    continue;
-                }
-
-                if (i < s.Length - 1 && s[i + 1] == '\n') // \r\n
-                {
-                    lines.Add(start < i ? s[start..i] : string.Empty);
-                    i += 2;
-                    start = i;
-                    continue;
-                }
-
-                lines.Add(start < i ? s[start..i] : string.Empty);
-                i++;
-                start = i;
-                continue;
-            }
-
-            if (ch == '\n' || ch == '\u2028')
-            {
-                lines.Add(start < i ? s[start..i] : string.Empty);
-                i++;
-                start = i;
-                continue;
-            }
-
-            i++;
+            Debug.WriteLine("ExtensionsMethods ToString<T>: " + ex.Message);
         }
 
-        lines.Add(start < i ? s[start..i] : string.Empty);
         return lines;
-    }
-    //-----------------------------------------------------------------------------------
-    public static string ToBase64String(this string text)
-    {
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(text));
-    }
-    //-----------------------------------------------------------------------------------
-    public static string FromBase64String(this string base64String)
-    {
-        return Encoding.UTF8.GetString(Convert.FromBase64String(base64String));
     }
     //-----------------------------------------------------------------------------------
     public static string RemoveWhiteSpaces(this string text)
     {
-        string findWhat = @"\s+";
-        return Regex.Replace(text, findWhat, "");
+        try
+        {
+            string findWhat = @"\s+";
+            return Regex.Replace(text, findWhat, "");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods RemoveWhiteSpaces: " + ex.Message);
+            return text;
+        }
     }
     //-----------------------------------------------------------------------------------
     public static XmlDocument ToXmlDocument(this XDocument xDocument)
     {
-        var xmlDocument = new XmlDocument();
-        using var xmlReader = xDocument.CreateReader();
+        XmlDocument xmlDocument = new();
+        using XmlReader xmlReader = xDocument.CreateReader();
         xmlDocument.Load(xmlReader);
         return xmlDocument;
     }
     //-----------------------------------------------------------------------------------
     public static XDocument ToXDocument(this XmlDocument xmlDocument)
     {
-        using var nodeReader = new XmlNodeReader(xmlDocument);
+        using XmlNodeReader nodeReader = new(xmlDocument);
         nodeReader.MoveToContent();
         return XDocument.Load(nodeReader);
     }
     //-----------------------------------------------------------------------------------
-    public static string? AssemblyDescription(this Assembly assembly)
+    public static string AssemblyDescription(this Assembly assembly)
     {
-        if (assembly != null && Attribute.IsDefined(assembly, typeof(AssemblyDescriptionAttribute)))
+        try
         {
-            AssemblyDescriptionAttribute? descriptionAttribute = (AssemblyDescriptionAttribute?)Attribute.GetCustomAttribute(assembly, typeof(AssemblyDescriptionAttribute));
-            if (descriptionAttribute != null)
+            if (assembly != null && Attribute.IsDefined(assembly, typeof(AssemblyDescriptionAttribute)))
             {
-                return descriptionAttribute.Description;
+                AssemblyDescriptionAttribute? descriptionAttribute = (AssemblyDescriptionAttribute?)Attribute.GetCustomAttribute(assembly, typeof(AssemblyDescriptionAttribute));
+                if (descriptionAttribute != null) return descriptionAttribute.Description;
             }
         }
-        return null;
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods AssemblyDescription: " + ex.Message);
+        }
+
+        return string.Empty;
     }
     //-----------------------------------------------------------------------------------
     public static T IsNotNull<T>([NotNull] this T? value, [CallerArgumentExpression(parameterName: "value")] string? paramName = null)
     {
-        if (value == null)
-            throw new ArgumentNullException(paramName);
-        else
-            return value;
+        if (value == null) throw new ArgumentNullException(paramName);
+        else return value;
     } // Usage: someVariable.IsNotNull();
     //-----------------------------------------------------------------------------------
     /// <summary>
@@ -359,29 +422,37 @@ public static class ExtensionsMethods
     /// </summary>
     public static GraphicsPath? Shrink(this GraphicsPath path, float width)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return null;
-        using GraphicsPath gp = new();
-        gp.AddPath(path, false);
-        gp.CloseAllFigures();
-        gp.Widen(new Pen(Color.Black, width * 2));
-        int position = 0;
-        GraphicsPath result = new();
-        while (position < gp.PointCount)
+        try
         {
-            // skip outer edge
-            position += CountNextFigure(gp.PathData, position);
-            // count inner edge
-            int figureCount = CountNextFigure(gp.PathData, position);
-            var points = new PointF[figureCount];
-            var types = new byte[figureCount];
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return null;
+            using GraphicsPath gp = new();
+            gp.AddPath(path, false);
+            gp.CloseAllFigures();
+            gp.Widen(new Pen(Color.Black, width * 2));
+            int position = 0;
+            GraphicsPath result = new();
+            while (position < gp.PointCount)
+            {
+                // skip outer edge
+                position += CountNextFigure(gp.PathData, position);
+                // count inner edge
+                int figureCount = CountNextFigure(gp.PathData, position);
+                var points = new PointF[figureCount];
+                var types = new byte[figureCount];
 
-            Array.Copy(gp.PathPoints, position, points, 0, figureCount);
-            Array.Copy(gp.PathTypes, position, types, 0, figureCount);
-            position += figureCount;
-            result.AddPath(new GraphicsPath(points, types), false);
+                Array.Copy(gp.PathPoints, position, points, 0, figureCount);
+                Array.Copy(gp.PathTypes, position, types, 0, figureCount);
+                position += figureCount;
+                result.AddPath(new GraphicsPath(points, types), false);
+            }
+            path.Reset();
+            path.AddPath(result, false);
         }
-        path.Reset();
-        path.AddPath(result, false);
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods Shrink: " + ex.Message);
+        }
+
         return path;
     }
 
@@ -391,13 +462,21 @@ public static class ExtensionsMethods
     private static int CountNextFigure(PathData data, int position)
     {
         int count = 0;
-        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return count;
-        for (int i = position; i < data?.Types?.Length; i++)
+
+        try
         {
-            count++;
-            if (0 != (data.Types[i] & (int)PathPointType.CloseSubpath))
-                return count;
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return count;
+            for (int i = position; i < data?.Types?.Length; i++)
+            {
+                count++;
+                if (0 != (data.Types[i] & (int)PathPointType.CloseSubpath)) return count;
+            }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods CountNextFigure: " + ex.Message);
+        }
+
         return count;
     }
     //-----------------------------------------------------------------------------------
@@ -406,12 +485,18 @@ public static class ExtensionsMethods
     /// </summary>
     public static void DrawRoundedRectangle(this Graphics graphics, Pen pen, Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
-        GraphicsPath? path = DrawingTool.RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
-        graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        if (path != null)
-            graphics.DrawPath(pen, path);
-        graphics.SmoothingMode = SmoothingMode.Default;
+        try
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
+            GraphicsPath? path = DrawingTool.RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            if (path != null) graphics.DrawPath(pen, path);
+            graphics.SmoothingMode = SmoothingMode.Default;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods DrawRoundedRectangle: " + ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
@@ -419,12 +504,18 @@ public static class ExtensionsMethods
     /// </summary>
     public static void FillRoundedRectangle(this Graphics graphics, Brush brush, Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
-        GraphicsPath? path = DrawingTool.RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
-        graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        if (path != null)
-            graphics.FillPath(brush, path);
-        graphics.SmoothingMode = SmoothingMode.Default;
+        try
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
+            GraphicsPath? path = DrawingTool.RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            if (path != null) graphics.FillPath(brush, path);
+            graphics.SmoothingMode = SmoothingMode.Default;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods FillRoundedRectangle: " + ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
@@ -432,8 +523,15 @@ public static class ExtensionsMethods
     /// </summary>
     public static void DrawCircle(this Graphics g, Pen pen, float centerX, float centerY, float radius)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
-        g.DrawEllipse(pen, centerX - radius, centerY - radius, radius + radius, radius + radius);
+        try
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
+            g.DrawEllipse(pen, centerX - radius, centerY - radius, radius + radius, radius + radius);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods DrawCircle: " + ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
@@ -441,30 +539,61 @@ public static class ExtensionsMethods
     /// </summary>
     public static void FillCircle(this Graphics g, Brush brush, float centerX, float centerY, float radius)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
-        g.FillEllipse(brush, centerX - radius, centerY - radius, radius + radius, radius + radius);
+        try
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) return;
+            g.FillEllipse(brush, centerX - radius, centerY - radius, radius + radius, radius + radius);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods FillCircle: " + ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     public static string ToXml(this DataSet ds)
     {
-        using var memoryStream = new MemoryStream();
-        using TextWriter streamWriter = new StreamWriter(memoryStream);
-        var xmlSerializer = new XmlSerializer(typeof(DataSet));
-        xmlSerializer.Serialize(streamWriter, ds);
-        return Encoding.UTF8.GetString(memoryStream.ToArray());
+        try
+        {
+            using MemoryStream memoryStream = new();
+            using TextWriter streamWriter = new StreamWriter(memoryStream);
+            XmlSerializer xmlSerializer = new(typeof(DataSet));
+            xmlSerializer.Serialize(streamWriter, ds);
+            return Encoding.UTF8.GetString(memoryStream.ToArray());
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods ToXml: " + ex.Message);
+            return string.Empty;
+        }
     }
     //-----------------------------------------------------------------------------------
-    public static string ToXmlWithWriteMode(this DataSet ds, XmlWriteMode xmlWriteMode)
+    public static string ToXml(this DataSet ds, XmlWriteMode xmlWriteMode)
     {
-        using var ms = new MemoryStream();
-        using TextWriter sw = new StreamWriter(ms);
-        ds.WriteXml(sw, xmlWriteMode);
-        return new UTF8Encoding(false).GetString(ms.ToArray());
+        try
+        {
+            using MemoryStream ms = new();
+            using TextWriter sw = new StreamWriter(ms);
+            ds.WriteXml(sw, xmlWriteMode);
+            return new UTF8Encoding(false).GetString(ms.ToArray());
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods ToXml: " + ex.Message);
+            return string.Empty;
+        }
     }
     //-----------------------------------------------------------------------------------
     public static DataSet ToDataSet(this DataSet ds, string xmlFile, XmlReadMode xmlReadMode)
     {
-        ds.ReadXml(xmlFile, xmlReadMode);
+        try
+        {
+            ds.ReadXml(xmlFile, xmlReadMode);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods ToDataSet: " + ex.Message);
+        }
+
         return ds;
     }
     //-----------------------------------------------------------------------------------
@@ -479,27 +608,35 @@ public static class ExtensionsMethods
     /// </returns>
     public static Color ChangeBrightness(this Color color, float correctionFactor)
     {
-        float red = (float)color.R;
-        float green = (float)color.G;
-        float blue = (float)color.B;
+        try
+        {
+            float red = (float)color.R;
+            float green = (float)color.G;
+            float blue = (float)color.B;
 
-        if (correctionFactor < 0)
-        {
-            correctionFactor = 1 + correctionFactor;
-            red *= correctionFactor;
-            green *= correctionFactor;
-            blue *= correctionFactor;
+            if (correctionFactor < 0)
+            {
+                correctionFactor = 1 + correctionFactor;
+                red *= correctionFactor;
+                green *= correctionFactor;
+                blue *= correctionFactor;
+            }
+            else
+            {
+                red = (255 - red) * correctionFactor + red;
+                green = (255 - green) * correctionFactor + green;
+                blue = (255 - blue) * correctionFactor + blue;
+            }
+            if (red < 0) red = 0; if (red > 255) red = 255;
+            if (green < 0) green = 0; if (green > 255) green = 255;
+            if (blue < 0) blue = 0; if (blue > 255) blue = 255;
+            return Color.FromArgb(color.A, (int)red, (int)green, (int)blue);
         }
-        else
+        catch (Exception ex)
         {
-            red = (255 - red) * correctionFactor + red;
-            green = (255 - green) * correctionFactor + green;
-            blue = (255 - blue) * correctionFactor + blue;
+            Debug.WriteLine("ExtensionsMethods ChangeBrightness: " + ex.Message);
+            return color;
         }
-        if (red < 0) red = 0; if (red > 255) red = 255;
-        if (green < 0) green = 0; if (green > 255) green = 255;
-        if (blue < 0) blue = 0; if (blue > 255) blue = 255;
-        return Color.FromArgb(color.A, (int)red, (int)green, (int)blue);
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
@@ -528,10 +665,18 @@ public static class ExtensionsMethods
     /// </returns>
     public static Color ChangeHue(this Color color, float hue)
     {
-        //float hueO = color.GetHue();
-        float saturationO = color.GetSaturation();
-        float lightnessO = color.GetBrightness();
-        return ColorsTool.FromHsl(255, hue, saturationO, lightnessO);
+        try
+        {
+            //float hueO = color.GetHue();
+            float saturationO = color.GetSaturation();
+            float lightnessO = color.GetBrightness();
+            return ColorsTool.FromHsl(255, hue, saturationO, lightnessO);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods ChangeHue: " + ex.Message);
+            return color;
+        }
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
@@ -542,13 +687,21 @@ public static class ExtensionsMethods
     /// </returns>
     public static Color ChangeSaturation(this Color color, float saturation)
     {
-        float hueO = color.GetHue();
-        //float saturationO = color.GetSaturation();
-        float lightnessO = color.GetBrightness();
-        return ColorsTool.FromHsl(255, hueO, saturation, lightnessO);
+        try
+        {
+            float hueO = color.GetHue();
+            //float saturationO = color.GetSaturation();
+            float lightnessO = color.GetBrightness();
+            return ColorsTool.FromHsl(255, hueO, saturation, lightnessO);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods ChangeSaturation: " + ex.Message);
+            return color;
+        }
     }
     //-----------------------------------------------------------------------------------
-    public static void SaveToFile<T>(this List<T> list, string filePath)
+    public static async Task SaveToFileAsync(this List<string> list, string filePath)
     {
         try
         {
@@ -563,21 +716,21 @@ public static class ExtensionsMethods
             for (int n = 0; n < list.Count; n++)
                 if (list[n] != null)
                 {
-                    file.WriteLine(list[n]);
+                    await file.WriteLineAsync(list[n]);
                 }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Save List to File: {ex.Message}");
+            Debug.WriteLine($"ExtensionsMethods SaveToFileAsync: {ex.Message}");
         }
     }
     //-----------------------------------------------------------------------------------
-    public static void LoadFromFile(this List<string> list, string filePath, bool ignoreEmptyLines, bool trimLines)
+    public static async Task LoadFromFileAsync(this List<string> list, string filePath, bool ignoreEmptyLines, bool trimLines)
     {
         try
         {
             if (!File.Exists(filePath)) return;
-            string content = File.ReadAllText(filePath);
+            string content = await File.ReadAllTextAsync(filePath);
             List<string> lines = content.SplitToLines();
             for (int n = 0; n < lines.Count; n++)
             {
@@ -586,36 +739,20 @@ public static class ExtensionsMethods
                 {
                     if (!string.IsNullOrWhiteSpace(line))
                     {
-                        if (trimLines)
-                            list.Add(line.Trim());
-                        else
-                            list.Add(line);
+                        if (trimLines) list.Add(line.Trim());
+                        else list.Add(line);
                     }
                 }
                 else
                 {
-                    if (trimLines)
-                        list.Add(line.Trim());
-                    else
-                        list.Add(line);
+                    if (trimLines) list.Add(line.Trim());
+                    else list.Add(line);
                 }
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("LoadFromFile: " + ex.Message);
-        }
-    }
-    //-----------------------------------------------------------------------------------
-    public static void LoadFromFile(this List<object> list, string filePath)
-    {
-        if (!File.Exists(filePath)) return;
-        string content = File.ReadAllText(filePath);
-        List<string> lines = content.SplitToLines();
-        for (int n = 0; n < lines.Count; n++)
-        {
-            string line = lines[n];
-            list.Add(line);
+            Debug.WriteLine("ExtensionsMethods LoadFromFileAsync: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
@@ -634,18 +771,40 @@ public static class ExtensionsMethods
     //-----------------------------------------------------------------------------------
     public static void ChangeValue<T>(this List<T> list, T oldValue, T newValue)
     {
-        list[list.GetIndex(oldValue)] = newValue;
+        try
+        {
+            list[list.GetIndex(oldValue)] = newValue;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods ChangeValue<T>: " + ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     public static void RemoveValue<T>(this List<T> list, T value)
     {
-        list.RemoveAt(list.GetIndex(value));
+        try
+        {
+            list.RemoveAt(list.GetIndex(value));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods RemoveValue<T>: " + ex.Message);
+        }
     }
     //-----------------------------------------------------------------------------------
     public static List<T> RemoveDuplicates<T>(this List<T> list)
     {
-        List<T> NoDuplicates = list.Distinct().ToList();
-        return NoDuplicates;
+        try
+        {
+            List<T> NoDuplicates = list.Distinct().ToList();
+            return NoDuplicates;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods RemoveDuplicates: " + ex.Message);
+            return list;
+        }
     }
     //-----------------------------------------------------------------------------------
     public static void WriteToFile(this MemoryStream memoryStream, string dstPath)
@@ -674,23 +833,16 @@ public static class ExtensionsMethods
     {
         return Enumerable.SequenceEqual(list1, list2);
     }
-
-    public static bool Compare(this string string1, string string2)
-    {
-        return string1.Equals(string2, StringComparison.Ordinal);
-    }
     //-----------------------------------------------------------------------------------
     public static bool IsInteger(this string s)
     {
-        if (int.TryParse(s, out _))
-            return true;
+        if (int.TryParse(s, out _)) return true;
         return false;
     }
     //-----------------------------------------------------------------------------------
     public static bool IsBool(this string s)
     {
-        if (bool.TryParse(s, out _))
-            return true;
+        if (bool.TryParse(s, out _)) return true;
         return false;
     }
     //-----------------------------------------------------------------------------------

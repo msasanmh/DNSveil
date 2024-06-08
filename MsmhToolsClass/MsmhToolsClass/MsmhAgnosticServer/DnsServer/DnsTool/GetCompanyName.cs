@@ -7,7 +7,7 @@ public static class GetCompanyName
     public static string HostToCompanyOffline(string host, string fileContent)
     {
         host = host.Trim();
-        string company = "Couldn't retrieve information.";
+        string company = string.Empty;
         if (!string.IsNullOrWhiteSpace(host))
         {
             if (!string.IsNullOrWhiteSpace(fileContent))

@@ -1,8 +1,12 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass.Themes;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SecureDNSClient;
 
@@ -251,7 +255,7 @@ public partial class FormMain
     {
         if (IsExiting) return;
         if (IsInAction(true, true, true, true, true, true, true, true, true, false, true, out _)) return;
-        await WriteSavedServersDelayToLog();
+        await WriteSavedServersDelayToLogAsync();
     }
 
     private async void CustomButtonConnect_Click(object? sender, EventArgs? e)
@@ -412,11 +416,11 @@ public partial class FormMain
         await StartProxy();
     }
 
-    private void CustomButtonSetProxy_Click(object sender, EventArgs e)
+    private async void CustomButtonSetProxy_Click(object sender, EventArgs e)
     {
         if (IsExiting) return;
         if (IsInAction(true, false, false, false, false, false, false, false, true, true, true, out _)) return;
-        SetProxy();
+        await SetProxyAsync();
     }
 
     private async void CustomButtonPDpiApplyChanges_Click(object sender, EventArgs e)
@@ -695,7 +699,7 @@ public partial class FormMain
     }
 
     // Settings -> Others
-    private void CustomButtonSettingRestoreDefault_Click(object sender, EventArgs e)
+    private async void CustomButtonSettingRestoreDefault_Click(object sender, EventArgs e)
     {
         if (IsExiting) return;
         if (IsCheckingStarted)
@@ -719,7 +723,7 @@ public partial class FormMain
             return;
         }
 
-        DefaultSettings();
+        await DefaultSettingsAsync();
 
         string msgDefault = "Settings restored to default." + NL;
         CustomRichTextBoxLog.AppendText(msgDefault, Color.MediumSeaGreen);

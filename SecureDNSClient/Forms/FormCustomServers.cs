@@ -785,10 +785,7 @@ public partial class FormCustomServers : Form
                     {
                         XDoc.Save(CustomServersXmlPath, SaveOptions.None);
                     }
-                    catch (Exception)
-                    {
-                        // do nothing
-                    }
+                    catch (Exception) { }
                 }
             }
         }
@@ -943,7 +940,7 @@ public partial class FormCustomServers : Form
 
         newGroupName = newGroupName.Trim();
 
-        if (string.IsNullOrEmpty(newGroupName) || string.IsNullOrWhiteSpace(newGroupName))
+        if (string.IsNullOrWhiteSpace(newGroupName))
         {
             string msg = "Name cannot be empty or white space.";
             CustomMessageBox.Show(this, msg, "Message");
@@ -984,10 +981,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"New Group Created: {newGroupName}");
     }
@@ -1068,10 +1062,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"Group Removed: {groupName}");
     }
@@ -1135,10 +1126,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"Group Moved Up: {groupName}");
     }
@@ -1202,10 +1190,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"Group Moved Down: {groupName}");
     }
@@ -1272,10 +1257,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"Group Moved To Top: {groupName}");
     }
@@ -1339,10 +1321,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"Group Moved To Buttom: {groupName}");
     }
@@ -1927,10 +1906,7 @@ public partial class FormCustomServers : Form
                         {
                             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
                         }
-                        catch (Exception)
-                        {
-                            // do nothing
-                        }
+                        catch (Exception) { }
 
                         break;
                     }
@@ -2293,10 +2269,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
     }
 
     private void MenuDnsRemoveAll_Click(object? sender, EventArgs e)
@@ -2335,10 +2308,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"All DNSs Removed From {groupName}");
     }
@@ -2428,10 +2398,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine($"All Selected DNSs Moved to {groupToSend}");
     }
@@ -2495,10 +2462,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine("Selected DNSs Moved up");
     }
@@ -2567,10 +2531,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine("All Selected DNSs Moved Down");
     }
@@ -2635,10 +2596,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine("All Selected DNSs Moved to Top");
     }
@@ -2703,10 +2661,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
 
         Debug.WriteLine("All Selected DNSs Moved to Bottom");
     }
@@ -2780,10 +2735,7 @@ public partial class FormCustomServers : Form
             {
                 XDoc.Save(CustomServersXmlPath, SaveOptions.None);
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
+            catch (Exception) { }
         }
     }
 
@@ -3017,31 +2969,42 @@ public partial class FormCustomServers : Form
 
         ToolStripMenuItem MenuAddBelowSelected = new();
         MenuAddBelowSelected.Font = Font;
-        MenuAddBelowSelected.Text = "Add below selected";
+        MenuAddBelowSelected.Text = "Add Below Selected";
         MenuAddBelowSelected.Click -= MenuAddBelowSelected_Click;
         MenuAddBelowSelected.Click += MenuAddBelowSelected_Click;
         Add.Items.Add(MenuAddBelowSelected);
 
         ToolStripMenuItem MenuAddToEnd = new();
         MenuAddToEnd.Font = Font;
-        MenuAddToEnd.Text = "Add to end";
+        MenuAddToEnd.Text = "Add To End";
         MenuAddToEnd.Click -= MenuAddToEnd_Click;
         MenuAddToEnd.Click += MenuAddToEnd_Click;
         Add.Items.Add(MenuAddToEnd);
 
         ToolStripMenuItem MenuAddToEndBrowse = new();
         MenuAddToEndBrowse.Font = Font;
-        MenuAddToEndBrowse.Text = "Add multiple (Browse)";
+        MenuAddToEndBrowse.Text = "Add Multiple (Browse)";
         MenuAddToEndBrowse.Click -= MenuAddToEndBrowse_Click;
         MenuAddToEndBrowse.Click += MenuAddToEndBrowse_Click;
         Add.Items.Add(MenuAddToEndBrowse);
 
-        if (dgvR.SelectedRows.Count == 0 || dgvR.RowCount == 0)
-            Add.Items.Remove(MenuAddBelowSelected);
+        ToolStripMenuItem MenuAddToEndFromUrl = new();
+        MenuAddToEndFromUrl.Font = Font;
+        MenuAddToEndFromUrl.Text = "Add From URL";
+        MenuAddToEndFromUrl.Click -= MenuAddToEndFromUrl_Click;
+        MenuAddToEndFromUrl.Click += MenuAddToEndFromUrl_Click;
+        Add.Items.Add(MenuAddToEndFromUrl);
 
-        if (dgvR.SelectedRows.Count > 0)
-            if (dgvR.SelectedRows[0].Index == dgvR.RowCount - 1)
+        try
+        {
+            if (dgvR.SelectedRows.Count == 0 || dgvR.RowCount == 0)
                 Add.Items.Remove(MenuAddBelowSelected);
+
+            if (dgvR.SelectedRows.Count > 0)
+                if (dgvR.SelectedRows[0].Index == dgvR.RowCount - 1)
+                    Add.Items.Remove(MenuAddBelowSelected);
+        }
+        catch (Exception) { }
 
         Theme.SetColors(Add);
         Add.RoundedCorners = 5;
@@ -3090,10 +3053,7 @@ public partial class FormCustomServers : Form
             {
                 XDoc.Save(CustomServersXmlPath, SaveOptions.None);
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
+            catch (Exception) { }
         }
 
         void MenuAddToEnd_Click(object? sender, EventArgs e)
@@ -3136,10 +3096,7 @@ public partial class FormCustomServers : Form
             {
                 XDoc.Save(CustomServersXmlPath, SaveOptions.None);
             }
-            catch (Exception)
-            {
-                // do nothing
-            }
+            catch (Exception) { }
         }
 
         async void MenuAddToEndBrowse_Click(object? sender, EventArgs e)
@@ -3180,16 +3137,12 @@ public partial class FormCustomServers : Form
                         int firstVisible = rowToInsert - dgvR.DisplayedRowCount(false) + 1;
                         if (firstVisible < 0) firstVisible = 0;
 
-                        List<string> lines = allContent.SplitToLines();
-                        for (int n = 0; n < lines.Count; n++)
+                        List<string> dnss = await FormMain.GetServersFromContentAsync(allContent);
+                        for (int n = 0; n < dnss.Count; n++)
                         {
-                            string line = lines[n];
-
-                            if (FormMain.IsDnsProtocolSupported(line))
-                            {
-                                XElement dns = CreateDNS(line, string.Empty);
-                                CopyDnsToGroup(groupToAdd, dns, null, null);
-                            }
+                            string dns = dnss[n];
+                            XElement dnsE = CreateDNS(dns, string.Empty);
+                            CopyDnsToGroup(groupToAdd, dnsE, null, null);
                         }
 
                         // Read DNSs
@@ -3203,17 +3156,137 @@ public partial class FormCustomServers : Form
                         {
                             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
                         }
-                        catch (Exception)
-                        {
-                            // do nothing
-                        }
+                        catch (Exception) { }
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception) { }
+        }
+
+        async void MenuAddToEndFromUrl_Click(object? sender, EventArgs e)
+        {
+            try
             {
-                // do nothing
+                string? groupToAdd = dgvG.SelectedRows[0].Cells[1].Value.ToString();
+                if (string.IsNullOrEmpty(groupToAdd)) return;
+
+                string url = string.Empty;
+                switch (CustomInputBox.Show(this, ref url, "Enter URL:", false, "Extract Servers From URL", 200))
+                {
+                    case DialogResult.OK:
+                        break;
+                    case DialogResult.Cancel:
+                        return;
+                    default:
+                        return;
+                }
+
+                url = url.Trim();
+
+                if (string.IsNullOrEmpty(url))
+                {
+                    string msg = "URL cannot be empty or white space.";
+                    CustomMessageBox.Show(this, msg, "Message");
+                    return;
+                }
+                
+                if (!url.ToLower().StartsWith("http://") && !url.ToLower().StartsWith("https://"))
+                {
+                    string msg = "URL must starts with http:// or https://";
+                    CustomMessageBox.Show(this, msg, "Message");
+                    return;
+                }
+
+                List<string> dnss = await FormMain.GetServersFromLinkAsync(url);
+                if (!dnss.Any())
+                {
+                    string msg = "Couldn't find any server!";
+                    CustomMessageBox.Show(this, msg, "Message");
+                    return;
+                }
+
+                int rowToInsert = dgvR.RowCount > 0 ? dgvR.RowCount : 0;
+
+                int firstVisible = rowToInsert - dgvR.DisplayedRowCount(false) + 1;
+                if (firstVisible < 0) firstVisible = 0;
+
+                for (int n = 0; n < dnss.Count; n++)
+                {
+                    string dns = dnss[n];
+                    XElement dnsE = CreateDNS(dns, string.Empty);
+                    CopyDnsToGroup(groupToAdd, dnsE, null, null);
+                }
+
+                // Read DNSs
+                ReadDNSs(groupToAdd);
+
+                // Select and Make it Visible
+                ShowRow(dgvR, rowToInsert, firstVisible);
+
+                // Save xDocument to File
+                try
+                {
+                    XDoc.Save(CustomServersXmlPath, SaveOptions.None);
+                }
+                catch (Exception) { }
+
+
+
+                //// Browse
+                //using OpenFileDialog ofd = new();
+                //ofd.Filter = "DNS Servers|*.txt";
+                //ofd.Multiselect = true;
+                //ofd.RestoreDirectory = true;
+
+                //if (ofd.ShowDialog() == DialogResult.OK)
+                //{
+                //    string allContent = string.Empty;
+                //    string[] files = ofd.FileNames;
+                //    for (int n = 0; n < files.Length; n++)
+                //    {
+                //        string file = files[n];
+                //        if (File.Exists(file))
+                //        {
+                //            string content = await File.ReadAllTextAsync(file, new UTF8Encoding(false));
+                //            if (content.Length > 0)
+                //            {
+                //                allContent += content;
+                //                allContent += Environment.NewLine;
+                //            }
+                //        }
+                //    }
+
+                //    if (allContent.Length > 0)
+                //    {
+                //        int rowToInsert = dgvR.RowCount > 0 ? dgvR.RowCount : 0;
+
+                //        int firstVisible = rowToInsert - dgvR.DisplayedRowCount(false) + 1;
+                //        if (firstVisible < 0) firstVisible = 0;
+
+                //        List<string> dnss = await FormMain.GetServersFromContentAsync(allContent);
+                //        for (int n = 0; n < dnss.Count; n++)
+                //        {
+                //            string dns = dnss[n];
+                //            XElement dnsE = CreateDNS(dns, string.Empty);
+                //            CopyDnsToGroup(groupToAdd, dnsE, null, null);
+                //        }
+
+                //        // Read DNSs
+                //        ReadDNSs(groupToAdd);
+
+                //        // Select and Make it Visible
+                //        ShowRow(dgvR, rowToInsert, firstVisible);
+
+                //        // Save xDocument to File
+                //        try
+                //        {
+                //            XDoc.Save(CustomServersXmlPath, SaveOptions.None);
+                //        }
+                //        catch (Exception) { }
+                //    }
+                //}
             }
+            catch (Exception) { }
         }
     }
 
@@ -3279,10 +3352,7 @@ public partial class FormCustomServers : Form
         {
             XDoc.Save(CustomServersXmlPath, SaveOptions.None);
         }
-        catch (Exception)
-        {
-            // do nothing
-        }
+        catch (Exception) { }
     }
 
     private async void FormCustomServers_FormClosing(object sender, FormClosingEventArgs e)

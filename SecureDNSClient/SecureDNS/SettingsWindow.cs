@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using CustomControls;
 using MsmhToolsClass;
@@ -11,35 +12,53 @@ public partial class FormMain
     public SetDnsOnNic.ActiveNICs GetNicNameSetting(CustomComboBox ccb)
     {
         SetDnsOnNic.ActiveNICs nicsList = new();
-        ccb.InvokeIt(() =>
+
+        try
         {
-            if (ccb != null && ccb.SelectedItem != null)
+            ccb.InvokeIt(() =>
             {
-                string? nicName = ccb.SelectedItem as string;
-                if (!string.IsNullOrEmpty(nicName))
+                if (ccb != null && ccb.SelectedItem != null)
                 {
-                    if (nicName.Equals(SetDnsOnNic.DefaultNicName.Auto))
+                    string? nicName = ccb.SelectedItem as string;
+                    if (!string.IsNullOrEmpty(nicName))
                     {
-                        IsDNSSet = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs, out bool isDnsSetOn, out SetDnsOnNic.ActiveNICs activeNICs);
-                        IsDNSSetOn = isDnsSetOn;
-                        nicsList = activeNICs;
-                    }
-                    else
-                    {
-                        nicsList.NICs.Add(nicName);
+                        if (nicName.Equals(SetDnsOnNic.DefaultNicName.Auto))
+                        {
+                            IsDNSSet = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs, out bool isDnsSetOn, out SetDnsOnNic.ActiveNICs activeNICs);
+                            IsDNSSetOn = isDnsSetOn;
+                            nicsList = activeNICs;
+                        }
+                        else
+                        {
+                            nicsList.NICs.Add(nicName);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SettingWindow GetNicNameSetting: " + ex.Message);
+        }
+
         return nicsList;
     }
 
     public string GetCfCleanIpSetting()
     {
         string result = string.Empty;
-        this.InvokeIt(() => result = CustomTextBoxSettingProxyCfCleanIP.Text.Trim());
-        bool isCfCleanIpv4Valid = NetworkTool.IsIPv4Valid(result, out IPAddress? _);
-        if (!isCfCleanIpv4Valid) result = string.Empty;
+
+        try
+        {
+            this.InvokeIt(() => result = CustomTextBoxSettingProxyCfCleanIP.Text.Trim());
+            bool isCfCleanIpv4Valid = NetworkTool.IsIPv4Valid(result, out IPAddress? _);
+            if (!isCfCleanIpv4Valid) result = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SettingWindow GetCfCleanIpSetting: " + ex.Message);
+        }
+
         return result;
     }
 
@@ -208,68 +227,81 @@ public partial class FormMain
         }
         catch (Exception) { }
 
-        // strip www. from blocked domain
+        // Strip www. from blocked domain
         string blockedDomainNoWwwD = blockedDomain;
-        if (blockedDomainNoWwwD.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
-            blockedDomainNoWwwD = blockedDomainNoWwwD[4..];
+
+        try
+        {
+            if (blockedDomainNoWwwD.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
+                blockedDomainNoWwwD = blockedDomainNoWwwD[4..];
+        }
+        catch (Exception) { }
 
         blockedDomainNoWww = blockedDomainNoWwwD.Trim();
         return blockedDomain.Trim();
     }
 
-    public async Task<(bool IsSuccess, string ProxyScheme, string ProxyUser, string ProxyPass, bool OnlyBlockedIPs)> GetUpStreamProxySetting()
+    public async Task<(bool IsSuccess, string ProxyScheme, string ProxyUser, string ProxyPass, bool OnlyBlockedIPs)> GetUpStreamProxySettingAsync()
     {
-        if (!CustomCheckBoxSettingProxyUpstream.Checked) return (true, string.Empty, string.Empty, string.Empty, false);
-
-        // Get Upstream Mode
-        string? mode = null;
-        this.InvokeIt(() => mode = CustomComboBoxSettingProxyUpstreamMode.SelectedItem as string);
-
-        // Check If Mode Is Empty
-        if (string.IsNullOrEmpty(mode))
+        try
         {
-            string msg = "Select The Mode Of Upstream Proxy." + NL;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+            if (!CustomCheckBoxSettingProxyUpstream.Checked) return (true, string.Empty, string.Empty, string.Empty, false);
+
+            // Get Upstream Mode
+            string? mode = null;
+            this.InvokeIt(() => mode = CustomComboBoxSettingProxyUpstreamMode.SelectedItem as string);
+
+            // Check If Mode Is Empty
+            if (string.IsNullOrEmpty(mode))
+            {
+                string msg = "Select The Mode Of Upstream Proxy." + NL;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                return (false, string.Empty, string.Empty, string.Empty, false);
+            }
+
+            // Get Upstream Host
+            string upstreamHost = string.Empty;
+            this.InvokeIt(() => upstreamHost = CustomTextBoxSettingProxyUpstreamHost.Text.Trim());
+
+            // Check If Host Is Empty
+            if (string.IsNullOrEmpty(upstreamHost))
+            {
+                string msg = "Upstream proxy host cannot be empty." + NL;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                return (false, string.Empty, string.Empty, string.Empty, false);
+            }
+
+            // Get Upstream Port
+            int upstreamPort = -1;
+            this.InvokeIt(() => upstreamPort = Convert.ToInt32(CustomNumericUpDownSettingProxyUpstreamPort.Value));
+
+            // Get Blocked Domain
+            string blockedDomain = GetBlockedDomainSetting(out string _);
+            if (string.IsNullOrEmpty(blockedDomain)) return (false, string.Empty, string.Empty, string.Empty, false);
+
+            // Get Upstream Proxy Scheme
+            string proxyScheme = $"{mode.ToLower().Trim()}://{upstreamHost}:{upstreamPort}";
+
+            // Check Upstream Proxy Works
+            bool isUpstreamProxyOk = await NetworkTool.IsWebsiteOnlineAsync($"https://{blockedDomain}", null, 5000, false, proxyScheme);
+            if (!isUpstreamProxyOk)
+            {
+                string msg = $"Upstream Proxy Cannot Open {blockedDomain}." + NL;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
+                return (false, string.Empty, string.Empty, string.Empty, false);
+            }
+
+            // Get Apply Only To Blocked IPs
+            bool onlyBlockedIPs = false;
+            this.InvokeIt(() => onlyBlockedIPs = CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Checked);
+
+            return (true, proxyScheme, string.Empty, string.Empty, onlyBlockedIPs);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SettingWindow GetUpStreamProxySettingAsync: " + ex.Message);
             return (false, string.Empty, string.Empty, string.Empty, false);
         }
-
-        // Get Upstream Host
-        string upstreamHost = string.Empty;
-        this.InvokeIt(() => upstreamHost = CustomTextBoxSettingProxyUpstreamHost.Text.Trim());
-
-        // Check If Host Is Empty
-        if (string.IsNullOrEmpty(upstreamHost))
-        {
-            string msg = "Upstream proxy host cannot be empty." + NL;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            return (false, string.Empty, string.Empty, string.Empty, false);
-        }
-
-        // Get Upstream Port
-        int upstreamPort = -1;
-        this.InvokeIt(() => upstreamPort = Convert.ToInt32(CustomNumericUpDownSettingProxyUpstreamPort.Value));
-
-        // Get Blocked Domain
-        string blockedDomain = GetBlockedDomainSetting(out string _);
-        if (string.IsNullOrEmpty(blockedDomain)) return (false, string.Empty, string.Empty, string.Empty, false);
-
-        // Get Upstream Proxy Scheme
-        string proxyScheme = $"{mode.ToLower().Trim()}://{upstreamHost}:{upstreamPort}";
-
-        // Check Upstream Proxy Works
-        bool isUpstreamProxyOk = await NetworkTool.IsWebsiteOnlineAsync($"https://{blockedDomain}", null, 5000, false, proxyScheme);
-        if (!isUpstreamProxyOk)
-        {
-            string msg = $"Upstream Proxy Cannot Open {blockedDomain}." + NL;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            return (false, string.Empty, string.Empty, string.Empty, false);
-        }
-
-        // Get Apply Only To Blocked IPs
-        bool onlyBlockedIPs = false;
-        this.InvokeIt(() => onlyBlockedIPs = CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Checked);
-
-        return (true, proxyScheme, string.Empty, string.Empty, onlyBlockedIPs);
     }
 
     public int GetDohPortSetting()
@@ -305,17 +337,22 @@ public partial class FormMain
         bool isPortOpen = pids.Any();
         if (isPortOpen)
         {
-            List<string> names = new();
-            foreach (int pid in pids)
+            try
             {
-                string name = ProcessManager.GetProcessNameByPID(pid);
-                if (!string.IsNullOrEmpty(name)) names.Add(name);
-            }
-            string namesStr = names.ToString(", ");
-            namesStr = string.IsNullOrEmpty(namesStr) ? "Unknown" : namesStr;
+                List<string> names = new();
+                foreach (int pid in pids)
+                {
+                    string name = ProcessManager.GetProcessNameByPID(pid);
+                    if (!string.IsNullOrEmpty(name)) names.Add(name);
+                }
+                string namesStr = names.ToString(", ");
+                namesStr = string.IsNullOrEmpty(namesStr) ? "Unknown" : namesStr;
 
-            string msg = $"Port {portToCheck} Is Occupied By \"{namesStr}\". {message}{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, color));
+                string msg = $"Port {portToCheck} Is Occupied By \"{namesStr}\". {message}{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, color));
+            }
+            catch (Exception) { }
+
             return false;
         }
         else return true;

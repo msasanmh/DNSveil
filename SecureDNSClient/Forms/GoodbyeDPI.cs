@@ -36,8 +36,8 @@ public partial class FormMain
         if (string.IsNullOrEmpty(blockedDomain)) return;
 
         // Kill GoodbyeDPI
-        ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
-        ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
+        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBasic);
+        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIAdvanced);
 
         string args = string.Empty;
         string modeStr = string.Empty;
@@ -269,8 +269,8 @@ public partial class FormMain
         }
 
         // Kill GoodbyeDPI
-        ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
-        ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
+        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBasic);
+        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIAdvanced);
         await Task.Delay(100);
 
         string modeStr = "Advanced";
@@ -320,11 +320,11 @@ public partial class FormMain
 
         // Kill GoodbyeDPI Basic
         if (deactiveBasic)
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPIBasic);
+            await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBasic);
 
         // Kill GoodbyeDPI Advanced
         if (deactiveAdvanced)
-            ProcessManager.KillProcessByPID(PIDGoodbyeDPIAdvanced);
+            await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIAdvanced);
 
         Task wait1 = Task.Run(async () =>
         {

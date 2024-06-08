@@ -1,5 +1,6 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsClass.MsmhAgnosticServer;
+using System.Diagnostics;
 using System.Net;
 
 namespace ConsoleAppTest;
@@ -25,7 +26,7 @@ internal class Program
         // Set ProxyRules Content (Apply Fake DNS and White List Program)
         string proxyRulesContent = $"{dohHost}|{dohCleanIP};";
         proxyRulesContent += $"\n{dohCleanIP}|+;";
-        proxyRulesContent += $"\n*|-;"; // Block Other Requests
+        //proxyRulesContent += $"\n*|-;"; // Block Other Requests
 
         List<string> dnsServers1 = new()
         {
@@ -34,9 +35,9 @@ internal class Program
             //"https://free.shecan.ir/dns-query",
             //"tls://dns.google",
             //"https://notworking.com/dns-query",
-            //"tcp://8.8.8.8:53",
+            "tcp://8.8.8.8:53",
             //"udp://8.8.8.8:53",
-            //"tcp://1.1.1.1:53",
+            "tcp://1.1.1.1:53",
             //"https://every1dns.com/dns-query",
             //"https://dns.cloudflare.com/dns-query",
             //"https://dns.google/dns-query",
@@ -49,18 +50,18 @@ internal class Program
         AgnosticSettings settings1 = new()
         {
             Working_Mode = AgnosticSettings.WorkingMode.DnsAndProxy,
-            ListenerPort = 53,
+            ListenerPort = 8080,
             DnsTimeoutSec = 10,
-            ProxyTimeoutSec = 40,
+            ProxyTimeoutSec = 60,
             MaxRequests = 1000000,
             KillOnCpuUsage = 40,
             DNSs = dnsServers1,
             BootstrapIpAddress = IPAddress.Loopback,
-            BootstrapPort = 53,
+            BootstrapPort = 8080,
             AllowInsecure = false,
             BlockPort80 = true,
             CloudflareCleanIP = cfClenIP,
-            UpstreamProxyScheme = $"socks5://{IPAddress.Loopback}:53",
+            UpstreamProxyScheme = $"socks5://{IPAddress.Loopback}:8080",
             //ApplyUpstreamOnlyToBlockedIps = true
         };
 
@@ -79,7 +80,7 @@ internal class Program
 
         List<string> dnsServers2 = new()
         {
-            $"udp://{IPAddress.Loopback}:53"
+            $"udp://{IPAddress.Loopback}:8080"
         };
 
         AgnosticSettings settings2 = new()
@@ -90,7 +91,7 @@ internal class Program
             DNSs = dnsServers2,
             MaxRequests = 1000000,
             BootstrapIpAddress = IPAddress.Loopback,
-            BootstrapPort = 53,
+            BootstrapPort = 8080,
             AllowInsecure = false,
             //UpstreamProxyScheme = "socks5://192.168.1.120:10808",
             //ApplyUpstreamOnlyToBlockedIps = true
@@ -105,19 +106,21 @@ internal class Program
         
         await server2.EnableSSL(settingsSSL);
 
-
+        AgnosticProgram.DnsLimit dnsLimit = new();
+        dnsLimit.Set(true, false, AgnosticProgram.DnsLimit.LimitDoHPathsMode.Text, "msasanmhX");
+        server2.EnableDnsLimit(dnsLimit);
 
         server1.Start(settings1);
         server2.Start(settings2);
 
-        
+
 
         DnsMessage dmQ1 = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.UDP, "youtube.com", DnsEnums.RRType.A, DnsEnums.CLASS.IN);
         DnsMessage.TryWrite(dmQ1, out byte[] dmQBytes1);
         DnsMessage dmQ2 = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.DoH, "mail.yahoo.com", DnsEnums.RRType.A, DnsEnums.CLASS.IN);
         DnsMessage.TryWrite(dmQ2, out byte[] dmQBytes2);
-        string dns = "udp://127.0.0.1:53";
-        string doh = "https://127.0.0.1:443/dns-query";
+        string dns = "udp://127.0.0.1:8080";
+        string doh = "https://127.0.0.1:443/msasanmhX/dns-query";
         //doh = "https://dns-cloudflare.com/dns-query";
 
         IPAddress bootIP = IPAddress.Parse("8.8.8.8");
@@ -136,10 +139,10 @@ internal class Program
         int n = 0;
 
 
-        tt1();
         //tt1();
         //tt1();
-        tt2();
+        //tt1();
+        //tt2();
         //tt2();
         //tt2();
 

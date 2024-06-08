@@ -1,10 +1,10 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsClass.MsmhAgnosticServer;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace SDCAgnosticServer;
 
@@ -12,9 +12,7 @@ public static partial class Program
 {
     // Defaults AgnosticSettings
     private const int DefaultPort = 8080;
-    private const int DefaultPortMinWindows = 53;
-    private const int DefaultPortMinLinux = 1024;
-    private static readonly int DefaultPortMin = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? DefaultPortMinWindows : DefaultPortMinLinux;
+    private const int DefaultPortMin = 53;
     private const int DefaultPortMax = 65535;
     private const AgnosticSettings.WorkingMode DefaultWorkingMode = AgnosticSettings.WorkingMode.DnsAndProxy;
     private const int DefaultMaxRequests = 5000;
@@ -63,8 +61,9 @@ public static partial class Program
     private static uint CountRequests { get; set; } = 0;
     private static bool WriteFragmentDetailsToLog { get; set; } = false;
     private static int ParentPID { get; set; } = -1;
+    private static ConcurrentDictionary<uint, string> WaitingInputCommands { get; set; } = new();
 
-    public static void ProxyServer_OnRequestReceived(object? sender, EventArgs e)
+    public static async void ProxyServer_OnRequestReceived(object? sender, EventArgs e)
     {
         if (WriteRequestsToLog)
             if (sender is string msg)
@@ -73,14 +72,14 @@ public static partial class Program
                 if (!StopWatchShowRequests.IsRunning) StopWatchShowRequests.Start();
                 if (CountRequests < 5 || StopWatchShowRequests.ElapsedMilliseconds > 40)
                 {
-                    WriteToStderr(msg, ConsoleColor.DarkGray, false);
+                    await WriteToStderrAsync(msg, ConsoleColor.DarkGray, false);
 
                     StopWatchShowRequests.Restart();
                 }
             }
     }
 
-    public static void FragmentStaticProgram_OnChunkDetailsReceived(object? sender, EventArgs e)
+    public static async void FragmentStaticProgram_OnChunkDetailsReceived(object? sender, EventArgs e)
     {
         if (WriteFragmentDetailsToLog)
             if (sender is string msg)
@@ -88,7 +87,7 @@ public static partial class Program
                 if (!StopWatchShowChunkDetails.IsRunning) StopWatchShowChunkDetails.Start();
                 if (StopWatchShowChunkDetails.ElapsedMilliseconds > 50)
                 {
-                    WriteToStderr(msg, ConsoleColor.DarkCyan, false);
+                    await WriteToStderrAsync(msg, ConsoleColor.DarkCyan, false);
 
                     StopWatchShowChunkDetails.Restart();
                 }
@@ -109,11 +108,14 @@ public static partial class Program
         Info.SetCulture(CultureInfo.InvariantCulture);
 
         // First Help
-        WriteToStdout(title);
-        WriteToStdout("Type \"Help\" To Get Help.");
+        await WriteToStdoutAsync(title);
+        await WriteToStdoutAsync("Type \"Help\" To Get Help.");
 
         // Exit When Parent Terminated
         ExitAuto();
+
+        // Execute Wainting Commands
+        ExecuteCommands();
 
         // Read Commands
         await ReadCommandsAsync();
@@ -131,6 +133,7 @@ public static partial class Program
                 if (!isParentExist)
                 {
                     Environment.Exit(0);
+                    await ProcessManager.KillProcessByPidAsync(Environment.ProcessId);
                 }
             }
         });
@@ -138,14 +141,19 @@ public static partial class Program
 
     private static async Task ReadCommandsAsync()
     {
-        await Task.Run(async () =>
+        await Task.Run(() =>
         {
+            uint n = 0;
             while (true)
             {
                 try
                 {
                     string? input = Console.ReadLine();
-                    await ExecuteCommandsAsync(input);
+                    if (!string.IsNullOrWhiteSpace(input))
+                    {
+                        n++;
+                        WaitingInputCommands.TryAdd(n, input);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -155,7 +163,45 @@ public static partial class Program
         });
     }
 
-    private static void MainDetails(string profileName)
+    private static async void ExecuteCommands()
+    {
+        await Task.Run(async () =>
+        {
+            while (true)
+            {
+                try
+                {
+                    if (WaitingInputCommands.IsEmpty) await Task.Delay(50);
+                    else
+                    {
+                        while (true)
+                        {
+                            int n1 = WaitingInputCommands.Count;
+                            await Task.Delay(200);
+                            int n2 = WaitingInputCommands.Count;
+                            if (n1 == n2) break;
+                        }
+
+                        List<KeyValuePair<uint, string>> commandsList = WaitingInputCommands.ToList();
+                        var sortedCommandsList = commandsList.OrderBy(x => x.Key);
+                        foreach (KeyValuePair<uint, string> command in sortedCommandsList)
+                        {
+                            await ExecuteCommandsAsync(command.Value);
+                            WaitingInputCommands.TryRemove(command.Key, out _);
+                            //Debug.WriteLine($"{command.Key}");
+                            await Task.Delay(25);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("ExecuteCommands: " + ex.Message);
+                }
+            }
+        });
+    }
+
+    private static async Task MainDetailsAsync(string profileName)
     {
         try
         {
@@ -177,29 +223,29 @@ public static partial class Program
                         mainDetails += $"{sf.AgnosticServer.FragmentProgram.FragmentMode}|"; // 8
                         mainDetails += $"{sf.AgnosticServer.DnsRulesProgram.RulesMode}|"; // 9
                         mainDetails += $"{sf.AgnosticServer.ProxyRulesProgram.RulesMode}|"; // 10
-                        WriteToStdout(mainDetails);
+                        await WriteToStdoutAsync(mainDetails);
                         isMatch = true;
                         break;
                     }
                 }
             }
 
-            if (!isMatch) WriteToStdout($"Wrong Profile Name", ConsoleColor.DarkRed);
+            if (!isMatch) await WriteToStdoutAsync($"Wrong Profile Name", ConsoleColor.DarkRed);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("MainDetails: " + ex.Message);
+            Debug.WriteLine("MainDetailsAsync: " + ex.Message);
         }
     }
 
-    private static void ShowProfileMsg(bool save = true)
+    private static async Task ShowProfileMsgAsync(bool save = true)
     {
         try
         {
             Profile = Profile.Trim();
             if (!string.IsNullOrEmpty(Profile))
             {
-                WriteToStdout($"{Environment.NewLine}{nameof(Profile)} Set To {Profile}", ConsoleColor.Cyan);
+                await WriteToStdoutAsync($"{Environment.NewLine}{nameof(Profile)} Set To {Profile}", ConsoleColor.Cyan);
 
                 if (save)
                 {
@@ -214,18 +260,18 @@ public static partial class Program
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ShowProfileMsg: " + ex.Message);
+            Debug.WriteLine("ShowProfileMsgAsync: " + ex.Message);
         }
     }
 
-    private static void ShowParentProcessMsg()
+    private static async Task ShowParentProcessMsgAsync()
     {
         string pid = ParentPID != -1 && ParentPID != 0 ? $"{ParentPID}" : "No Parent";
         string msg = $"\nParent Process ID: {pid}";
-        WriteToStdout(msg, ConsoleColor.Green);
+        await WriteToStdoutAsync(msg, ConsoleColor.Green);
     }
 
-    private static void ShowSettingsMsg(AgnosticSettings settings, bool save = true)
+    private static async Task ShowSettingsMsgAsync(AgnosticSettings settings, bool save = true)
     {
         try
         {
@@ -254,7 +300,7 @@ public static partial class Program
                 }
                 msg += $"\nApply Upstream Only To Blocked IPs: {settings.ApplyUpstreamOnlyToBlockedIps}";
             }
-            WriteToStdout(msg, ConsoleColor.Blue);
+            await WriteToStdoutAsync(msg, ConsoleColor.Blue);
 
             if (save)
             {
@@ -269,15 +315,15 @@ public static partial class Program
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ShowSettingsMsg: " + ex.Message);
+            Debug.WriteLine("ShowSettingsMsgAsync: " + ex.Message);
         }
     }
 
-    private static void ShowSettingsSSLMsg(AgnosticSettingsSSL settingsSSL, bool save = true)
+    private static async Task ShowSettingsSSLMsgAsync(AgnosticSettingsSSL settingsSSL, bool save = true)
     {
         try
         {
-            string msg = "\nSSL settings:";
+            string msg = "\nSSL Settings:";
             msg += $"\nEnabled: {settingsSSL.EnableSSL}";
             if (settingsSSL.EnableSSL)
             {
@@ -307,7 +353,7 @@ public static partial class Program
                 else
                     msg += "\nDefault SNI: Empty (Original SNI Will Be Used)";
             }
-            WriteToStdout(msg, ConsoleColor.Blue);
+            await WriteToStdoutAsync(msg, ConsoleColor.Blue);
 
             if (save)
             {
@@ -322,11 +368,11 @@ public static partial class Program
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ShowSettingsSSLMsg: " + ex.Message);
+            Debug.WriteLine("ShowSettingsSSLMsgAsync: " + ex.Message);
         }
     }
 
-    private static void ShowFragmentMsg(AgnosticProgram.Fragment fragmentProgram, bool save = true)
+    private static async Task ShowFragmentMsgAsync(AgnosticProgram.Fragment fragmentProgram, bool save = true)
     {
         try
         {
@@ -339,7 +385,7 @@ public static partial class Program
                 result += $"\nAnti-Pattern Offset: {fragmentProgram.AntiPatternOffset} Chunks";
                 result += $"\nFragment Delay: {fragmentProgram.FragmentDelay} ms";
             }
-            WriteToStdout(result, ConsoleColor.Green);
+            await WriteToStdoutAsync(result, ConsoleColor.Green);
 
             if (save)
             {
@@ -354,17 +400,17 @@ public static partial class Program
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ShowFragmentMsg: " + ex.Message);
+            Debug.WriteLine("ShowFragmentMsgAsync: " + ex.Message);
         }
     }
 
-    private static void ShowDnsRulesMsg(AgnosticProgram.DnsRules dnsRulesProgram, bool save = true)
+    private static async Task ShowDnsRulesMsgAsync(AgnosticProgram.DnsRules dnsRulesProgram, bool save = true)
     {
         try
         {
-            WriteToStdout($"\n{Key.Programs.DnsRules.Name} Mode: {dnsRulesProgram.RulesMode}", ConsoleColor.Green);
+            await WriteToStdoutAsync($"\n{Key.Programs.DnsRules.Name} Mode: {dnsRulesProgram.RulesMode}", ConsoleColor.Green);
             if (dnsRulesProgram.RulesMode != AgnosticProgram.DnsRules.Mode.Disable)
-                WriteToStdout($"Dns Rules:\n{dnsRulesProgram.PathOrText}", ConsoleColor.Green);
+                await WriteToStdoutAsync($"Dns Rules:\n{dnsRulesProgram.PathOrText}", ConsoleColor.Green);
 
             if (save)
             {
@@ -379,17 +425,17 @@ public static partial class Program
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ShowDnsRulesMsg: " + ex.Message);
+            Debug.WriteLine("ShowDnsRulesMsgAsync: " + ex.Message);
         }
     }
 
-    private static void ShowProxyRulesMsg(AgnosticProgram.ProxyRules proxyRulesProgram, bool save = true)
+    private static async Task ShowProxyRulesMsgAsync(AgnosticProgram.ProxyRules proxyRulesProgram, bool save = true)
     {
         try
         {
-            WriteToStdout($"\n{Key.Programs.ProxyRules.Name} Mode: {proxyRulesProgram.RulesMode}", ConsoleColor.Green);
+            await WriteToStdoutAsync($"\n{Key.Programs.ProxyRules.Name} Mode: {proxyRulesProgram.RulesMode}", ConsoleColor.Green);
             if (proxyRulesProgram.RulesMode != AgnosticProgram.ProxyRules.Mode.Disable)
-                WriteToStdout($"Proxy Rules:\n{proxyRulesProgram.PathOrText}", ConsoleColor.Green);
+                await WriteToStdoutAsync($"Proxy Rules:\n{proxyRulesProgram.PathOrText}", ConsoleColor.Green);
 
             if (save)
             {
@@ -404,18 +450,48 @@ public static partial class Program
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ShowProxyRulesMsg: " + ex.Message);
+            Debug.WriteLine("ShowProxyRulesMsgAsync: " + ex.Message);
         }
     }
 
-    private static void ShowStatus()
+    private static async Task ShowDnsLimitMsgAsync(AgnosticProgram.DnsLimit dnsLimitProgram, bool save = true)
+    {
+        try
+        {
+            await WriteToStdoutAsync($"\n{Key.Programs.DnsLimit.Name} Enable: {dnsLimitProgram.EnableDnsLimit}", ConsoleColor.Green);
+            if (dnsLimitProgram.EnableDnsLimit)
+            {
+                await WriteToStdoutAsync($"Disable Plain DNS: {dnsLimitProgram.DisablePlainDns}", ConsoleColor.Green);
+                await WriteToStdoutAsync($"{Key.Programs.DnsLimit.DoHPathLimitMode.Name} Mode: {dnsLimitProgram.LimitDoHMode}", ConsoleColor.Green);
+                if (dnsLimitProgram.LimitDoHMode != AgnosticProgram.DnsLimit.LimitDoHPathsMode.Disable)
+                    await WriteToStdoutAsync($"DoH Paths:\n{dnsLimitProgram.PathOrText}", ConsoleColor.Green);
+            }
+            
+            if (save)
+            {
+                // Add Or Update Server Profile
+                ServerProfile sf = new()
+                {
+                    Name = Profile,
+                    DnsLimit = dnsLimitProgram
+                };
+                AddProfile(sf);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ShowDnsRulesMsgAsync: " + ex.Message);
+        }
+    }
+
+    private static async Task ShowStatusAsync()
     {
         foreach (ServerProfile sf in ServerProfiles)
         {
             if (sf.AgnosticServer != null && sf.Settings != null && !string.IsNullOrEmpty(sf.Name))
             {
                 string result = $"\nServer {sf.Name} Running: {sf.AgnosticServer.IsRunning}";
-                WriteToStdout(result, ConsoleColor.Blue);
+                await WriteToStdoutAsync(result, ConsoleColor.Blue);
 
                 if (sf.AgnosticServer.IsRunning)
                 {
@@ -444,21 +520,22 @@ public static partial class Program
                             addressMsg += $"\n{localIPv6}:{sf.Settings.ListenerPort}";
                     }
 
-                    WriteToStdout(addressMsg, ConsoleColor.Blue);
+                    await WriteToStdoutAsync(addressMsg, ConsoleColor.Blue);
                 }
 
-                if (sf.Settings != null) ShowSettingsMsg(sf.Settings, false);
-                if (sf.SettingsSSL != null) ShowSettingsSSLMsg(sf.SettingsSSL, false);
-                if (sf.Fragment != null) ShowFragmentMsg(sf.Fragment, false);
-                if (sf.DnsRules != null) ShowDnsRulesMsg(sf.DnsRules, false);
-                if (sf.ProxyRules != null) ShowProxyRulesMsg(sf.ProxyRules, false);
+                if (sf.Settings != null) await ShowSettingsMsgAsync(sf.Settings, false);
+                if (sf.SettingsSSL != null) await ShowSettingsSSLMsgAsync(sf.SettingsSSL, false);
+                if (sf.Fragment != null) await ShowFragmentMsgAsync(sf.Fragment, false);
+                if (sf.DnsRules != null) await ShowDnsRulesMsgAsync(sf.DnsRules, false);
+                if (sf.ProxyRules != null) await ShowProxyRulesMsgAsync(sf.ProxyRules, false);
+                if (sf.DnsLimit != null) await ShowDnsLimitMsgAsync(sf.DnsLimit, false);
             }
         }
 
-        ShowParentProcessMsg();
+        await ShowParentProcessMsgAsync();
     }
 
-    private static void FlushDns()
+    private static async Task FlushDnsAsync()
     {
         try
         {
@@ -470,16 +547,17 @@ public static partial class Program
                 }
             }
 
-            ProcessManager.ExecuteOnly("ipconfig", null, "/flushdns", true, true);
-            WriteToStdout("DNS Flushed", ConsoleColor.Green);
+            if (OperatingSystem.IsWindows())
+                await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
+            await WriteToStdoutAsync("DNS Flushed", ConsoleColor.Green);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("FlushDns: " + ex.Message);
+            Debug.WriteLine("FlushDnsAsync: " + ex.Message);
         }
     }
 
-    private static void SaveCommandsToFile()
+    private static async Task SaveCommandsToFileAsync()
     {
         try
         {
@@ -569,6 +647,16 @@ public static partial class Program
                             commands.Add(cmd);
                         }
 
+                        if (sf.DnsLimit != null)
+                        {
+                            baseCmd = $"{Key.Programs.Name} {Key.Programs.DnsLimit.Name}";
+                            cmd = $"{baseCmd} -{Key.Programs.DnsLimit.Enable}={sf.DnsLimit.EnableDnsLimit}";
+                            cmd += $" -{Key.Programs.DnsLimit.DisablePlain}={sf.DnsLimit.DisablePlainDns}";
+                            cmd += $" -{Key.Programs.DnsLimit.DoHPathLimitMode.Name}={sf.DnsLimit.LimitDoHMode}";
+                            cmd += $" -{Key.Programs.DnsLimit.PathOrText}=\"{sf.DnsLimit.PathOrText.Replace(Environment.NewLine, "\\n")}\"";
+                            commands.Add(cmd);
+                        }
+
                         // Add A New Line
                         commands.Add(string.Empty);
                     }
@@ -578,18 +666,18 @@ public static partial class Program
 
                 if (commands.Any())
                 {
-                    commands.SaveToFile(p);
-                    WriteToStdout("Saved To:", ConsoleColor.Green);
-                    WriteToStdout(p, ConsoleColor.Green);
+                    await commands.SaveToFileAsync(p);
+                    await WriteToStdoutAsync("Saved To:", ConsoleColor.Green);
+                    await WriteToStdoutAsync(p, ConsoleColor.Green);
                 }
                 else
-                    WriteToStdout("There Is Nothing To Save.", ConsoleColor.Blue);
+                    await WriteToStdoutAsync("There Is Nothing To Save.", ConsoleColor.Blue);
             }
-            else WriteToStdout("Failed To Find The Path.", ConsoleColor.Red);
+            else await WriteToStdoutAsync("Failed To Find The Path.", ConsoleColor.Red);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("SaveCommandsToFile: " + ex.Message);
+            Debug.WriteLine("SaveCommandsToFileAsync: " + ex.Message);
         }
     }
 
@@ -603,7 +691,7 @@ public static partial class Program
                 if (File.Exists(p))
                 {
                     List<string> commands = new();
-                    commands.LoadFromFile(p, true, true);
+                    await commands.LoadFromFileAsync(p, true, true);
 
                     if (commands.Any())
                     {
@@ -611,18 +699,18 @@ public static partial class Program
                         for (int n = 0; n < commands.Count; n++)
                         {
                             string command = commands[n];
-                            if (!command.StartsWith("//") || !command.StartsWith("load"))
+                            if (!command.StartsWith("//") || !command.ToLower().StartsWith("load"))
                                 await ExecuteCommandsAsync(command);
                         }
                     }
 
-                    WriteToStdout($"\nLoaded From:", ConsoleColor.Green);
-                    WriteToStdout(p, ConsoleColor.Green);
+                    await WriteToStdoutAsync($"\nLoaded From:", ConsoleColor.Green);
+                    await WriteToStdoutAsync(p, ConsoleColor.Green);
                 }
                 else
-                    WriteToStdout("File Not Exist.", ConsoleColor.Blue);
+                    await WriteToStdoutAsync("File Not Exist.", ConsoleColor.Blue);
             }
-            else WriteToStdout("Failed To Find The Path.", ConsoleColor.Red);
+            else await WriteToStdoutAsync("Failed To Find The Path.", ConsoleColor.Red);
         }
         catch (Exception ex)
         {
@@ -630,23 +718,37 @@ public static partial class Program
         }
     }
 
-    private static void WriteToStdout(string msg, ConsoleColor consoleColor = ConsoleColor.White, bool resetColor = true)
+    private static async Task WriteToStdoutAsync(string msg, ConsoleColor consoleColor = ConsoleColor.White, bool resetColor = true)
     {
         try
         {
             Console.ForegroundColor = consoleColor;
-            Console.Out.WriteLine(msg);
+            List<string> lines = msg.ReplaceLineEndings().Split(Environment.NewLine).ToList();
+            foreach (string line in lines)
+                await Console.Out.WriteLineAsync(line);
             if (resetColor) Console.ResetColor();
         }
-        catch (Exception) { }
+        catch (Exception ex)
+        {
+            try
+            {
+                await Console.Out.WriteLineAsync(ex.Message);
+            }
+            catch (Exception ex2)
+            {
+                Debug.WriteLine("WriteToStdoutAsync: " + ex2.Message);
+            }
+        }
     }
 
-    private static void WriteToStderr(string msg, ConsoleColor consoleColor = ConsoleColor.White, bool resetColor = true)
+    private static async Task WriteToStderrAsync(string msg, ConsoleColor consoleColor = ConsoleColor.White, bool resetColor = true)
     {
         try
         {
             Console.ForegroundColor = consoleColor;
-            Console.Error.WriteLine(msg);
+            List<string> lines = msg.ReplaceLineEndings().Split(Environment.NewLine).ToList();
+            foreach (string line in lines)
+                await Console.Error.WriteLineAsync(line);
             if (resetColor) Console.ResetColor();
         }
         catch (Exception) { }

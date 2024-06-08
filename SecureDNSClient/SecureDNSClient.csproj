@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Copyright>MSasanMH</Copyright>
     <Product>SDC - Secure DNS Client</Product>
-    <Version>$(VersionPrefix)3.0.4</Version>
+    <Version>$(VersionPrefix)3.2.0</Version>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
     <Platforms>AnyCPU;x64;x86</Platforms>
@@ -28,11 +28,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="DNS-Servers-Insecure.sdcs" />
-    <None Remove="DNS-Servers.sdcs" />
+    <None Remove="DNS-Servers-Insecure.txt" />
+    <None Remove="DNS-Servers.txt" />
     <None Remove="DoH-Servers.txt" />
     <None Remove="Forms\pzbnwnag.5pr~" />
     <None Remove="HostToCompany.txt" />
+    <None Remove="MPriv.bin" />
+    <None Remove="MPub.bin" />
     <None Remove="NecessaryFiles\dnscrypt-proxy.exe" />
     <None Remove="NecessaryFiles\dnscrypt-proxy.toml" />
     <None Remove="NecessaryFiles\dnslookup.exe" />
@@ -49,9 +51,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="DNS-Servers-Insecure.sdcs" />
-    <EmbeddedResource Include="DNS-Servers.sdcs" />
+    <EmbeddedResource Include="DNS-Servers-Insecure.txt" />
+    <EmbeddedResource Include="DNS-Servers.txt" />
     <EmbeddedResource Include="HostToCompany.txt" />
+    <EmbeddedResource Include="MPriv.bin" />
+    <EmbeddedResource Include="MPub.bin" />
     <EmbeddedResource Include="NecessaryFiles\goodbyedpi.exe" />
     <EmbeddedResource Include="NecessaryFiles\versions.txt" />
     <EmbeddedResource Include="NecessaryFiles\WinDivert.dll" />

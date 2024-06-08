@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SDCLookup": {
+      "commandName": "Project",
+      "commandLineArgs": "-Domain=google.com -DNSs=\"sdns://AQcAAAAAAAAAETg5LjM4LjEzMS4zODo0MzQzIKWHS9r0FoKY--wcnJl1Ar5aOUb91xsufvPUjid3rNRaHzIuZG5zY3J5cHQtY2VydC5hbXMtZG5zY3J5cHQtbmw sdns://gQ44OC4yMTguMjA2LjEzNw, sdns://AQcAAAAAAAAAETg5LjM4LjEzMS4zODo0MzQzIKWHS9r0FoKY--wcnJl1Ar5aOUb91xsufvPUjid3rNRaHzIuZG5zY3J5cHQtY2VydC5hbXMtZG5zY3J5cHQtbmw sdns://gQ44OC4yMTguMjA2LjEzNw, sdns://AQcAAAAAAAAAETg5LjM4LjEzMS4zODo0MzQzIKWHS9r0FoKY--wcnJl1Ar5aOUb91xsufvPUjid3rNRaHzIuZG5zY3J5cHQtY2VydC5hbXMtZG5zY3J5cHQtbmw sdns://gQ44OC4yMTguMjA2LjEzNw\" -TimeoutMS=5000 -DoubleCheck=True"
+    }
+  }
+}

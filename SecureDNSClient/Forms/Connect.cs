@@ -1,6 +1,7 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
 using System.Net;
+using System.ServiceProcess;
 
 namespace SecureDNSClient;
 
@@ -35,36 +36,102 @@ public partial class FormMain
                 this.InvokeIt(() => CustomButtonConnect.Enabled = true);
                 await UpdateStatusShortOnBoolsChanged();
 
-                // Create uid
-                SecureDNS.GenerateUid(this);
-
                 // Update NICs
                 await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
 
-                Task taskConnect = Task.Run(async () =>
+                if (connectMode != ConnectMode.Unknown)
                 {
-                    if (connectMode != ConnectMode.Unknown)
-                        isConnectSuccess = await Connect(connectMode, limitLog);
-                });
+                    string icsMsg = $"Checking For ICS Service Port Conflict...{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(icsMsg, Color.DarkOrange));
 
-                await taskConnect.ContinueWith(async _ =>
-                {
-                    IsConnecting = false;
-                    await UpdateStatusShortOnBoolsChanged();
-
-                    string msg = $"{NL}Connect Task: {taskConnect.Status}{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
-
-                    if (taskConnect.Status == TaskStatus.Faulted)
+                    // Get Svchost Stat
+                    string hnsService = "HNS";
+                    string icsService = "SharedAccess";
+                    ServiceTool.GetStatus(hnsService, out ServiceControllerStatus? hnsStatus, out ServiceStartMode? hnsStartMode);
+                    ServiceTool.GetStatus(icsService, out ServiceControllerStatus? icsStatus, out ServiceStartMode? icsStartMode);
+                    if (icsStatus != null)
                     {
-                        if (connectMode == ConnectMode.ConnectToWorkingServers)
+                        if (icsStatus == ServiceControllerStatus.Running || icsStatus == ServiceControllerStatus.StartPending)
                         {
-                            string faulted = $"Current DNS Servers Are Not Stable, Please Check Servers.{NL}";
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(faulted, Color.IndianRed));
+                            icsMsg = $"Temporary Disabling ICS Service...{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(icsMsg, Color.DarkOrange));
+
+                            // Stop Svchost
+                            await ServiceTool.ChangeStartModeAsync(hnsService, ServiceStartMode.Disabled);
+                            await ServiceTool.ChangeStatusAsync(hnsService, ServiceControllerStatus.Stopped);
+                            await ServiceTool.ChangeStartModeAsync(icsService, ServiceStartMode.Disabled);
+                            await ServiceTool.ChangeStatusAsync(icsService, ServiceControllerStatus.Stopped);
                         }
                     }
 
-                }, TaskScheduler.FromCurrentSynchronizationContext());
+                    bool revertBack = false;
+                    ServiceTool.GetStatus(icsService, out ServiceControllerStatus? icsStatus2, out _);
+                    if (icsStatus != null && icsStatus2 != null)
+                    {
+                        if (!icsStatus.Equals(icsStatus2))
+                        {
+                            icsMsg = $"ICS Service Status Changed To: {icsStatus2}{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(icsMsg, Color.DarkOrange));
+                            revertBack = true;
+                        }
+                    }
+
+                    // Start Connect
+                    isConnectSuccess = await ConnectAsync(connectMode, limitLog);
+                    bool retry = false;
+                    this.InvokeIt(() => retry = CustomCheckBoxSettingConnectRetry.Checked);
+                    if (!isConnectSuccess && retry && !IsDisconnecting && !IsDisconnectingAll && !IsQuickDisconnecting)
+                    {
+                        // Kill Processes
+                        await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
+                        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
+
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{NL}Retying...{NL}"));
+                        isConnectSuccess = await ConnectAsync(connectMode, limitLog);
+                    }
+
+                    if (revertBack)
+                    {
+                        icsMsg = $"Enabling ICS Service...{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(icsMsg, Color.DarkOrange));
+
+                        // Set Svchost To Previous State
+                        await ServiceTool.ChangeStartModeAsync(hnsService, hnsStartMode);
+                        await ServiceTool.ChangeStatusAsync(hnsService, hnsStatus);
+                        await ServiceTool.ChangeStartModeAsync(icsService, icsStartMode);
+                        await ServiceTool.ChangeStatusAsync(icsService, icsStatus);
+
+                        ServiceTool.GetStatus(icsService, out ServiceControllerStatus? icsStatus3, out ServiceStartMode? icsStartMode3);
+                        if (icsStatus2 != null && icsStatus3 != null)
+                        {
+                            if (!icsStatus2.Equals(icsStatus3))
+                            {
+                                icsMsg = $"ICS Service Status: {icsStatus3}{NL}";
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(icsMsg, Color.DarkOrange));
+                            }
+                            else
+                            {
+                                if (icsStartMode3 != null && icsStartMode3 == ServiceStartMode.Disabled)
+                                {
+                                    icsMsg = $"ICS Service {icsStatus3}, Because Startup Type Is {icsStartMode3}.{NL}";
+                                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(icsMsg, Color.DarkOrange));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (isConnectSuccess)
+                {
+                    // Create uid
+                    SecureDNS.GenerateUid(this);
+                }
+
+                IsConnecting = false;
+                await UpdateStatusShortOnBoolsChanged();
+
+                string msg = $"{NL}Connect Task: {isConnectSuccess}{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
             }
             catch (Exception ex)
             {
@@ -90,7 +157,7 @@ public partial class FormMain
                 {
                     while (true)
                     {
-                        disconnect();
+                        await disconnectAsync();
                         await Task.Delay(200);
                         await UpdateBools();
                         if (!IsConnecting && !IsConnected) break;
@@ -98,11 +165,11 @@ public partial class FormMain
                 });
                 try { await wait1.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
 
-                static void disconnect()
+                static async Task disconnectAsync()
                 {
-                    // Kill processes (DNSProxy, DNSCrypt)
-                    ProcessManager.KillProcessByPID(PIDDnsServer);
-                    ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+                    // Kill Processes
+                    await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
+                    await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
                 }
 
                 // To See Status Immediately
@@ -125,7 +192,7 @@ public partial class FormMain
                 this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText(msgDisconnected));
 
                 // Reconnect
-                if (!StopQuickConnect) // Make Quick Connect Cancel faster
+                if (!StopQuickConnect) // Make Quick Connect Cancel Faster
                     if (reconnect) isConnectSuccess = await StartConnect(connectMode, false, limitLog);
             }
             catch (Exception ex)
@@ -137,7 +204,7 @@ public partial class FormMain
         return isConnectSuccess;
     }
 
-    private async Task<bool> Connect(ConnectMode connectMode, bool limitLog = false)
+    private async Task<bool> ConnectAsync(ConnectMode connectMode, bool limitLog = false)
     {
         // Write Connecting Message To Log
         string msgConnecting = "Connecting... Please Wait..." + NL + NL;
@@ -148,15 +215,18 @@ public partial class FormMain
 
         // Check Plain DNS Port
         List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
-        foreach (int pid in pids)
-        {
-            ProcessManager.KillProcessByPID(pid);
-            await Task.Delay(5);
-        }
+        foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
+        await Task.Delay(5);
+        pids = ProcessManager.GetProcessPidsByUsingPort(53);
+        foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
 
         bool portDns = GetListeningPort(53, "You Need To Resolve The Conflict.", Color.IndianRed);
         if (!portDns)
         {
+            IsEverythingDisconnected(out string stat);
+            stat = $"{NL}Port 53 Is Occupied:{NL}{stat}";
+            await LogToDebugFileAsync(stat);
+
             IsConnecting = false;
             return false;
         }
@@ -166,7 +236,7 @@ public partial class FormMain
         {
             int dohPort = GetDohPortSetting();
             pids = ProcessManager.GetProcessPidsByUsingPort(dohPort);
-            foreach (int pid in pids) ProcessManager.KillProcessByPID(pid);
+            foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
             bool portDoH = GetListeningPort(dohPort, "You Need To Resolve The Conflict.", Color.IndianRed);
             if (!portDoH)
             {
@@ -196,13 +266,13 @@ public partial class FormMain
             }
             else
             {
-                ProcessManager.KillProcessByPID(PIDDnsServer);
+                await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
             }
         }
         else if (connectMode == ConnectMode.ConnectToFakeProxyDohViaProxyDPI)
         {
             //=== Connect To Fake Proxy Via Proxy Fragment
-            bool connected = await ConnectToFakeProxyDohUsingProxyDPIAsync().ConfigureAwait(false);
+            bool connected = await ConnectToFakeProxyDohUsingProxyDPIAsync();
             if (connected)
             {
                 internalConnect();
@@ -211,13 +281,13 @@ public partial class FormMain
             }
             else
             {
-                ProcessManager.KillProcessByPID(PIDDnsServer);
+                await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
             }
         }
         else if (connectMode == ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI)
         {
             //=== Connect To Fake Proxy Via GoodbyeDPI
-            bool connected = await ConnectToFakeProxyDohUsingGoodbyeDPIAsync().ConfigureAwait(false);
+            bool connected = await ConnectToFakeProxyDohUsingGoodbyeDPIAsync();
             if (connected)
             {
                 internalConnect();
@@ -226,8 +296,8 @@ public partial class FormMain
             }
             else
             {
-                ProcessManager.KillProcessByPID(PIDDnsServer);
-                ProcessManager.KillProcessByPID(PIDGoodbyeDPIBypass);
+                await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
+                await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
             }
         }
         else if (connectMode == ConnectMode.ConnectToPopularServersWithProxy)
@@ -242,7 +312,7 @@ public partial class FormMain
             }
             else
             {
-                ProcessManager.KillProcessByPID(PIDDnsServer);
+                await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
             }
         }
 

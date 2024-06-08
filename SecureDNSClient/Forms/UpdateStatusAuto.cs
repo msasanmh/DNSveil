@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Media;
 using System.Net;
 using System.Reflection;
+using System.Text;
 
 namespace SecureDNSClient;
 
@@ -194,31 +195,38 @@ public partial class FormMain
         try
         {
             // Without System Proxy
-            using HttpClientHandler handler = new();
-            handler.UseProxy = false;
-            using HttpClient httpClient = new(handler);
-            httpClient.Timeout = TimeSpan.FromSeconds(20);
-            update = await httpClient.GetStringAsync(new Uri(updateUrl));
-        }
-        catch (Exception)
-        {
-            try
+            Uri uri = new(updateUrl, UriKind.Absolute);
+            HttpRequest hr = new()
+            {
+                AllowAutoRedirect = true,
+                AllowInsecure = true,
+                TimeoutMS = 20000,
+                URI = uri
+            };
+            HttpRequestResponse hrr = await HttpRequest.SendAsync(hr);
+            if (hrr.IsSuccess)
+            {
+                update = Encoding.UTF8.GetString(hrr.Data);
+            }
+            else
             {
                 // With System Proxy
-                using HttpClientHandler handler = new();
-                handler.UseProxy = true;
-                using HttpClient httpClient = new(handler);
-                httpClient.Timeout = TimeSpan.FromSeconds(20);
-                update = await httpClient.GetStringAsync(new Uri(updateUrl));
-            }
-            catch (Exception ex)
-            {
-                update = string.Empty;
-                Debug.WriteLine("Check Update: " + ex.Message);
+                string systemProxyScheme = NetworkTool.GetSystemProxy();
+                if (!string.IsNullOrWhiteSpace(systemProxyScheme))
+                {
+                    hr.ProxyScheme = systemProxyScheme;
+                    hrr = await HttpRequest.SendAsync(hr);
+                    if (hrr.IsSuccess)
+                    {
+                        update = Encoding.UTF8.GetString(hrr.Data);
+                    }
+                }
             }
         }
+        catch (Exception) { }
 
         update = update.Trim();
+        Debug.WriteLine(update);
         if (!string.IsNullOrEmpty(update) && update.Contains('|'))
         {
             string[] split = update.Split('|');
@@ -390,11 +398,11 @@ public partial class FormMain
                     continue;
                 }
 
-                int timeoutMS = 2000;
-                string blockedDomain = GetBlockedDomainSetting(out string _);
-                await UpdateBoolDnsOnce(timeoutMS, blockedDomain);
+                int timeoutMS = 5000;
+                GetBlockedDomainSetting(out string blockedDomainNoWww);
+                await UpdateBoolDnsOnce(timeoutMS, blockedDomainNoWww);
                 await Task.Delay(UpdateDnsDohDelayMS / 2);
-                await UpdateBoolDohOnce(timeoutMS, blockedDomain);
+                await UpdateBoolDohOnce(timeoutMS, blockedDomainNoWww);
                 await Task.Delay(UpdateDnsDohDelayMS / 2);
             }
         });
@@ -410,10 +418,10 @@ public partial class FormMain
                 CheckDns checkDns = new(false, false);
                 string udpServer = $"udp://{IPAddress.Loopback}:53";
                 string tcpServer = $"tcp://{IPAddress.Loopback}:53";
-                await checkDns.CheckDnsExternalAsync(host, udpServer, timeoutMS);
-                if (checkDns.DnsLatency > 9)
-                    await checkDns.CheckDnsExternalAsync(host, tcpServer, timeoutMS);
-                LocalDnsLatency = checkDns.DnsLatency;
+                CheckDns.CheckDnsResult cdr = await checkDns.CheckDnsExternalAsync(host, udpServer, timeoutMS);
+                if (cdr.DnsLatency > 9 || cdr.DnsLatency == -1)
+                    cdr = await checkDns.CheckDnsExternalAsync(host, tcpServer, timeoutMS);
+                LocalDnsLatency = cdr.DnsLatency;
                 IsDNSConnected = LocalDnsLatency != -1;
             }
             else
@@ -438,10 +446,10 @@ public partial class FormMain
             {
                 CheckDns checkDns = new(false, false);
                 string dohServer = $"https://{IPAddress.Loopback}:{ConnectedDohPort}/dns-query";
-                await checkDns.CheckDnsExternalAsync(host, dohServer, timeoutMS);
-                if (checkDns.DnsLatency > 50)
-                    await checkDns.CheckDnsExternalAsync(host, dohServer, timeoutMS);
-                LocalDohLatency = checkDns.DnsLatency;
+                CheckDns.CheckDnsResult cdr = await checkDns.CheckDnsExternalAsync(host, dohServer, timeoutMS);
+                if (cdr.DnsLatency > 50 || cdr.DnsLatency == -1)
+                    cdr = await checkDns.CheckDnsExternalAsync(host, dohServer, timeoutMS);
+                LocalDohLatency = cdr.DnsLatency;
                 IsDoHConnected = LocalDohLatency != -1;
             }
             else
@@ -663,7 +671,7 @@ public partial class FormMain
             // Reconnect Button Enable
             this.InvokeIt(() => CustomButtonReconnect.Enabled = (IsConnected || IsConnecting) && !IsDisconnecting);
             await Task.Delay(delay);
-
+            
             // SetDNS Button Text
             this.InvokeIt(() =>
             {
@@ -674,7 +682,7 @@ public partial class FormMain
                 else CustomButtonSetDNS.Text = IsDNSSetOn ? "Unset DNS" : "Set DNS";
             });
             await Task.Delay(delay);
-
+            
             // SetDNS Button Enable
             this.InvokeIt(() => CustomButtonSetDNS.Enabled = IsConnected && !IsDNSSetting && !IsDNSUnsetting);
             await Task.Delay(delay);
@@ -695,7 +703,7 @@ public partial class FormMain
             // SetProxy Button Text
             this.InvokeIt(() => CustomButtonSetProxy.Text = IsProxySet || IsAnotherProxySet ? "Unset Proxy" : "Set Proxy");
             await Task.Delay(delay);
-
+            
             // SetProxy Button Enable & Color
             this.InvokeIt(() =>
             {
@@ -1124,7 +1132,7 @@ public partial class FormMain
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg));
             try { Environment.Exit(0); } catch (Exception) { }
             Application.Exit();
-            ProcessManager.KillProcessByPID(Environment.ProcessId, true);
+            await ProcessManager.KillProcessByPidAsync(Environment.ProcessId, true);
             return;
         }
 

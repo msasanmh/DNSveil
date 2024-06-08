@@ -273,7 +273,7 @@ public static class CertificateTool
         DateTime notAfter = issuerNotAfter.AddDays(-1);
 
         // Create RSA Private Key
-        RSA rsaKey = RSA.Create(2048);
+        RSA rsaKey = RSA.Create(4096);
         privateKey = rsaKey;
 
         // Create Request

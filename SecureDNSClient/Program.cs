@@ -1,5 +1,6 @@
 using MsmhToolsClass;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 
@@ -19,6 +20,15 @@ internal static partial class Program
     [STAThread]
     static void Main()
     {
+        try
+        {
+            // Setting Culture Is Necessary To Read Args In Any Windows Display Language Other Than English
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+        }
+        catch (Exception) { }
+
         // Exit If It's Root Directory
         if (FileDirectory.IsRootDirectory())
         {
@@ -58,7 +68,7 @@ internal static partial class Program
                     if (isInt) StartupDelaySec = value;
                 }
 
-                // New Cli
+                // New CLI
                 if (!oldCli)
                 {
                     for (int n = 0; n < args.Length; n++)
@@ -91,7 +101,7 @@ internal static partial class Program
 
         // Prevent multiple instances
         string productName = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName ?? "SDC - Secure DNS Client";
-        using Mutex mutex = new(false, productName);
+        Mutex mutex = new(false, productName);
         if (!mutex.WaitOne(0, true))
         {
             MessageBox.Show($"{productName} is already running.");
@@ -112,7 +122,7 @@ internal static partial class Program
     {
         try
         {
-            string err = e.Exception.GetInnerExceptions();
+            string err = e.Exception.GetInnerExceptions() + Environment.NewLine;
             Debug.WriteLine("-=-=-=-=-=-=-=-=-=-=-=-= UnobservedTaskException:" + Environment.NewLine + err);
 
             try
@@ -133,7 +143,7 @@ internal static partial class Program
     {
         try
         {
-            string err = e.Exception.GetInnerExceptions();
+            string err = e.Exception.GetInnerExceptions() + Environment.NewLine;
             Debug.WriteLine("-=-=-=-=-=-=-=-=-=-=-=-= ThreadException:" + Environment.NewLine + err);
 
             try
@@ -154,7 +164,7 @@ internal static partial class Program
     {
         try
         {
-            string? err = e.ExceptionObject.ToString();
+            string? err = e.ExceptionObject.ToString() + Environment.NewLine;
             if (string.IsNullOrEmpty(err)) return;
             Debug.WriteLine("-=-=-=-=-=-=-=-=-=-=-=-= UnhandledException:" + Environment.NewLine + err);
 

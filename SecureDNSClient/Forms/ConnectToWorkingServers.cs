@@ -16,7 +16,7 @@ public partial class FormMain
             return false;
         }
 
-        string hosts = string.Empty;
+        List<string> dnssList = new();
         int countUsingServers = 0;
 
         // Sort by latency
@@ -26,9 +26,8 @@ public partial class FormMain
         // Get number of max servers
         int maxServers = GetMaxServersToConnectSetting();
 
-        // New SavedDnsList and SavedEncodedDnsList
+        // New SavedDnsList
         List<string> savedDnsList = new();
-        List<string> savedEncodedDnsList = new();
 
         // Clear CurrentUsingCustomServers
         CurrentUsingCustomServersList.Clear();
@@ -39,33 +38,30 @@ public partial class FormMain
             if (IsDisconnecting) return false;
 
             DnsInfo dnsInfo = WorkingDnsList[n];
-            string host = dnsInfo.DNS;
+            string dns = dnsInfo.DNS;
 
-            // Add host to UsingDnsList
-            savedDnsList.Add(host);
-
-            // Add encoded host to SavedEncodedDnsList
-            savedEncodedDnsList.Add(EncodingTool.GetSHA512(host));
+            // Add dns to SavedDnsList
+            savedDnsList.Add(dns);
 
             // Update Current Using DNS Servers
             CurrentUsingCustomServersList.Add(dnsInfo);
 
-            hosts += $"{host},";
+            dnssList.Add(dns);
 
             countUsingServers = n + 1;
             if (n >= maxServers - 1) break;
         }
 
-        if (hosts.EndsWith(',')) hosts = hosts.TrimEnd(',');
+        string dnss = dnssList.ToString(',');
 
         // Update Saved Dns List
         SavedDnsList = new(savedDnsList);
-        SavedEncodedDnsList = new(savedEncodedDnsList);
+        SavedEncodedDnsList = new(await BuiltInEncryptAsync(savedDnsList));
 
         // Save encoded hosts to file
-        SavedEncodedDnsList.SaveToFile(SecureDNS.SavedEncodedDnsPath);
+        await SavedEncodedDnsList.SaveToFileAsync(SecureDNS.SavedEncodedDnsPath);
 
-        return await NormalConnectAsync(hosts, countUsingServers);
+        return await NormalConnectAsync(dnss, countUsingServers);
     }
 
     private async Task<bool> NormalConnectAsync(string dnss, int numberOfUsingServers)
@@ -83,7 +79,7 @@ public partial class FormMain
         string bootstrapIP = GetBootstrapSetting(out int bootstrapPort).ToString();
 
         // Kill If It's Already Running
-        ProcessManager.KillProcessByPID(PIDDnsServer);
+        await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
         bool isCmdSent = false;
         PIDDnsServer = DnsConsole.Execute(SecureDNS.AgnosticServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
         await Task.Delay(50);
@@ -104,7 +100,7 @@ public partial class FormMain
         {
             string msg = $"Couldn't Start DNS Server. Try Again.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            ProcessManager.KillProcessByPID(PIDDnsServer);
+            await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
             return false;
         }
 
@@ -144,7 +140,7 @@ public partial class FormMain
                 // Send Set Profile
                 isCmdSent = await DnsConsole.SendCommandAsync("Profile DoH");
                 if (!isCmdSent) return false;
-
+                
                 // Send DoH Settings
                 string dohSettingsCmd = $"Setting -Port={dohPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
                 dohSettingsCmd += $" -AllowInsecure={insecure} -DNSs={dnss} -CfCleanIP={cfCleanIPv4}";
@@ -179,14 +175,34 @@ public partial class FormMain
         // Send Start Command
         isCmdSent = await DnsConsole.SendCommandAsync("Start");
         if (!isCmdSent) return false;
+        
+        // Wait For Confirm Msg
+        bool confirmed = false;
+        Task wait2 = Task.Run(async () =>
+        {
+            while (true)
+            {
+                if (IsDisconnecting) break;
+                if (!ProcessManager.FindProcessByPID(PIDDnsServer)) break;
+                if (DnsConsole.GetStdoutBag.Contains("Confirmed"))
+                {
+                    confirmed = true;
+                    break;
+                }
+                await Task.Delay(25);
+            }
+        });
+        try { await wait2.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
 
-        if (IsConnected)
+        GetBlockedDomainSetting(out string blockedDomainNoWww);
+        if (IsConnected && confirmed)
         {
             string msgSuccess = $"Connected.{NL}Waiting For DNS To Get Online...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgSuccess, Color.MediumSeaGreen));
 
             // Wait Until DNS Gets Online
-            Task wait2 = Task.Run(async () =>
+            int timeoutMS = 1000;
+            Task wait3 = Task.Run(async () =>
             {
                 while (!IsDNSConnected)
                 {
@@ -194,11 +210,17 @@ public partial class FormMain
                     if (IsDNSConnected) break;
                     if (!ProcessManager.FindProcessByPID(PIDDnsServer)) break;
                     if (!IsInternetOnline) break;
-                    await UpdateBoolDnsOnce(GetCheckTimeoutSetting() + 100, GetBlockedDomainSetting(out string _));
+
+                    List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
+                    foreach (int pid in pids) if (pid != PIDDnsServer) await ProcessManager.KillProcessByPidAsync(pid);
+
+                    await UpdateBoolDnsOnce(timeoutMS, blockedDomainNoWww);
                     await Task.Delay(25);
+                    timeoutMS += 500;
+                    if (timeoutMS > 10000) timeoutMS = 10000;
                 }
             });
-            try { await wait2.WaitAsync(TimeSpan.FromSeconds(15)); } catch (Exception) { }
+            try { await wait3.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
 
             if (IsDNSConnected)
             {
@@ -207,18 +229,21 @@ public partial class FormMain
                 else
                     msgSuccess = "Local DNS Server Started Using " + numberOfUsingServers + " Server." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgSuccess, Color.MediumSeaGreen));
+                await LogToDebugFileAsync(msgSuccess);
 
                 return true;
             }
         }
-
+        
         string msgFailed = "Error: Couldn't Start DNS Server!";
-        if (ProcessManager.FindProcessByPID(PIDDnsServer) && !IsDNSConnected)
-            msgFailed = "DNS Can't Get Online. Check Servers.";
+        if (!confirmed) msgFailed = "Couldn't Get Confirm Message From Console.";
+        else if (ProcessManager.FindProcessByPID(PIDDnsServer) && !IsDNSConnected)
+            msgFailed = $"DNS Can't Get Online (Check Domain: {blockedDomainNoWww}). Check Servers.";
         if (IsDisconnecting) msgFailed = "Task Canceled.";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailed + NL, Color.IndianRed));
+        await LogToDebugFileAsync(msgFailed);
 
-        ProcessManager.KillProcessByPID(PIDDnsServer);
+        await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
         return false;
     }
 

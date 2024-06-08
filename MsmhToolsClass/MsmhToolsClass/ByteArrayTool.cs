@@ -60,6 +60,26 @@ public static class ByteArrayTool
         }
     }
 
+    public static bool TryConvertBytesToUInt24(byte[] bytes, out uint result)
+    {
+        try
+        {
+            int n = (bytes[0] << 16) + (bytes[1] << 8) + bytes[2];
+            if (n < 0)
+            {
+                result = 0;
+                return false;
+            }
+            result = Convert.ToUInt32(n);
+            return true;
+        }
+        catch (Exception)
+        {
+            result = 0;
+            return false;
+        }
+    }
+
     public static bool TryConvertBytesToUInt32(byte[] bytes, out uint result)
     {
         try
@@ -91,6 +111,24 @@ public static class ByteArrayTool
             // OR
             //byte[] result0 = BitConverter.GetBytes(value);
             //result = BitConverter.IsLittleEndian ? result0.Reverse().ToArray() : result0;
+            return true;
+        }
+        catch (Exception)
+        {
+            result = Array.Empty<byte>();
+            return false;
+        }
+    }
+
+    public static bool TryConvertUInt24ToBytes(uint value, out byte[] result)
+    {
+        try
+        {
+            byte[] bytes = new byte[3];
+            bytes[0] = (byte)(value >> 16);
+            bytes[1] = (byte)(value >> 8);
+            bytes[2] = (byte)value;
+            result = bytes;
             return true;
         }
         catch (Exception)

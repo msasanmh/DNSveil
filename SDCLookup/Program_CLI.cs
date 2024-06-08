@@ -40,7 +40,7 @@ internal static partial class Program
             if (arg.Contains(key, StringComparison.OrdinalIgnoreCase) && arg.Length > key.Length)
             {
                 keyValue.Value = arg[key.Length..];
-
+                
                 if (keyType == typeof(string))
                 {
                     keyValue.ValueString = keyValue.Value;

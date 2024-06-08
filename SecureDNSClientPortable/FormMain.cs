@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace SecureDNSClientPortable
@@ -16,6 +17,11 @@ namespace SecureDNSClientPortable
 
             try
             {
+                // Setting Culture Is Necessary To Read Args In Any Windows Display Language Other Than English
+                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+                CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+                CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+
                 string? appPath = null;
 
                 bool x64 = ArchProcess == Architecture.X64 && ArchOs == Architecture.X64;

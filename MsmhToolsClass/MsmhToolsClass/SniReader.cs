@@ -7,6 +7,16 @@ namespace MsmhToolsClass;
 // https://tls13.xargs.org
 public class SniReader
 {
+    public class Lengths
+    {
+        public int TLS_Record_Layer_StartIndex_2Bytes { get; set; } = -1;
+        public int TLS_Record_Layer_Length { get; set; } = -1;
+        public int Client_Hello_StartIndex_3Bytes { get; set; } = -1;
+        public int Client_Hello_Length { get; set; } = -1;
+        public int Extensions_StartIndex_2Bytes { get; set; } = -1;
+        public int Extensions_Length { get; set; } = -1;
+    }
+
     public class TlsExtensions
     {
         public byte[] Data { get; set; } = Array.Empty<byte>();
@@ -31,12 +41,15 @@ public class SniReader
 
     public string ReasonPhrase { get; private set; } = string.Empty;
     public SslProtocols SslProtocol { get; private set; } = SslProtocols.None;
+    public Lengths AllLengths { get; private set; } = new();
+    public bool HasSniPaddingExtension { get; private set; } = false;
     public bool HasTlsExtensions { get; private set; } = false;
     public TlsExtensions AllExtensions { get; private set; } = new();
     public bool HasSniExtension { get; private set; } = false;
     public List<SniExtension> SniExtensionList { get; private set; } = new();
     public bool HasSni { get; private set; } = false;
     public List<SNI> SniList { get; private set; } = new();
+    public byte[] Data { get; private set; } = Array.Empty<byte>();
 
     private const int TLS_HEADER_LEN = 5;
     private const int TLS_HANDSHAKE_CONTENT_TYPE = 0x16;
@@ -46,6 +59,7 @@ public class SniReader
     {
         try
         {
+            Data = data;
             int pos = TLS_HEADER_LEN;
             int dataLength = data.Length;
 
@@ -89,8 +103,11 @@ public class SniReader
                     return;
                 }
 
-                // TLS Record Length (Length Of Handshake Message) (2 Bytes)
+                // TLS Record Layer Length (Length Of Handshake Message) (2 Bytes) ======================================
                 int len = (data[3] << 8) + data[4];
+                AllLengths.TLS_Record_Layer_StartIndex_2Bytes = 3;
+                AllLengths.TLS_Record_Layer_Length = len;
+                //Debug.WriteLine("Length Of TLS Record Layer: " + len);
                 dataLength = Math.Min(dataLength, len + TLS_HEADER_LEN);
 
                 // Check We Received Entire TLS Record Length
@@ -117,8 +134,11 @@ public class SniReader
                 // Skip Handshake Message Type
                 pos += 1;
 
-                // Length of Client Hello Data (3 Bytes)
+                // Length Of Client Hello (Handshake) (3 Bytes) ======================================
                 len = (data[pos] << 16) + (data[pos + 1] << 8) + data[pos + 2];
+                AllLengths.Client_Hello_StartIndex_3Bytes = pos;
+                AllLengths.Client_Hello_Length = len;
+                //Debug.WriteLine("Length Of Client Hello: " + len);
 
                 // Skip Length Of Client Hello Data
                 pos += 3;
@@ -138,6 +158,7 @@ public class SniReader
 
                 // Session ID Length (1 Byte)
                 len = data[pos];
+                //Debug.WriteLine("Length Of Session ID: " + len);
                 pos += 1 + len;
 
                 // CIPHER SUITES
@@ -149,6 +170,7 @@ public class SniReader
 
                 // Cipher Suits Length (2 Bytes)
                 len = (data[pos] << 8) + data[pos + 1];
+                //Debug.WriteLine("Length Of Cipher Suits: " + len);
                 pos += 2 + len;
 
                 // COMPRESSION METHODS (TLS 1.3 No Longer Allows Compression, So This Field Is Always A Single Entry.
@@ -161,6 +183,7 @@ public class SniReader
 
                 // Compression Methods Length (1 Byte)
                 len = data[pos];
+                //Debug.WriteLine("Length Of Compression Methods: " + len);
                 pos += 1 + len;
 
                 if (pos == dataLength && tls_version_major == 3 && tls_version_minor == 0)
@@ -176,10 +199,13 @@ public class SniReader
                     return;
                 }
 
-                // Extensions Length (2 Bytes)
+                // Extensions Length (2 Bytes) ======================================
                 len = (data[pos] << 8) + data[pos + 1];
+                AllLengths.Extensions_StartIndex_2Bytes = pos;
+                AllLengths.Extensions_Length = len;
+                //Debug.WriteLine("Length Of Extensions: " + len);
                 pos += 2;
-
+                
                 if (pos + len > dataLength)
                 {
                     ReasonPhrase = "Wrong Data.";
@@ -192,7 +218,10 @@ public class SniReader
                 ParseExtensions(extensionsData, pos);
             }
         }
-        catch (Exception) { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SniReader: " + ex.Message);
+        }
     }
 
     private void ParseExtensions(byte[] data, int pos0)
@@ -208,6 +237,7 @@ public class SniReader
 
             int pos = 0;
             int len;
+
             // Parse Each 4 Bytes For The Extension Header (To Avoid Index Out Of Range)
             while (pos + 4 <= data.Length)
             {
@@ -220,9 +250,10 @@ public class SniReader
                 byte[] extData = new byte[len];
                 Buffer.BlockCopy(data, pos, extData, 0, len);
 
-                //if (data[pos] == 0x00 && data[pos + 1] == 0x15) // Extension: Padding
                 if (data[pos] == 0x00 && data[pos + 1] == 0x00) // Extension: SNI
                     ParseSniExtension(extData, pos0 + pos);
+                else if (data[pos] == 0x00 && data[pos + 1] == 0x15) // Extension: Padding
+                    HasSniPaddingExtension = true;
                 //else if (data[pos] == 0x00 && data[pos + 1] == 0x0b) // Extension: EC Point Formats
                 //else if (data[pos] == 0x00 && data[pos + 1] == 0x0a) // Extension: Supported Groups
                 //else if (data[pos] == 0x00 && data[pos + 1] == 0x23) // Extension: Session Ticket
@@ -249,7 +280,10 @@ public class SniReader
                 SniList.Clear();
             }
         }
-        catch (Exception) { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SniReader ParseExtensions: " + ex.Message);
+        }
     }
 
     private void ParseSniExtension(byte[] data, int pos0)
@@ -259,13 +293,28 @@ public class SniReader
             // EXTENSION SERVER NAME
             if (data.Length <= 0) return;
 
-            HasSniExtension = true;
-            SniExtension sniExtension = new();
-            sniExtension.Data = data;
-            sniExtension.Length = data.Length;
-            sniExtension.StartIndex = pos0;
-            SniExtensionList.Add(sniExtension);
+            // Google SNI Extension e.g.
+            //byte[] google = new byte[23];
+            //google[0] = 0;
+            //google[1] = 0;
+            //google[2] = 0;
+            //google[3] = 19;
+            //google[4] = 0;
+            //google[5] = 17;
+            //google[6] = 0;
+            //google[7] = 0;
+            //google[8] = 14;
+            //byte[] googleSNI = Encoding.UTF8.GetBytes("www.google.com");
 
+            HasSniExtension = true;
+            SniExtension sniExtension = new()
+            {
+                Data = data,
+                Length = data.Length,
+                StartIndex = pos0
+            };
+            SniExtensionList.Add(sniExtension);
+            //Debug.WriteLine("=========R: " + (sniExtension.StartIndex + sniExtension.Length));
             int pos = 0;
 
             // Check If It's A Server Name Extension
@@ -303,11 +352,13 @@ public class SniReader
                             string serverName = Encoding.UTF8.GetString(outData);
                             //Debug.WriteLine("----------Server Name: " + serverName + ", Length: " + len + ", Whole Data Length: " + Data.Length);
 
-                            SNI sni = new();
-                            sni.Data = outData;
-                            sni.Length = len;
-                            sni.ServerName = serverName;
-                            sni.StartIndex = pos0 + pos;
+                            SNI sni = new()
+                            {
+                                Data = outData,
+                                Length = len,
+                                ServerName = serverName,
+                                StartIndex = pos0 + pos
+                            };
 
                             // Add SNI to List
                             SniList.Add(sni);
@@ -322,7 +373,10 @@ public class SniReader
                 }
             }
         }
-        catch (Exception) { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("SniReader ParseSniExtension: " + ex.Message);
+        }
     }
 
 }

@@ -8,6 +8,7 @@ public class DnsEnums
         UDP,
         TCP,
         DnsCrypt,
+        AnonymizedDNSCrypt, // DnsCrypt + AnonymizedDNSCryptRelay
         DoH,
         DoT,
         DoQ,
@@ -22,6 +23,7 @@ public class DnsEnums
         public static readonly string UDP = "UDP Plain DNS";
         public static readonly string TCP = "TCP Plain DNS";
         public static readonly string DnsCrypt = "DNSCrypt";
+        public static readonly string AnonymizedDNSCrypt = "Anonymized DNSCrypt";
         public static readonly string DoH = "DNS-Over-HTTPS";
         public static readonly string DoT = "DNS-Over-TLS";
         public static readonly string DoQ = "DNS-Over-Quic";

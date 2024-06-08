@@ -143,7 +143,7 @@ public partial class FormMain
                 string bootstrapIp = GetBootstrapSetting(out int bootstrapPort).ToString();
 
                 // Get UpStream Proxy
-                var upstream = await GetUpStreamProxySetting();
+                var upstream = await GetUpStreamProxySettingAsync();
                 if (!upstream.IsSuccess)
                 {
                     UpdateProxyBools = true;
@@ -153,7 +153,7 @@ public partial class FormMain
                 }
 
                 // Kill If It's Already Running
-                ProcessManager.KillProcessByPID(PIDProxyServer);
+                await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
                 bool isCmdSent = false;
                 PIDProxyServer = ProxyConsole.Execute(SecureDNS.AgnosticServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
                 await Task.Delay(100);
@@ -173,7 +173,7 @@ public partial class FormMain
                 {
                     string msg = $"Couldn't Start Proxy Server. Try Again.{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-                    ProcessManager.KillProcessByPID(PIDProxyServer);
+                    await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
                     UpdateProxyBools = true;
                     IsProxyActivating = false;
                     await UpdateStatusShortOnBoolsChanged();
@@ -184,7 +184,7 @@ public partial class FormMain
                 isCmdSent = await ProxyConsole.SendCommandAsync("Profile Proxy");
                 if (!isCmdSent)
                 {
-                    await FaildSendCommandMessage();
+                    await FaildSendCommandMessageAsync();
                     return;
                 }
 
@@ -196,7 +196,7 @@ public partial class FormMain
                 isCmdSent = await ProxyConsole.SendCommandAsync(settingsCmd);
                 if (!isCmdSent)
                 {
-                    await FaildSendCommandMessage();
+                    await FaildSendCommandMessageAsync();
                     return;
                 }
 
@@ -204,7 +204,7 @@ public partial class FormMain
                 bool isDpiBypassApplied = await ApplyProxyDpiChanges();
                 if (!isDpiBypassApplied)
                 {
-                    await FaildSendCommandMessage();
+                    await FaildSendCommandMessageAsync();
                     return;
                 }
 
@@ -212,7 +212,7 @@ public partial class FormMain
                 bool isRulesOk = await ApplyProxyRules();
                 if (!isRulesOk)
                 {
-                    await FaildSendCommandMessage();
+                    await FaildSendCommandMessageAsync();
                     return;
                 }
 
@@ -222,7 +222,7 @@ public partial class FormMain
                     isCmdSent = await ProxyConsole.SendCommandAsync("Requests True");
                     if (!isCmdSent)
                     {
-                        await FaildSendCommandMessage();
+                        await FaildSendCommandMessageAsync();
                         return;
                     }
                 }
@@ -231,7 +231,7 @@ public partial class FormMain
                     isCmdSent = await ProxyConsole.SendCommandAsync("Requests False");
                     if (!isCmdSent)
                     {
-                        await FaildSendCommandMessage();
+                        await FaildSendCommandMessageAsync();
                         return;
                     }
                 }
@@ -242,7 +242,7 @@ public partial class FormMain
                     isCmdSent = await ProxyConsole.SendCommandAsync("FragmentDetails True");
                     if (!isCmdSent)
                     {
-                        await FaildSendCommandMessage();
+                        await FaildSendCommandMessageAsync();
                         return;
                     }
                 }
@@ -251,7 +251,7 @@ public partial class FormMain
                     isCmdSent = await ProxyConsole.SendCommandAsync("FragmentDetails False");
                     if (!isCmdSent)
                     {
-                        await FaildSendCommandMessage();
+                        await FaildSendCommandMessageAsync();
                         return;
                     }
                 }
@@ -262,7 +262,7 @@ public partial class FormMain
                 isCmdSent = await ProxyConsole.SendCommandAsync(parentCommand);
                 if (!isCmdSent)
                 {
-                    await FaildSendCommandMessage();
+                    await FaildSendCommandMessageAsync();
                     return;
                 }
 
@@ -288,7 +288,7 @@ public partial class FormMain
 
                 if (!isCmdSent || !ProxyConsole.GetStdout.ToLower().StartsWith(confirmMsg))
                 {
-                    await FaildSendCommandMessage();
+                    await FaildSendCommandMessageAsync();
                     return;
                 }
 
@@ -355,11 +355,11 @@ public partial class FormMain
                 if (ProcessManager.FindProcessByPID(PIDProxyServer))
                 {
                     // Unset Proxy First
-                    if (IsProxySet) SetProxy(true);
+                    if (IsProxySet) await SetProxyAsync(true);
                     await Task.Delay(100);
                     if (IsProxySet) NetworkTool.UnsetProxy(false, true);
 
-                    ProcessManager.KillProcessByPID(PIDProxyServer);
+                    await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
 
                     // Wait for Proxy Server to Exit
                     Task wait1 = Task.Run(async () =>
@@ -417,7 +417,7 @@ public partial class FormMain
 
     // ========================================== Other Proxy Methods
 
-    public async Task FaildSendCommandMessage()
+    public async Task FaildSendCommandMessageAsync()
     {
         if (!IsDisconnectingAll && !IsQuickConnecting)
         {
@@ -426,7 +426,7 @@ public partial class FormMain
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
         }
 
-        ProcessManager.KillProcessByPID(PIDProxyServer);
+        await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
         UpdateProxyBools = true;
         IsProxyActivating = false;
         await UpdateStatusShortOnBoolsChanged();

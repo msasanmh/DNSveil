@@ -208,7 +208,7 @@
             CustomGroupBoxSettingCheckDnsProtocol = new CustomControls.CustomGroupBox();
             CustomCheckBoxSettingProtocolPlainDNS = new CustomControls.CustomCheckBox();
             CustomCheckBoxSettingProtocolDoQ = new CustomControls.CustomCheckBox();
-            CustomCheckBoxSettingProtocolDNSCryptRelay = new CustomControls.CustomCheckBox();
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt = new CustomControls.CustomCheckBox();
             CustomCheckBoxSettingProtocolDNSCrypt = new CustomControls.CustomCheckBox();
             CustomCheckBoxSettingProtocolTLS = new CustomControls.CustomCheckBox();
             CustomCheckBoxSettingProtocolDoH = new CustomControls.CustomCheckBox();
@@ -239,6 +239,7 @@
             CustomCheckBoxSettingQcOnStartup = new CustomControls.CustomCheckBox();
             CustomButtonSettingQcStartup = new CustomControls.CustomButton();
             TabPageSettingsConnect = new TabPage();
+            CustomCheckBoxSettingConnectRetry = new CustomControls.CustomCheckBox();
             CustomCheckBoxDnsEventShowRequest = new CustomControls.CustomCheckBox();
             CustomButtonSettingDnsRules = new CustomControls.CustomButton();
             CustomCheckBoxSettingDnsEnableRules = new CustomControls.CustomCheckBox();
@@ -309,6 +310,7 @@
             CustomButtonImportUserData = new CustomControls.CustomButton();
             CustomButtonExportUserData = new CustomControls.CustomButton();
             TabPageAbout = new TabPage();
+            LinkLabelStNonbarbari = new LinkLabel();
             LinkLabelStWolfkingal2000 = new LinkLabel();
             CustomLabelAboutVersion = new CustomControls.CustomLabel();
             PictureBoxFarvahar = new PictureBox();
@@ -332,7 +334,6 @@
             CustomButtonProcessMonitor = new CustomControls.CustomButton();
             SplitContainerMain = new SplitContainer();
             SplitContainerTop = new SplitContainer();
-            LinkLabelStNonbarbari = new LinkLabel();
             ((System.ComponentModel.ISupportInitialize)SplitContainerShareMain).BeginInit();
             SplitContainerShareMain.Panel1.SuspendLayout();
             SplitContainerShareMain.Panel2.SuspendLayout();
@@ -559,7 +560,7 @@
             CustomLabelProxySSLInfo.Margin = new Padding(3);
             CustomLabelProxySSLInfo.Name = "CustomLabelProxySSLInfo";
             CustomLabelProxySSLInfo.RoundedCorners = 0;
-            CustomLabelProxySSLInfo.Size = new Size(212, 15);
+            CustomLabelProxySSLInfo.Size = new Size(214, 17);
             CustomLabelProxySSLInfo.TabIndex = 147;
             CustomLabelProxySSLInfo.Text = "By Installing Root Certificate Authority.";
             CustomLabelProxySSLInfo.TextAlign = ContentAlignment.MiddleLeft;
@@ -591,7 +592,7 @@
             CustomLabelShareInfo.Location = new Point(13, 5);
             CustomLabelShareInfo.Name = "CustomLabelShareInfo";
             CustomLabelShareInfo.RoundedCorners = 0;
-            CustomLabelShareInfo.Size = new Size(317, 21);
+            CustomLabelShareInfo.Size = new Size(319, 23);
             CustomLabelShareInfo.TabIndex = 132;
             CustomLabelShareInfo.Text = "Share to other devices on the same network.";
             // 
@@ -724,7 +725,7 @@
             CustomLabelPDpiPresets.Location = new Point(318, 39);
             CustomLabelPDpiPresets.Name = "CustomLabelPDpiPresets";
             CustomLabelPDpiPresets.RoundedCorners = 0;
-            CustomLabelPDpiPresets.Size = new Size(47, 15);
+            CustomLabelPDpiPresets.Size = new Size(49, 17);
             CustomLabelPDpiPresets.TabIndex = 144;
             CustomLabelPDpiPresets.Text = "Presets:";
             // 
@@ -771,7 +772,7 @@
             CustomLabelPDpiBeforeSniChunks.Margin = new Padding(3);
             CustomLabelPDpiBeforeSniChunks.Name = "CustomLabelPDpiBeforeSniChunks";
             CustomLabelPDpiBeforeSniChunks.RoundedCorners = 0;
-            CustomLabelPDpiBeforeSniChunks.Size = new Size(108, 15);
+            CustomLabelPDpiBeforeSniChunks.Size = new Size(110, 17);
             CustomLabelPDpiBeforeSniChunks.TabIndex = 142;
             CustomLabelPDpiBeforeSniChunks.Text = "Chunks before SNI:";
             CustomLabelPDpiBeforeSniChunks.TextAlign = ContentAlignment.MiddleLeft;
@@ -803,7 +804,7 @@
             CustomLabelPDpiSniChunkMode.Margin = new Padding(3);
             CustomLabelPDpiSniChunkMode.Name = "CustomLabelPDpiSniChunkMode";
             CustomLabelPDpiSniChunkMode.RoundedCorners = 0;
-            CustomLabelPDpiSniChunkMode.Size = new Size(98, 15);
+            CustomLabelPDpiSniChunkMode.Size = new Size(100, 17);
             CustomLabelPDpiSniChunkMode.TabIndex = 141;
             CustomLabelPDpiSniChunkMode.Text = "SNI chunk mode:";
             CustomLabelPDpiSniChunkMode.TextAlign = ContentAlignment.MiddleLeft;
@@ -852,7 +853,7 @@
             CustomLabelPDpiSniChunks.Margin = new Padding(3);
             CustomLabelPDpiSniChunks.Name = "CustomLabelPDpiSniChunks";
             CustomLabelPDpiSniChunks.RoundedCorners = 0;
-            CustomLabelPDpiSniChunks.Size = new Size(71, 15);
+            CustomLabelPDpiSniChunks.Size = new Size(73, 17);
             CustomLabelPDpiSniChunks.TabIndex = 134;
             CustomLabelPDpiSniChunks.Text = "Chunks SNI:";
             CustomLabelPDpiSniChunks.TextAlign = ContentAlignment.MiddleLeft;
@@ -1040,7 +1041,7 @@
             CustomLabelShareRulesStatus.Location = new Point(4, 2);
             CustomLabelShareRulesStatus.Name = "CustomLabelShareRulesStatus";
             CustomLabelShareRulesStatus.RoundedCorners = 0;
-            CustomLabelShareRulesStatus.Size = new Size(175, 15);
+            CustomLabelShareRulesStatus.Size = new Size(177, 17);
             CustomLabelShareRulesStatus.TabIndex = 0;
             CustomLabelShareRulesStatus.Text = "Check ProxyRules for a domain:";
             // 
@@ -2000,7 +2001,7 @@
             CustomLabelSelectNIC.Margin = new Padding(3);
             CustomLabelSelectNIC.Name = "CustomLabelSelectNIC";
             CustomLabelSelectNIC.RoundedCorners = 0;
-            CustomLabelSelectNIC.Size = new Size(144, 15);
+            CustomLabelSelectNIC.Size = new Size(146, 17);
             CustomLabelSelectNIC.TabIndex = 0;
             CustomLabelSelectNIC.Text = "Select a Network Interface";
             // 
@@ -2012,7 +2013,7 @@
             CustomComboBoxNICs.ForeColor = Color.White;
             CustomComboBoxNICs.FormattingEnabled = true;
             CustomComboBoxNICs.ItemHeight = 17;
-            CustomComboBoxNICs.Location = new Point(15, 36);
+            CustomComboBoxNICs.Location = new Point(15, 38);
             CustomComboBoxNICs.Margin = new Padding(10);
             CustomComboBoxNICs.Name = "CustomComboBoxNICs";
             CustomComboBoxNICs.RoundedCorners = 5;
@@ -2029,7 +2030,7 @@
             CustomLabelSetDnsSpacer1.BorderColor = Color.Blue;
             CustomLabelSetDnsSpacer1.FlatStyle = FlatStyle.Flat;
             CustomLabelSetDnsSpacer1.ForeColor = Color.White;
-            CustomLabelSetDnsSpacer1.Location = new Point(8, 72);
+            CustomLabelSetDnsSpacer1.Location = new Point(8, 74);
             CustomLabelSetDnsSpacer1.Margin = new Padding(3);
             CustomLabelSetDnsSpacer1.Name = "CustomLabelSetDnsSpacer1";
             CustomLabelSetDnsSpacer1.RoundedCorners = 0;
@@ -2041,7 +2042,7 @@
             // 
             CustomButtonUpdateNICs.BorderColor = Color.Blue;
             CustomButtonUpdateNICs.FlatStyle = FlatStyle.Flat;
-            CustomButtonUpdateNICs.Location = new Point(8, 98);
+            CustomButtonUpdateNICs.Location = new Point(8, 100);
             CustomButtonUpdateNICs.Name = "CustomButtonUpdateNICs";
             CustomButtonUpdateNICs.RoundedCorners = 5;
             CustomButtonUpdateNICs.SelectionColor = Color.LightBlue;
@@ -2055,7 +2056,7 @@
             // 
             CustomButtonFindActiveNic.BorderColor = Color.Blue;
             CustomButtonFindActiveNic.FlatStyle = FlatStyle.Flat;
-            CustomButtonFindActiveNic.Location = new Point(8, 131);
+            CustomButtonFindActiveNic.Location = new Point(8, 133);
             CustomButtonFindActiveNic.Name = "CustomButtonFindActiveNic";
             CustomButtonFindActiveNic.RoundedCorners = 5;
             CustomButtonFindActiveNic.SelectionColor = Color.LightBlue;
@@ -2069,7 +2070,7 @@
             // 
             CustomButtonEnableDisableNicIPv6.BorderColor = Color.Blue;
             CustomButtonEnableDisableNicIPv6.FlatStyle = FlatStyle.Flat;
-            CustomButtonEnableDisableNicIPv6.Location = new Point(8, 164);
+            CustomButtonEnableDisableNicIPv6.Location = new Point(8, 166);
             CustomButtonEnableDisableNicIPv6.Name = "CustomButtonEnableDisableNicIPv6";
             CustomButtonEnableDisableNicIPv6.RoundedCorners = 5;
             CustomButtonEnableDisableNicIPv6.SelectionColor = Color.LightBlue;
@@ -2083,7 +2084,7 @@
             // 
             CustomButtonEnableDisableNic.BorderColor = Color.Blue;
             CustomButtonEnableDisableNic.FlatStyle = FlatStyle.Flat;
-            CustomButtonEnableDisableNic.Location = new Point(8, 197);
+            CustomButtonEnableDisableNic.Location = new Point(8, 199);
             CustomButtonEnableDisableNic.Name = "CustomButtonEnableDisableNic";
             CustomButtonEnableDisableNic.RoundedCorners = 5;
             CustomButtonEnableDisableNic.SelectionColor = Color.LightBlue;
@@ -2100,7 +2101,7 @@
             CustomLabelSetDnsSpacer2.BorderColor = Color.Blue;
             CustomLabelSetDnsSpacer2.FlatStyle = FlatStyle.Flat;
             CustomLabelSetDnsSpacer2.ForeColor = Color.White;
-            CustomLabelSetDnsSpacer2.Location = new Point(8, 230);
+            CustomLabelSetDnsSpacer2.Location = new Point(8, 232);
             CustomLabelSetDnsSpacer2.Margin = new Padding(3);
             CustomLabelSetDnsSpacer2.Name = "CustomLabelSetDnsSpacer2";
             CustomLabelSetDnsSpacer2.RoundedCorners = 0;
@@ -3386,7 +3387,7 @@
             CustomGroupBoxSettingCheckDnsProtocol.BorderColor = Color.Blue;
             CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolPlainDNS);
             CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolDoQ);
-            CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolDNSCryptRelay);
+            CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolAnonymizedDNSCrypt);
             CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolDNSCrypt);
             CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolTLS);
             CustomGroupBoxSettingCheckDnsProtocol.Controls.Add(CustomCheckBoxSettingProtocolDoH);
@@ -3428,21 +3429,21 @@
             CustomCheckBoxSettingProtocolDoQ.Text = "DNS-Over-Quic";
             CustomCheckBoxSettingProtocolDoQ.UseVisualStyleBackColor = false;
             // 
-            // CustomCheckBoxSettingProtocolDNSCryptRelay
+            // CustomCheckBoxSettingProtocolAnonymizedDNSCrypt
             // 
-            CustomCheckBoxSettingProtocolDNSCryptRelay.BackColor = Color.DimGray;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.BorderColor = Color.Blue;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.CheckColor = Color.Blue;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Checked = true;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.CheckState = CheckState.Checked;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.ForeColor = Color.White;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Location = new Point(15, 55);
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Name = "CustomCheckBoxSettingProtocolDNSCryptRelay";
-            CustomCheckBoxSettingProtocolDNSCryptRelay.SelectionColor = Color.LightBlue;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Size = new Size(105, 17);
-            CustomCheckBoxSettingProtocolDNSCryptRelay.TabIndex = 3;
-            CustomCheckBoxSettingProtocolDNSCryptRelay.Text = "DNSCrypt Relay";
-            CustomCheckBoxSettingProtocolDNSCryptRelay.UseVisualStyleBackColor = false;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.BackColor = Color.DimGray;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.BorderColor = Color.Blue;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.CheckColor = Color.Blue;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.Checked = true;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.CheckState = CheckState.Checked;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.ForeColor = Color.White;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.Location = new Point(15, 55);
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.Name = "CustomCheckBoxSettingProtocolAnonymizedDNSCrypt";
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.SelectionColor = Color.LightBlue;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.Size = new Size(147, 17);
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.TabIndex = 3;
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.Text = "Anonymized DNSCrypt";
+            CustomCheckBoxSettingProtocolAnonymizedDNSCrypt.UseVisualStyleBackColor = false;
             // 
             // CustomCheckBoxSettingProtocolDNSCrypt
             // 
@@ -3923,6 +3924,7 @@
             // 
             TabPageSettingsConnect.AutoScroll = true;
             TabPageSettingsConnect.BackColor = Color.Transparent;
+            TabPageSettingsConnect.Controls.Add(CustomCheckBoxSettingConnectRetry);
             TabPageSettingsConnect.Controls.Add(CustomCheckBoxDnsEventShowRequest);
             TabPageSettingsConnect.Controls.Add(CustomButtonSettingDnsRules);
             TabPageSettingsConnect.Controls.Add(CustomCheckBoxSettingDnsEnableRules);
@@ -3937,13 +3939,27 @@
             TabPageSettingsConnect.Text = "Connect";
             TabPageSettingsConnect.Visible = false;
             // 
+            // CustomCheckBoxSettingConnectRetry
+            // 
+            CustomCheckBoxSettingConnectRetry.BackColor = Color.DimGray;
+            CustomCheckBoxSettingConnectRetry.BorderColor = Color.Blue;
+            CustomCheckBoxSettingConnectRetry.CheckColor = Color.Blue;
+            CustomCheckBoxSettingConnectRetry.ForeColor = Color.White;
+            CustomCheckBoxSettingConnectRetry.Location = new Point(50, 79);
+            CustomCheckBoxSettingConnectRetry.Name = "CustomCheckBoxSettingConnectRetry";
+            CustomCheckBoxSettingConnectRetry.SelectionColor = Color.LightBlue;
+            CustomCheckBoxSettingConnectRetry.Size = new Size(132, 17);
+            CustomCheckBoxSettingConnectRetry.TabIndex = 135;
+            CustomCheckBoxSettingConnectRetry.Text = "Enable one time retry";
+            CustomCheckBoxSettingConnectRetry.UseVisualStyleBackColor = false;
+            // 
             // CustomCheckBoxDnsEventShowRequest
             // 
             CustomCheckBoxDnsEventShowRequest.BackColor = Color.DimGray;
             CustomCheckBoxDnsEventShowRequest.BorderColor = Color.Blue;
             CustomCheckBoxDnsEventShowRequest.CheckColor = Color.Blue;
             CustomCheckBoxDnsEventShowRequest.ForeColor = Color.White;
-            CustomCheckBoxDnsEventShowRequest.Location = new Point(50, 100);
+            CustomCheckBoxDnsEventShowRequest.Location = new Point(50, 127);
             CustomCheckBoxDnsEventShowRequest.Name = "CustomCheckBoxDnsEventShowRequest";
             CustomCheckBoxDnsEventShowRequest.SelectionColor = Color.LightBlue;
             CustomCheckBoxDnsEventShowRequest.Size = new Size(158, 17);
@@ -3955,7 +3971,7 @@
             // 
             CustomButtonSettingDnsRules.BorderColor = Color.Blue;
             CustomButtonSettingDnsRules.FlatStyle = FlatStyle.Flat;
-            CustomButtonSettingDnsRules.Location = new Point(210, 156);
+            CustomButtonSettingDnsRules.Location = new Point(210, 176);
             CustomButtonSettingDnsRules.Name = "CustomButtonSettingDnsRules";
             CustomButtonSettingDnsRules.RoundedCorners = 5;
             CustomButtonSettingDnsRules.SelectionColor = Color.LightBlue;
@@ -3971,7 +3987,7 @@
             CustomCheckBoxSettingDnsEnableRules.BorderColor = Color.Blue;
             CustomCheckBoxSettingDnsEnableRules.CheckColor = Color.Blue;
             CustomCheckBoxSettingDnsEnableRules.ForeColor = Color.White;
-            CustomCheckBoxSettingDnsEnableRules.Location = new Point(50, 158);
+            CustomCheckBoxSettingDnsEnableRules.Location = new Point(50, 178);
             CustomCheckBoxSettingDnsEnableRules.Name = "CustomCheckBoxSettingDnsEnableRules";
             CustomCheckBoxSettingDnsEnableRules.SelectionColor = Color.LightBlue;
             CustomCheckBoxSettingDnsEnableRules.Size = new Size(116, 17);
@@ -4413,12 +4429,12 @@
             CustomNumericUpDownSettingProxyHandleRequests.BorderStyle = BorderStyle.FixedSingle;
             CustomNumericUpDownSettingProxyHandleRequests.Location = new Point(310, 23);
             CustomNumericUpDownSettingProxyHandleRequests.Maximum = new decimal(new int[] { 9000, 0, 0, 0 });
-            CustomNumericUpDownSettingProxyHandleRequests.Minimum = new decimal(new int[] { 1000, 0, 0, 0 });
+            CustomNumericUpDownSettingProxyHandleRequests.Minimum = new decimal(new int[] { 5000, 0, 0, 0 });
             CustomNumericUpDownSettingProxyHandleRequests.Name = "CustomNumericUpDownSettingProxyHandleRequests";
             CustomNumericUpDownSettingProxyHandleRequests.RoundedCorners = 5;
             CustomNumericUpDownSettingProxyHandleRequests.Size = new Size(55, 23);
             CustomNumericUpDownSettingProxyHandleRequests.TabIndex = 44;
-            CustomNumericUpDownSettingProxyHandleRequests.Value = new decimal(new int[] { 1000, 0, 0, 0 });
+            CustomNumericUpDownSettingProxyHandleRequests.Value = new decimal(new int[] { 5000, 0, 0, 0 });
             // 
             // TabPageSettingProxyAdvanced
             // 
@@ -5130,6 +5146,18 @@
             TabPageAbout.Text = "About";
             TabPageAbout.Visible = false;
             // 
+            // LinkLabelStNonbarbari
+            // 
+            LinkLabelStNonbarbari.AutoSize = true;
+            LinkLabelStNonbarbari.LinkBehavior = LinkBehavior.NeverUnderline;
+            LinkLabelStNonbarbari.Location = new Point(461, 214);
+            LinkLabelStNonbarbari.Name = "LinkLabelStNonbarbari";
+            LinkLabelStNonbarbari.Size = new Size(67, 15);
+            LinkLabelStNonbarbari.TabIndex = 14;
+            LinkLabelStNonbarbari.TabStop = true;
+            LinkLabelStNonbarbari.Text = "Nonbarbari";
+            LinkLabelStNonbarbari.LinkClicked += LinkLabelStNonbarbari_LinkClicked;
+            // 
             // LinkLabelStWolfkingal2000
             // 
             LinkLabelStWolfkingal2000.AutoSize = true;
@@ -5153,7 +5181,7 @@
             CustomLabelAboutVersion.Location = new Point(600, 51);
             CustomLabelAboutVersion.Name = "CustomLabelAboutVersion";
             CustomLabelAboutVersion.RoundedCorners = 0;
-            CustomLabelAboutVersion.Size = new Size(47, 17);
+            CustomLabelAboutVersion.Size = new Size(45, 15);
             CustomLabelAboutVersion.TabIndex = 7;
             CustomLabelAboutVersion.Text = "Version";
             // 
@@ -5178,7 +5206,7 @@
             CustomLabelAboutCopyright.Location = new Point(55, 185);
             CustomLabelAboutCopyright.Name = "CustomLabelAboutCopyright";
             CustomLabelAboutCopyright.RoundedCorners = 0;
-            CustomLabelAboutCopyright.Size = new Size(111, 32);
+            CustomLabelAboutCopyright.Size = new Size(109, 30);
             CustomLabelAboutCopyright.TabIndex = 11;
             CustomLabelAboutCopyright.Text = "© 2023 MSasanMH\r\nLicense: GPLv3";
             // 
@@ -5205,7 +5233,7 @@
             CustomLabelAboutSpecialThanks.Location = new Point(446, 135);
             CustomLabelAboutSpecialThanks.Name = "CustomLabelAboutSpecialThanks";
             CustomLabelAboutSpecialThanks.RoundedCorners = 0;
-            CustomLabelAboutSpecialThanks.Size = new Size(83, 122);
+            CustomLabelAboutSpecialThanks.Size = new Size(81, 120);
             CustomLabelAboutSpecialThanks.TabIndex = 9;
             CustomLabelAboutSpecialThanks.Text = "special thanks\r\n{\r\n\r\n\r\n\r\n\r\n\r\n}";
             // 
@@ -5244,7 +5272,7 @@
             CustomLabelAboutUsing.Location = new Point(270, 135);
             CustomLabelAboutUsing.Name = "CustomLabelAboutUsing";
             CustomLabelAboutUsing.RoundedCorners = 0;
-            CustomLabelAboutUsing.Size = new Size(38, 92);
+            CustomLabelAboutUsing.Size = new Size(36, 90);
             CustomLabelAboutUsing.TabIndex = 8;
             CustomLabelAboutUsing.Text = "using\r\n{\r\n\r\n\r\n\r\n}";
             // 
@@ -5259,7 +5287,7 @@
             CustomLabelAboutThis2.Location = new Point(267, 75);
             CustomLabelAboutThis2.Name = "CustomLabelAboutThis2";
             CustomLabelAboutThis2.RoundedCorners = 0;
-            CustomLabelAboutThis2.Size = new Size(332, 17);
+            CustomLabelAboutThis2.Size = new Size(330, 15);
             CustomLabelAboutThis2.TabIndex = 2;
             CustomLabelAboutThis2.Text = "A DNS Client, Supporting DNSCrypt, DoH, DoT, UDP and TCP.";
             // 
@@ -5276,7 +5304,7 @@
             CustomLabelAboutThis.Location = new Point(235, 33);
             CustomLabelAboutThis.Name = "CustomLabelAboutThis";
             CustomLabelAboutThis.RoundedCorners = 0;
-            CustomLabelAboutThis.Size = new Size(369, 34);
+            CustomLabelAboutThis.Size = new Size(367, 32);
             CustomLabelAboutThis.TabIndex = 1;
             CustomLabelAboutThis.Text = "SDC - Secure DNS Client";
             CustomLabelAboutThis.Click += CustomLabelAboutThis_Click;
@@ -5483,18 +5511,6 @@
             SplitContainerTop.Size = new Size(984, 400);
             SplitContainerTop.SplitterDistance = 779;
             SplitContainerTop.TabIndex = 0;
-            // 
-            // LinkLabelStNonbarbari
-            // 
-            LinkLabelStNonbarbari.AutoSize = true;
-            LinkLabelStNonbarbari.LinkBehavior = LinkBehavior.NeverUnderline;
-            LinkLabelStNonbarbari.Location = new Point(461, 214);
-            LinkLabelStNonbarbari.Name = "LinkLabelStNonbarbari";
-            LinkLabelStNonbarbari.Size = new Size(67, 15);
-            LinkLabelStNonbarbari.TabIndex = 14;
-            LinkLabelStNonbarbari.TabStop = true;
-            LinkLabelStNonbarbari.Text = "Nonbarbari";
-            LinkLabelStNonbarbari.LinkClicked += LinkLabelStNonbarbari_LinkClicked;
             // 
             // FormMain
             // 
@@ -5816,7 +5832,7 @@
         private CustomControls.CustomCheckBox CustomCheckBoxSettingProtocolDNSCrypt;
         private CustomControls.CustomCheckBox CustomCheckBoxSettingProtocolTLS;
         private CustomControls.CustomCheckBox CustomCheckBoxSettingProtocolDoH;
-        private CustomControls.CustomCheckBox CustomCheckBoxSettingProtocolDNSCryptRelay;
+        private CustomControls.CustomCheckBox CustomCheckBoxSettingProtocolAnonymizedDNSCrypt;
         private CustomControls.CustomCheckBox CustomCheckBoxSettingProtocolDoQ;
         private CustomControls.CustomCheckBox CustomCheckBoxSettingProtocolPlainDNS;
         private TabPage TabPageSettingsShare;
@@ -5975,5 +5991,6 @@
         private CustomControls.CustomButton CustomButtonSettingDnsRules;
         private CustomControls.CustomCheckBox CustomCheckBoxDnsEventShowRequest;
         private LinkLabel LinkLabelStNonbarbari;
+        private CustomControls.CustomCheckBox CustomCheckBoxSettingConnectRetry;
     }
 }

@@ -39,71 +39,79 @@ public partial class AgnosticProgram
 
         public DnsRules() { }
 
-        public void Set(Mode mode, string filePathOrText)
+        public async void Set(Mode mode, string filePathOrText)
         {
-            Rules_List.Clear();
-            Variables.Clear();
-            Default_DnsProxyScheme = string.Empty;
-            Default_DnsProxyUser = string.Empty;
-            Default_DnsProxyPass = string.Empty;
-            MainRules_List.Clear();
-
-            RulesMode = mode;
-            PathOrText = filePathOrText;
-
-            if (RulesMode == Mode.Disable) return;
-
-            if (RulesMode == Mode.File)
+            try
             {
-                try
+                Rules_List.Clear();
+                Variables.Clear();
+                Default_DnsProxyScheme = string.Empty;
+                Default_DnsProxyUser = string.Empty;
+                Default_DnsProxyPass = string.Empty;
+                MainRules_List.Clear();
+
+                RulesMode = mode;
+                PathOrText = filePathOrText;
+
+                if (RulesMode == Mode.Disable) return;
+
+                if (RulesMode == Mode.File)
                 {
-                    TextContent = File.ReadAllText(Path.GetFullPath(filePathOrText));
-                }
-                catch (Exception) { }
-            }
-            else if (RulesMode == Mode.Text) TextContent = filePathOrText;
-
-            if (string.IsNullOrEmpty(TextContent) || string.IsNullOrWhiteSpace(TextContent)) return;
-
-            TextContent += Environment.NewLine;
-            Rules_List = TextContent.SplitToLines();
-
-            for (int n = 0; n < Rules_List.Count; n++)
-            {
-                string line = Rules_List[n].Trim();
-                if (line.StartsWith("//")) continue; // Support Comment //
-                if (!line.EndsWith(';')) continue; // Must Have ; At The End
-                if (string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line)) continue; // Line Cannot Be Empty
-
-                // Get Variables
-                if (line.Contains('=') && !line.Contains(',') && !line.Contains('&'))
-                {
-                    line = line.TrimEnd(';');
-                    string[] split = line.Split('=');
-                    if (split.Length == 2)
+                    try
                     {
-                        string item1 = split[0].Trim();
-                        string item2 = split[1].Trim();
-                        if (!string.IsNullOrEmpty(item1) && !string.IsNullOrEmpty(item2))
-                            Variables.Add(new Tuple<string, string>(item1, item2));
+                        TextContent = await File.ReadAllTextAsync(Path.GetFullPath(PathOrText));
+                    }
+                    catch (Exception) { }
+                }
+                else if (RulesMode == Mode.Text) TextContent = PathOrText;
+
+                if (string.IsNullOrEmpty(TextContent) || string.IsNullOrWhiteSpace(TextContent)) return;
+
+                TextContent += Environment.NewLine;
+                Rules_List = TextContent.SplitToLines();
+
+                List<string> list = Rules_List.ToList();
+                for (int n = 0; n < list.Count; n++)
+                {
+                    string line = list[n].Trim();
+                    if (line.StartsWith("//")) continue; // Support Comment //
+                    if (!line.EndsWith(';')) continue; // Must Have ; At The End
+                    if (string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line)) continue; // Line Cannot Be Empty
+
+                    // Get Variables
+                    if (line.Contains('=') && !line.Contains(',') && !line.Contains('&'))
+                    {
+                        line = line.TrimEnd(';');
+                        string[] split = line.Split('=');
+                        if (split.Length == 2)
+                        {
+                            string item1 = split[0].Trim();
+                            string item2 = split[1].Trim();
+                            if (!string.IsNullOrEmpty(item1) && !string.IsNullOrEmpty(item2))
+                                Variables.Add(new Tuple<string, string>(item1, item2));
+                        }
+                    }
+
+                    // Get Defaults
+                    else if (line.StartsWith(Rules.KEYS.DnsProxy, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        Default_DnsProxyScheme = Rules.GetValue(line, Rules.KEYS.DnsProxy, Rules.SUB_KEYS.FirstKey, out _, out _, Variables);
+                        Default_DnsProxyUser = Rules.GetValue(line, Rules.KEYS.DnsProxy, Rules.SUB_KEYS.User, out _, out _, Variables);
+                        Default_DnsProxyPass = Rules.GetValue(line, Rules.KEYS.DnsProxy, Rules.SUB_KEYS.Pass, out _, out _, Variables);
+                    }
+
+                    // Get DnsMainRules (Client|Domain|DnsRules)
+                    else if (line.Contains('|'))
+                    {
+                        string[] split = line.Split('|');
+                        if (split.Length == 2) SetDomainRules(Rules.KEYS.AllClients, split[0].Trim(), split[1].Trim());
+                        if (split.Length == 3) SetDomainRules(split[0].Trim(), split[1].Trim(), split[2].Trim());
                     }
                 }
-
-                // Get Defaults
-                else if (line.StartsWith(Rules.KEYS.DnsProxy, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    Default_DnsProxyScheme = Rules.GetValue(line, Rules.KEYS.DnsProxy, Rules.SUB_KEYS.FirstKey, out _, out _, Variables);
-                    Default_DnsProxyUser = Rules.GetValue(line, Rules.KEYS.DnsProxy, Rules.SUB_KEYS.User, out _, out _, Variables);
-                    Default_DnsProxyPass = Rules.GetValue(line, Rules.KEYS.DnsProxy, Rules.SUB_KEYS.Pass, out _, out _, Variables);
-                }
-
-                // Get DnsMainRules (Client|Domain|DnsRules)
-                else if (line.Contains('|'))
-                {
-                    string[] split = line.Split('|');
-                    if (split.Length == 2) SetDomainRules(Rules.KEYS.AllClients, split[0].Trim(), split[1].Trim());
-                    if (split.Length == 3) SetDomainRules(split[0].Trim(), split[1].Trim(), split[2].Trim());
-                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("DnsRules Set: " + ex.Message);
             }
         }
 
@@ -164,7 +172,7 @@ public partial class AgnosticProgram
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Dns Rules_SetDomainRules: " + ex.Message);
+                Debug.WriteLine("DnsRules SetDomainRules: " + ex.Message);
             }
         }
 

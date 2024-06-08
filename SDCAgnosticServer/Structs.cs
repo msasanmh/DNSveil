@@ -4,6 +4,7 @@ public struct Key
 {
     public readonly struct Common
     {
+        public static readonly string Exit = "Exit";
         public static readonly string C = "C";
         public static readonly string CLS = "CLS";
         public static readonly string Load = "Load";
@@ -13,6 +14,7 @@ public struct Key
         public static readonly string Flush = "Flush";
         public static readonly string Start = "Start";
         public static readonly string Stop = "Stop";
+        public static readonly string Update = "Update";
         public static readonly string Save = "Save";
         public static readonly string KillAll = "KillAll";
         public static readonly string Requests = "Requests";
@@ -106,6 +108,21 @@ public struct Key
             public readonly struct Mode
             {
                 public static readonly string Name = "Mode";
+                public static readonly string File = "File";
+                public static readonly string Text = "Text";
+                public static readonly string Disable = "Disable";
+            }
+            public static readonly string PathOrText = "PathOrText";
+        }
+
+        public readonly struct DnsLimit
+        {
+            public static readonly string Name = "DnsLimit";
+            public static readonly string Enable = "Enable";
+            public static readonly string DisablePlain = "DisablePlain";
+            public readonly struct DoHPathLimitMode
+            {
+                public static readonly string Name = "DoHPathLimitMode";
                 public static readonly string File = "File";
                 public static readonly string Text = "Text";
                 public static readonly string Disable = "Disable";

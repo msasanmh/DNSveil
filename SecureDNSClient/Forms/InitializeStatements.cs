@@ -53,6 +53,7 @@ public partial class FormMain : Form
 
     // Check Servers
     private int NumberOfWorkingServers { get; set; } = 0;
+    public static bool IsCheckedCustomServers { get; set; } = false;
     public static bool IsCheckingStarted { get; set; } = false;
     private static bool StopChecking { get; set; } = false;
     public List<DnsInfo> WorkingDnsList { get; set; } = new();
