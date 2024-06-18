@@ -221,7 +221,7 @@ public partial class FormMain
                     List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
                     foreach (int pid in pids) if (pid != PIDDnsServer) await ProcessManager.KillProcessByPidAsync(pid);
 
-                    await UpdateBoolDnsOnce(timeoutMS, blockedDomainNoWww);
+                    await UpdateBoolDnsOnceAsync(timeoutMS, blockedDomainNoWww);
                     await Task.Delay(25);
                     timeoutMS += 500;
                     if (timeoutMS > 10000) timeoutMS = 10000;

@@ -261,14 +261,14 @@ public class CheckDns
             {
                 if (smart) break;
                 IPAddress realDomainIP = realDomainIPs[n];
-                string readHeader = await NetworkTool.GetHeaders(domain, realDomainIP.ToString(), 5000, false).ConfigureAwait(false);
+                string readHeader = await NetworkTool.GetHeadersAsync(domain, realDomainIP.ToString(), 5000, false).ConfigureAwait(false);
                 if (string.IsNullOrEmpty(readHeader)) continue; // There is nothing to check, continue
                 Debug.WriteLine(readHeader);
                 if (!readHeader.ToLower().StartsWith("forbidden")) break; // It's not Forbidden, break
                 for (int n2 = 0; n2 < domainIPs.Count; n2++)
                 {
                     IPAddress domainIP = domainIPs[n2];
-                    string header = await NetworkTool.GetHeaders(domain, domainIP.ToString(), 5000, false).ConfigureAwait(false);
+                    string header = await NetworkTool.GetHeadersAsync(domain, domainIP.ToString(), 5000, false).ConfigureAwait(false);
                     if (string.IsNullOrEmpty(header)) continue;
                     Debug.WriteLine(header);
 

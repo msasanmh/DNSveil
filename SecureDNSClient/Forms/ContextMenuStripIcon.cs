@@ -410,8 +410,8 @@ public partial class FormMain
         while (true)
         {
             await Task.WhenAll(dc(), dcDns());
-            await UpdateBools();
-            await UpdateBoolProxy();
+            await UpdateBoolsAsync();
+            await UpdateBoolProxyAsync();
             bool isEverythingDisconnected = IsEverythingDisconnected(out string debug);
             if (isEverythingDisconnected) break;
 
@@ -432,7 +432,7 @@ public partial class FormMain
                 if (!IsDnsFullFlushed)
                 {
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Full Flushing DNS...{NL}", Color.LightGray));
-                    await Task.Run(async () => await FlushDNS(true, true, false, false, false));
+                    await Task.Run(async () => await FlushDNSAsync(true, true, false, false, false));
                     IsDnsFlushed = true;
                     IsDnsFullFlushed = true;
                 }
@@ -442,7 +442,7 @@ public partial class FormMain
                 if (!IsDnsFlushed)
                 {
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flushing DNS...{NL}", Color.LightGray));
-                    await FlushDNS(true, false, false, false, false);
+                    await FlushDNSAsync(true, false, false, false, false);
                     IsDnsFlushed = true;
                 }
             }
@@ -454,7 +454,7 @@ public partial class FormMain
             IsDNSConnected = LocalDnsLatency != -1;
             LocalDohLatency = -1;
             IsDoHConnected = LocalDohLatency != -1;
-            await UpdateStatusLong();
+            await UpdateStatusLongAsync();
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Everything Disconnected.{NL}", Color.MediumSeaGreen));
         }
 

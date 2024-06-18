@@ -97,8 +97,8 @@ public partial class FormMain : Form
             Debug.WriteLine(e.Mode);
             if (LastConnectMode == ConnectMode.ConnectToWorkingServers || LastConnectMode == ConnectMode.ConnectToFakeProxyDohViaGoodbyeDPI)
             {
-                await UpdateBoolInternetAccess();
-                await UpdateBools(200);
+                await UpdateBoolInternetStateAsync();
+                await UpdateBoolsAsync(200);
                 if (!IsConnecting && !IsDisconnecting && !IsDisconnectingAll && !IsQuickConnectWorking &&
                     IsInternetOnline && IsConnected && !IsDNSConnected)
                 {

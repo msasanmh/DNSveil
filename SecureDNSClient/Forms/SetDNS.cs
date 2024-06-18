@@ -21,7 +21,7 @@ public partial class FormMain
 
             // Set DNS
             IsDNSSetting = true;
-            await UpdateStatusShortOnBoolsChanged();
+            await UpdateStatusShortOnBoolsChangedAsync();
 
             // Write Connect first to log
             string msgConnect = string.Empty;
@@ -30,7 +30,7 @@ public partial class FormMain
                 msgConnect = "Connect First." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
                 IsDNSSetting = false;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
                 return;
             }
             else if (!IsDNSConnected)
@@ -38,7 +38,7 @@ public partial class FormMain
                 msgConnect = "Wait Until DNS Gets Online." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnect, Color.IndianRed));
                 IsDNSSetting = false;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
                 return;
             }
 
@@ -46,7 +46,7 @@ public partial class FormMain
             if (!IsInternetOnline)
             {
                 IsDNSSetting = false;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
                 return;
             }
 
@@ -58,7 +58,7 @@ public partial class FormMain
                 if (dr == DialogResult.No)
                 {
                     IsDNSSetting = false;
-                    await UpdateStatusShortOnBoolsChanged();
+                    await UpdateStatusShortOnBoolsChangedAsync();
                     return;
                 }
             }
@@ -120,15 +120,15 @@ public partial class FormMain
             {
                 // Flush DNS
                 if (!Program.IsStartup)
-                    if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNS(true, false, false, false, true);
+                    if (!IsDisconnecting && !IsDisconnectingAll) await FlushDNSAsync(true, false, false, false, true);
 
                 // To See Status Immediately
-                await UpdateStatusLong();
+                await UpdateStatusLongAsync();
             }
             
             IsDNSSetting = false;
-            await UpdateStatusShortOnBoolsChanged();
-            await UpdateStatusNic();
+            await UpdateStatusShortOnBoolsChangedAsync();
+            await UpdateStatusNicAsync();
         }
         else
         {
@@ -139,7 +139,7 @@ public partial class FormMain
             CustomRichTextBoxLog.AppendText($"Unsetting DNS...{NL}", Color.MediumSeaGreen);
 
             IsDNSUnsetting = true;
-            await UpdateStatusShortOnBoolsChanged();
+            await UpdateStatusShortOnBoolsChangedAsync();
 
             bool unsetSuccess = false;
             for (int n = 0; n < nicNameList.Count; n++)
@@ -191,17 +191,17 @@ public partial class FormMain
             if (unsetSuccess)
             {
                 // Flush DNS
-                await FlushDNS(true, false, false, false, true);
+                await FlushDNSAsync(true, false, false, false, true);
                 IsDnsFlushed = true;
 
                 // To See Status Immediately
-                await UpdateStatusLong();
+                await UpdateStatusLongAsync();
             }
             
             IsDNSUnsetting = false;
             IsDNSSet = false;
-            await UpdateStatusShortOnBoolsChanged();
-            await UpdateStatusNic();
+            await UpdateStatusShortOnBoolsChangedAsync();
+            await UpdateStatusNicAsync();
         }
     }
 

@@ -8,7 +8,7 @@
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
 	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <Title>MSMH Multi DNS And Proxy Server</Title>
-    <Version>$(VersionPrefix)3.0.7</Version>
+    <Version>$(VersionPrefix)3.0.9</Version>
     <Copyright>MSasanMH</Copyright>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <Description>A Multi Proxy Server.

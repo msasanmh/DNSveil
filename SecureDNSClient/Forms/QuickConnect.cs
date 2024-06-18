@@ -209,13 +209,13 @@ public partial class FormMain
         {
             IsConnected = await runStartConnect(); // 1
             await Task.Delay(delay); // 2
-            await UpdateBools();
+            await UpdateBoolsAsync();
             if (!IsConnected)
             {
                 if (await cancelOnCondition()) return;
                 await runStartConnect();
                 await Task.Delay(delay); // 3
-                await UpdateBools();
+                await UpdateBoolsAsync();
                 if (!IsConnected)
                 {
                     if (await cancelOnCondition()) return;
@@ -236,7 +236,7 @@ public partial class FormMain
                     {
                         if (IsExiting || StopQuickConnect || (!Program.IsStartup && !IsInternetOnline)) break;
                         if (!isConnectSuccess) break;
-                        await UpdateBools();
+                        await UpdateBoolsAsync();
                         if (IsConnected || QuickConnectTimeout.ElapsedMilliseconds > 30000) break;
                         await Task.Delay(100);
                     }
@@ -653,9 +653,9 @@ public partial class FormMain
             if (showWarning && !IsExiting && !StopQuickConnect)
             {
                 // Update Bools
-                await UpdateBools();
-                await UpdateBoolProxy();
-                await UpdateStatusLong();
+                await UpdateBoolsAsync();
+                await UpdateBoolProxyAsync();
+                await UpdateStatusLongAsync();
 
                 string msgNotifyUser = string.Empty;
                 if (!IsInternetOnline) msgNotifyUser += $"There is no Internet connectivity.{NL}";
@@ -684,7 +684,7 @@ public partial class FormMain
             }
 
             IsQuickConnecting = false;
-            await UpdateStatusShortOnBoolsChanged();
+            await UpdateStatusShortOnBoolsChangedAsync();
         }
     }
 

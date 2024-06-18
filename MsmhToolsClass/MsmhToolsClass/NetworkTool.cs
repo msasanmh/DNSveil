@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Management;
 using System.Management.Automation;
 using System.Net;
-using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -1217,7 +1216,7 @@ public static class NetworkTool
     /// <summary>
     /// Check Internet Access Based On Pinging A DNS IP
     /// </summary>
-    public static async Task<bool> IsInternetAliveAsync(IPAddress? ip, int timeoutMS = 3000)
+    public static async Task<bool> IsInternetAliveByPingAsync(IPAddress? ip, int timeoutMS = 3000)
     {
         try
         {
@@ -1240,100 +1239,190 @@ public static class NetworkTool
         }
     }
 
-    public static async Task<HttpStatusCode> GetHttpStatusCode(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
+    public enum InternetState
+    {
+        Online,
+        Unstable,
+        Offline,
+        Unknown
+    }
+
+    public static async Task<InternetState> GetInternetStateAsync(IPAddress? ip, int timeoutMS = 3000)
+    {
+        try
+        {
+            ip ??= CultureInfo.InstalledUICulture switch
+            {
+                { Name: string n } when n.ToLower().StartsWith("fa") => IPAddress.Parse("8.8.8.8"), // Iran
+                { Name: string n } when n.ToLower().StartsWith("ru") => IPAddress.Parse("77.88.8.7"), // Russia
+                { Name: string n } when n.ToLower().StartsWith("zh") => IPAddress.Parse("223.6.6.6"), // China
+                _ => IPAddress.Parse("1.1.1.1") // Others
+            };
+
+            bool isAliveByPing = await IsInternetAliveByPingAsync(ip, timeoutMS);
+            if (isAliveByPing)
+            {
+                return InternetState.Online;
+            }
+            else
+            {
+                bool isAliveByNic = await IsInternetAliveByNicAsync(ip, timeoutMS);
+                return isAliveByNic ? InternetState.Unstable : InternetState.Offline;
+            }
+        }
+        catch (Exception)
+        {
+            return InternetState.Offline;
+        }
+    }
+
+    public static async Task<HttpStatusCode> GetHttpStatusCodeAsync(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, bool isAgnosticProxyTest = false, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
     {
         HttpStatusCode result = HttpStatusCode.RequestTimeout;
         if (string.IsNullOrWhiteSpace(urlOrDomain)) return result;
-        HttpResponseMessage? response = null;
-
-        urlOrDomain = urlOrDomain.Trim();
-        GetUrlDetails(urlOrDomain, 443, out string scheme, out string host, out _, out _, out int port, out string path, out _);
-        if (string.IsNullOrEmpty(scheme))
-        {
-            scheme = "https://";
-            urlOrDomain = $"{scheme}{host}:{port}{path}";
-        }
-        string url = urlOrDomain;
-        //Debug.WriteLine("GetHttpStatusCode: " + url);
-        if (!string.IsNullOrEmpty(ip))
-        {
-            ip = ip.Trim();
-            url = $"{scheme}{ip}:{port}{path}";
-            //Debug.WriteLine("GetHttpStatusCode: " + url);
-        }
 
         try
         {
-            Uri uri = new(url, UriKind.Absolute);
+            GetUrlDetails(urlOrDomain.Trim(), 443, out string scheme, out string host, out _, out _, out int port, out string path, out _);
+            string origHost = host;
+            if (string.IsNullOrEmpty(scheme)) scheme = "https://";
+            if (!string.IsNullOrWhiteSpace(ip)) host = ip.Trim();
 
-            using HttpClientHandler handler = new();
-            handler.AllowAutoRedirect = true;
+            UriBuilder uriBuilder = new()
+            {
+                Scheme = scheme,
+                Host = host,
+                Port = port,
+                Path = path
+            };
+
+            Uri uri = uriBuilder.Uri;
+            
             if (useSystemProxy)
             {
-                // WebRequest.GetSystemWebProxy() Can't always detect System Proxy
-                proxyScheme = GetSystemProxy(); // Reading from Registry
-                if (!string.IsNullOrEmpty(proxyScheme))
+                string systemProxyScheme = GetSystemProxy(); // Reading from Registry
+                if (!string.IsNullOrEmpty(systemProxyScheme))
                 {
-                    //Debug.WriteLine("GetHttpStatusCode: " + proxyScheme);
-                    NetworkCredential credential = CredentialCache.DefaultNetworkCredentials;
-                    handler.Proxy = new WebProxy(proxyScheme, true, null, credential);
-                    handler.Credentials = credential;
-                    handler.UseProxy = true;
-                }
-                else
-                {
-                    Debug.WriteLine("GetHttpStatusCode: System Proxy Is Null.");
-                    handler.UseProxy = false;
+                    proxyScheme = systemProxyScheme;
+                    proxyUser = string.Empty;
+                    proxyPass = string.Empty;
                 }
             }
-            else if (!string.IsNullOrEmpty(proxyScheme))
+
+            HttpRequest hr = new()
             {
-                //Debug.WriteLine("GetHttpStatusCode: " + proxyScheme);
-                NetworkCredential credential = new(proxyUser, proxyPass);
-                handler.Proxy = new WebProxy(proxyScheme, true, null, credential);
-                handler.Credentials = credential;
-                handler.UseProxy = true;
-            }
-            else handler.UseProxy = false;
+                CT = ct,
+                URI = uri,
+                Method = HttpMethod.Get,
+                TimeoutMS = timeoutMs,
+                AllowInsecure = true, // Ignore Cert Check To Make It Faster
+                AllowAutoRedirect = true,
+                ProxyScheme = proxyScheme,
+                ProxyUser = proxyUser,
+                ProxyPass = proxyPass,
+            };
+            hr.Headers.Add("host", origHost); // In Case Of Using IP
+            if (isAgnosticProxyTest) hr.UserAgent = "SDC - Secure DNS Client"; // Proxy Test Protocol Depends On This
 
-            // Ignore Cert Check To Make It Faster
-            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-            handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
+            HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
 
-            // Get
-            using HttpRequestMessage message = new(HttpMethod.Get, uri);
-            message.Headers.TryAddWithoutValidation("User-Agent", "Other"); // Proxy Test Protocol Depends On This
-            message.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml");
-            message.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate");
-            message.Headers.TryAddWithoutValidation("Accept-Charset", "ISO-8859-1");
-
-            if (!string.IsNullOrEmpty(ip))
-            {
-                message.Headers.TryAddWithoutValidation("host", host);
-            }
-            
-            using HttpClient httpClient = new(handler);
-            httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
-            response = await httpClient.SendAsync(message, ct).ConfigureAwait(false);
-            //response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException hre)
-        {
-            if (hre.StatusCode != null) result = (HttpStatusCode)hre.StatusCode;
+            result = hrr.StatusCode;
         }
         catch (Exception) { }
-
-        if (response != null)
-        {
-            result = response.StatusCode;
-            //Debug.WriteLine("GetHttpStatusCode: " + result);
-            try { response.Dispose(); } catch (Exception) { }
-        }
 
         return result;
     }
 
-    public static async Task<string> GetHeaders(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    public static async Task<string> GetHeadersAsync(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    {
+        string result = string.Empty;
+        if (string.IsNullOrWhiteSpace(urlOrDomain)) return result;
+
+        try
+        {
+            GetUrlDetails(urlOrDomain.Trim(), 443, out string scheme, out string host, out _, out _, out int port, out string path, out _);
+            string origHost = host;
+            if (string.IsNullOrEmpty(scheme)) scheme = "https://";
+            if (!string.IsNullOrWhiteSpace(ip)) host = ip.Trim();
+            bool firstTrySuccess = false;
+
+            try
+            {
+                UriBuilder uriBuilder = new()
+                {
+                    Scheme = scheme,
+                    Host = host,
+                    Port = port,
+                    Path = path
+                };
+
+                Uri uri = uriBuilder.Uri;
+
+                if (useSystemProxy)
+                {
+                    string systemProxyScheme = GetSystemProxy(); // Reading from Registry
+                    if (!string.IsNullOrEmpty(systemProxyScheme))
+                    {
+                        proxyScheme = systemProxyScheme;
+                        proxyUser = string.Empty;
+                        proxyPass = string.Empty;
+                    }
+                }
+
+                HttpRequest hr = new()
+                {
+                    URI = uri,
+                    Method = HttpMethod.Get,
+                    UserAgent = "Other",
+                    TimeoutMS = timeoutMs,
+                    AllowInsecure = true, // Ignore Cert Check To Make It Faster
+                    AllowAutoRedirect = true,
+                    ProxyScheme = proxyScheme,
+                    ProxyUser = proxyUser,
+                    ProxyPass = proxyPass,
+                };
+                hr.Headers.Add("host", origHost); // In Case Of Using IP
+
+                HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
+
+                List<string> resultList = new()
+                {
+                    hrr.StatusCode.ToString()
+                };
+
+                for (int n = 0; n < hrr.Headers.Count; n++)
+                {
+                    string? key = hrr.Headers.GetKey(n);
+                    string? val = hrr.Headers.Get(n);
+
+                    if (string.IsNullOrEmpty(key)) continue;
+                    if (string.IsNullOrEmpty(val)) continue;
+
+                    string kv = $"{key}: {val}";
+                    resultList.Add(kv);
+                    firstTrySuccess = true;
+                }
+
+                result = resultList.ToString(Environment.NewLine);
+            }
+            catch (Exception) { }
+
+            try
+            {
+                if (!firstTrySuccess && !urlOrDomain.Contains("://www."))
+                {
+                    urlOrDomain = $"{scheme}www.{origHost}:{port}{path}";
+                    result = await GetHeadersAsync(urlOrDomain, ip, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
+                }
+            }
+            catch (Exception) { }
+        }
+        catch (Exception) { }
+
+        return result;
+    }
+
+    public static async Task<string> GetHeadersOLD(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
         if (string.IsNullOrWhiteSpace(urlOrDomain)) return string.Empty;
         HttpResponseMessage? response = null;
@@ -1428,7 +1517,7 @@ public static class NetworkTool
             if (string.IsNullOrEmpty(result) && !urlOrDomain.Contains("://www."))
             {
                 urlOrDomain = $"{scheme}www.{host}:{port}{path}";
-                result = await GetHeaders(urlOrDomain, ip, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
+                result = await GetHeadersAsync(urlOrDomain, ip, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
             }
         }
         catch (Exception) { }
@@ -1446,7 +1535,7 @@ public static class NetworkTool
     /// <returns></returns>
     public static async Task<bool> IsWebsiteOnlineAsync(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
-        string headers = await GetHeaders(urlOrDomain, ip, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
+        string headers = await GetHeadersAsync(urlOrDomain, ip, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
         return !string.IsNullOrEmpty(headers);
     }
 

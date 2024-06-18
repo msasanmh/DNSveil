@@ -18,13 +18,13 @@ public partial class FormMain
             // Start Checking
             if (stop) return;
             IsCheckingStarted = true;
-            await UpdateStatusShortOnBoolsChanged();
+            await UpdateStatusShortOnBoolsChangedAsync();
 
             // Check Internet Connectivity
             if (!IsInternetOnline)
             {
                 IsCheckingStarted = false;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
                 return;
             }
 
@@ -49,14 +49,14 @@ public partial class FormMain
 
             IsCheckingStarted = false;
             StopChecking = false;
-            await UpdateStatusShortOnBoolsChanged();
-            await UpdateStatusLong();
+            await UpdateStatusShortOnBoolsChangedAsync();
+            await UpdateStatusLongAsync();
         }
         else
         {
             // Stop Checking
             StopChecking = true;
-            await UpdateStatusShortOnBoolsChanged();
+            await UpdateStatusShortOnBoolsChangedAsync();
             this.InvokeIt(() => CustomProgressBarCheck.StopTimer = true);
             this.InvokeIt(() => CustomButtonCheck.Enabled = false);
         }

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace SecureDNSClient;
@@ -21,7 +22,7 @@ public partial class FormMain
         await FileDirectory.AppendTextLineAsync(SecureDNS.ErrorLogPath, message, new UTF8Encoding(false));
     }
 
-    private async Task LoadTheme()
+    private async Task LoadThemeAsync()
     {
         if (!IsThemeApplied || !IsScreenHighDpiScaleApplied)
         {
@@ -117,7 +118,8 @@ public partial class FormMain
             {
                 await Task.Delay(1000);
                 IPAddress bootstrapIP = GetBootstrapSetting(out _);
-                IsAppReady = IsInternetOnline = await NetworkTool.IsInternetAliveAsync(bootstrapIP, 3000);
+                await UpdateBoolInternetStateAsync();
+                IsAppReady = NetState == NetworkTool.InternetState.Online;
                 if (IsAppReady) break;
             }
             string msgReady = $"Network Detected (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
@@ -312,7 +314,7 @@ public partial class FormMain
         }
     }
 
-    private async Task FillComboBoxes(bool nics = true, bool qcConnectModes = true, bool qcNics = true, bool qcGoodbyeDpiModes = true)
+    private async Task FillComboBoxesAsync(bool nics = true, bool qcConnectModes = true, bool qcNics = true, bool qcGoodbyeDpiModes = true)
     {
         IPAddress bootstrapIP = GetBootstrapSetting(out int bootstrapPort);
 
@@ -421,46 +423,7 @@ public partial class FormMain
         }
     }
 
-    private async Task<bool> IsInternetAlive(bool writeToLog = true, int timeoutMS = 3000)
-    {
-        bool isAlive = false;
-
-        try
-        {
-            bool pingCondition = AppUpTime.Elapsed < TimeSpan.FromSeconds(30) && !IsConnected && !IsDNSConnected;
-            IPAddress bootstrapIP = GetBootstrapSetting(out _);
-
-            if (pingCondition)
-            {
-                isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
-            }
-            else
-            {
-                isAlive = await NetworkTool.IsInternetAliveByNicAsync(bootstrapIP, timeoutMS);
-                if (!isAlive)
-                {
-                    // Read Ping If Internet Is Not Based On Adapter
-                    isAlive = await NetworkTool.IsInternetAliveAsync(bootstrapIP, timeoutMS);
-                }
-            }
-        }
-        catch (Exception) { }
-        
-        if (!isAlive)
-        {
-            if (writeToLog)
-            {
-                string msgNet = $"There Is No Internet Connectivity.{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgNet, Color.IndianRed));
-                await LogToDebugFileAsync(NL + msgNet + NL);
-            }
-            return false;
-        }
-        else
-            return true;
-    }
-
-    private async Task FlushDNS(bool flush, bool register, bool release, bool renew, bool showMsg)
+    private async Task FlushDNSAsync(bool flush, bool register, bool release, bool renew, bool showMsg)
     {
         if (IsFlushingDns) return;
         if (flush == false && register == false && release == false && renew == false) return;
@@ -481,10 +444,13 @@ public partial class FormMain
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flush: ", Color.DodgerBlue));
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
                 }
-
-                if (IsDNSConnected && !IsExiting)
+                
+                if (IsDNSConnected && !IsExiting) await DnsConsole.SendCommandAsync("flush");
+                if (IsProxyRunning && !IsExiting)
                 {
-                    await DnsConsole.SendCommandAsync("flush");
+                    UpdateProxyBools = false;
+                    await ProxyConsole.SendCommandAsync("flush");
+                    UpdateProxyBools = true;
                 }
             }
             
@@ -624,7 +590,7 @@ public partial class FormMain
         dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
         dgv.BorderStyle = BorderStyle.None;
         List<DataGridViewRow> rList = new();
-        for (int n = 0; n < 14; n++)
+        for (int n = 0; n < 15; n++)
         {
             DataGridViewRow row = new();
             row.CreateCells(dgv, "cell0", "cell1");
@@ -632,27 +598,28 @@ public partial class FormMain
 
             string cellName = n switch
             {
-                0 => "Working Servers",
-                1 => "Is Connected",
-                2 => "Local DNS",
-                3 => "Local DNS Latency",
-                4 => "Local DoH",
-                5 => "Local DoH Latency",
-                6 => "Is DNS Set",
-                7 => "Is Sharing",
-                8 => "Proxy Requests",
-                9 => "Is Proxy Set",
-                10 => "Proxy DPI Bypass",
-                11 => "GoodbyeDPI",
-                12 => "CPU",
-                13 => "",
+                0 => "Internet Status",
+                1 => "Working Servers",
+                2 => "Is Connected",
+                3 => "Local DNS",
+                4 => "Local DNS Latency",
+                5 => "Local DoH",
+                6 => "Local DoH Latency",
+                7 => "Is DNS Set",
+                8 => "Is Sharing",
+                9 => "Proxy Requests",
+                10 => "Is Proxy Set",
+                11 => "Proxy DPI Bypass",
+                12 => "GoodbyeDPI",
+                13 => "CPU",
+                14 => "",
                 _ => string.Empty
             };
 
             if (n % 2 == 0)
-                row.DefaultCellStyle.BackColor = BackColor.ChangeBrightness(-0.2f);
-            else
                 row.DefaultCellStyle.BackColor = BackColor;
+            else
+                row.DefaultCellStyle.BackColor = BackColor.ChangeBrightness(-0.2f);
 
             row.Cells[0].Value = cellName;
             row.Cells[1].Value = string.Empty;
@@ -744,7 +711,7 @@ public partial class FormMain
         dgv.Rows.AddRange(rList.ToArray());
     }
 
-    private async Task CheckDPIWorks(string host, int timeoutSec = 30) //Default timeout: 100 sec
+    private async Task CheckDPIWorksAsync(string host, int timeoutSec = 30) // Default .NET Timeout: 100 Sec
     {
         if (IsDisconnecting || IsDisconnectingAll || StopQuickConnect) return;
         if (CheckDpiBypassCTS.IsCancellationRequested) return;
@@ -833,16 +800,13 @@ public partial class FormMain
                 {
                     Debug.WriteLine("Proxy");
 
-                    UpdateProxyBools = false;
-                    // Kill all requests before check
-                    await ProxyConsole.SendCommandAsync("KillAll");
-                    await Task.Delay(500);
-                    UpdateProxyBools = true;
+                    string proxyScheme = $"http://{IPAddress.Loopback}:{ProxyPort}";
 
-                    string proxyScheme = $"socks5://{IPAddress.Loopback}:{ProxyPort}";
+                    msgDPI = $"Selecting DPI Bypass Method...{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI, Color.LightGray));
 
                     StopWatchCheckDPIWorks.Restart();
-                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCode(url, null, timeoutSec * 1000, false, proxyScheme, null, null, CheckDpiBypassCTS.Token);
+                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, false, false, proxyScheme, null, null, CheckDpiBypassCTS.Token);
                     StopWatchCheckDPIWorks.Stop();
                     Debug.WriteLine(hsc);
                     if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
@@ -856,7 +820,7 @@ public partial class FormMain
                     Debug.WriteLine("No Proxy");
 
                     StopWatchCheckDPIWorks.Restart();
-                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCode(url, null, timeoutSec * 1000, false, null, null, null, CheckDpiBypassCTS.Token);
+                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, false, false, null, null, null, CheckDpiBypassCTS.Token);
                     StopWatchCheckDPIWorks.Stop();
 
                     if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
@@ -930,39 +894,40 @@ public partial class FormMain
         UpdateProxyBools = true;
     }
 
-    private static async Task<bool> WarmUpProxy(string host, string proxyScheme, int timeoutSec, CancellationToken cancellationToken)
+    private static async Task<bool> WarmUpProxyAsync(string host, string proxyScheme, int timeoutSec, CancellationToken ct)
     {
-        string url = $"https://{host}/";
-        Uri uri = new(url, UriKind.Absolute);
-
-        using HttpClientHandler handler = new();
-        handler.Proxy = new WebProxy(proxyScheme, true);
-        handler.UseProxy = true;
-        // Ignore Cert Check To Make It Faster
-        handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-        handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
-
-        using HttpClient httpClientWithProxy = new(handler);
-        httpClientWithProxy.Timeout = TimeSpan.FromSeconds(timeoutSec);
-
-        // Get Only Header
-        using HttpRequestMessage message = new(HttpMethod.Head, uri);
-        message.Headers.TryAddWithoutValidation("User-Agent", "Other");
-
         try
         {
-            await httpClientWithProxy.SendAsync(message, cancellationToken);
-            return true;
+            string url = $"https://{host}/";
+            Uri uri = new(url, UriKind.Absolute);
+
+            HttpRequest hr = new()
+            {
+                CT = ct,
+                URI = uri,
+                Method = HttpMethod.Get,
+                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
+                TimeoutMS = timeoutSec * 1000,
+                AllowInsecure = false,
+                AllowAutoRedirect = true,
+                ProxyScheme = proxyScheme,
+            };
+
+            HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
+            //Debug.WriteLine($"WarmUpProxyAsync, URL: {url}, StatusCode: {hrr.StatusCode}");
+            return hrr.IsSuccess;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Debug.WriteLine("WarmUpProxyAsync: " + ex.Message);
             return false;
         }
+
     }
 
     // ============================== Old Content To New
 
-    private static async Task MoveToNewLocation()
+    private static async Task MoveToNewLocationAsync()
     {
         try
         {

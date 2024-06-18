@@ -55,6 +55,7 @@ public partial class MsmhAgnosticServer
     private Socket? UdpSocket_;
     private readonly DnsCache DnsCaches = new();
     private readonly ProxyRequestsCache ProxyRequestsCaches = new();
+    private readonly CaptivePortal CaptivePortals = new();
     private TcpListener? TcpListener_;
     internal TunnelManager TunnelManager_ = new();
 
@@ -62,8 +63,9 @@ public partial class MsmhAgnosticServer
     private CancellationToken CancelToken_;
     private CancellationTokenSource CTS_PR = new();
 
-    private System.Timers.Timer KillOnOverloadTimer { get; set; } = new(5000);
+    private System.Timers.Timer KillOnOverloadTimer { get; set; } = new(10000);
     private float CpuUsage { get; set; } = -1;
+    private static NetworkTool.InternetState InternetState = NetworkTool.InternetState.Online; // Default
 
     private bool Cancel { get; set; } = false;
 
@@ -76,7 +78,6 @@ public partial class MsmhAgnosticServer
     public bool IsRunning { get; private set; } = false;
 
     private readonly ConcurrentQueue<DateTime> MaxRequestsQueue = new();
-    private readonly ConcurrentDictionary<string, DateTime> DelinquentRequests = new();
     private readonly ConcurrentDictionary<string, (DateTime dt, bool applyFakeSNI, bool applyFragment)> TestRequests = new();
     internal static readonly int MaxRequestsDelay = 50;
     internal static readonly int MaxRequestsDivide = 20; // 20 * 50 = 1000 ms
@@ -91,35 +92,43 @@ public partial class MsmhAgnosticServer
 
     public void Start(AgnosticSettings settings)
     {
-        if (IsRunning) return;
-        IsRunning = true;
+        try
+        {
+            if (IsRunning) return;
+            IsRunning = true;
 
-        Settings_ = settings;
-        Settings_.Initialize();
+            Settings_ = settings;
+            Settings_.Initialize();
 
-        // Set Default DNSs
-        if (Settings_.DNSs.Count == 0) Settings_.DNSs = AgnosticSettings.DefaultDNSs();
+            // Set Default DNSs
+            if (Settings_.DNSs.Count == 0) Settings_.DNSs = AgnosticSettings.DefaultDNSs();
 
-        Stats = new Stats();
+            Stats = new Stats();
 
-        Welcome();
+            Welcome();
 
-        TunnelManager_ = new();
+            TunnelManager_ = new();
 
-        CancelTokenSource_ = new();
-        CancelToken_ = CancelTokenSource_.Token;
+            CancelTokenSource_ = new();
+            CancelToken_ = CancelTokenSource_.Token;
 
-        Cancel = false;
+            Cancel = false;
 
-        MaxRequestsTimer();
+            MaxRequestsTimer();
 
-        KillOnOverloadTimer.Elapsed += KillOnOverloadTimer_Elapsed;
-        KillOnOverloadTimer.Start();
+            KillOnOverloadTimer.Elapsed -= KillOnOverloadTimer_Elapsed;
+            KillOnOverloadTimer.Elapsed += KillOnOverloadTimer_Elapsed;
+            KillOnOverloadTimer.Start();
 
-        ThreadStart threadStart = new(AcceptConnections);
-        MainThread = new(threadStart);
-        if (OperatingSystem.IsWindows()) MainThread.SetApartmentState(ApartmentState.STA);
-        MainThread.Start();
+            ThreadStart threadStart = new(AcceptConnections);
+            MainThread = new(threadStart);
+            if (OperatingSystem.IsWindows()) MainThread.SetApartmentState(ApartmentState.STA);
+            MainThread.Start();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("MsmhAgnosticServer Start: " + ex.Message);
+        }
     }
 
     private void Welcome()
@@ -156,18 +165,34 @@ public partial class MsmhAgnosticServer
 
     private async void KillOnOverloadTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
     {
-        if (OperatingSystem.IsWindows() && typeof(PerformanceCounter) != null)
-            CpuUsage = await ProcessManager.GetCpuUsage(Environment.ProcessId, 1000);
-
-        if (CpuUsage >= Settings_.KillOnCpuUsage && Settings_.KillOnCpuUsage > 0)
+        try
         {
-            KillAll();
+            if (OperatingSystem.IsWindows() && typeof(PerformanceCounter) != null)
+                CpuUsage = await ProcessManager.GetCpuUsage(Environment.ProcessId, 1000);
+
+            if (CpuUsage >= Settings_.KillOnCpuUsage && Settings_.KillOnCpuUsage > 0)
+            {
+                KillAll();
+            }
+
+            if (CpuUsage >= 75f)
+            {
+                try { Environment.Exit(0); } catch (Exception) { }
+                await ProcessManager.KillProcessByPidAsync(Environment.ProcessId);
+            }
+
+            // Get Internet State
+            IPAddress ipToCheck = Settings_.BootstrapIpAddress;
+            if (ipToCheck == IPAddress.None || ipToCheck == IPAddress.Any || ipToCheck == IPAddress.IPv6None || ipToCheck == IPAddress.IPv6Any)
+            {
+                bool isIP = IPAddress.TryParse("8.8.8.8", out IPAddress? ip);
+                if (isIP && ip != null) ipToCheck = ip;
+            }
+            InternetState = await NetworkTool.GetInternetStateAsync(ipToCheck, 5000);
         }
-
-        if (CpuUsage >= 95f)
+        catch (Exception ex)
         {
-            try { Environment.Exit(0); } catch (Exception) { }
-            await ProcessManager.KillProcessByPidAsync(Environment.ProcessId);
+            Debug.WriteLine("MsmhAgnosticServer KillOnOverloadTimer_Elapsed: " + ex.Message);
         }
     }
 
@@ -214,7 +239,6 @@ public partial class MsmhAgnosticServer
                 KillAll();
 
                 MaxRequestsQueue.Clear();
-                DelinquentRequests.Clear();
                 TestRequests.Clear();
 
                 KillOnOverloadTimer.Stop();
@@ -542,7 +566,7 @@ public partial class MsmhAgnosticServer
             pt.ClientSSL?.Disconnect();
 
             TunnelManager_.Remove(pt);
-            Debug.WriteLine($"{pt.Req.Address} Disconnected");
+            //Debug.WriteLine($"{pt.Req.Address} Disconnected");
         }
         catch (Exception ex)
         {

@@ -24,7 +24,9 @@ public partial class FormMain : Form
     private readonly Stopwatch LabelMainStopWatch = new();
     private static readonly CustomLabel LabelMain = new();
     public static ProcessMonitor MonitorProcess { get; set; } = new();
-    public static bool IsInternetOnline { get; set; } = false;
+    public static NetworkTool.InternetState NetPreState { get; set; } = NetworkTool.InternetState.Unknown;
+    public static NetworkTool.InternetState NetState { get; set; } = NetworkTool.InternetState.Unknown;
+    public static bool IsInternetOnline => NetState == NetworkTool.InternetState.Online || NetState == NetworkTool.InternetState.Unstable;
     private bool Once { get; set; } = true;
     private bool Once2 { get; set; } = true;
     public static bool IsInActionState { get; set; } = false;
@@ -33,7 +35,7 @@ public partial class FormMain : Form
     private bool StartupTaskExecuted { get; set; } = false;
     private bool IsCheckingForUpdate { get; set; } = false;
     private bool IsDPIActive { get; set; } = false;
-    public static IPAddress? LocalIP { get; set; } = IPAddress.Loopback; // as default
+    public static IPAddress? LocalIP { get; set; } = IPAddress.Loopback; // As Default
     public Settings? AppSettings { get; set; }
     private readonly ToolStripMenuItem ToolStripMenuItemIcon = new();
     private readonly Stopwatch StopWatchCheckDPIWorks = new();
@@ -48,8 +50,6 @@ public partial class FormMain : Form
     private bool AudioAlertOffline { get; set; } = false;
     private bool AudioAlertRequestsExceeded { get; set; } = false;
     private readonly Stopwatch StopWatchAudioAlertDelay = new();
-    private bool InternetOnline { get; set; } = false;
-    private bool InternetOffline { get; set; } = true;
 
     // Check Servers
     private int NumberOfWorkingServers { get; set; } = 0;

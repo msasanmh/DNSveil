@@ -7,7 +7,7 @@ namespace MsmhToolsClass.MsmhAgnosticServer;
 public class ProxyRequest
 {
     // More than this means there is no internet or destination is blocked so it's better to cancel the request
-    private static readonly int TimeoutRequestCreationMS = 200;
+    private static readonly int TimeoutRequestCreationMS = 500;
 
     public static async Task<ProxyRequest?> RequestHTTP_S(byte[] firstBuffer, CancellationToken ct)
     {
@@ -33,7 +33,7 @@ public class ProxyRequest
                 };
                 
                 Proxy.Name proxyName = httpRequest.URI.Scheme.Equals("http") ? Proxy.Name.HTTP : Proxy.Name.HTTPS;
-                if (httpRequest.UserAgent.Equals("Other")) proxyName = Proxy.Name.Test;
+                if (httpRequest.UserAgent.Equals("SDC - Secure DNS Client", StringComparison.OrdinalIgnoreCase)) proxyName = Proxy.Name.Test;
                 
                 // I Set User and Pass to none (I don't support Auth)
                 string user = string.Empty, pass = string.Empty;
@@ -46,7 +46,7 @@ public class ProxyRequest
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("RequestHttpRemote: " + ex.Message);
+                Debug.WriteLine("RequestHTTP_S: " + ex.Message);
                 return null;
             }
         });
@@ -164,7 +164,7 @@ public class ProxyRequest
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("RequestSocks4Remote: " + ex.Message);
+                Debug.WriteLine("RequestSocks4_4A: " + ex.Message);
                 return null;
             }
         });
@@ -282,7 +282,7 @@ public class ProxyRequest
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("RequestSocks5Remote: " + ex.Message);
+                Debug.WriteLine("RequestSocks5: " + ex.Message);
                 return null;
             }
         });
@@ -312,7 +312,7 @@ public class ProxyRequest
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("RequestHttpRemote: " + ex.Message);
+                Debug.WriteLine("RequestSniProxy: " + ex.Message);
                 return null;
             }
         });

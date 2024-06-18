@@ -80,14 +80,14 @@ public partial class FormMain : Form
         LabelMain.BringToFront();
 
         // Load Theme
-        await LoadTheme();
+        await LoadThemeAsync();
 
         // Label Screen to Fix Screen DPI
         LabelScreen.Text = "MSasanMH";
         LabelScreen.Font = Font;
 
         // Fill ComboBoxes
-        await FillComboBoxes();
+        await FillComboBoxesAsync();
 
         // App Startup Defaults
         string productName = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName ?? "SDC - Secure DNS Client";
@@ -119,7 +119,7 @@ public partial class FormMain : Form
         FileDirectory.CreateEmptyDirectory(SecureDNS.UserDataDirPath);
 
         // Move User Data and Certificate to the new location
-        await MoveToNewLocation();
+        await MoveToNewLocationAsync();
 
         // Initialize and Load Settings
         if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidXMLFile(SecureDNS.SettingsXmlPath))
@@ -197,7 +197,7 @@ public partial class FormMain : Form
             string msg = $"Unsetting DNS...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.Gray));
             await UnsetAllDNSs();
-            await UpdateStatusNic();
+            await UpdateStatusNicAsync();
         }
 
         IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
@@ -255,7 +255,7 @@ public partial class FormMain : Form
         {
             try
             {
-                string? status = CustomDataGridViewStatus.Rows[11].Cells[1].Value.ToString();
+                string? status = CustomDataGridViewStatus.Rows[12].Cells[1].Value.ToString();
                 if (string.IsNullOrEmpty(status)) isStatusEmpty = true;
             }
             catch (Exception) { }
@@ -302,7 +302,7 @@ public partial class FormMain : Form
 
             // Load Theme
             if (AppUpTime.ElapsedMilliseconds > 20000)
-                await LoadTheme();
+                await LoadThemeAsync();
 
             // Delete Log Files On > 500KB
             DeleteFileOnSize(SecureDNS.LogWindowPath, 500);
@@ -435,8 +435,8 @@ public partial class FormMain : Form
         if (!Visible) return;
         Task.Run(async () =>
         {
-            await UpdateStatusShortOnBoolsChanged();
-            await UpdateStatusNic();
+            await UpdateStatusShortOnBoolsChangedAsync();
+            await UpdateStatusNicAsync();
         });
     }
 
@@ -644,9 +644,9 @@ public partial class FormMain : Form
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgQcCanceled, Color.MediumSeaGreen));
                 }
 
-                Task.Run(async () => await UpdateStatusLong());
-                Task.Run(async () => await UpdateStatusNic());
-                Task.Run(async () => await CheckUpdate());
+                Task.Run(async () => await UpdateStatusLongAsync());
+                Task.Run(async () => await UpdateStatusNicAsync());
+                Task.Run(async () => await CheckUpdateAsync());
             }
 
             this.SetDarkTitleBar(true); // Just in case

@@ -15,7 +15,7 @@ public partial class MsmhAgnosticServer
             if (req.Address.Equals("0.0.0.0")) return null;
             if (req.Address.StartsWith("10.")) return null;
             req.ClientIP = clientIP;
-
+            
             // Event
             string msgReqEvent = $"[{req.ClientIP}] [{req.ProxyName}] ";
 
@@ -25,34 +25,9 @@ public partial class MsmhAgnosticServer
             if (req.ProxyName == Proxy.Name.Socks4 || req.ProxyName == Proxy.Name.Socks4A || req.ProxyName == Proxy.Name.Socks5)
                 msgReqEvent += $"[{req.Command}] ";
 
-            // Count Max Requests
-            string checkRequest = $"{clientIP}_{req.AddressOrig}";
-            bool isKeyExist = DelinquentRequests.TryGetValue(checkRequest, out DateTime lastTime);
-            if (isKeyExist)
-            {
-                DateTime now = DateTime.UtcNow;
-                TimeSpan ts = now - lastTime;
-                if (ts <= TimeSpan.FromMilliseconds(0.4))
-                {
-                    DelinquentRequests.TryUpdate(checkRequest, now, lastTime);
-
-                    // Event
-                    msgReqEvent += $"Delinquent Request Detected - Request Denied ({req.AddressOrig}:{req.Port})";
-                    OnRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
-                    return null;
-                }
-                else DelinquentRequests.TryRemove(checkRequest, out _);
-            }
-            else DelinquentRequests.TryAdd(checkRequest, DateTime.UtcNow);
-
-            // Cache Requests
-            var cachedReq = ProxyRequestsCaches.Get(checkRequest, req);
-            if (cachedReq != null)
-            {
-                OnRequestReceived?.Invoke(cachedReq.Value.eventMsg, EventArgs.Empty);
-                return cachedReq.Value.pReq;
-            }
-
+            // Captive Portal
+            bool isCaptivePortal = CaptivePortals.IsCaptivePortal(req.AddressOrig);
+            
             // Test Requests
             bool isTestRequestExist = TestRequests.TryGetValue(req.AddressOrig, out (DateTime dt, bool applyFakeSNI, bool applyFragment) testReq);
             if (isTestRequestExist)
@@ -72,10 +47,13 @@ public partial class MsmhAgnosticServer
             // Block Port 80
             if (Settings_.BlockPort80 && req.Port == 80)
             {
-                // Event
-                msgReqEvent += $"Block Port 80: {req.Address}:{req.Port}, Request Denied.";
-                OnRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
-                return null;
+                if (!isCaptivePortal)
+                {
+                    // Event
+                    msgReqEvent += $"Block Port 80: {req.Address}:{req.Port}, Request Denied.";
+                    OnRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
+                    return null;
+                }
             }
 
             //// ProxyRules Program
@@ -99,10 +77,13 @@ public partial class MsmhAgnosticServer
                 // Block Port
                 if (rr.IsPortBlock)
                 {
-                    // Event
-                    msgReqEvent += $"Block Port {req.Port}: {req.Address}:{req.Port}, Request Denied.";
-                    OnRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
-                    return null;
+                    if (!isCaptivePortal)
+                    {
+                        // Event
+                        msgReqEvent += $"Block Port {req.Port}: {req.Address}:{req.Port}, Request Denied.";
+                        OnRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
+                        return null;
+                    }
                 }
 
                 // Apply DPI Bypass If Is Match
@@ -193,49 +174,135 @@ public partial class MsmhAgnosticServer
                     msgReqEvent += $"{req.AddressOrig}:{req.Port} => {req.Address}";
             }
 
-            HttpStatusCode httpStatus = HttpStatusCode.RequestTimeout;
-            if (req.ApplyChangeSNI)
+            // No Bypass For Captive Portal
+            if (isCaptivePortal)
             {
-                msgReqEvent += $" => {req.AddressSNI}";
-                if (req.ProxyName != Proxy.Name.Test)
+                req.ApplyChangeSNI = false;
+                req.ApplyFragment = false;
+            }
+
+            // Add Orig Values To Cache
+            ProxyRequestsCache.ProxyRequestsCacheResult prcr = new();
+            prcr.OrigValues.ApplyChangeSNI = req.ApplyChangeSNI;
+            prcr.OrigValues.ApplyFragment = req.ApplyFragment;
+            prcr.OrigValues.IsDestBlocked = req.IsDestBlocked;
+
+            // Cache Requests
+            string checkRequest = $"{req.ClientIP}_{req.ProxyName}_{req.AddressOrig}_{req.Port}";
+            var cachedReq = ProxyRequestsCaches.Get(checkRequest, req);
+
+            // Check Fake SNI Is Compatible
+            HttpStatusCode httpStatus = HttpStatusCode.RequestTimeout;
+            string event_ApplyChangeSNI = string.Empty;
+            if (cachedReq != null)
+            {
+                req.ApplyChangeSNI = cachedReq.ApplyChangeSNI.Apply;
+                event_ApplyChangeSNI = cachedReq.ApplyChangeSNI.Event_ApplyChangeSNI;
+            }
+            else
+            {
+                if (req.ApplyChangeSNI)
                 {
-                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCode($"https://{req.AddressOrig}:{req.Port}", null, 5000, false, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
-                    if (hsc == HttpStatusCode.Forbidden || hsc == HttpStatusCode.MisdirectedRequest || hsc == HttpStatusCode.InternalServerError || hsc == HttpStatusCode.RequestTimeout)
+                    if (req.ProxyName != Proxy.Name.Test)
                     {
-                        HttpStatusCode hsc2 = await NetworkTool.GetHttpStatusCode($"https://{req.AddressOrig}:{req.Port}", null, 5000, false).ConfigureAwait(false);
-                        if (hsc2 != HttpStatusCode.RequestTimeout)
+                        TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, false));
+
+                        HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
+                        if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.BadRequest || hsc == HttpStatusCode.Forbidden)
                         {
-                            req.ApplyChangeSNI = false;
-                            req.ApplyFragment = false;
-                            msgReqEvent += $" ({hsc2}) => OFF";
-                            httpStatus = hsc2;
-                        }
-                        else if (hsc != HttpStatusCode.RequestTimeout)
-                        {
-                            req.ApplyChangeSNI = false;
-                            msgReqEvent += $" ({hsc})";
+                            // Fake SNI Is Compatible
+                            event_ApplyChangeSNI += $" => {req.AddressSNI}";
+                            req.ApplyFragment = false; // No Need To Fragment
                             TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
                             httpStatus = hsc;
                         }
+                        else if (hsc != HttpStatusCode.RequestTimeout && (hsc == HttpStatusCode.MisdirectedRequest || hsc == HttpStatusCode.InternalServerError))
+                        {
+                            // Fake SNI Is Not Compatible
+                            req.ApplyChangeSNI = false;
+                            event_ApplyChangeSNI += $" => {req.AddressSNI} (Not Compatible => OFF)";
+                            TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
+                            httpStatus = hsc;
+                        }
+                        else
+                        {
+                            HttpStatusCode hscDirect = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", req.Address, 4000, false, true).ConfigureAwait(false);
+                            if (hscDirect != HttpStatusCode.RequestTimeout)
+                            {
+                                // Not Blocked By SNI: No Need To Apply FakeSNI Or Fragment
+                                req.ApplyChangeSNI = false;
+                                req.ApplyFragment = false;
+                                TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
+                                httpStatus = hscDirect;
+                            }
+                            else
+                            {
+                                // No Idea
+                                event_ApplyChangeSNI += $" => {req.AddressSNI} ({hsc})";
+                                httpStatus = hsc;
+                            }
+                        }
                     }
                 }
             }
+            msgReqEvent += event_ApplyChangeSNI;
 
-            if (!req.ApplyChangeSNI && req.ApplyFragment)
+            // Check Fragment Is Compatible
+            string event_ApplyFragment = string.Empty;
+            if (cachedReq != null)
             {
-                msgReqEvent += " => Fragmented";
-                if (req.ProxyName != Proxy.Name.Test)
+                req.ApplyFragment = cachedReq.ApplyFragment.Apply;
+                event_ApplyFragment = cachedReq.ApplyFragment.Event_ApplyFragment;
+            }
+            else
+            {
+                if (req.ApplyFragment)
                 {
-                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCode($"https://{req.AddressOrig}:{req.Port}", null, 3000, false, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
-                    if (hsc != HttpStatusCode.OK && hsc != HttpStatusCode.NotFound && hsc != HttpStatusCode.RequestTimeout)
+                    if (req.ProxyName != Proxy.Name.Test)
                     {
-                        req.ApplyFragment = false;
-                        msgReqEvent += $" ({hsc}) => OFF";
-                        TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
-                        httpStatus = hsc;
+                        TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, false, req.ApplyFragment));
+
+                        HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
+                        if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.BadRequest || hsc == HttpStatusCode.Forbidden)
+                        {
+                            event_ApplyFragment += " => Fragmented";
+                            req.ApplyChangeSNI = false; // No Need For Fake SNI
+                            TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
+                            httpStatus = hsc;
+                        }
+                        else if (hsc != HttpStatusCode.RequestTimeout)
+                        {
+                            // Fragment Is Not Compatible
+                            req.ApplyFragment = false;
+                            event_ApplyFragment += " => Fragmented (Not Compatible => OFF)";
+                            TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
+                            httpStatus = hsc;
+                        }
+                        else
+                        {
+                            HttpStatusCode hscDirect = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", req.Address, 4000, false, true).ConfigureAwait(false);
+                            if (hscDirect != HttpStatusCode.RequestTimeout)
+                            {
+                                // Not Blocked By SNI: No Need To Apply FakeSNI Or Fragment
+                                req.ApplyChangeSNI = false;
+                                req.ApplyFragment = false;
+                                TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
+                                httpStatus = hscDirect;
+                            }
+                            else
+                            {
+                                // No Idea
+                                event_ApplyFragment += $" => Fragmented ({hsc})";
+                                httpStatus = hsc;
+                            }
+                        }
                     }
                 }
             }
+            msgReqEvent += event_ApplyFragment;
+
+            // If Both Are Active Use Fragment
+            if (req.ApplyChangeSNI && req.ApplyFragment) req.ApplyChangeSNI = false;
 
             // Check If IP Is Blocked
             isIp = NetworkTool.IsIp(req.Address, out IPAddress? ip);
@@ -249,20 +316,18 @@ public partial class MsmhAgnosticServer
                     {
                         if (httpStatus == HttpStatusCode.RequestTimeout || httpStatus == HttpStatusCode.Forbidden)
                         {
-                            httpStatus = await NetworkTool.GetHttpStatusCode($"https://{req.AddressOrig}:{req.Port}", null, 5000, false, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
-                            req.IsDestBlocked = httpStatus == HttpStatusCode.RequestTimeout || httpStatus == HttpStatusCode.Forbidden;
-
-                            //if (req.ProxyName == Proxy.Name.Socks5 && req.Command == Socks.Commands.UDP)
-                            //    req.IsDestBlocked = !await NetworkTool.CanUdpConnect(req.Address, req.Port, 5000);
-                            //else
-                            //{
-                            //    bool canPing = await NetworkTool.CanPing(req.Address, 5000);
-                            //    bool canTcpConnect = await NetworkTool.CanTcpConnect(req.Address, req.Port, 5000);
-                            //    Debug.WriteLine("===--> " + req.AddressOrig + " -> " + httpStatus + " -> " + canPing + " -> " + canTcpConnect);
-                            //    req.IsDestBlocked = !canPing || !canTcpConnect;
-                            //}
-
-                            if (req.IsDestBlocked) msgReqEvent += $" ({httpStatus})";
+                            if (rr.IsMatch && rr.ApplyUpStreamProxy && rr.ApplyUpStreamProxyToBlockedIPs)
+                            {
+                                if (cachedReq != null)
+                                {
+                                    req.IsDestBlocked = cachedReq.IsDestBlocked.Apply;
+                                }
+                                else
+                                {
+                                    httpStatus = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
+                                    req.IsDestBlocked = httpStatus == HttpStatusCode.RequestTimeout || httpStatus == HttpStatusCode.Forbidden;
+                                }
+                            }
                         }
                     }
                 }
@@ -327,8 +392,19 @@ public partial class MsmhAgnosticServer
             }
 
             // Add To Cache
-            ProxyRequestsCaches.Add(checkRequest, req, msgReqEvent);
+            if (req.ProxyName != Proxy.Name.Test && InternetState == NetworkTool.InternetState.Online)
+            {
+                prcr.ApplyChangeSNI.Apply = req.ApplyChangeSNI;
+                prcr.ApplyChangeSNI.Event_ApplyChangeSNI = event_ApplyChangeSNI;
 
+                prcr.ApplyFragment.Apply = req.ApplyFragment;
+                prcr.ApplyFragment.Event_ApplyFragment = event_ApplyFragment;
+
+                prcr.IsDestBlocked.Apply = req.IsDestBlocked;
+
+                ProxyRequestsCaches.Add(checkRequest, prcr);
+            }
+            
             return req;
         }
         catch (Exception ex)

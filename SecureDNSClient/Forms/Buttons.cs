@@ -165,7 +165,7 @@ public partial class FormMain
                 try
                 {
                     WorkingDnsList.Clear();
-                    await UpdateStatusLong();
+                    await UpdateStatusLongAsync();
                 }
                 catch (Exception) { }
             }
@@ -247,7 +247,7 @@ public partial class FormMain
     {
         if (IsExiting) return;
         if (IsInAction(true, true, false, false, false, false, false, false, false, false, true, out _)) return;
-        await CheckUpdate(true);
+        await CheckUpdateAsync(true);
     }
 
     // Secure DNS -> Connect
@@ -315,7 +315,7 @@ public partial class FormMain
         }
 
         // Update NIC Status
-        await UpdateStatusNic();
+        await UpdateStatusNicAsync();
 
         // Enable Button
         CustomButtonEnableDisableNicIPv6.Enabled = true;
@@ -343,7 +343,7 @@ public partial class FormMain
         }
 
         // Update NIC Status
-        await UpdateStatusNic();
+        await UpdateStatusNicAsync();
 
         // Enable Button
         CustomButtonEnableDisableNic.Enabled = true;
@@ -356,7 +356,7 @@ public partial class FormMain
         await SetDNS(GetNicNameSetting(CustomComboBoxNICs).NICs);
 
         // Update NIC Status
-        await UpdateStatusNic();
+        await UpdateStatusNicAsync();
     }
 
     private async void CustomButtonUnsetAllDNSs_Click(object sender, EventArgs e)
@@ -369,7 +369,7 @@ public partial class FormMain
 
         if (!IsDNSSet)
         {
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"There is nothing to unset.{NL}", Color.DodgerBlue));
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"There Is Nothing To Unset.{NL}", Color.DodgerBlue));
             return;
         }
 
@@ -377,13 +377,13 @@ public partial class FormMain
         this.InvokeIt(() => CustomButtonUnsetAllDNSs.Enabled = false);
         this.InvokeIt(() => CustomButtonUnsetAllDNSs.Text = "Unsetting...");
         await UnsetAllDNSs(true);
-        await FlushDNS(true, false, false, false, true);
+        await FlushDNSAsync(true, false, false, false, true);
         this.InvokeIt(() => CustomButtonUnsetAllDNSs.Text = "Unset All DNSs");
         this.InvokeIt(() => CustomButtonUnsetAllDNSs.Enabled = true);
         IsDNSUnsetting = false;
 
         // Update NIC Status
-        await UpdateStatusNic();
+        await UpdateStatusNicAsync();
     }
 
     // Secure DNS -> Share + DPI Bypass
@@ -431,10 +431,10 @@ public partial class FormMain
         await ApplyProxyDpiChanges();
         UpdateProxyBools = true;
 
-        await UpdateBoolProxy();
+        await UpdateBoolProxyAsync();
         UpdateApplyDpiBypassChangesButton();
 
-        await UpdateBoolProxy();
+        await UpdateBoolProxyAsync();
         IsProxySet = UpdateBoolIsProxySet(out bool isAnotherProxySet, out string currentSystemProxy);
         IsAnotherProxySet = isAnotherProxySet;
         CurrentSystemProxy = currentSystemProxy;
@@ -447,7 +447,7 @@ public partial class FormMain
         if (IsInAction(true, true, true, true, true, true, true, true, true, true, true, out _)) return;
         // Get blocked domain
         string blockedDomain = GetBlockedDomainSetting(out _);
-        await CheckDPIWorks(blockedDomain);
+        await CheckDPIWorksAsync(blockedDomain);
     }
 
     // Secure DNS -> GoodbyeDPI -> Basic
@@ -589,7 +589,7 @@ public partial class FormMain
         if (IsInAction(true, false, true, true, true, true, true, true, true, false, true, out _)) return;
         CustomButtonToolsFlushDns.Enabled = false;
         CustomButtonToolsFlushDns.Text = "Flushing...";
-        await FlushDNS(true, true, false, false, true);
+        await FlushDNSAsync(true, true, false, false, true);
         if (!IsDNSSet) IsDnsFullFlushed = true;
         CustomButtonToolsFlushDns.Text = "Flush DNS";
         CustomButtonToolsFlushDns.Enabled = true;
@@ -743,7 +743,7 @@ public partial class FormMain
             try
             {
                 // Save Settings
-                await SaveSettings();
+                await SaveSettingsAsync();
                 await Task.Delay(200);
 
                 ZipFile.CreateFromDirectory(SecureDNS.UserDataDirPath, sfd.FileName);

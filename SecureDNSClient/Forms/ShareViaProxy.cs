@@ -7,79 +7,7 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    /// <summary>
-    /// Apply Fake Proxy (ProxyRules: Fake DNS and White List)
-    /// </summary>
-    /// <param name="fakeProcess">Process</param>
-    /// <returns>Returns True if everything's ok.</returns>
-    public async Task<bool> ApplyFakeProxy(ProcessConsole processConsole)
-    {
-        bool isOk = ApplyFakeProxyOut(out AgnosticProgram.ProxyRules? rules);
-        if (!isOk) return false;
-        if (rules == null) return false;
-
-        // Add Program to Proxy
-        string rulesCommand = $"Programs ProxyRules -Mode={rules.RulesMode} -PathOrText=\"{rules.TextContent.ReplaceLineEndings("\\n")}\"";
-        Debug.WriteLine(rulesCommand);
-        return await processConsole.SendCommandAsync(rulesCommand);
-    }
-
-    public bool ApplyFakeProxyOut(out AgnosticProgram.ProxyRules? rules)
-    {
-        // Get DoH Clean Ip
-        string dohCleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text;
-        bool isValid = NetworkTool.IsIPv4Valid(dohCleanIP, out IPAddress? _);
-        if (!isValid)
-        {
-            string msg = $"Fake Proxy Clean IP Is Not Valid, Check Settings.{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            rules = null;
-            return false;
-        }
-
-        // Check IP Is Clean
-        bool isDohIpClean1 = NetworkTool.CanPing(dohCleanIP, 5000).Result;
-        bool isDohIpClean2 = NetworkTool.CanTcpConnect(dohCleanIP, 443, 5000).Result;
-        if (!isDohIpClean1 || !isDohIpClean2)
-        {
-            // CF Clean IP Is Not Valid
-            string msg = $"Fake Proxy Clean IP Is Not Clean.{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
-            rules = null;
-            return false;
-        }
-
-        // Get Fake Proxy DoH Address
-        string url = CustomTextBoxSettingFakeProxyDohAddress.Text;
-        NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out _, out int _, out string _, out bool _);
-        string host1 = "dns.cloudflare.com";
-        string host2 = "cloudflare-dns.com";
-        string host3 = "every1dns.com";
-
-        // Set ProxyRules Content
-        string rulesContent = $"{host}|{dohCleanIP};";
-        rulesContent += $"\n{dohCleanIP}|+;";
-        rulesContent += $"\n*|-;"; // Block Other Requests
-
-        if (host.Equals(host1) || host.Equals(host2) || host.Equals(host3))
-        {
-            rulesContent = $"{host1}|{dohCleanIP};";
-            rulesContent += $"\n{host2}|{dohCleanIP};";
-            rulesContent += $"\n{host3}|{dohCleanIP};";
-            rulesContent += $"\n{dohCleanIP}|+;";
-            rulesContent += $"\n*|-;"; // Block Other Requests
-        }
-
-        // ProxyRules Program
-        AgnosticProgram.ProxyRules rulesProgram = new();
-        rulesProgram.Set(AgnosticProgram.ProxyRules.Mode.Text, rulesContent);
-
-        rules = rulesProgram;
-        return true;
-    }
-
     // ========================================== Start Proxy
-
     private async Task StartProxy(bool stop = false, bool limitLog = false)
     {
         await Task.Run(async () =>
@@ -102,7 +30,7 @@ public partial class FormMain
 
                 UpdateProxyBools = false;
                 IsProxyActivating = true;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
 
                 // Start Proxy Server
                 string msgStart = $"Starting Proxy Server...{NL}";
@@ -115,7 +43,7 @@ public partial class FormMain
                 {
                     UpdateProxyBools = true;
                     IsProxyActivating = false;
-                    await UpdateStatusShortOnBoolsChanged();
+                    await UpdateStatusShortOnBoolsChangedAsync();
                     return;
                 }
 
@@ -148,7 +76,7 @@ public partial class FormMain
                 {
                     UpdateProxyBools = true;
                     IsProxyActivating = false;
-                    await UpdateStatusShortOnBoolsChanged();
+                    await UpdateStatusShortOnBoolsChangedAsync();
                     return;
                 }
 
@@ -176,7 +104,7 @@ public partial class FormMain
                     await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
                     UpdateProxyBools = true;
                     IsProxyActivating = false;
-                    await UpdateStatusShortOnBoolsChanged();
+                    await UpdateStatusShortOnBoolsChangedAsync();
                     return;
                 }
 
@@ -330,26 +258,29 @@ public partial class FormMain
                 IsProxyRunning = true;
                 UpdateProxyBools = true;
                 IsProxyActivating = false;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
 
                 // To See Status Immediately
-                await UpdateBoolProxy();
+                await UpdateBoolProxyAsync();
                 IsDPIActive = UpdateBoolIsDpiActive();
-                await UpdateStatusLong();
+                await UpdateStatusLongAsync();
 
                 // Warm Up Proxy (Sync)
                 string blockedDomain = GetBlockedDomainSetting(out string _);
                 string proxyScheme = $"socks5://{IPAddress.Loopback}:{ProxyPort}";
                 if (isIPv6SupportedByOS) proxyScheme = $"socks5://[{IPAddress.IPv6Loopback}]:{ProxyPort}";
                 if (IsDNSSet)
-                    _ = Task.Run(() => WarmUpProxy(blockedDomain, proxyScheme, 30, CancellationToken.None));
+                {
+                    _ = Task.Run(() => WarmUpProxyAsync(blockedDomain, proxyScheme, 30, CancellationToken.None));
+                    _ = Task.Run(() => WarmUpProxyAsync("www.twitch.tv", proxyScheme, 30, CancellationToken.None));
+                }
             }
             else
             {
                 // Stop Proxy
                 if (IsProxyActivating || IsProxyDeactivating) return;
                 IsProxyDeactivating = true;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
 
                 // Stop Proxy Server
                 if (ProcessManager.FindProcessByPID(PIDProxyServer))
@@ -376,7 +307,7 @@ public partial class FormMain
                     {
                         // Update Bool
                         IsProxyRunning = false;
-                        await UpdateStatusShortOnBoolsChanged();
+                        await UpdateStatusShortOnBoolsChangedAsync();
 
                         // Clear LastProxyRulesPath
                         LastProxyRulesPath = string.Empty;
@@ -398,9 +329,9 @@ public partial class FormMain
                     }
 
                     // To See Status Immediately
-                    await UpdateBoolProxy();
+                    await UpdateBoolProxyAsync();
                     IsDPIActive = UpdateBoolIsDpiActive();
-                    await UpdateStatusLong();
+                    await UpdateStatusLongAsync();
                 }
                 else
                 {
@@ -410,7 +341,7 @@ public partial class FormMain
                 }
 
                 IsProxyDeactivating = false;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
             }
         });
     }
@@ -422,14 +353,14 @@ public partial class FormMain
         if (!IsDisconnectingAll && !IsQuickConnecting)
         {
             string msg = $"Couldn't Communicate With Proxy Console.{NL}";
-            msg += $"Please Make Sure You Have .NET Desktop v6 x86 And x64 Installed On Your OS.{NL}";
+            msg += $"Please Make Sure You Have .NET Desktop v6 And ASP.NET Core v6 Installed On Your OS.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
         }
 
         await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
         UpdateProxyBools = true;
         IsProxyActivating = false;
-        await UpdateStatusShortOnBoolsChanged();
+        await UpdateStatusShortOnBoolsChangedAsync();
     }
 
     private async Task<bool> ApplyProxyDpiChanges()

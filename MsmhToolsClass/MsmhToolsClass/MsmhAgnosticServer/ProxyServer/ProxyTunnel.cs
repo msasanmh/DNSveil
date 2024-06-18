@@ -108,8 +108,8 @@ internal class ProxyTunnel
                 if (Settings_.ProxyTimeoutSec > 0 &&
                     KillOnTimeout.ElapsedMilliseconds > TimeSpan.FromSeconds(Settings_.ProxyTimeoutSec).TotalMilliseconds)
                 {
-                    string msg = $"Killed Request On Timeout({Req.TimeoutSec} Sec): {Req.AddressOrig}:{Req.Port}";
-                    Debug.WriteLine(msg);
+                    //string msg = $"Killed Request On Timeout({Req.TimeoutSec} Sec): {Req.AddressOrig}:{Req.Port}";
+                    //Debug.WriteLine(msg);
 
                     OnTunnelDisconnected?.Invoke(this, EventArgs.Empty);
                     ProxifiedTcpClient_?.Close();
@@ -296,7 +296,7 @@ internal class ProxyTunnel
             try
             {
                 List<byte> bufferList = new();
-                string statusLine = hrr.ProtocolVersion + " " + hrr.StatusCode + " " + hrr.StatusDescription + "\r\n";
+                string statusLine = hrr.ProtocolVersion + " " + hrr.StatusCodeNumber + " " + hrr.StatusDescription + "\r\n";
                 bufferList.AddRange(Encoding.UTF8.GetBytes(statusLine));
 
                 if (!string.IsNullOrEmpty(hrr.ContentType))

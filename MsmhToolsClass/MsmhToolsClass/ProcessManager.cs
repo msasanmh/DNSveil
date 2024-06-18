@@ -456,11 +456,11 @@ public static class ProcessManager
     {
         int pid = -1;
 
-        Process[] processes = Process.GetProcessesByName(processName);
-        if (processes.Any()) pid = processes[0].Id;
-
         try
         {
+            Process[] processes = Process.GetProcessesByName(processName);
+            if (processes.Any()) pid = processes[0].Id;
+
             for (int n = 0; n < processes.Length; n++)
                 processes[n].Dispose();
         }

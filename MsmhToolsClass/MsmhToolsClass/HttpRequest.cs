@@ -60,8 +60,9 @@ public class HttpRequestResponse
     public string ContentType { get; internal set; } = string.Empty;
     public long ContentLength { get; internal set; } = 0;
     public string ProtocolVersion { get; internal set; } = string.Empty;
-    public int StatusCode { get; internal set; } = (int)HttpStatusCode.NoContent;
-    public string StatusDescription { get; internal set; } = HttpStatusCode.NoContent.ToString();
+    public HttpStatusCode StatusCode { get; internal set; } = HttpStatusCode.RequestTimeout;
+    public int StatusCodeNumber { get; internal set; } = (int)HttpStatusCode.RequestTimeout;
+    public string StatusDescription { get; internal set; } = HttpStatusCode.RequestTimeout.ToString();
     public NameValueCollection Headers { get; internal set; } = new(StringComparer.InvariantCultureIgnoreCase);
     public byte[] Data { get; internal set; } = Array.Empty<byte>();
 
@@ -77,6 +78,7 @@ public class HttpRequestResponse
             result += $"{nameof(ContentLength)}: {ContentLength}\r\n";
             result += $"{nameof(ProtocolVersion)}: {ProtocolVersion}\r\n";
             result += $"{nameof(StatusCode)}: {StatusCode}\r\n";
+            result += $"{nameof(StatusCodeNumber)}: {StatusCodeNumber}\r\n";
             result += $"{nameof(StatusDescription)}: {StatusDescription}\r\n";
             if (Headers.Count > 0)
                 result += $"{nameof(Headers)}:\r\n";
@@ -273,7 +275,7 @@ public class HttpRequest
 
                         key = key.Trim();
                         val = val.Trim();
-
+                        
                         if (string.IsNullOrEmpty(key)) continue;
                         if (string.IsNullOrEmpty(val)) continue;
                         string keyEval = key.ToLower();
@@ -479,9 +481,10 @@ public class HttpRequest
 
                 hrr.IsSuccess = response.IsSuccessStatusCode;
                 hrr.ProtocolVersion = $"HTTP/{response.Version}";
-                hrr.StatusCode = (int)response.StatusCode;
+                hrr.StatusCode = response.StatusCode;
+                hrr.StatusCodeNumber = (int)response.StatusCode;
                 hrr.StatusDescription = response.StatusCode.ToString();
-
+                
                 hrr.ContentEncoding = string.Join(",", response.Content.Headers.ContentEncoding);
                 if (response.Content.Headers.ContentType != null)
                     hrr.ContentType = response.Content.Headers.ContentType.ToString();
@@ -520,12 +523,13 @@ public class HttpRequest
                 {
                     hrr.IsSuccess = false;
                     hrr.ProtocolVersion = $"HTTP/{exceptionResponse.ProtocolVersion}";
-                    hrr.StatusCode = (int)exceptionResponse.StatusCode;
+                    hrr.StatusCode = exceptionResponse.StatusCode;
+                    hrr.StatusCodeNumber = (int)exceptionResponse.StatusCode;
                     hrr.StatusDescription = exceptionResponse.StatusDescription;
                     hrr.ContentEncoding = exceptionResponse.ContentEncoding;
                     hrr.ContentType = exceptionResponse.ContentType;
                     hrr.ContentLength = exceptionResponse.ContentLength;
-
+                    
                     if (exceptionResponse.Headers != null && exceptionResponse.Headers.Count > 0)
                     {
                         for (int n = 0; n < exceptionResponse.Headers.Count; n++)
@@ -580,9 +584,43 @@ public class HttpRequest
                     catch (Exception) { }
                 }
             }
+            catch (HttpRequestException hre)
+            {
+                if (hre.StatusCode != null)
+                {
+                    hrr.StatusCode = (HttpStatusCode)hre.StatusCode;
+                    hrr.StatusCodeNumber = (int)hrr.StatusCode;
+                    hrr.StatusDescription = hrr.StatusCode.ToString();
+                }
+            }
             catch (Exception ex)
             {
-                Debug.WriteLine("HttpRequest SendAsync: " + ex.GetInnerExceptions());
+                if (hr.URI == null)
+                    Debug.WriteLine("HttpRequest SendAsync: " + ex.GetInnerExceptions());
+                else
+                {
+                    try
+                    {
+                        string host = string.Empty;
+                        for (int n = 0; n < hr.Headers.Count; n++)
+                        {
+                            string? key = hr.Headers.GetKey(n);
+                            string? val = hr.Headers.Get(n);
+
+                            if (string.IsNullOrEmpty(key)) continue;
+                            if (string.IsNullOrEmpty(val)) continue;
+
+                            if (key.ToLower().Trim().Equals("host"))
+                            {
+                                host = val;
+                                break;
+                            }
+                        }
+                        Debug.WriteLine($"HttpRequest SendAsync. URL: {hr.URI}, Host Header: {host}");
+                        Debug.WriteLine("HttpRequest SendAsync: " + ex.GetInnerExceptions());
+                    }
+                    catch (Exception) { }
+                }
                 hrr.IsSuccess = false;
             }
         });

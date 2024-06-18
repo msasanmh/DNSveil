@@ -112,7 +112,7 @@ public partial class FormMain
                     }
 
                     // Update Status Long
-                    await UpdateStatusLong();
+                    await UpdateStatusLongAsync();
 
                     // DeDup
                     SavedDnsList = SavedDnsList.Distinct().ToList();
@@ -340,7 +340,7 @@ public partial class FormMain
                     WorkingDnsList = WorkingDnsList.DistinctBy(x => x.DNS).ToList();
 
                     // Update Status Long
-                    await UpdateStatusLong();
+                    await UpdateStatusLongAsync();
                 }
 
                 return;

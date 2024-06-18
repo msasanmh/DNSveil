@@ -89,11 +89,11 @@ public partial class FormMain
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIBasicActive = true;
             IsGoodbyeDPIAdvancedActive = false;
-            if (Visible) await UpdateStatusShortOnBoolsChanged();
+            if (Visible) await UpdateStatusShortOnBoolsChangedAsync();
 
             // To See Status Immediately
             IsDPIActive = UpdateBoolIsDpiActive();
-            if (Visible) await UpdateStatusLong();
+            if (Visible) await UpdateStatusLongAsync();
         }
         else
         {
@@ -297,11 +297,11 @@ public partial class FormMain
             // Set IsGoodbyeDPIActive true
             IsGoodbyeDPIAdvancedActive = true;
             IsGoodbyeDPIBasicActive = false;
-            if (Visible) await UpdateStatusShortOnBoolsChanged();
+            if (Visible) await UpdateStatusShortOnBoolsChangedAsync();
 
             // To See Status Immediately
             IsDPIActive = UpdateBoolIsDpiActive();
-            if (Visible) await UpdateStatusLong();
+            if (Visible) await UpdateStatusLongAsync();
         }
         else
         {
@@ -357,7 +357,7 @@ public partial class FormMain
             {
                 // Set IsGoodbyeDPIBasicActive to False
                 IsGoodbyeDPIBasicActive = false;
-                if (Visible) await UpdateStatusShortOnBoolsChanged();
+                if (Visible) await UpdateStatusShortOnBoolsChangedAsync();
 
                 string msgDC = "GoodbyeDPI (Basic) deactivated." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
@@ -366,7 +366,7 @@ public partial class FormMain
 
                 // To See Status Immediately
                 IsDPIActive = UpdateBoolIsDpiActive();
-                if (Visible) await UpdateStatusLong();
+                if (Visible) await UpdateStatusLongAsync();
             }
         }
 
@@ -382,7 +382,7 @@ public partial class FormMain
             {
                 // Set IsGoodbyeDPIAdvancedActive to False
                 IsGoodbyeDPIAdvancedActive = false;
-                if (Visible) await UpdateStatusShortOnBoolsChanged();
+                if (Visible) await UpdateStatusShortOnBoolsChangedAsync();
 
                 string msgDC = "GoodbyeDPI (Advanced) deactivated." + NL;
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDC, Color.LightGray));
@@ -391,7 +391,7 @@ public partial class FormMain
 
                 // To See Status Immediately
                 IsDPIActive = UpdateBoolIsDpiActive();
-                if (Visible) await UpdateStatusLong();
+                if (Visible) await UpdateStatusLongAsync();
             }
         }
 

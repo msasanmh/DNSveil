@@ -113,13 +113,13 @@ public partial class FormMain
         }
 
         // To See Status Immediately
-        await UpdateStatusLong();
+        await UpdateStatusLongAsync();
     }
 
     private async Task SetProxyInternalAsync()
     {
         // Update Proxy Bools
-        await UpdateBoolProxy();
+        await UpdateBoolProxyAsync();
         
         // Get IP:Port
         string ip = IPAddress.Loopback.ToString();

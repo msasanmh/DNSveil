@@ -5,35 +5,65 @@ namespace MsmhToolsClass.MsmhAgnosticServer;
 
 public class ProxyRequestsCache
 {
-    private readonly ConcurrentDictionary<string, (DateTime dt, ProxyRequest pr, string eventMsg)> Caches = new();
+    public class OrigValues
+    {
+        public bool ApplyChangeSNI { get; set; }
+        public bool ApplyFragment { get; set; }
+        public bool IsDestBlocked { get; set; }
+    }
 
-    public (ProxyRequest pReq, string eventMsg)? Get(string key, ProxyRequest req)
+    public class ApplyChangeSNI
+    {
+        public bool Apply { get; set; }
+        public string Event_ApplyChangeSNI { get; set; } = string.Empty;
+    }
+
+    public class ApplyFragment
+    {
+        public bool Apply { get; set; }
+        public string Event_ApplyFragment { get; set; } = string.Empty;
+    }
+
+    public class IsDestBlocked
+    {
+        public bool Apply { get; set; }
+        public string Event_IsDestBlocked { get; set; } = string.Empty;
+    }
+
+    public class ProxyRequestsCacheResult
+    {
+        public OrigValues OrigValues = new();
+        public ApplyChangeSNI ApplyChangeSNI = new();
+        public ApplyFragment ApplyFragment = new();
+        public IsDestBlocked IsDestBlocked = new();
+    }
+
+    private readonly ConcurrentDictionary<string, (DateTime dt, ProxyRequestsCacheResult prcr)> Caches = new();
+
+    public ProxyRequestsCacheResult? Get(string key, ProxyRequest req)
     {
         try
         {
-            bool isCached = Caches.TryGetValue(key, out (DateTime dt, ProxyRequest pr, string eventMsg) cachedReq);
+            bool isCached = Caches.TryGetValue(key, out (DateTime dt, ProxyRequestsCacheResult prcr) cachedReq);
             if (isCached)
             {
                 DateTime now = DateTime.UtcNow;
                 TimeSpan ts = now - cachedReq.dt;
-                if (ts >= TimeSpan.FromMinutes(10))
+                if (ts >= TimeSpan.FromMinutes(30))
                 {
                     Caches.TryRemove(key, out _);
                 }
                 else
                 {
-                    if (req.ProxyName != Proxy.Name.Test)
+                    if (req.ApplyChangeSNI == cachedReq.prcr.OrigValues.ApplyChangeSNI &&
+                        req.ApplyFragment == cachedReq.prcr.OrigValues.ApplyFragment &&
+                        req.IsDestBlocked == cachedReq.prcr.OrigValues.IsDestBlocked)
                     {
-                        req.TimeoutSec = cachedReq.pr.TimeoutSec;
-                        req.ApplyFragment = cachedReq.pr.ApplyFragment;
-                        req.ApplyChangeSNI = cachedReq.pr.ApplyChangeSNI;
-                        req.AddressSNI = cachedReq.pr.AddressSNI;
-                        req.Address = cachedReq.pr.Address;
-                        req.IsDestBlocked = cachedReq.pr.IsDestBlocked;
-                        req.ApplyUpStreamProxy = cachedReq.pr.ApplyUpStreamProxy;
-                        req.AddressType = cachedReq.pr.AddressType;
-
-                        return (req, cachedReq.eventMsg);
+                        return cachedReq.prcr;
+                    }
+                    else
+                    {
+                        Caches.TryRemove(key, out _);
                     }
                 }
             }
@@ -46,12 +76,11 @@ public class ProxyRequestsCache
         return null;
     }
 
-    public void Add(string key, ProxyRequest req, string msgReqEvent)
+    public void Add(string key, ProxyRequestsCacheResult prcr)
     {
         try
         {
-            if (req.ProxyName != Proxy.Name.Test)
-                Caches.TryAdd(key, (DateTime.UtcNow, req, msgReqEvent));
+            Caches.TryAdd(key, (DateTime.UtcNow, prcr));
         }
         catch (Exception ex)
         {

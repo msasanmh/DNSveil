@@ -113,7 +113,7 @@ public partial class FormMain
             catch (Exception) { }
 
             // Check
-            spaceV = 10;
+            spaceV = 8;
             CustomRadioButtonBuiltIn.Location = new Point(20, 20);
 
             CustomRadioButtonCustom.Left = CustomRadioButtonBuiltIn.Left;
@@ -134,7 +134,7 @@ public partial class FormMain
             try
             {
                 int sd = Math.Max(CustomLabelCustomServersInfo.Right, CustomCheckBoxInsecure.Right);
-                SplitContainerCheckTop.Panel1MinSize = sd + spaceHH + spaceH3;
+                SplitContainerCheckTop.Panel1MinSize = sd + spaceHH;
                 SplitContainerCheckTop.SplitterDistance = SplitContainerCheckTop.Panel1MinSize;
             }
             catch (Exception) { }
@@ -906,10 +906,10 @@ public partial class FormMain
             CustomLabelAboutVersion.Left = CustomLabelAboutThis.Right;
             CustomLabelAboutVersion.Top = CustomLabelAboutThis.Bottom - 10;
 
-            CustomLabelAboutThis2.Left = CustomLabelAboutThis.Left + 25;
-            CustomLabelAboutThis2.Top = CustomLabelAboutThis.Bottom + 5;
+            CustomLabelAboutThis2.Left = CustomLabelAboutThis.Left;
+            CustomLabelAboutThis2.Top = CustomLabelAboutVersion.Bottom + 5;
 
-            CustomLabelAboutUsing.Left = CustomLabelAboutThis2.Left;
+            CustomLabelAboutUsing.Left = CustomLabelAboutThis.Left + 40;
             CustomLabelAboutUsing.Top = CustomLabelAboutThis2.Bottom + 40;
 
             LinkLabelDNSLookup.Left = CustomLabelAboutUsing.Left + 15;

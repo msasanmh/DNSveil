@@ -22,7 +22,7 @@ public partial class FormMain
 
         // Check if proxy works
         string sampleRequest = "https://dns.google/dns-query?dns=AAABAAABAAAAAAABCGdvb2dsZQNjb20AAAEAAQ";
-        string headers = await NetworkTool.GetHeaders(sampleRequest, null, 5000, false, proxyScheme);
+        string headers = await NetworkTool.GetHeadersAsync(sampleRequest, null, 5000, false, proxyScheme);
         string[] header = headers.Split(NL, StringSplitOptions.RemoveEmptyEntries);
         if (header.Length > 0) headers = header[0];
         Color statusColor = headers.Contains("OK") ? Color.MediumSeaGreen : Color.IndianRed;
@@ -191,7 +191,7 @@ public partial class FormMain
                     List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
                     foreach (int pid in pids) if (pid != PIDDnsServer) await ProcessManager.KillProcessByPidAsync(pid);
 
-                    await UpdateBoolDnsOnce(timeoutMS, blockedDomainNoWww);
+                    await UpdateBoolDnsOnceAsync(timeoutMS, blockedDomainNoWww);
                     await Task.Delay(25);
                     timeoutMS += 500;
                     if (timeoutMS > 10000) timeoutMS = 10000;

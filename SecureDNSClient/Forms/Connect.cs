@@ -19,7 +19,7 @@ public partial class FormMain
         }
 
         // Update Bools
-        await UpdateBools();
+        await UpdateBoolsAsync();
 
         bool isConnectSuccess = false;
 
@@ -34,7 +34,7 @@ public partial class FormMain
                 if (IsConnecting) return false;
                 IsConnecting = true;
                 this.InvokeIt(() => CustomButtonConnect.Enabled = true);
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
 
                 // Update NICs
                 await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
@@ -128,7 +128,7 @@ public partial class FormMain
                 }
 
                 IsConnecting = false;
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
 
                 string msg = $"{NL}Connect Task: {isConnectSuccess}{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
@@ -146,7 +146,7 @@ public partial class FormMain
                 if (IsDisconnecting) return false;
                 IsDisconnecting = true;
                 this.InvokeIt(() => CustomButtonConnect.Enabled = true);
-                await UpdateStatusShortOnBoolsChanged();
+                await UpdateStatusShortOnBoolsChangedAsync();
 
                 // Write Disconnecting message to log
                 string msgDisconnecting = $"{NL}Disconnecting...{NL}";
@@ -159,7 +159,7 @@ public partial class FormMain
                     {
                         await disconnectAsync();
                         await Task.Delay(200);
-                        await UpdateBools();
+                        await UpdateBoolsAsync();
                         if (!IsConnecting && !IsConnected) break;
                     }
                 });
@@ -180,8 +180,8 @@ public partial class FormMain
                 IsDoHConnected = LocalDohLatency != -1;
                 
                 IsDisconnecting = false;
-                await UpdateStatusShortOnBoolsChanged();
-                await UpdateStatusLong();
+                await UpdateStatusShortOnBoolsChangedAsync();
+                await UpdateStatusLongAsync();
 
                 // Write Disconnected message to log
                 string msgDisconnected = $"Disconnected.{NL}";
@@ -321,11 +321,11 @@ public partial class FormMain
         void internalConnect()
         {
             // To see online status immediately
-            Task.Run(async () => await UpdateBoolDnsOnce(GetCheckTimeoutSetting() * 2, GetBlockedDomainSetting(out string _)));
-            Task.Run(async () => await UpdateBoolDohOnce(GetCheckTimeoutSetting() * 2, GetBlockedDomainSetting(out string _)));
+            Task.Run(async () => await UpdateBoolDnsOnceAsync(GetCheckTimeoutSetting() * 2, GetBlockedDomainSetting(out string _)));
+            Task.Run(async () => await UpdateBoolDohOnceAsync(GetCheckTimeoutSetting() * 2, GetBlockedDomainSetting(out string _)));
 
             // Update Groupbox Status
-            Task.Run(() => UpdateStatusLong());
+            Task.Run(() => UpdateStatusLongAsync());
         }
 
         void connectMessage(bool writeToLog = true)

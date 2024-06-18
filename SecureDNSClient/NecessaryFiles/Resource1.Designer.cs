@@ -135,8 +135,8 @@ namespace SecureDNSClient.NecessaryFiles {
         ///dnslookup-X86 1.10.1
         ///sdclookup-X64 1.0.7
         ///sdclookup-X86 1.0.7
-        ///sdcagnosticserver-X64 3.0.7
-        ///sdcagnosticserver-X86 3.0.7
+        ///sdcagnosticserver-X64 3.0.9
+        ///sdcagnosticserver-X86 3.0.9
         ///goodbyedpi-X64 0.2.2
         ///goodbyedpi-X86 0.2.2.
         /// </summary>

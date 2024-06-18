@@ -1,4 +1,5 @@
 ﻿using MsmhToolsClass;
+using System.Diagnostics;
 
 namespace SecureDNSClient;
 
@@ -202,6 +203,7 @@ public partial class FormMain
 
             // Wait Until DNS Gets Online
             int timeoutMS = 1000;
+            Stopwatch sw = Stopwatch.StartNew();
             Task wait3 = Task.Run(async () =>
             {
                 while (!IsDNSConnected)
@@ -214,20 +216,21 @@ public partial class FormMain
                     List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
                     foreach (int pid in pids) if (pid != PIDDnsServer) await ProcessManager.KillProcessByPidAsync(pid);
 
-                    await UpdateBoolDnsOnce(timeoutMS, blockedDomainNoWww);
+                    await UpdateBoolDnsOnceAsync(timeoutMS, blockedDomainNoWww);
                     await Task.Delay(25);
                     timeoutMS += 500;
                     if (timeoutMS > 10000) timeoutMS = 10000;
                 }
             });
             try { await wait3.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
+            sw.Stop();
 
             if (IsDNSConnected)
             {
                 if (numberOfUsingServers > 1)
-                    msgSuccess = "Local DNS Server Started Using " + numberOfUsingServers + " Fastest Servers In Parallel." + NL;
+                    msgSuccess = $"Local DNS Server Started Using {numberOfUsingServers} Fastest Servers In Parallel. Took: {Math.Round(sw.Elapsed.TotalSeconds, 2)} Sec.{NL}";
                 else
-                    msgSuccess = "Local DNS Server Started Using " + numberOfUsingServers + " Server." + NL;
+                    msgSuccess = $"Local DNS Server Started Using {numberOfUsingServers} Server. Took: {Math.Round(sw.Elapsed.TotalSeconds, 2)} Sec.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgSuccess, Color.MediumSeaGreen));
                 await LogToDebugFileAsync(msgSuccess);
 

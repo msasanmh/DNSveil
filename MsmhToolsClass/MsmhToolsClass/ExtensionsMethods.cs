@@ -59,6 +59,48 @@ public static class ExtensionsMethods
     }
     //-----------------------------------------------------------------------------------
     /// <summary>
+    /// To List
+    /// </summary>
+    public static List<Tuple<string, string>> ToList(this NameValueCollection nvc)
+    {
+        List<Tuple<string, string>> result = new();
+        
+        try
+        {
+            for (int n = 0; n < nvc.Count; n++)
+            {
+                string? key = nvc.GetKey(n);
+                string? val = nvc.Get(n);
+                if (string.IsNullOrEmpty(key)) continue;
+                if (string.IsNullOrEmpty(val)) continue;
+                result.Add(new Tuple<string, string>(key, val));
+            }
+        }
+        catch (Exception) { }
+
+        return result;
+    }
+    //-----------------------------------------------------------------------------------
+    /// <summary>
+    /// Get Value By Key
+    /// </summary>
+    /// <returns>Returns string.Empty If Key Not Exist Or Value Is Empty.</returns>
+    public static string GetValueByKey(this NameValueCollection nvc, string? key)
+    {
+        string result = string.Empty;
+        if (string.IsNullOrWhiteSpace(key)) return result;
+        
+        try
+        {
+            string? value = nvc[key];
+            result = value ?? string.Empty;
+        }
+        catch (Exception) { }
+
+        return result;
+    }
+    //-----------------------------------------------------------------------------------
+    /// <summary>
     /// If Key Exist Adds The Value (Comma-Separated)
     /// </summary>
     public static void AddAndUpdate(this NameValueCollection nvc, string? key, string? value)

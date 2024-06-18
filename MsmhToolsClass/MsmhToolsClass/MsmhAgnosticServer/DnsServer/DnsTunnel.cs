@@ -203,6 +203,8 @@ public class DnsTunnel
 
             if (answers.Count != 0)
             {
+                // Show Only 5 Records
+                if (answers.Count > 5) answers = answers.Take(5).ToList();
                 msgReqEvent += answers.ToString(", ");
                 onRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
             }
