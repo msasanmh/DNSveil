@@ -36,6 +36,7 @@ Then install [ASP.NET Core Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-
 ### Notes
 * SDC is not a VPN and it does not change your IP address, so your IP address is still visible to the websites you visit.
 * SDC is open source and super clean. If your Antivirus raise an alert it's False-Positive, any programmer can read the source and confirm it. some antivirus apps raise alert as PUA (Potentially Unwanted Application) for WinDivert which is used by GoodbyeDPI. If your antivirus detects WinDivert as a threat, add it to your exclusion list to ensure SDC functions as expected.
+* After changing `Enable SSL Decryption` you need to restart your browser.
 
 ---
 
