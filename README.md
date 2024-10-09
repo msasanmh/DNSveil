@@ -88,52 +88,6 @@ Then install [ASP.NET Core Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-
 
 ---
 
-### DNS Rules
-* Syntax (wildcard is supported):
-    - `Domain` `|` `Rules` `;`
-* Rules:
-    - Fake DNS (forward a domain to your desired IP address):\
-    `example.com|127.0.0.1;`
-    - Use a custom DNS for a domain:\
-    `example.com|dns:https://max.rethinkdns.com/dns-query;`
-    - Use a custom and blocked DNS by an upstream proxy:\
-    `example.com|dns:https://max.rethinkdns.com/dns-query;dnsproxy:socks5://127.0.0.1:1080;`
-    - DNS Domain (Get IP for a domain and use it for another domain):\
-    `youtube.com|dnsdomain:google.com;`
-    - Block a domain and all it's sub-domains:\
-    `example.com|-;`\
-    `*.example.com|-;`
-<br><br>
-* Example of DNS Rules file:
-```
-// Variables
-SmartDns1 = https://one.YourSmartDnsServer.net/dns-query;
-SmartDns2 = https://two.YourSmartDnsServer.net/dns-query;
-SmartDns3 = https://three.YourSmartDnsServer.net/dns-query;
-
-// YouTube
-youtube.com|dnsdomain:google.com;
-ytimg.com|dnsdomain:google.com;
-*.ytimg.com|dnsdomain:google.com;
-ggpht.com|dnsdomain:google.com;
-*.ggpht.com|dnsdomain:*.googleusercontent.com;
-*.googleapis|dnsdomain:google.com;
-*.googlevideo.com|dnsdomain:*.c.docs.google.com;
-
-// Use Smart DNS For These Domains
-developers.google.com|dns:SmartDns1,SmartDns2,SmartDns3;
-*.googleusercontent.com|dns:SmartDns1,SmartDns2,SmartDns3;
-developer.android.com|dns:SmartDns1,SmartDns2,SmartDns3;
-gemini.google.com|dns:SmartDns1,SmartDns2,SmartDns3;
-*.openai.com|dns:SmartDns1;
-claude.ai|dns:SmartDns1,SmartDns2,SmartDns3;
-*.claude.ai|dns:SmartDns1,SmartDns2,SmartDns3;
-spotify.com|dns:SmartDns1,SmartDns2,SmartDns3;
-*.spotify.com|dns:SmartDns1,SmartDns2,SmartDns3;
-```
-
----
-
 ### Proxy Server
 * Proxy server is use to bypass SNI/DNS based blocked websites.
 * How to use:
@@ -147,7 +101,7 @@ spotify.com|dns:SmartDns1,SmartDns2,SmartDns3;
 
 ---
 
-### Proxy Rules
+### SDC Text Based Rules
 * Syntax (wildcard is supported):
     - `Domain` `|` `Rules` `;`
 * Rules:
