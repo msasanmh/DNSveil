@@ -127,7 +127,7 @@ Then install [ASP.NET Core Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-
     `example.com|-;`\
     `*.example.com|-;`
 <br><br>
-* Example of Proxy Rules file:
+* Example of Rules file:
 ```
 // Variables
 SmartDns1 = https://one.YourSmartDnsServer.net/dns-query;
