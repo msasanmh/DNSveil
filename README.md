@@ -104,6 +104,9 @@ Then install [ASP.NET Core Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-
 ### SDC Text Based Rules
 * Syntax (wildcard is supported):
     - `Domain` `|` `Rules` `;`
+    - `CIDR` `|` `Rules` `;`
+    - `IPv4` `|` `Rules` `;`
+    - `IPv6` `|` `Rules` `;`
 * Rules:
     - Fake DNS (forward a domain to your desired IP address):\
     `example.com|127.0.0.1;`
