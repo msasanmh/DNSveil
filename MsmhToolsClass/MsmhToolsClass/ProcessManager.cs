@@ -15,10 +15,10 @@ public static class ProcessManager
     /// <param name="process">Process</param>
     /// <param name="delay">Delay to calculate usage (ms)</param>
     /// <returns>Returns -1 if fail</returns>
-    public static async Task<float> GetCpuUsage(Process process, int delay)
+    public static async Task<float> GetCpuUsageAsync(Process process, int delay)
     {
         string processName = process.ProcessName;
-        return await GetCpuUsage(processName, delay);
+        return await GetCpuUsageAsync(processName, delay);
     }
 
     /// <summary>
@@ -27,12 +27,12 @@ public static class ProcessManager
     /// <param name="pid">PID</param>
     /// <param name="delay">Delay to calculate usage (ms)</param>
     /// <returns>Returns -1 if fail</returns>
-    public static async Task<float> GetCpuUsage(int pid, int delay)
+    public static async Task<float> GetCpuUsageAsync(int pid, int delay)
     {
         if (pid < 0) return -1;
         string processName = GetProcessNameByPID(pid);
         if (!string.IsNullOrEmpty(processName))
-            return await GetCpuUsage(processName, delay);
+            return await GetCpuUsageAsync(processName, delay);
         return -1;
     }
 
@@ -42,7 +42,7 @@ public static class ProcessManager
     /// <param name="processName">Process Name</param>
     /// <param name="delay">Delay to calculate usage (ms)</param>
     /// <returns>Returns -1 if fail</returns>
-    public static async Task<float> GetCpuUsage(string processName, int delay)
+    public static async Task<float> GetCpuUsageAsync(string processName, int delay)
     {
         // To Get CPU Total Usage:
         // new PerformanceCounter("Processor", "% Processor Time", "_Total");
@@ -66,7 +66,7 @@ public static class ProcessManager
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Get CPU Usage: {ex.Message}");
+                Debug.WriteLine($"Get CPU Usage Async: {ex.Message}");
             }
         });
 
@@ -159,8 +159,12 @@ public static class ProcessManager
 
             if (environmentVariables != null)
             {
-                foreach (KeyValuePair<string, string> kvp in environmentVariables)
-                    process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+                try
+                {
+                    foreach (KeyValuePair<string, string> kvp in environmentVariables)
+                        process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+                }
+                catch (Exception) { }
             }
 
             if (args != null)
@@ -618,14 +622,23 @@ public static class ProcessManager
     public static string GetArguments(this Process process)
     {
         string result = string.Empty;
-        if (!OperatingSystem.IsWindows()) return result;
-        if (typeof(ManagementObjectSearcher) == null) return result;
-        if (typeof(ManagementObjectCollection) == null) return result;
-        if (typeof(ManagementBaseObject) == null) return result;
 
-        using ManagementObjectSearcher searcher = new("SELECT CommandLine FROM Win32_Process WHERE ProcessId = " + process.Id);
-        using ManagementObjectCollection objects = searcher.Get();
-        result = objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString() ?? string.Empty;
+        try
+        {
+            if (!OperatingSystem.IsWindows()) return result;
+            if (typeof(ManagementObjectSearcher) == null) return result;
+            if (typeof(ManagementObjectCollection) == null) return result;
+            if (typeof(ManagementBaseObject) == null) return result;
+
+            using ManagementObjectSearcher searcher = new("SELECT CommandLine FROM Win32_Process WHERE ProcessId = " + process.Id);
+            using ManagementObjectCollection objects = searcher.Get();
+            result = objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString() ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ProcessManager GetArguments: " + ex.Message);
+        }
+
         return result;
     }
     //-----------------------------------------------------------------------------------

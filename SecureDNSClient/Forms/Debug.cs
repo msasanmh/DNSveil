@@ -10,7 +10,8 @@ public partial class FormMain
         string? msg = e.Data;
         if (msg != null)
         {
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.DarkGray));
+            if (!msg.StartsWith("Confirmed:"))
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.DarkGray));
             await LogToDebugFileAsync(msg);
         }
     }
@@ -22,7 +23,8 @@ public partial class FormMain
         {
             if (!msg.StartsWith("details"))
             {
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.DarkGray));
+                if (!msg.StartsWith("Confirmed:"))
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, Color.DarkGray));
                 await LogToDebugFileAsync(msg);
             }
         }

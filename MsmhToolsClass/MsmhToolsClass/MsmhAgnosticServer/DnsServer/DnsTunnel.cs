@@ -5,7 +5,7 @@ namespace MsmhToolsClass.MsmhAgnosticServer;
 
 public class DnsTunnel
 {
-    public static async Task Process(AgnosticResult aResult, AgnosticProgram.DnsRules dnsRulesProgram, AgnosticProgram.DnsLimit dnsLimitProgram, DnsCache dnsCaches, AgnosticSettings settings, EventHandler<EventArgs>? onRequestReceived)
+    public static async Task Process(AgnosticResult aResult, AgnosticProgram.Rules rulesProgram, AgnosticProgram.DnsLimit dnsLimitProgram, DnsCache dnsCaches, AgnosticSettings settings, EventHandler<EventArgs>? onRequestReceived)
     {
         DnsEnums.DnsProtocol dnsProtocol = aResult.Protocol switch
         {
@@ -85,17 +85,17 @@ public class DnsTunnel
             if (!usedCache)
             {
                 // Apply DnsRules Program
-                AgnosticProgram.DnsRules.DnsRulesResult drr = new();
-                if (dnsRulesProgram.RulesMode != AgnosticProgram.DnsRules.Mode.Disable)
+                AgnosticProgram.Rules.RulesResult rr = new();
+                if (rulesProgram.RulesMode != AgnosticProgram.Rules.Mode.Disable)
                 {
-                    drr = await dnsRulesProgram.GetAsync(aResult.Local_EndPoint.Address.ToString(), addressQ, settings).ConfigureAwait(false);
+                    rr = await rulesProgram.GetAsync(aResult.Local_EndPoint.Address.ToString(), addressQ, 0, settings).ConfigureAwait(false);
                 }
                 
                 bool usedFakeOrCustom = false;
-                if (drr.IsMatch)
+                if (rr.IsMatch)
                 {
                     // Black List
-                    if (drr.IsBlackList)
+                    if (rr.IsBlackList)
                     {
                         await dnsRequest.SendFailedResponseAsync().ConfigureAwait(false);
                         usedFakeOrCustom = true;
@@ -106,7 +106,7 @@ public class DnsTunnel
                     }
 
                     // If Custom Dns Couldn't Get An IP
-                    if (string.IsNullOrEmpty(drr.Dns))
+                    if (string.IsNullOrEmpty(rr.Dns))
                     {
                         await dnsRequest.SendFailedResponseAsync().ConfigureAwait(false);
                         usedFakeOrCustom = true;
@@ -117,11 +117,11 @@ public class DnsTunnel
                     }
 
                     // Fake DNS / Dns Domain / Custom Dns Or Smart DNS
-                    bool isDnsIp = NetworkTool.IsIp(drr.Dns, out IPAddress? dnsIp);
+                    bool isDnsIp = NetworkTool.IsIP(rr.Dns, out IPAddress? dnsIp);
                     if (isDnsIp && dnsIp != null)
                     {
-                        bool isDnsIpv6 = NetworkTool.IsIPv6(dnsIp);
-                        if (isDnsIpv6)
+                        bool isDnsIPv6 = NetworkTool.IsIPv6(dnsIp);
+                        if (isDnsIPv6)
                         {
                             // IPv6
                             if (typeQ == DnsEnums.RRType.AAAA)
@@ -136,7 +136,7 @@ public class DnsTunnel
                                     await dnsRequest.SendToAsync(aBuffer).ConfigureAwait(false);
                                     usedFakeOrCustom = true;
                                     bool cacheSuccess = dnsCaches.TryAdd(dmQ, dmR);
-                                    Debug.WriteLine("ADDED TO CACHE 1: " + cacheSuccess);
+                                    Debug.WriteLine("Custom DNS IPv6 ADDED TO CACHE: " + cacheSuccess);
                                 }
                             }
                         }
@@ -155,7 +155,7 @@ public class DnsTunnel
                                     await dnsRequest.SendToAsync(aBuffer).ConfigureAwait(false);
                                     usedFakeOrCustom = true;
                                     bool cacheSuccess = dnsCaches.TryAdd(dmQ, dmR);
-                                    Debug.WriteLine("ADDED TO CACHE 2: " + cacheSuccess);
+                                    Debug.WriteLine("Custom DNS IPv4 ADDED TO CACHE: " + cacheSuccess);
                                 }
                             }
                         }
@@ -168,9 +168,63 @@ public class DnsTunnel
                     dmR = DnsMessage.Read(response, dnsRequest.Protocol);
                     if (dmR.IsSuccess)
                     {
-                        await dnsRequest.SendToAsync(response).ConfigureAwait(false);
-                        bool cacheSuccess = dnsCaches.TryAdd(dmQ, dmR);
-                        Debug.WriteLine("ADDED TO CACHE 3: " + cacheSuccess);
+                        bool wasCfIP = false;
+                        if (!string.IsNullOrWhiteSpace(settings.CloudflareCleanIP))
+                        {
+                            if (NetworkTool.IsIP(settings.CloudflareCleanIP, out IPAddress? cfIP) && cfIP != null)
+                            {
+                                if (IsCfIP(dmR))
+                                {
+                                    // Return CF IP
+                                    bool isCfIPv6 = NetworkTool.IsIPv6(cfIP);
+                                    if (isCfIPv6)
+                                    {
+                                        // IPv6
+                                        if (typeQ == DnsEnums.RRType.AAAA)
+                                        {
+                                            dmR = DnsMessage.CreateResponse(dmQ, 1, 0, 0);
+                                            dmR.Answers.AnswerRecords.Clear();
+                                            dmR.Answers.AnswerRecords.Add(new AaaaRecord(addressQ, 60, cfIP));
+
+                                            bool isTryWriteSuccess = DnsMessage.TryWrite(dmR, out byte[] aBuffer);
+                                            if (isTryWriteSuccess)
+                                            {
+                                                await dnsRequest.SendToAsync(aBuffer).ConfigureAwait(false);
+                                                wasCfIP = true;
+                                                bool cacheSuccess = dnsCaches.TryAdd(dmQ, dmR);
+                                                Debug.WriteLine("CF IPv6 ADDED TO CACHE: " + cacheSuccess);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // IPv4
+                                        if (typeQ == DnsEnums.RRType.A)
+                                        {
+                                            dmR = DnsMessage.CreateResponse(dmQ, 1, 0, 0);
+                                            dmR.Answers.AnswerRecords.Clear();
+                                            dmR.Answers.AnswerRecords.Add(new ARecord(addressQ, 60, cfIP));
+
+                                            bool isTryWriteSuccess = DnsMessage.TryWrite(dmR, out byte[] aBuffer);
+                                            if (isTryWriteSuccess)
+                                            {
+                                                await dnsRequest.SendToAsync(aBuffer).ConfigureAwait(false);
+                                                wasCfIP = true;
+                                                bool cacheSuccess = dnsCaches.TryAdd(dmQ, dmR);
+                                                Debug.WriteLine("CF IPv4 ADDED TO CACHE: " + cacheSuccess);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!wasCfIP)
+                        {
+                            await dnsRequest.SendToAsync(response).ConfigureAwait(false);
+                            bool cacheSuccess = dnsCaches.TryAdd(dmQ, dmR);
+                            Debug.WriteLine("ADDED TO CACHE: " + cacheSuccess);
+                        }
                     }
                     else
                     {
@@ -212,4 +266,37 @@ public class DnsTunnel
             //Debug.WriteLine(dmR.ToString());
         }
     }
+
+    private static bool IsCfIP(DnsMessage dmR)
+    {
+        bool result = false;
+
+        try
+        {
+            for (int n = 0; n < dmR.Answers.AnswerRecords.Count; n++)
+            {
+                IResourceRecord rr = dmR.Answers.AnswerRecords[n];
+                if (rr is ARecord aRecord)
+                {
+                    if (CommonTools.IsCfIP(aRecord.IP))
+                    {
+                        result = true;
+                        break;
+                    }
+                }
+                else if (rr is AaaaRecord aaaaRecord)
+                {
+                    if (CommonTools.IsCfIP(aaaaRecord.IP))
+                    {
+                        result = true;
+                        break;
+                    }
+                }
+            }
+        }
+        catch (Exception) { }
+
+        return result;
+    }
+
 }

@@ -66,8 +66,7 @@ public static partial class Program
                 {
                     string prefix = "help program";
                     if (input.ToLower().Equals($"{prefix} {Key.Programs.Fragment.Name.ToLower()}")) await Help.GetHelpFragmentAsync();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.DnsRules.Name.ToLower()}")) await Help.GetHelpDnsRulesAsync();
-                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.ProxyRules.Name.ToLower()}")) await Help.GetHelpProxyRulesAsync();
+                    else if (input.ToLower().Equals($"{prefix} {Key.Programs.Rules.Name.ToLower()}")) await Help.GetHelpRulesAsync();
                     else if (input.ToLower().Equals($"{prefix} {Key.Programs.DnsLimit.Name.ToLower()}")) await Help.GetHelpDnsLimitAsync();
                     else await Help.GetHelpProgramsAsync();
                 }
@@ -316,14 +315,14 @@ public static partial class Program
                         while (true)
                         {
                             string cfCleanIp = string.Empty;
-                            object value = await ConsoleTools.ReadValueAsync("Enter Cloudflare Clean IPv4 (Default: Empty)", cfCleanIp, typeof(string));
+                            object value = await ConsoleTools.ReadValueAsync("Enter Cloudflare Clean IPv4 Or IPv6 (Default: Empty)", cfCleanIp, typeof(string));
                             cfCleanIp = value.ToString() ?? string.Empty;
                             cfCleanIp = cfCleanIp.Trim();
 
                             if (!string.IsNullOrEmpty(cfCleanIp))
                             {
-                                bool isIpv4Valid = NetworkTool.IsIPv4Valid(cfCleanIp, out _);
-                                if (isIpv4Valid) cloudflareCleanIP = cfCleanIp;
+                                bool isIp = NetworkTool.IsIP(cfCleanIp, out _);
+                                if (isIp) cloudflareCleanIP = cfCleanIp;
                             }
 
                             if (!string.IsNullOrEmpty(cloudflareCleanIP))
@@ -333,7 +332,7 @@ public static partial class Program
                             break;
                         }
 
-                        // Bootstrap Ip
+                        // Bootstrap IP
                         while (true)
                         {
                             string getBootstrapIp = string.Empty;
@@ -744,8 +743,7 @@ public static partial class Program
                 {
                     string msg = "Available Programs:\n\n";
                     msg += $"{Key.Programs.Fragment.Name}\n";
-                    msg += $"{Key.Programs.DnsRules.Name}\n";
-                    msg += $"{Key.Programs.ProxyRules.Name}\n";
+                    msg += $"{Key.Programs.Rules.Name}\n";
                     msg += $"{Key.Programs.DnsLimit.Name}\n";
 
                     // Interactive Mode
@@ -907,29 +905,29 @@ public static partial class Program
                                 await ShowFragmentMsgAsync(FragmentStaticProgram);
                             }
 
-                            // Dns Rules
-                            else if (programName.ToLower().Equals(Key.Programs.DnsRules.Name.ToLower()))
+                            // Rules
+                            else if (programName.ToLower().Equals(Key.Programs.Rules.Name.ToLower()))
                             {
-                                string msgAm = $"Available {Key.Programs.DnsRules.Name} Modes:\n\n";
-                                msgAm += $"{Key.Programs.DnsRules.Mode.File}\n";
-                                msgAm += $"{Key.Programs.DnsRules.Mode.Text}\n";
-                                msgAm += $"{Key.Programs.DnsRules.Mode.Disable}\n";
+                                string msgAm = $"Available {Key.Programs.Rules.Name} Modes:\n\n";
+                                msgAm += $"{Key.Programs.Rules.Mode.File}\n";
+                                msgAm += $"{Key.Programs.Rules.Mode.Text}\n";
+                                msgAm += $"{Key.Programs.Rules.Mode.Disable}\n";
 
                                 await WriteToStdoutAsync(msgAm, ConsoleColor.Cyan);
 
-                                string modeStr = Key.Programs.DnsRules.Mode.Disable;
-                                AgnosticProgram.DnsRules.Mode mode = AgnosticProgram.DnsRules.Mode.Disable;
+                                string modeStr = Key.Programs.Rules.Mode.Disable;
+                                AgnosticProgram.Rules.Mode mode = AgnosticProgram.Rules.Mode.Disable;
                                 string msgRV = $"Enter One Of Modes (Default: {mode}):";
                                 while (true)
                                 {
                                     object value = await ConsoleTools.ReadValueAsync(msgRV, modeStr, typeof(string));
                                     modeStr = value.ToString() ?? string.Empty;
-                                    if (modeStr.ToLower().Equals(Key.Programs.DnsRules.Mode.File.ToLower()))
-                                        mode = AgnosticProgram.DnsRules.Mode.File;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.DnsRules.Mode.Text.ToLower()))
-                                        mode = AgnosticProgram.DnsRules.Mode.Text;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.DnsRules.Mode.Disable.ToLower()))
-                                        mode = AgnosticProgram.DnsRules.Mode.Disable;
+                                    if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.File.ToLower()))
+                                        mode = AgnosticProgram.Rules.Mode.File;
+                                    else if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.Text.ToLower()))
+                                        mode = AgnosticProgram.Rules.Mode.Text;
+                                    else if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.Disable.ToLower()))
+                                        mode = AgnosticProgram.Rules.Mode.Disable;
                                     else
                                     {
                                         await WriteToStdoutAsync("Wrong Mode.", ConsoleColor.Red);
@@ -940,7 +938,7 @@ public static partial class Program
 
                                 string filePathOrText = string.Empty;
 
-                                if (mode == AgnosticProgram.DnsRules.Mode.File)
+                                if (mode == AgnosticProgram.Rules.Mode.File)
                                 {
                                     while (true)
                                     {
@@ -949,7 +947,7 @@ public static partial class Program
                                         filePathOrText = valuePath.ToString() ?? string.Empty;
                                         if (string.IsNullOrEmpty(filePathOrText))
                                         {
-                                            mode = AgnosticProgram.DnsRules.Mode.Disable;
+                                            mode = AgnosticProgram.Rules.Mode.Disable;
                                             break;
                                         }
                                         else
@@ -966,15 +964,15 @@ public static partial class Program
                                     }
                                 }
 
-                                if (mode == AgnosticProgram.DnsRules.Mode.Text)
+                                if (mode == AgnosticProgram.Rules.Mode.Text)
                                 {
-                                    msgRV = $"Enter {Key.Programs.DnsRules.Name} As Text (Default: Cancel):";
+                                    msgRV = $"Enter {Key.Programs.Rules.Name} As Text (Default: Cancel):";
                                     msgRV += "\n    e.g. Google.com|8.8.8.8;\\nCloudflare.com|dns:tcp://8.8.8.8;";
                                     object valueText = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
                                     filePathOrText = valueText.ToString() ?? string.Empty;
                                     if (string.IsNullOrEmpty(filePathOrText))
                                     {
-                                        mode = AgnosticProgram.DnsRules.Mode.Disable;
+                                        mode = AgnosticProgram.Rules.Mode.Disable;
                                     }
                                     else
                                     {
@@ -982,91 +980,10 @@ public static partial class Program
                                     }
                                 }
 
-                                AgnosticProgram.DnsRules dnsRulesProgram = new();
-                                dnsRulesProgram.Set(mode, filePathOrText);
+                                AgnosticProgram.Rules RulesProgram = new();
+                                await RulesProgram.SetAsync(mode, filePathOrText);
 
-                                await ShowDnsRulesMsgAsync(dnsRulesProgram);
-                            }
-
-                            // ProxyRules
-                            else if (programName.ToLower().Equals(Key.Programs.ProxyRules.Name.ToLower()))
-                            {
-                                string msgAm = $"Available {Key.Programs.ProxyRules.Name} Modes:\n\n";
-                                msgAm += $"{Key.Programs.ProxyRules.Mode.File}\n";
-                                msgAm += $"{Key.Programs.ProxyRules.Mode.Text}\n";
-                                msgAm += $"{Key.Programs.ProxyRules.Mode.Disable}\n";
-
-                                await WriteToStdoutAsync(msgAm, ConsoleColor.Cyan);
-
-                                string modeStr = Key.Programs.ProxyRules.Mode.Disable;
-                                AgnosticProgram.ProxyRules.Mode mode = AgnosticProgram.ProxyRules.Mode.Disable;
-                                string msgRV = $"Enter One Of Modes (Default: {mode}):";
-                                while (true)
-                                {
-                                    object value = await ConsoleTools.ReadValueAsync(msgRV, modeStr, typeof(string));
-                                    modeStr = value.ToString() ?? string.Empty;
-                                    if (modeStr.ToLower().Equals(Key.Programs.ProxyRules.Mode.File.ToLower()))
-                                        mode = AgnosticProgram.ProxyRules.Mode.File;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.ProxyRules.Mode.Text.ToLower()))
-                                        mode = AgnosticProgram.ProxyRules.Mode.Text;
-                                    else if (modeStr.ToLower().Equals(Key.Programs.ProxyRules.Mode.Disable.ToLower()))
-                                        mode = AgnosticProgram.ProxyRules.Mode.Disable;
-                                    else
-                                    {
-                                        await WriteToStdoutAsync("Wrong Mode.", ConsoleColor.Red);
-                                        continue;
-                                    }
-                                    break;
-                                }
-
-                                string filePathOrText = string.Empty;
-
-                                if (mode == AgnosticProgram.ProxyRules.Mode.File)
-                                {
-                                    while (true)
-                                    {
-                                        msgRV = $"Enter The Path Of {mode} (Default: Cancel):";
-                                        object valuePath = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
-                                        filePathOrText = valuePath.ToString() ?? string.Empty;
-                                        if (string.IsNullOrEmpty(filePathOrText))
-                                        {
-                                            mode = AgnosticProgram.ProxyRules.Mode.Disable;
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            filePathOrText = Path.GetFullPath(filePathOrText);
-                                            if (!File.Exists(filePathOrText))
-                                            {
-                                                string msgNotExist = $"{filePathOrText}\nFile Not Exist.";
-                                                await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
-                                                continue;
-                                            }
-                                            else break;
-                                        }
-                                    }
-                                }
-
-                                if (mode == AgnosticProgram.ProxyRules.Mode.Text)
-                                {
-                                    msgRV = $"Enter {Key.Programs.ProxyRules.Name} As Text (Default: Cancel):";
-                                    msgRV += "\n    e.g. Google.com|8.8.8.8;\\nCloudflare.com|dns:tcp://8.8.8.8;";
-                                    object valueText = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
-                                    filePathOrText = valueText.ToString() ?? string.Empty;
-                                    if (string.IsNullOrEmpty(filePathOrText))
-                                    {
-                                        mode = AgnosticProgram.ProxyRules.Mode.Disable;
-                                    }
-                                    else
-                                    {
-                                        filePathOrText = filePathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                                    }
-                                }
-
-                                AgnosticProgram.ProxyRules proxyRulesProgram = new();
-                                proxyRulesProgram.Set(mode, filePathOrText);
-
-                                await ShowProxyRulesMsgAsync(proxyRulesProgram);
+                                await ShowRulesMsgAsync(RulesProgram);
                             }
 
                             // Dns Limit
@@ -1273,39 +1190,39 @@ public static partial class Program
                             await ShowFragmentMsgAsync(fragmentStaticProgram);
                         }
 
-                        // DnsRules
-                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.DnsRules.Name.ToLower()}"))
+                        // Rules
+                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.Rules.Name.ToLower()}"))
                         {
-                            // Programs DnsRules -Mode=m -PathOrText="m"
+                            // Programs Rules -Mode=m -PathOrText="m"
 
                             // Get ModeStr
-                            string modeStr = Key.Programs.DnsRules.Mode.Disable;
-                            string key = Key.Programs.DnsRules.Mode.Name;
+                            string modeStr = Key.Programs.Rules.Mode.Disable;
+                            string key = Key.Programs.Rules.Mode.Name;
                             isValueOk = ConsoleTools.TryGetValueByKey(input, key, true, false, out string value);
                             if (!isValueOk) return;
 
                             KeyValues modes = new();
-                            modes.Add(Key.Programs.DnsRules.Mode.File, true, false, typeof(string));
-                            modes.Add(Key.Programs.DnsRules.Mode.Text, true, false, typeof(string));
-                            modes.Add(Key.Programs.DnsRules.Mode.Disable, true, false, typeof(string));
+                            modes.Add(Key.Programs.Rules.Mode.File, true, false, typeof(string));
+                            modes.Add(Key.Programs.Rules.Mode.Text, true, false, typeof(string));
+                            modes.Add(Key.Programs.Rules.Mode.Disable, true, false, typeof(string));
 
                             isValueOk = ConsoleTools.TryGetString(key, value, true, modes, out value);
                             if (!isValueOk) return;
                             modeStr = value;
 
                             // Get -Mode
-                            AgnosticProgram.DnsRules.Mode mode = AgnosticProgram.DnsRules.Mode.Disable;
-                            if (modeStr.ToLower().Equals(Key.Programs.DnsRules.Mode.File.ToLower()))
-                                mode = AgnosticProgram.DnsRules.Mode.File;
-                            else if (modeStr.ToLower().Equals(Key.Programs.DnsRules.Mode.Text.ToLower()))
-                                mode = AgnosticProgram.DnsRules.Mode.Text;
-                            else if (modeStr.ToLower().Equals(Key.Programs.DnsRules.Mode.Disable.ToLower()))
-                                mode = AgnosticProgram.DnsRules.Mode.Disable;
+                            AgnosticProgram.Rules.Mode mode = AgnosticProgram.Rules.Mode.Disable;
+                            if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.File.ToLower()))
+                                mode = AgnosticProgram.Rules.Mode.File;
+                            else if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.Text.ToLower()))
+                                mode = AgnosticProgram.Rules.Mode.Text;
+                            else if (modeStr.ToLower().Equals(Key.Programs.Rules.Mode.Disable.ToLower()))
+                                mode = AgnosticProgram.Rules.Mode.Disable;
 
                             // Get -PathOrText
                             string pathOrText = string.Empty;
-                            key = Key.Programs.DnsRules.PathOrText;
-                            if (mode != AgnosticProgram.DnsRules.Mode.Disable)
+                            key = Key.Programs.Rules.PathOrText;
+                            if (mode != AgnosticProgram.Rules.Mode.Disable)
                             {
                                 isValueOk = ConsoleTools.TryGetValueByKey(input, key, true, true, out value);
                                 if (!isValueOk) return;
@@ -1314,7 +1231,7 @@ public static partial class Program
                                 pathOrText = value;
                             }
 
-                            if (mode == AgnosticProgram.DnsRules.Mode.File)
+                            if (mode == AgnosticProgram.Rules.Mode.File)
                             {
                                 pathOrText = Path.GetFullPath(pathOrText);
                                 if (!File.Exists(pathOrText))
@@ -1325,78 +1242,15 @@ public static partial class Program
                                 }
                             }
 
-                            if (mode == AgnosticProgram.DnsRules.Mode.Text)
+                            if (mode == AgnosticProgram.Rules.Mode.Text)
                             {
                                 pathOrText = pathOrText.ToLower().Replace(@"\n", Environment.NewLine);
                             }
 
-                            AgnosticProgram.DnsRules dnsRulesProgram = new();
-                            dnsRulesProgram.Set(mode, pathOrText);
+                            AgnosticProgram.Rules RulesProgram = new();
+                            await RulesProgram.SetAsync(mode, pathOrText);
 
-                            await ShowDnsRulesMsgAsync(dnsRulesProgram);
-                        }
-
-                        // ProxyRules
-                        if (input.ToLower().StartsWith($"{Key.Programs.Name.ToLower()} {Key.Programs.ProxyRules.Name.ToLower()}"))
-                        {
-                            // Programs ProxyRules -Mode=m -PathOrText="m"
-
-                            // Get ModeStr
-                            string modeStr = Key.Programs.ProxyRules.Mode.Disable;
-                            string key = Key.Programs.ProxyRules.Mode.Name;
-                            isValueOk = ConsoleTools.TryGetValueByKey(input, key, true, false, out string value);
-                            if (!isValueOk) return;
-
-                            KeyValues modes = new();
-                            modes.Add(Key.Programs.ProxyRules.Mode.File, true, false, typeof(string));
-                            modes.Add(Key.Programs.ProxyRules.Mode.Text, true, false, typeof(string));
-                            modes.Add(Key.Programs.ProxyRules.Mode.Disable, true, false, typeof(string));
-
-                            isValueOk = ConsoleTools.TryGetString(key, value, true, modes, out value);
-                            if (!isValueOk) return;
-                            modeStr = value;
-
-                            // Get -Mode
-                            AgnosticProgram.ProxyRules.Mode mode = AgnosticProgram.ProxyRules.Mode.Disable;
-                            if (modeStr.ToLower().Equals(Key.Programs.ProxyRules.Mode.File.ToLower()))
-                                mode = AgnosticProgram.ProxyRules.Mode.File;
-                            else if (modeStr.ToLower().Equals(Key.Programs.ProxyRules.Mode.Text.ToLower()))
-                                mode = AgnosticProgram.ProxyRules.Mode.Text;
-                            else if (modeStr.ToLower().Equals(Key.Programs.ProxyRules.Mode.Disable.ToLower()))
-                                mode = AgnosticProgram.ProxyRules.Mode.Disable;
-
-                            // Get -PathOrText
-                            string pathOrText = string.Empty;
-                            key = Key.Programs.ProxyRules.PathOrText;
-                            if (mode != AgnosticProgram.ProxyRules.Mode.Disable)
-                            {
-                                isValueOk = ConsoleTools.TryGetValueByKey(input, key, true, true, out value);
-                                if (!isValueOk) return;
-                                isValueOk = ConsoleTools.TryGetString(key, value, true, out value);
-                                if (!isValueOk) return;
-                                pathOrText = value;
-                            }
-
-                            if (mode == AgnosticProgram.ProxyRules.Mode.File)
-                            {
-                                pathOrText = Path.GetFullPath(pathOrText);
-                                if (!File.Exists(pathOrText))
-                                {
-                                    string msgNotExist = $"{pathOrText}\nFile Not Exist.";
-                                    await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
-                                    return;
-                                }
-                            }
-
-                            if (mode == AgnosticProgram.ProxyRules.Mode.Text)
-                            {
-                                pathOrText = pathOrText.ToLower().Replace(@"\n", Environment.NewLine);
-                            }
-
-                            AgnosticProgram.ProxyRules proxyRulesProgram = new();
-                            proxyRulesProgram.Set(mode, pathOrText);
-
-                            await ShowProxyRulesMsgAsync(proxyRulesProgram);
+                            await ShowRulesMsgAsync(RulesProgram);
                         }
 
                         // Dns Limit
@@ -1515,7 +1369,7 @@ public static partial class Program
                 {
                     // WriteRequests True
                     WriteRequestsToLog = true;
-                    await WriteToStdoutAsync($"WriteRequestsToLog: True", ConsoleColor.Green);
+                    await WriteToStdoutAsync($"WriteRequestsToLog: True", ConsoleColor.Green, true, $"{Key.Common.Requests} {WriteRequestsToLog.ToString().CapitalizeFirstLetter()}");
 
                     // Save Command To List
                     string baseCmd = Key.Common.Requests;
@@ -1528,7 +1382,7 @@ public static partial class Program
                 {
                     // WriteRequests False
                     WriteRequestsToLog = false;
-                    await WriteToStdoutAsync($"WriteRequestsToLog: False", ConsoleColor.Green);
+                    await WriteToStdoutAsync($"WriteRequestsToLog: False", ConsoleColor.Green, true, $"{Key.Common.Requests} {WriteRequestsToLog.ToString().CapitalizeFirstLetter()}");
 
                     // Save Command To List
                     string baseCmd = Key.Common.Requests;
@@ -1541,7 +1395,7 @@ public static partial class Program
                 {
                     // ChunkDetails True
                     WriteFragmentDetailsToLog = true;
-                    await WriteToStdoutAsync($"WriteFragmentDetailsToLog: True", ConsoleColor.Green);
+                    await WriteToStdoutAsync($"WriteFragmentDetailsToLog: True", ConsoleColor.Green, true, $"{Key.Common.FragmentDetails} {WriteFragmentDetailsToLog.ToString().CapitalizeFirstLetter()}");
 
                     // Save Command To List
                     string baseCmd = Key.Common.FragmentDetails;
@@ -1554,7 +1408,7 @@ public static partial class Program
                 {
                     // ChunkDetails False
                     WriteFragmentDetailsToLog = false;
-                    await WriteToStdoutAsync($"WriteFragmentDetailsToLog: False", ConsoleColor.Green);
+                    await WriteToStdoutAsync($"WriteFragmentDetailsToLog: False", ConsoleColor.Green, true, $"{Key.Common.FragmentDetails} {WriteFragmentDetailsToLog.ToString().CapitalizeFirstLetter()}");
 
                     // Save Command To List
                     string baseCmd = Key.Common.FragmentDetails;
@@ -1617,8 +1471,7 @@ public static partial class Program
 
                                 if (sf.SettingsSSL != null) await sf.AgnosticServer.EnableSSL(sf.SettingsSSL);
                                 if (sf.Fragment != null) sf.AgnosticServer.EnableFragment(sf.Fragment);
-                                if (sf.DnsRules != null) sf.AgnosticServer.EnableDnsRules(sf.DnsRules);
-                                if (sf.ProxyRules != null) sf.AgnosticServer.EnableProxyRules(sf.ProxyRules);
+                                if (sf.Rules != null) sf.AgnosticServer.EnableRules(sf.Rules);
                                 if (sf.DnsLimit != null) sf.AgnosticServer.EnableDnsLimit(sf.DnsLimit);
                                 sf.AgnosticServer.Start(sf.Settings);
                                 await Task.Delay(50);
@@ -1637,7 +1490,6 @@ public static partial class Program
                                 }
                                 else
                                 {
-                                    CountRequests = 0;
                                     sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
                                     if (sf.Fragment != null)
                                         sf.Fragment.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
@@ -1658,7 +1510,7 @@ public static partial class Program
 
                     if (confirmed)
                     {
-                        await WriteToStdoutAsync("Confirmed", ConsoleColor.Green);
+                        await WriteToStdoutAsync("Confirmed", ConsoleColor.Green, true, Key.Common.Start);
                     }
                 }
 
@@ -1666,7 +1518,6 @@ public static partial class Program
                 else if (input.ToLower().Equals(Key.Common.Stop.ToLower()))
                 {
                     // Stop
-                    CountRequests = 0;
                     foreach (ServerProfile sf in ServerProfiles)
                     {
                         if (sf.AgnosticServer != null && sf.Settings != null && !string.IsNullOrEmpty(sf.Name))
@@ -1704,8 +1555,7 @@ public static partial class Program
                             await WriteToStdoutAsync($"Updating {sf.Name}...", ConsoleColor.Cyan);
 
                             if (sf.Fragment != null) sf.AgnosticServer.EnableFragment(sf.Fragment);
-                            if (sf.DnsRules != null) sf.AgnosticServer.EnableDnsRules(sf.DnsRules);
-                            if (sf.ProxyRules != null) sf.AgnosticServer.EnableProxyRules(sf.ProxyRules);
+                            if (sf.Rules != null) sf.AgnosticServer.EnableRules(sf.Rules);
                             if (sf.DnsLimit != null) sf.AgnosticServer.EnableDnsLimit(sf.DnsLimit);
 
                             await WriteToStdoutAsync($"{sf.Name} Updated", ConsoleColor.Green);

@@ -156,12 +156,12 @@ public class Help
 
         help = $"    -{Key.Setting.CfCleanIP}=";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Cloudflare CDN Clean IP To Redirect All Cloudflare IPs To This One.";
+        help = $"      Cloudflare CDN Clean IPv4 Or IPv6 To Redirect All Cloudflare IPs To This One.";
         await WriteToStdoutAsync(help);
 
         help = $"    -{Key.Setting.BootstrapIp}=";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Bootstrap IPv4 (A Plain DNS).";
+        help = $"      Bootstrap (A Plain DNS).";
         await WriteToStdoutAsync(help);
 
         help = $"    -{Key.Setting.BootstrapPort}=";
@@ -267,14 +267,9 @@ public class Help
         help = $"      Activate Fragment To Circumvent Censorship (Requires Dns To Be Set To A DoH).";
         await WriteToStdoutAsync(help);
 
-        help = $"    {Key.Programs.DnsRules.Name}";
+        help = $"    {Key.Programs.Rules.Name}";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Set Per Domain DNS Rules. e.g. Block, FakeDNS, DNS, DnsDomain.";
-        await WriteToStdoutAsync(help);
-
-        help = $"    {Key.Programs.ProxyRules.Name}";
-        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Set Per Domain Proxy Rules. e.g. Block, NoBypass, FakeDNS, DNS, FakeSNI, ETC.";
+        help = $"      Set Per Domain/IP/CIDR Rules. e.g. Block, DNS, FakeDNS, Direct, FakeSNI, ETC.";
         await WriteToStdoutAsync(help);
 
         help = $"    {Key.Programs.DnsLimit.Name}";
@@ -345,8 +340,7 @@ public class Help
         msg = "  <Program>";
         await WriteToStdoutAsync(msg, ConsoleColor.Blue);
         msg = $"    {Key.Programs.Fragment.Name}\n";
-        msg += $"    {Key.Programs.DnsRules.Name}\n";
-        msg += $"    {Key.Programs.ProxyRules.Name}\n";
+        msg += $"    {Key.Programs.Rules.Name}\n";
         msg += $"    {Key.Programs.DnsLimit.Name}\n";
         await WriteToStdoutAsync(msg, ConsoleColor.Cyan);
     }
@@ -426,37 +420,37 @@ public class Help
         await WriteToStdoutAsync(help);
     }
 
-    public static async Task GetHelpDnsRulesAsync()
+    public static async Task GetHelpRulesAsync()
     {
-        // Help Program DnsRules
-        // Programs DnsRules -Mode=m -PathOrText="m"
+        // Help Program Rules
+        // Programs Rules -Mode=m -PathOrText="m"
         string help;
-        help = $"\nPrograms {Key.Programs.DnsRules.Name}";
+        help = $"\nPrograms {Key.Programs.Rules.Name}";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
-        help = $"  Set Per Domain DnsRules. e.g. Block, FakeDNS, DNS, DnsDomain.";
+        help = $"  Set Per Domain Rules. e.g. Block, NoBypass, FakeDNS, DNS, FakeSNI, ETC.";
         await WriteToStdoutAsync(help);
 
         // -Mode=
         help = "\n  -Mode=";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
-        help = $"    {Key.Programs.DnsRules.Mode.File}";
+        help = $"    {Key.Programs.Rules.Mode.File}";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Dns Rules As File.";
+        help = $"      Rules As File.";
         await WriteToStdoutAsync(help);
 
-        help = $"    {Key.Programs.DnsRules.Mode.Text}";
+        help = $"    {Key.Programs.Rules.Mode.Text}";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Dns Rules As Text.";
+        help = $"      Rules As Text.";
         await WriteToStdoutAsync(help);
 
-        help = $"    {Key.Programs.DnsRules.Mode.Disable}";
+        help = $"    {Key.Programs.Rules.Mode.Disable}";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      To Disable {Key.Programs.DnsRules.Name}.";
+        help = $"      To Disable {Key.Programs.Rules.Name}.";
         await WriteToStdoutAsync(help);
 
         // -PathOrText=
-        help = $"\n  -{Key.Programs.DnsRules.PathOrText}=";
+        help = $"\n  -{Key.Programs.Rules.PathOrText}=";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
         help = $"    The File Path Or Text Depends On The Mode (Require Double Quotes).";
         help += $"\n    File Mode: The Path Of File. (Each Line One Rule).";
@@ -465,71 +459,13 @@ public class Help
 
         // Examples
         help = $"\nExamples:";
-        help += $"\n  Programs {Key.Programs.DnsRules.Name} -Mode=Disable";
-        help += $"\n  Programs {Key.Programs.DnsRules.Name} -Mode=File -PathOrText=\"C:\\list.txt\"";
-        help += $"\n  Programs {Key.Programs.DnsRules.Name} -Mode=Text -PathOrText=\"Google.com|8.8.8.8\\nCloudflare.com|1.1.1.1\"";
+        help += $"\n  Programs {Key.Programs.Rules.Name} -Mode=Disable";
+        help += $"\n  Programs {Key.Programs.Rules.Name} -Mode=File -PathOrText=\"C:\\list.txt\"";
+        help += $"\n  Programs {Key.Programs.Rules.Name} -Mode=Text -PathOrText=\"Google.com|8.8.8.8\\nCloudflare.com|1.1.1.1\"";
         await WriteToStdoutAsync(help);
 
-        // DnsRules Syntax Example
-        help = $"\n{Key.Programs.DnsRules.Name} Syntax Example:";
-        help += $"\n  instagram.com|163.70.128.174;";
-        help += $"\n  youtube.com|dnsdomain:google.com;";
-        help += $"\n  ytimg.com|dnsdomain:google.com;";
-        help += $"\n  *.ytimg.com|dnsdomain:google.com;";
-        help += $"\n  ggpht.com|dnsdomain:google.com;";
-        help += $"\n  *.ggpht.com|dns:8.8.8.8:53;dnsdomain:*.googleusercontent.com;";
-        help += $"\n  *.googleapis|dns:8.8.8.8:53;dnsdomain:google.com;";
-        help += $"\n  *.googlevideo.com|dns:8.8.8.8:53;dnsdomain:*.c.docs.google.com;";
-        help += $"\n\n  More Help: https://github.com/msasanmh/SecureDNSClient/tree/main/Help";
-        await WriteToStdoutAsync(help);
-    }
-
-    public static async Task GetHelpProxyRulesAsync()
-    {
-        // Help Program ProxyRules
-        // Programs ProxyRules -Mode=m -PathOrText="m"
-        string help;
-        help = $"\nPrograms {Key.Programs.ProxyRules.Name}";
-        await WriteToStdoutAsync(help, ConsoleColor.Blue);
-        help = $"  Set Per Domain ProxyRules. e.g. Block, NoBypass, FakeDNS, DNS, FakeSNI, ETC.";
-        await WriteToStdoutAsync(help);
-
-        // -Mode=
-        help = "\n  -Mode=";
-        await WriteToStdoutAsync(help, ConsoleColor.Blue);
-
-        help = $"    {Key.Programs.ProxyRules.Mode.File}";
-        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      ProxyRules As File.";
-        await WriteToStdoutAsync(help);
-
-        help = $"    {Key.Programs.ProxyRules.Mode.Text}";
-        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      ProxyRules As Text.";
-        await WriteToStdoutAsync(help);
-
-        help = $"    {Key.Programs.ProxyRules.Mode.Disable}";
-        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      To Disable {Key.Programs.ProxyRules.Name}.";
-        await WriteToStdoutAsync(help);
-
-        // -PathOrText=
-        help = $"\n  -{Key.Programs.ProxyRules.PathOrText}=";
-        await WriteToStdoutAsync(help, ConsoleColor.Blue);
-        help = $"    The File Path Or Text Depends On The Mode (Require Double Quotes).";
-        help += $"\n    File Mode: The Path Of File. (Each Line One Rule).";
-        help += $"\n    Text Mode: e.g. \"Google.com|8.8.8.8;\\nCloudflare.com|dns:tcp://8.8.8.8;\"";
-        await WriteToStdoutAsync(help);
-
-        // Examples
-        help = $"\nExamples:";
-        help += $"\n  Programs {Key.Programs.ProxyRules.Name} -Mode=Disable";
-        help += $"\n  Programs {Key.Programs.ProxyRules.Name} -Mode=File -PathOrText=\"C:\\list.txt\"";
-        help += $"\n  Programs {Key.Programs.ProxyRules.Name} -Mode=Text -PathOrText=\"Google.com|8.8.8.8\\nCloudflare.com|1.1.1.1\"";
-        await WriteToStdoutAsync(help);
-
-        // ProxyRules Syntax Example
-        help = $"\n{Key.Programs.ProxyRules.Name} Syntax Example:";
+        // Rules Syntax Example
+        help = $"\n{Key.Programs.Rules.Name} Syntax Example:";
         help += $"\n  dns:8.8.8.8:53;";
         help += $"\n  instagram.com|163.70.128.174;sni:speedtest.com;";
         help += $"\n  youtube.com|dns:8.8.8.8:53;dnsdomain:google.com;sni:google.com;";
@@ -539,7 +475,7 @@ public class Help
         help += $"\n  *.ggpht.com|dns:8.8.8.8:53;dnsdomain:*.googleusercontent.com;";
         help += $"\n  *.googleapis|dns:8.8.8.8:53;dnsdomain:google.com;";
         help += $"\n  *.googlevideo.com|dns:8.8.8.8:53;dnsdomain:*.c.docs.google.com;sni:google.com;";
-        help += $"\n\n  More Help: https://github.com/msasanmh/SecureDNSClient/tree/main/Help";
+        help += $"\n\n  More Help: https://github.com/msasanmh/SecureDNSClient";
         await WriteToStdoutAsync(help);
     }
 

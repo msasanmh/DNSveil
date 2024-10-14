@@ -7,6 +7,7 @@ using System.Management.Automation;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace MsmhToolsClass;
@@ -249,7 +250,7 @@ public static class NetworkTool
             host = host0;
             
             // Get Base Host
-            if (!IsIp(host, out _) && host.Contains('.'))
+            if (!IsIP(host, out _) && host.Contains('.'))
             {
                 baseHost = host;
                 string[] dotSplit = host.Split('.');
@@ -293,15 +294,60 @@ public static class NetworkTool
         }
     }
 
-    public static bool IsLocalIP(string ipv4)
+    /// <summary>
+    /// IsLocalIP
+    /// </summary>
+    /// <param name="ipStr">IPv4 Or IPv6</param>
+    public static bool IsLocalIP(string ipStr)
     {
-        if (string.IsNullOrEmpty(ipv4)) return false;
-        string ip = ipv4.Trim();
-        return ip.ToLower().Equals("localhost") || ip.Equals("0.0.0.0") || ip.StartsWith("10.") || ip.StartsWith("127.") || ip.StartsWith("192.168.") ||
-               ip.StartsWith("172.16.") || ip.StartsWith("172.17.") || ip.StartsWith("172.18.") || ip.StartsWith("172.19.") ||
-               ip.StartsWith("172.20.") || ip.StartsWith("172.21.") || ip.StartsWith("172.22.") || ip.StartsWith("172.23.") ||
-               ip.StartsWith("172.24.") || ip.StartsWith("172.25.") || ip.StartsWith("172.26.") || ip.StartsWith("172.27.") ||
-               ip.StartsWith("172.28.") || ip.StartsWith("172.29.") || ip.StartsWith("172.30.") || ip.StartsWith("172.31.");
+        try
+        {
+            if (string.IsNullOrWhiteSpace(ipStr)) return false;
+            bool isIp = IsIP(ipStr, out IPAddress? ip);
+            if (!isIp) return false;
+
+            if (isIp && ip != null)
+            {
+                if (IPAddress.IsLoopback(ip)) return true;
+                if (ip.IsIPv6LinkLocal) return true;
+                if (ip.IsIPv6SiteLocal) return true;
+                if (ip.IsIPv6UniqueLocal) return true;
+            }
+            
+            List<string> localCIDRs = new()
+            {
+                "0.0.0.0/8",
+                "10.0.0.0/8",
+                "100.64.0.0/10",
+                "127.0.0.0/8",
+                "169.254.0.0/16",
+                "172.16.0.0/12",
+                "192.0.0.0/24",
+                "192.0.2.0/24",
+                "192.88.99.0/24",
+                "192.168.0.0/16",
+                "198.18.0.0/15",
+                "198.51.100.0/24",
+                "203.0.113.0/24",
+                "224.0.0.0/3",
+                "::/127",
+                "fc00::/7",
+                "fe80::/10",
+                "ff00::/8"
+            };
+
+            for (int n = 0; n < localCIDRs.Count; n++)
+            {
+                string cidr = localCIDRs[n].Trim();
+                bool isInRange = IsIpInRange(ipStr, cidr);
+                if (isInRange) return true;
+            }
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -456,7 +502,7 @@ public static class NetworkTool
         return Uri.CheckHostName(domain) != UriHostNameType.Unknown;
     }
 
-    public static bool IsIp(string ipStr, out IPAddress? ip)
+    public static bool IsIP(string ipStr, out IPAddress? ip)
     {
         ip = null;
         if (!string.IsNullOrEmpty(ipStr))
@@ -512,6 +558,76 @@ public static class NetworkTool
     public static bool IsIPv6(IPAddress iPAddress)
     {
         return iPAddress.AddressFamily == AddressFamily.InterNetworkV6;
+    }
+
+    /// <summary>
+    /// Is Ip In Range
+    /// </summary>
+    /// <param name="ipStr">IPv4 Or IPv6</param>
+    /// <param name="cidr">IPv4 CIDR Or IPv6 CIDR</param>
+    /// <returns>True Or False</returns>
+    public static bool IsIpInRange(string ipStr, string cidr)
+    {
+        bool isInRange = false;
+
+        try
+        {
+            // Split CIDR Into Base IP And Prefix Length
+            if (!string.IsNullOrWhiteSpace(ipStr) && cidr.Contains('/'))
+            {
+                string[] split = cidr.Split('/', StringSplitOptions.TrimEntries);
+                if (split.Length == 2)
+                {
+                    string cidrBase = split[0];
+                    string prefix = split[1];
+                    bool isInt = int.TryParse(prefix, out int prefixLength);
+                    if (isInt)
+                    {
+                        // Convert Input IP And CIDR Base To Byte Array
+                        bool isInputIP = IPAddress.TryParse(ipStr, out IPAddress? ip);
+                        if (isInputIP && ip != null)
+                        {
+                            bool isCidrBaseIP = IPAddress.TryParse(cidrBase, out IPAddress? cidrIP);
+                            if (isCidrBaseIP && cidrIP != null)
+                            {
+                                byte[] ipBytes = ip.GetAddressBytes();
+                                byte[] cidrBytes = cidrIP.GetAddressBytes();
+
+                                // If IP Address Families Match
+                                if (ipBytes.Length == cidrBytes.Length)
+                                {
+                                    // Calculate The Mask From The Prefix Length
+                                    int maskBits = prefixLength;
+                                    byte[] maskBytes = new byte[ipBytes.Length];
+
+                                    for (int n = 0; n < maskBytes.Length; n++)
+                                    {
+                                        int remainingBits = Math.Min(maskBits, 8);
+                                        maskBytes[n] = (byte)(255 << (8 - remainingBits));
+                                        maskBits -= remainingBits;
+                                    }
+
+                                    // Apply The Mask And Compare
+                                    for (int n = 0; n < ipBytes.Length; n++)
+                                    {
+                                        if ((ipBytes[n] & maskBytes[n]) != (cidrBytes[n] & maskBytes[n])) return false;
+                                    }
+
+                                    // If All Matches It's In Range
+                                    isInRange = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool IsIpInRange: " + ex.Message);
+        }
+
+        return isInRange;
     }
 
     /// <summary>
@@ -1045,7 +1161,7 @@ public static class NetworkTool
     }
 
     /// <summary>
-    /// Unset IPv4 DNS to DHCP (Windows Only)
+    /// Unset IPv6 DNS to DHCP (Windows Only)
     /// </summary>
     /// <param name="nicName">Network Interface Name</param>
     public static async Task UnsetDnsIPv6(string nicName)
@@ -1070,7 +1186,7 @@ public static class NetworkTool
     }
 
     /// <summary>
-    /// Unset IPv4 DNS to DHCP (Windows Only)
+    /// Unset IPv6 DNS to DHCP (Windows Only)
     /// </summary>
     /// <param name="nic">Network Interface</param>
     public static async Task UnsetDnsIPv6(NetworkInterface nic)
@@ -1078,8 +1194,34 @@ public static class NetworkTool
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
         if (nic == null) return;
-
+        
         await UnsetDnsIPv6(nic.Name);
+    }
+
+    /// <summary>
+    /// Unset IPv6 DNS by seting DNS to Static
+    /// </summary>
+    /// <param name="nic">Network Interface</param>
+    /// <param name="dns1">Primary</param>
+    /// <param name="dns2">Secondary</param>
+    public static async Task UnsetDnsIPv6(NetworkInterface nic, string dns1, string? dns2)
+    {
+        string dnsServers = dns1;
+        if (!string.IsNullOrEmpty(dns2)) dnsServers += $",{dns2}";
+        await SetDnsIPv6(nic, dnsServers);
+    }
+
+    /// <summary>
+    /// Unset IPv6 DNS by seting DNS to Static
+    /// </summary>
+    /// <param name="nicName">Network Interface Name</param>
+    /// <param name="dns1">Primary</param>
+    /// <param name="dns2">Secondary</param>
+    public static async Task UnsetDnsIPv6(string nicName, string dns1, string? dns2)
+    {
+        string dnsServers = dns1;
+        if (!string.IsNullOrEmpty(dns2)) dnsServers += $",{dns2}";
+        await SetDnsIPv6(nicName, dnsServers);
     }
 
     /// <summary>
@@ -1403,7 +1545,8 @@ public static class NetworkTool
                     firstTrySuccess = true;
                 }
 
-                result = resultList.ToString(Environment.NewLine);
+                if (resultList.Count > 0)
+                    result = resultList.ToString(Environment.NewLine);
             }
             catch (Exception) { }
 
@@ -1715,7 +1858,7 @@ public static class NetworkTool
             {
                 Ping ping = new();
                 PingReply? reply;
-                bool isIp = IsIp(host, out IPAddress? ip);
+                bool isIp = IsIP(host, out IPAddress? ip);
                 if (isIp && ip != null)
                     reply = ping.Send(ip, timeoutMS);
                 else

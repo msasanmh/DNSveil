@@ -1,7 +1,6 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
 using MsmhToolsClass.MsmhAgnosticServer;
-using System.Diagnostics;
 using System.Net;
 
 namespace SecureDNSClient;
@@ -19,8 +18,8 @@ public partial class FormMain
             this.InvokeIt(() => log.ResetText());
 
             bool isRulesEnabled = false;
-            this.InvokeIt(() => isRulesEnabled = CustomCheckBoxSettingProxyEnableRules.Checked);
-            if (!isRulesEnabled && ProxyRulesMode == AgnosticProgram.ProxyRules.Mode.Disable)
+            this.InvokeIt(() => isRulesEnabled = CustomCheckBoxSettingEnableRules.Checked);
+            if (!isRulesEnabled && RulesMode == AgnosticProgram.Rules.Mode.Disable)
             {
                 this.InvokeIt(() => log.AppendText("Proxy Rules Are Disabled.", Color.DarkOrange));
 
@@ -38,7 +37,7 @@ public partial class FormMain
 
             NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out _, out int port, out _, out _);
 
-            string rulesPath = string.IsNullOrEmpty(LastProxyRulesPath) ? SecureDNS.ProxyRulesPath : LastProxyRulesPath;
+            string rulesPath = string.IsNullOrEmpty(LastRulesPath) ? SecureDNS.RulesPath : LastRulesPath;
             if (!File.Exists(rulesPath))
             {
                 this.InvokeIt(() => CustomButtonShareRulesStatusRead.Enabled = true);
@@ -49,14 +48,14 @@ public partial class FormMain
             string content = string.Empty;
             try { content = await File.ReadAllTextAsync(rulesPath); } catch (Exception) { }
 
-            if (string.IsNullOrEmpty(LastProxyRulesPath) || !content.Equals(LastProxyRulesContent))
+            if (string.IsNullOrEmpty(LastRulesPath) || !content.Equals(LastRulesContent))
             {
-                LastProxyRulesContent = content;
+                LastRulesContent = content;
 
                 // Reapply ProxyRules To Proxy Server
-                if (IsProxyActivated && !IsProxyActivating) await ApplyProxyRules();
+                if (IsProxyActivated && !IsProxyActivating) await ApplyRulesToProxyAsync();
 
-                CheckProxyRules.Set(AgnosticProgram.ProxyRules.Mode.Text, LastProxyRulesContent);
+                await CheckRules.SetAsync(AgnosticProgram.Rules.Mode.Text, LastRulesContent);
             }
 
             AgnosticSettings agnosticSettings = new()
@@ -65,7 +64,7 @@ public partial class FormMain
                 DnsTimeoutSec = 5,
                 CloudflareCleanIP = GetCfCleanIpSetting()
             };
-            AgnosticProgram.ProxyRules.ProxyRulesResult prr = await CheckProxyRules.GetAsync(IPAddress.Loopback.ToString(), host, port, agnosticSettings);
+            AgnosticProgram.Rules.RulesResult prr = await CheckRules.GetAsync(IPAddress.Loopback.ToString(), host, port, agnosticSettings);
 
             this.InvokeIt(() => log.AppendText($"Domain:{NL}"));
             this.InvokeIt(() => log.AppendText($"{host}{NL}", Color.DodgerBlue));
@@ -126,7 +125,7 @@ public partial class FormMain
                             this.InvokeIt(() => log.AppendText($"None{NL}", Color.DodgerBlue));
                         }
                         
-                        bool isIp = NetworkTool.IsIp(prr.Dns, out _);
+                        bool isIp = NetworkTool.IsIP(prr.Dns, out _);
                         if (isIp)
                         {
                             this.InvokeIt(() => log.AppendText($"IP: "));
@@ -138,9 +137,9 @@ public partial class FormMain
                             this.InvokeIt(() => log.AppendText($"Couldn't Get DNS Message{NL}", Color.DarkOrange));
                         }
 
-                        // DPI Bypass
-                        this.InvokeIt(() => log.AppendText($"{NL}Apply DPI Bypass: "));
-                        this.InvokeIt(() => log.AppendText($"{prr.ApplyDpiBypass.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
+                        // Is Direct
+                        this.InvokeIt(() => log.AppendText($"{NL}Is Direct: "));
+                        this.InvokeIt(() => log.AppendText($"{prr.IsDirect.ToString().CapitalizeFirstLetter()}{NL}", Color.DodgerBlue));
 
                         if (!host.Equals(prr.Sni))
                         {

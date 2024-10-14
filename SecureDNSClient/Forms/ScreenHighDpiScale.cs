@@ -699,12 +699,6 @@ public partial class FormMain
             CustomCheckBoxDnsEventShowRequest.Left = CustomCheckBoxSettingConnectRetry.Left;
             CustomCheckBoxDnsEventShowRequest.Top = CustomCheckBoxSettingConnectRetry.Bottom + spaceV;
 
-            CustomCheckBoxSettingDnsEnableRules.Left = CustomCheckBoxDnsEventShowRequest.Left;
-            CustomCheckBoxSettingDnsEnableRules.Top = CustomCheckBoxDnsEventShowRequest.Bottom + spaceV;
-
-            CustomButtonSettingDnsRules.Left = CustomCheckBoxSettingDnsEnableRules.Right + spaceH2;
-            CustomButtonSettingDnsRules.Top = CustomCheckBoxSettingDnsEnableRules.Top - 2;
-
             //// Settings Set/Unset DNS
             spaceV = 30;
             CustomRadioButtonSettingUnsetDnsToDhcp.Location = new Point(spaceHH, 35);
@@ -724,6 +718,18 @@ public partial class FormMain
 
             CustomTextBoxSettingUnsetDns2.Left = CustomTextBoxSettingUnsetDns1.Left;
             CustomTextBoxSettingUnsetDns2.Top = CustomLabelSettingUnsetDns2.Top - 2;
+
+            CustomLabelSettingUnsetDnsIPv6_1.Left = CustomLabelSettingUnsetDns2.Left;
+            CustomLabelSettingUnsetDnsIPv6_1.Top = CustomLabelSettingUnsetDns2.Bottom + spaceV;
+
+            CustomTextBoxSettingUnsetDnsIPv6_1.Left = CustomTextBoxSettingUnsetDns2.Left;
+            CustomTextBoxSettingUnsetDnsIPv6_1.Top = CustomLabelSettingUnsetDnsIPv6_1.Top - 2;
+
+            CustomLabelSettingUnsetDnsIPv6_2.Left = CustomLabelSettingUnsetDnsIPv6_1.Left;
+            CustomLabelSettingUnsetDnsIPv6_2.Top = CustomLabelSettingUnsetDnsIPv6_1.Bottom + spaceV;
+
+            CustomTextBoxSettingUnsetDnsIPv6_2.Left = CustomTextBoxSettingUnsetDnsIPv6_1.Left;
+            CustomTextBoxSettingUnsetDnsIPv6_2.Top = CustomLabelSettingUnsetDnsIPv6_2.Top - 2;
 
             //// Settings Share Basic
             CustomLabelSettingProxyPort.Location = new Point(spaceRight, 25);
@@ -775,20 +781,6 @@ public partial class FormMain
 
             CustomTextBoxSettingProxyCfCleanIP.Left = CustomCheckBoxSettingProxyCfCleanIP.Right + spaceH;
             CustomTextBoxSettingProxyCfCleanIP.Top = CustomCheckBoxSettingProxyCfCleanIP.Top - 2;
-
-            CustomLabelSettingShareSeparator1.Left = spaceRight;
-            CustomLabelSettingShareSeparator1.Top = CustomCheckBoxSettingProxyCfCleanIP.Bottom + spaceV;
-            CustomLabelSettingShareSeparator1.Width = TabPageSettingProxyAdvanced.Width - (spaceRight * 2);
-            CustomLabelSettingShareSeparator1.Height = 1;
-
-            CustomCheckBoxSettingProxyEnableRules.Left = CustomCheckBoxSettingProxyCfCleanIP.Left;
-            CustomCheckBoxSettingProxyEnableRules.Top = CustomLabelSettingShareSeparator1.Bottom + spaceV;
-
-            CustomLabelSettingProxyRules.Left = spaceRight * 4;
-            CustomLabelSettingProxyRules.Top = CustomCheckBoxSettingProxyEnableRules.Bottom + (spaceV / 2);
-
-            CustomButtonSettingProxyRules.Left = CustomLabelSettingProxyRules.Right + spaceHH;
-            CustomButtonSettingProxyRules.Top = CustomCheckBoxSettingProxyEnableRules.Bottom + 5;
 
             //// Settings Fake Proxy
             spaceV = 50;

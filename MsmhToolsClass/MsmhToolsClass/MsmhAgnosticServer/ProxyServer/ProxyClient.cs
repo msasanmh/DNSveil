@@ -62,7 +62,7 @@ public class ProxyClient
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.ToString());
+            Debug.WriteLine("ProxyClient ReceiveAsync: " + ex.ToString());
             Disconnect();
             return -1;
         }
@@ -91,7 +91,7 @@ public class ProxyClient
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("ProxyClient SendAsync: " + ex.ToString());
             Disconnect();
             return false;
         }

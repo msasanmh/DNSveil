@@ -102,7 +102,7 @@ public partial class FormMain : Form
     private bool IsProxyDpiBypassActive { get; set; } = false;
     private bool IsProxyFragmentActive { get; set; } = false;
     private AgnosticProgram.Fragment.Mode ProxyFragmentMode { get; set; } = AgnosticProgram.Fragment.Mode.Disable;
-    private AgnosticProgram.ProxyRules.Mode ProxyRulesMode { get; set; } = AgnosticProgram.ProxyRules.Mode.Disable;
+    private AgnosticProgram.Rules.Mode RulesMode { get; set; } = AgnosticProgram.Rules.Mode.Disable;
     private bool IsProxySSLDecryptionActive { get; set; } = false;
     private bool IsProxySSLChangeSniActive { get; set; } = false;
     private bool IsProxySet { get; set; } = false;
@@ -111,9 +111,9 @@ public partial class FormMain : Form
     private static bool UpdateProxyBools { get; set; } = true;
     private string LastFragmentProgramCommand { get; set; } = string.Empty;
     private string LastDefaultSni { get; set; } = string.Empty;
-    private AgnosticProgram.ProxyRules CheckProxyRules { get; set; } = new();
-    private string LastProxyRulesPath { get; set; } = string.Empty;
-    private string LastProxyRulesContent { get; set; } = string.Empty;
+    private AgnosticProgram.Rules CheckRules { get; set; } = new();
+    private string LastRulesPath { get; set; } = string.Empty;
+    private string LastRulesContent { get; set; } = string.Empty;
 
     // GoodbyeDPI
     private static int PIDGoodbyeDPIBasic { get; set; } = -1;

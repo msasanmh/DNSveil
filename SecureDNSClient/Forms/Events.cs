@@ -16,20 +16,21 @@ public partial class FormMain : Form
     private void DnsConsole_ErrorDataReceived(object? sender, DataReceivedEventArgs e)
     {
         string? msg = e.Data;
-        if (!string.IsNullOrEmpty(msg) && CustomCheckBoxDnsEventShowRequest.Checked)
+        bool writeDnsToLog = true;
+        this.InvokeIt(() => writeDnsToLog = CustomCheckBoxDnsEventShowRequest.Checked);
+        if (!string.IsNullOrEmpty(msg) && writeDnsToLog)
         {
             if (!StopWatchWriteDnsOutputDelay.IsRunning) StopWatchWriteDnsOutputDelay.Start();
-            if (StopWatchWriteDnsOutputDelay.ElapsedMilliseconds < 100) return;
+            if (StopWatchWriteDnsOutputDelay.ElapsedMilliseconds < 80) return;
             StopWatchWriteDnsOutputDelay.Restart();
             if (!IsInternetOnline) return;
 
-            bool writeToLog = true;
             _ = GetBlockedDomainSetting(out string blockedDomainNoWww);
-            if (msg.Contains(blockedDomainNoWww) || msg.Contains($"{IPAddress.Loopback}:53")) writeToLog = false;
+            if (msg.Contains(blockedDomainNoWww) || msg.Contains($"{IPAddress.Loopback}:53")) writeDnsToLog = false;
 
             // Write To Log
             Color reqColor = msg.Contains("Request Denied") ? Color.Orange : Color.Gray;
-            if (writeToLog && !IsExiting && IsConnected && IsDNSConnected && !IsInActionState)
+            if (writeDnsToLog && !IsExiting && IsConnected && IsDNSConnected && !IsInActionState)
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, reqColor));
         }
     }
@@ -37,17 +38,23 @@ public partial class FormMain : Form
     private void ProxyConsole_ErrorDataReceived(object? sender, DataReceivedEventArgs e)
     {
         string? msg = e.Data;
+        bool writeDnsToLog = true;
+        this.InvokeIt(() => writeDnsToLog = CustomCheckBoxDnsEventShowRequest.Checked);
         if (!string.IsNullOrEmpty(msg))
         {
             if (!StopWatchWriteProxyOutputDelay.IsRunning) StopWatchWriteProxyOutputDelay.Start();
-            if (StopWatchWriteProxyOutputDelay.ElapsedMilliseconds < 100) return;
+            if (StopWatchWriteProxyOutputDelay.ElapsedMilliseconds < 80) return;
             StopWatchWriteProxyOutputDelay.Restart();
             if (!IsInternetOnline) return;
-            
+
             // Write To Log
-            Color reqColor = msg.Contains("Request Denied") ? Color.Orange : Color.Gray;
-            if (!IsExiting && IsProxyActivated && IsProxyRunning && !IsInActionState)
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, reqColor));
+            bool isProxyDnsQuery = msg.Contains("Q:");
+            if (!isProxyDnsQuery || (isProxyDnsQuery && writeDnsToLog))
+            {
+                Color reqColor = msg.Contains("Request Denied") ? Color.Orange : Color.Gray;
+                if (!IsExiting && IsProxyActivated && IsProxyRunning && !IsInActionState)
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg + NL, reqColor));
+            }
         }
     }
 

@@ -14,13 +14,13 @@ public class IpScannerResult
 
     public IpScannerResult() { }
 }
+
 public class IpScanner
 {
     private List<IpScannerResult> WorkingIPs { get; set; } = new();
-    private List<string> IpRangeList { get; set; } = new();
-    private List<string> AllIPs { get; set; } = new();
+    private List<string> CIDR_List { get; set; } = new();
+    private List<IPAddress> AllIPs { get; set; } = new();
     private bool StopScan { get; set; } = false;
-    private static readonly MsmhAgnosticServer ProxyServer = new();
 
     // Public
     public bool IsRunning { get; private set; } = false;
@@ -36,7 +36,6 @@ public class IpScanner
     /// </summary>
     public int Timeout { get; set; }
     public bool RandomScan { get; set; } = true;
-    public int ProxyServerPort { get; set; } = 8090;
 
     /// <summary>
     /// Sender is IpScannerResult
@@ -52,12 +51,10 @@ public class IpScanner
     /// <summary>
     /// Find Clean IPs
     /// </summary>
-    /// <param name="ipRange">e.g. 103.21.244.0 - 103.21.244.255\n198.41.128.0 - 198.41.143.255</param>
-    public void SetIpRange(string ipRange)
+    /// <param name="cidrList">A List Of CIDR</param>
+    public void SetIpRange(List<string> cidrList)
     {
-        if (!string.IsNullOrEmpty(ipRange))
-            ipRange += Environment.NewLine;
-        IpRangeList = ipRange.SplitToLines();
+        CIDR_List = cidrList;
     }
 
     public List<IpScannerResult> GetWorkingIPs
@@ -65,7 +62,7 @@ public class IpScanner
         get => WorkingIPs;
     }
 
-    public int GetAllIpsCount
+    public int GetAllIPsCount
     {
         get => AllIPs.Count;
     }
@@ -83,213 +80,152 @@ public class IpScanner
             StopScan = false;
             if (AllIPs.Any()) AllIPs.Clear();
 
-            AgnosticSettings settings = new()
-            {
-                ListenerPort = ProxyServerPort,
-                MaxRequests = 100000,
-                DnsTimeoutSec = 10,
-                ProxyTimeoutSec = 0,
-                KillOnCpuUsage = 50,
-                BlockPort80 = true,
-                AllowInsecure = true
-            };
-
-            if (!ProxyServer.IsRunning) ProxyServer.Start(settings);
             Random random = new();
 
             Task.Run(async () =>
             {
-                for (int n = 0; n < IpRangeList.Count; n++)
-                {
-                    string ipRange = IpRangeList[n].Trim();
+                IPRange ipRange = new(CIDR_List);
+                ipRange.StartGenerateIPs();
+                await Task.Delay(100);
 
-                    if (!string.IsNullOrEmpty(ipRange))
-                    {
-                        string[] split = ipRange.Split('-');
-                        string ipMin = split[0].Trim();
-                        string ipMax = split[1].Trim();
-
-                        string[] ipMins = ipMin.Split('.');
-                        int ipMin1 = 0, ipMin2 = 0, ipMin3 = 0, ipMin4 = 0;
-
-                        try
-                        {
-                            ipMin1 = int.Parse(ipMins[0]);
-                            ipMin2 = int.Parse(ipMins[1]);
-                            ipMin3 = int.Parse(ipMins[2]);
-                            ipMin4 = int.Parse(ipMins[3]);
-                        }
-                        catch (Exception) { }
-
-                        string[] ipMaxs = ipMax.Split('.');
-                        int ipMax1 = 0, ipMax2 = 0, ipMax3 = 0, ipMax4 = 0;
-
-                        try
-                        {
-                            ipMax1 = int.Parse(ipMaxs[0]);
-                            ipMax2 = int.Parse(ipMaxs[1]);
-                            ipMax3 = int.Parse(ipMaxs[2]);
-                            ipMax4 = int.Parse(ipMaxs[3]);
-                        }
-                        catch (Exception) { }
-
-                        for (int ipOut1 = ipMin1; ipOut1 <= ipMax1; ipOut1++)
-                        {
-                            for (int ipOut2 = ipMin2; ipOut2 <= ipMax2; ipOut2++)
-                            {
-                                for (int ipOut3 = ipMin3; ipOut3 <= ipMax3; ipOut3++)
-                                {
-                                    for (int ipOut4 = ipMin4; ipOut4 <= ipMax4; ipOut4++)
-                                    {
-                                        if (StopScan)
-                                        {
-                                            IsRunning = false;
-                                            if (ProxyServer.IsRunning)
-                                                ProxyServer.Stop();
-                                            return;
-                                        }
-
-                                        string ipOut = $"{ipOut1}.{ipOut2}.{ipOut3}.{ipOut4}";
-
-                                        AllIPs.Add(ipOut);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                for (int n = 0; n < AllIPs.Count; n++)
+                int pauseDelayMs = 1;
+                int startIndex = 0;
+                while (true)
                 {
                     if (StopScan)
                     {
+                        ipRange.Dispose();
                         IsRunning = false;
-                        if (ProxyServer.IsRunning)
-                            ProxyServer.Stop();
                         return;
                     }
 
-                    OnNumberOfCheckedIpChanged?.Invoke(n, EventArgs.Empty);
+                    ipRange.Pause(true);
+                    await Task.Delay(pauseDelayMs);
 
-                    int percent = 0;
-                    if (n > 0 && n < AllIPs.Count - 1)
-                        percent = (n * 100) / AllIPs.Count;
-                    if (n == AllIPs.Count - 1)
-                        percent = 100;
-                    OnPercentChanged?.Invoke(percent, EventArgs.Empty);
+                    AllIPs = ipRange.IPs.GetRange(startIndex, ipRange.IPs.Count - startIndex);
+                    startIndex = ipRange.IPs.Count;
 
-                    string ipOut = AllIPs[n];
-
-                    if (RandomScan)
+                    for (int n = 0; n < AllIPs.Count; n++)
                     {
-                        int rn = random.Next(AllIPs.Count);
-                        ipOut = AllIPs[rn];
-                    }
+                        if (StopScan)
+                        {
+                            ipRange.Dispose();
+                            IsRunning = false;
+                            return;
+                        }
 
-                    OnNewIpCheck?.Invoke(ipOut, EventArgs.Empty);
-                    OnFullReportChanged?.Invoke($"Checking: {ipOut} ({n} of {AllIPs.Count}) {percent}%", EventArgs.Empty);
+                        OnNumberOfCheckedIpChanged?.Invoke(n, EventArgs.Empty);
 
-                    // Real Delay
-                    int realDelayOut = -1;
-                    try
-                    {
+                        int percent = 0;
+                        if (n > 0 && n < AllIPs.Count - 1)
+                            percent = (n * 100) / AllIPs.Count;
+                        if (n == AllIPs.Count - 1)
+                            percent = 100;
+                        OnPercentChanged?.Invoke(percent, EventArgs.Empty);
+
+                        string ipOut = AllIPs[n].ToString();
+
+                        if (RandomScan)
+                        {
+                            int rn = random.Next(AllIPs.Count);
+                            ipOut = AllIPs[rn].ToString();
+                        }
+
+                        OnNewIpCheck?.Invoke(ipOut, EventArgs.Empty);
+                        OnFullReportChanged?.Invoke($"Checking: {ipOut} ({n} of {AllIPs.Count}) {percent}%", EventArgs.Empty);
+
                         // Real Delay
-                        string urlScheme = string.Empty;
-                        if (CheckWebsite.Contains("://"))
-                        {
-                            string[] split = CheckWebsite.Split("://");
-                            urlScheme = $"{split[0].Trim().ToLower()}://";
-                        }
-                        NetworkTool.GetUrlDetails(CheckWebsite, CheckPort, out _, out string host, out _, out _, out int _, out string _, out bool _);
-                        string url = $"{urlScheme}{host}:{CheckPort}";
-
-                        Uri uri = new(url, UriKind.Absolute);
-
-                        // Create ProxyRules
-                        AgnosticProgram.ProxyRules rules = new();
-                        string rulesContent = $"{host}|{ipOut};";
-                        rulesContent += $"{ipOut}|+;";
-                        rulesContent += $"*|-;"; // Block Other Requests
-                        rules.Set(AgnosticProgram.ProxyRules.Mode.Text, rulesContent);
-                        ProxyServer.EnableProxyRules(rules);
-
-                        ProxyServer.KillAll();
-                        await Task.Delay(100);
-
-                        string proxyScheme = $"http://{IPAddress.Loopback}:{ProxyServerPort}";
-
-                        using SocketsHttpHandler socketsHttpHandler = new();
-                        socketsHttpHandler.Proxy = new WebProxy(proxyScheme, true);
-
-                        using HttpClient httpClientWithProxy = new(socketsHttpHandler);
-                        httpClientWithProxy.Timeout = TimeSpan.FromMilliseconds(Timeout);
-
-                        Stopwatch realDelay = new();
-                        realDelay.Start();
-                        await httpClientWithProxy.GetAsync(uri);
-                        realDelay.Stop();
-
-                        realDelayOut = Convert.ToInt32(realDelay.ElapsedMilliseconds);
-                        realDelay.Reset();
-                    }
-                    catch (Exception)
-                    {
-                        realDelayOut = -1;
-                    }
-
-                    Debug.WriteLine("Real Delay: " + realDelayOut);
-
-                    if (realDelayOut != -1)
-                    {
-                        // Ping Delay
-                        int pingDelayOut = -1;
+                        int realDelayOut = -1;
                         try
                         {
-                            Stopwatch pingDelay = new();
-                            pingDelay.Start();
-                            bool canPing = await NetworkTool.CanPing(ipOut, Timeout);
-                            pingDelay.Stop();
+                            // Real Delay
+                            string urlScheme = string.Empty;
+                            if (CheckWebsite.Contains("://"))
+                            {
+                                string[] split = CheckWebsite.Split("://");
+                                urlScheme = $"{split[0].Trim().ToLower()}://";
+                            }
+                            NetworkTool.GetUrlDetails(CheckWebsite, CheckPort, out _, out string host, out _, out _, out int _, out string _, out bool _);
+                            string url = $"{urlScheme}{host}:{CheckPort}";
 
-                            if (canPing) pingDelayOut = Convert.ToInt32(pingDelay.ElapsedMilliseconds);
-                            pingDelay.Reset();
+                            Stopwatch realDelay = new();
+                            realDelay.Start();
+                            HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, ipOut, Timeout, false, false);
+                            realDelay.Stop();
+
+                            Debug.WriteLine("HttpStatusCode: " + hsc);
+
+                            if (hsc == HttpStatusCode.OK)
+                                realDelayOut = Convert.ToInt32(realDelay.ElapsedMilliseconds);
+
+                            realDelay.Reset();
                         }
                         catch (Exception)
                         {
-                            pingDelayOut = -1;
+                            realDelayOut = -1;
                         }
 
-                        // Tcp delay
-                        int tcpDelayOut = -1;
-                        try
-                        {
-                            Stopwatch tcpDelay = new();
-                            tcpDelay.Start();
-                            bool canTcpConnect = await NetworkTool.CanTcpConnect(ipOut, CheckPort, Timeout);
-                            tcpDelay.Stop();
+                        Debug.WriteLine("Real Delay: " + realDelayOut);
 
-                            if (canTcpConnect) tcpDelayOut = Convert.ToInt32(tcpDelay.ElapsedMilliseconds);
-                            tcpDelay.Reset();
+                        if (realDelayOut != -1)
+                        {
+                            // Ping Delay
+                            int pingDelayOut = -1;
+                            try
+                            {
+                                Stopwatch pingDelay = new();
+                                pingDelay.Start();
+                                bool canPing = await NetworkTool.CanPing(ipOut, Timeout);
+                                pingDelay.Stop();
+
+                                if (canPing) pingDelayOut = Convert.ToInt32(pingDelay.ElapsedMilliseconds);
+                                pingDelay.Reset();
+                            }
+                            catch (Exception)
+                            {
+                                pingDelayOut = -1;
+                            }
+
+                            // Tcp delay
+                            int tcpDelayOut = -1;
+                            try
+                            {
+                                Stopwatch tcpDelay = new();
+                                tcpDelay.Start();
+                                bool canTcpConnect = await NetworkTool.CanTcpConnect(ipOut, CheckPort, Timeout);
+                                tcpDelay.Stop();
+
+                                if (canTcpConnect) tcpDelayOut = Convert.ToInt32(tcpDelay.ElapsedMilliseconds);
+                                tcpDelay.Reset();
+                            }
+                            catch (Exception)
+                            {
+                                tcpDelayOut = -1;
+                            }
+
+                            // Result
+                            if (tcpDelayOut != -1 && pingDelayOut != -1)
+                            {
+                                IpScannerResult scannerResult = new()
+                                {
+                                    IP = ipOut,
+                                    RealDelay = realDelayOut,
+                                    TcpDelay = tcpDelayOut,
+                                    PingDelay = pingDelayOut
+                                };
+
+                                OnWorkingIpReceived?.Invoke(scannerResult, EventArgs.Empty);
+                                WorkingIPs.Add(scannerResult);
+                            }
                         }
-                        catch (Exception)
-                        {
-                            tcpDelayOut = -1;
-                        }
 
-                        // Result
-                        IpScannerResult scannerResult = new()
-                        {
-                            IP = ipOut,
-                            RealDelay = realDelayOut,
-                            TcpDelay = tcpDelayOut,
-                            PingDelay = pingDelayOut
-                        };
-
-                        OnWorkingIpReceived?.Invoke(scannerResult, EventArgs.Empty);
-                        WorkingIPs.Add(scannerResult);
                     }
 
+                    AllIPs.Clear();
+                    ipRange.Pause(false);
+                    await Task.Delay(pauseDelayMs);
+                    if (!ipRange.IsRunning) StopScan = true;
                 }
-
             });
         }
         catch (Exception ex)

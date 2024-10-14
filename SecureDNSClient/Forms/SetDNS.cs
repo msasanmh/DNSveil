@@ -8,7 +8,7 @@ namespace SecureDNSClient;
 
 public partial class FormMain
 {
-    private async Task SetDNS(List<string> nicNameList, bool unset = false, bool limitLog = false)
+    private async Task SetDnsAsync(List<string> nicNameList, bool unset = false, bool limitLog = false)
     {
         string loopbackIPv4 = IPAddress.Loopback.ToString();
         string loopbackIPv6 = IPAddress.IPv6Loopback.ToString();
@@ -256,9 +256,11 @@ public partial class FormMain
         else
         {
             // Unset to Static
-            string dns1 = CustomTextBoxSettingUnsetDns1.Text;
-            string dns2 = CustomTextBoxSettingUnsetDns2.Text;
-            await SetDnsOnNic_.UnsetDnsToStatic(dns1, dns2, nicName);
+            string dnsIPv4_1 = CustomTextBoxSettingUnsetDns1.Text;
+            string dnsIPv4_2 = CustomTextBoxSettingUnsetDns2.Text;
+            string dnsIPv6_1 = CustomTextBoxSettingUnsetDnsIPv6_1.Text;
+            string dnsIPv6_2 = CustomTextBoxSettingUnsetDnsIPv6_2.Text;
+            await SetDnsOnNic_.UnsetDnsToStatic(dnsIPv4_1, dnsIPv4_2, dnsIPv6_1, dnsIPv6_2, nicName);
         }
     }
 

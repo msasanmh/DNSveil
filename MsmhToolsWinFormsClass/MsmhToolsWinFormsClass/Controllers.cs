@@ -14,15 +14,48 @@ public static class Controllers
 
         void getAllSubControlsByType(Control control)
         {
-            listC.Add(control);
-
-            if (control.HasChildren)
+            try
             {
-                for (int n = 0; n < control.Controls.Count; n++)
+                listC.Add(control);
+
+                if (control.HasChildren)
                 {
-                    Control c = control.Controls[n];
-                    getAllSubControlsByType(c);
+                    for (int n = 0; n < control.Controls.Count; n++)
+                    {
+                        Control c = control.Controls[n];
+                        getAllSubControlsByType(c);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Controllers GetAllControls: " + ex.Message);
+            }
+        }
+        return listC;
+    }
+    //-----------------------------------------------------------------------------------
+    public static List<Control> GetChildControls(Control control)
+    {
+        List<Control> listC = new();
+        getSubControlsByType(control);
+
+        void getSubControlsByType(Control control)
+        {
+            try
+            {
+                if (control.HasChildren)
+                {
+                    for (int n = 0; n < control.Controls.Count; n++)
+                    {
+                        Control c = control.Controls[n];
+                        listC.Add(c);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Controllers GetChildControls: " + ex.Message);
             }
         }
         return listC;
@@ -35,14 +68,21 @@ public static class Controllers
 
         void getAllSubControlsByType(Control control)
         {
-            if (control.HasChildren)
+            try
             {
-                for (int n = 0; n < control.Controls.Count; n++)
+                if (control.HasChildren)
                 {
-                    Control c = control.Controls[n];
-                    listC.Add(c);
-                    getAllSubControlsByType(c);
+                    for (int n = 0; n < control.Controls.Count; n++)
+                    {
+                        Control c = control.Controls[n];
+                        listC.Add(c);
+                        getAllSubControlsByType(c);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Controllers GetAllChildControls: " + ex.Message);
             }
         }
         return listC;
@@ -51,21 +91,30 @@ public static class Controllers
     public static List<T> GetAllControlsByType<T>(Control control)
     {
         List<T> listT = new();
-        var type = control.GetType();
-        var fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
-        for (int n = 0; n < fields.Length; n++)
-        {
-            FieldInfo field = fields[n];
-            object? value = field.GetValue(control);
 
-            if (value != null &&
-                (value.GetType().IsSubclassOf(typeof(T)) || value.GetType() == typeof(T)))
+        try
+        {
+            var type = control.GetType();
+            var fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+            for (int n = 0; n < fields.Length; n++)
             {
-                var t = (T)value;
-                if (t != null)
-                    listT.Add(t);
+                FieldInfo field = fields[n];
+                object? value = field.GetValue(control);
+
+                if (value != null &&
+                    (value.GetType().IsSubclassOf(typeof(T)) || value.GetType() == typeof(T)))
+                {
+                    var t = (T)value;
+                    if (t != null)
+                        listT.Add(t);
+                }
             }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Controllers GetAllControlsByType: " + ex.Message);
+        }
+
         return listT;
     } // Usage: var toolStripButtons = GetSubControls<ToolStripDropButton>(form);
       //-----------------------------------------------------------------------------------
@@ -115,13 +164,22 @@ public static class Controllers
     public static Control GetTopParent(Control control)
     {
         Control parent = control;
-        if (control.Parent != null)
+
+        try
         {
-            parent = control.Parent;
-            if (parent.Parent != null)
-                while (parent.Parent != null)
-                    parent = parent.Parent;
+            if (control.Parent != null)
+            {
+                parent = control.Parent;
+                if (parent.Parent != null)
+                    while (parent.Parent != null)
+                        parent = parent.Parent;
+            }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Controllers GetTopParent: " + ex.Message);
+        }
+
         return parent;
     }
     //-----------------------------------------------------------------------------------
@@ -139,7 +197,7 @@ public static class Controllers
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Controllers_SetDarkControl: " + ex.Message);
+                Debug.WriteLine("Controllers SetDarkControl: " + ex.Message);
             }
         });
     }
@@ -168,7 +226,7 @@ public static class Controllers
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Controllers_InvalidateAll: " + ex.Message);
+                Debug.WriteLine("Controllers InvalidateAll: " + ex.Message);
             }
         });
     }
@@ -183,7 +241,7 @@ public static class Controllers
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Controllers_InvalidateAll: " + ex.Message);
+                Debug.WriteLine("Controllers InvalidateAll: " + ex.Message);
             }
         });
     }

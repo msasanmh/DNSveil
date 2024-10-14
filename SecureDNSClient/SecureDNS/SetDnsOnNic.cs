@@ -369,36 +369,70 @@ public class SetDnsOnNic
         await UnsetDnsToDHCP(nicName);
     }
 
-    public async Task UnsetDnsToStatic(string dns1, string dns2, string nicName)
+    public async Task UnsetDnsToStatic(string ipv4_1, string ipv4_2, string ipv6_1, string ipv6_2, string nicName)
     {
         if (string.IsNullOrEmpty(nicName)) return;
-        dns1 = dns1.Trim();
-        dns2 = dns2.Trim();
-        await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName, dns1, dns2));
-        await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName));
+
+        ipv4_1 = ipv4_1.Trim();
+        ipv4_2 = ipv4_2.Trim();
+        ipv6_1 = ipv6_1.Trim();
+        ipv6_2 = ipv6_2.Trim();
+
+        if (NetworkTool.IsIP(ipv4_1, out IPAddress? ip41) && ip41 != null && NetworkTool.IsIPv4(ip41))
+        {
+            if (NetworkTool.IsIP(ipv4_2, out IPAddress? ip42) && ip42 != null && NetworkTool.IsIPv4(ip42))
+            {
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName, ipv4_1, ipv4_2));
+            }
+            else
+            {
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName, ipv4_1, null));
+            }
+        }
+        else
+        {
+            await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName));
+        }
+
+        if (NetworkTool.IsIP(ipv6_1, out IPAddress? ip61) && ip61 != null && NetworkTool.IsIPv6(ip61))
+        {
+            if (NetworkTool.IsIP(ipv6_2, out IPAddress? ip62) && ip62 != null && NetworkTool.IsIPv6(ip62))
+            {
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName, ipv6_1, ipv6_2));
+            }
+            else
+            {
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName, ipv6_1, null));
+            }
+        }
+        else
+        {
+            await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName));
+        }
+
         SaveToFile();
     }
 
-    public async Task UnsetDnsToStatic(string dns1, string dns2, List<string> nicNameList)
+    public async Task UnsetDnsToStatic(string ipv4_1, string ipv4_2, string ipv6_1, string ipv6_2, List<string> nicNameList)
     {
         for (int n = 0; n < nicNameList.Count; n++)
         {
             string nicName = nicNameList[n];
-            await UnsetDnsToStatic(dns1, dns2, nicName);
+            await UnsetDnsToStatic(ipv4_1, ipv4_2, ipv6_1, ipv6_2, nicName);
         }
     }
 
-    public async Task UnsetDnsToStatic(string dns1, string dns2, NetworkInterface? nic)
+    public async Task UnsetDnsToStatic(string ipv4_1, string ipv4_2, string ipv6_1, string ipv6_2, NetworkInterface? nic)
     {
         if (nic == null) return;
-        await UnsetDnsToStatic(dns1, dns2, nic.Name);
+        await UnsetDnsToStatic(ipv4_1, ipv4_2, ipv6_1, ipv6_2, nic.Name);
     }
 
-    public async Task UnsetDnsToStatic(string dns1, string dns2, CustomComboBox ccb)
+    public async Task UnsetDnsToStatic(string ipv4_1, string ipv4_2, string ipv6_1, string ipv6_2, CustomComboBox ccb)
     {
         string? nicName = ccb.SelectedItem as string;
         if (string.IsNullOrEmpty(nicName)) return;
-        await UnsetDnsToStatic(dns1, dns2, nicName);
+        await UnsetDnsToStatic(ipv4_1, ipv4_2, ipv6_1, ipv6_2, nicName);
     }
 
     public async Task UnsetSavedDnssToDHCP()

@@ -32,7 +32,7 @@ public class AgnosticSettings
 
     public WorkingMode Working_Mode { get; set; } = WorkingMode.DnsAndProxy;
 
-    private int PMaxRequests { get; set; } = 5000;
+    private int PMaxRequests { get; set; } = 10000;
     /// <summary>
     /// Maximum Number Of Threads Per Second. (Min: 20)
     /// </summary>
@@ -128,7 +128,7 @@ public class AgnosticSettings
         else
         {
             IsIPv4SupportedByISP = true;
-            IsIPv6SupportedByISP = false;
+            IsIPv6SupportedByISP = true;
         }
 
         IsIPv4SupportedByOS = NetworkTool.IsIPv4Supported();

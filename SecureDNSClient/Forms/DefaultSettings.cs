@@ -132,34 +132,42 @@ public partial class FormMain : Form
                 // Settings Connect
                 CustomNumericUpDownSettingMaxServers.Value = (decimal)5;
                 CustomCheckBoxSettingConnectRetry.Checked = false;
-                CustomCheckBoxDnsEventShowRequest.Checked = false;
-                CustomCheckBoxSettingDnsEnableRules.Checked = false;
+                CustomCheckBoxDnsEventShowRequest.Checked = true;
 
                 // Settings Set/Unset DNS
                 CustomRadioButtonSettingUnsetDnsToDhcp.Checked = false;
                 CustomRadioButtonSettingUnsetDnsToStatic.Checked = true;
                 CustomTextBoxSettingUnsetDns1.Text = "8.8.8.8";
                 CustomTextBoxSettingUnsetDns2.Text = "8.8.4.4";
+                CustomTextBoxSettingUnsetDnsIPv6_1.Text = string.Empty;
+                CustomTextBoxSettingUnsetDnsIPv6_2.Text = string.Empty;
 
                 // Settings Share Basic
                 CustomNumericUpDownSettingProxyPort.Value = (decimal)8080;
                 CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)5000;
-                CustomCheckBoxSettingProxyBlockPort80.Checked = true;
+                CustomCheckBoxSettingProxyBlockPort80.Checked = false;
                 CustomNumericUpDownSettingProxyKillRequestTimeout.Value = (decimal)60;
                 CustomCheckBoxSettingProxyUpstream.Checked = false;
                 CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Checked = true;
-                CustomComboBoxSettingProxyUpstreamMode.SelectedIndex = CustomComboBoxSettingProxyUpstreamMode.Items.Count > 1 ? 1 : -1;
+                CustomComboBoxSettingProxyUpstreamMode.SelectedIndex = CustomComboBoxSettingProxyUpstreamMode.Items.Count > 1 ? 0 : -1;
                 CustomTextBoxSettingProxyUpstreamHost.Text = IPAddress.Loopback.ToString();
                 CustomNumericUpDownSettingProxyUpstreamPort.Value = (decimal)1090;
-
-                // Settings Share Advanced
-                CustomCheckBoxSettingProxyCfCleanIP.Checked = false;
-                CustomTextBoxSettingProxyCfCleanIP.Text = string.Empty;
-                CustomCheckBoxSettingProxyEnableRules.Checked = false;
 
                 // Settings Fake Proxy
                 CustomTextBoxSettingFakeProxyDohAddress.Text = "https://dns.cloudflare.com/dns-query";
                 CustomTextBoxSettingFakeProxyDohCleanIP.Text = "104.16.132.229";
+
+                // Settings Rules
+                CustomCheckBoxSettingProxyCfCleanIP.Checked = false;
+                CustomTextBoxSettingProxyCfCleanIP.Text = string.Empty;
+                CustomCheckBoxSettingEnableRules.Checked = false;
+
+                // Geo Assets
+                CustomCheckBoxGeoAsset_IR_Domains.Checked = true;
+                CustomCheckBoxGeoAsset_IR_CIDRs.Checked = true;
+                CustomCheckBoxGeoAsset_IR_ADS.Checked = false;
+                CustomCheckBoxGeoAssetUpdate.Checked = true;
+                CustomNumericUpDownGeoAssetsUpdate.Value = (decimal)24;
 
                 // Settings CPU
                 CustomRadioButtonSettingCPUHigh.Checked = false;

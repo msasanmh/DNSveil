@@ -69,13 +69,13 @@ internal class Program
         fragment.Set(AgnosticProgram.Fragment.Mode.Program, 50, AgnosticProgram.Fragment.ChunkMode.SNI, 5, 2, 1);
         server1.EnableFragment(fragment);
 
-        AgnosticProgram.DnsRules dnsRules1 = new();
-        dnsRules1.Set(AgnosticProgram.DnsRules.Mode.Text, dnsRulesContent);
-        server1.EnableDnsRules(dnsRules1);
+        AgnosticProgram.Rules dnsRules1 = new();
+        await dnsRules1.SetAsync(AgnosticProgram.Rules.Mode.Text, dnsRulesContent);
+        server1.EnableRules(dnsRules1);
 
-        AgnosticProgram.ProxyRules proxyRules1 = new();
-        proxyRules1.Set(AgnosticProgram.ProxyRules.Mode.Text, proxyRulesContent);
-        server1.EnableProxyRules(proxyRules1);
+        AgnosticProgram.Rules proxyRules1 = new();
+        await proxyRules1.SetAsync(AgnosticProgram.Rules.Mode.Text, proxyRulesContent);
+        server1.EnableRules(proxyRules1);
 
 
         List<string> dnsServers2 = new()

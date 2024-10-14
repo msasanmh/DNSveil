@@ -3,7 +3,6 @@ using System.Diagnostics;
 using CustomControls;
 using System.Reflection;
 using MsmhToolsClass;
-using MsmhToolsClass.MsmhAgnosticServer;
 using System.Runtime.InteropServices;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -84,8 +83,6 @@ public class SecureDNS
     public static readonly string SettingsXmlDnsScanner = GetFullPath(UserDataDirPath, "DnsScannerSettings.xml");
     public static readonly string SettingsXmlDnsScannerExport = GetFullPath(UserDataDirPath, "DnsScannerExportSettings.xml");
     public static readonly string UserIdPath = GetFullPath(UserDataDirPath, "uid.txt");
-    public static readonly string DnsRulesPath = GetFullPath(UserDataDirPath, "DnsRules.txt");
-    public static readonly string ProxyRulesPath = GetFullPath(UserDataDirPath, "ProxyRules.txt");
     public static readonly string BuiltInServersSecureUpdateUrl = "https://github.com/msasanmh/SecureDNSClient/raw/main/Subs/sdc-secure.txt";
     public static readonly string BuiltInServersSecurePath = GetFullPath(UserDataDirPath, "BuiltInServers_Secure.txt");
     public static readonly string BuiltInServersInsecureUpdateUrl = "https://github.com/msasanmh/SecureDNSClient/raw/main/Subs/sdc-insecure.txt";
@@ -99,6 +96,19 @@ public class SecureDNS
     public static readonly string LogWindowPath = GetFullPath(UserDataDirPath, "LogWindow.txt");
     public static readonly string CloseStatusPath = GetFullPath(UserDataDirPath, "CloseStatus.txt");
     public static readonly string ErrorLogPath = GetFullPath(UserDataDirPath, "ErrorLog.txt");
+
+    // Rules & Assets
+    public static readonly string RulesPath = GetFullPath(UserDataDirPath, "Rules.txt");
+    public static readonly string DnsRulesPath = GetFullPath(UserDataDirPath, "DnsRules.txt");
+    public static readonly string ProxyRulesPath = GetFullPath(UserDataDirPath, "ProxyRules.txt");
+    public static readonly string Rules_Assets_DNS = GetFullPath(UserDataDirPath, "Rules_Assets_DNS.tmp");
+    public static readonly string Rules_Assets_Proxy = GetFullPath(UserDataDirPath, "Rules_Assets_Proxy.tmp");
+    public static readonly string AssetDirPath = GetFullPath(UserDataDirPath, "Assets");
+    public static readonly string Asset_Local_CIDRs = GetFullPath(AssetDirPath, "Local_CIDRs.txt");
+    public static readonly string Asset_Cloudflare_CIDRs = GetFullPath(AssetDirPath, "Cloudflare_CIDRs.txt");
+    public static readonly string Asset_IR_Domains = GetFullPath(AssetDirPath, "IR_Domains.txt");
+    public static readonly string Asset_IR_CIDRs = GetFullPath(AssetDirPath, "IR_CIDRs.txt");
+    public static readonly string Asset_IR_ADS_Domains = GetFullPath(AssetDirPath, "IR_ADS_Domains.txt");
 
     // Old Proxy ProxyRules
     public static readonly string BlackWhiteListPath = GetFullPath(UserDataDirPath, "BlackWhiteList.txt");

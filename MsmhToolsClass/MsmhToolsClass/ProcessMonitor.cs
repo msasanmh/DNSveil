@@ -1,5 +1,6 @@
 ﻿using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
+using System.Diagnostics;
 
 namespace MsmhToolsClass;
 
@@ -121,8 +122,9 @@ public sealed class ProcessMonitor : IDisposable
                 EtwSession.StopOnDispose = false;
                 EtwSession.Source.Process();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine("ProcessMonitor Start: " + ex.Message);
                 ResetNetCounters();
             }
         });
@@ -307,9 +309,16 @@ public sealed class ProcessMonitor : IDisposable
 
     public void Dispose()
     {
-        if (ClearTimer.Enabled) ClearTimer.Stop();
-        Stop = true;
-        EtwSession?.Source.StopProcessing();
-        EtwSession?.Dispose();
+        try
+        {
+            if (ClearTimer.Enabled) ClearTimer.Stop();
+            Stop = true;
+            EtwSession?.Source.StopProcessing();
+            EtwSession?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ProcessMonitor Dispose: " + ex.Message);
+        }
     }
 }

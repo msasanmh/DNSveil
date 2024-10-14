@@ -346,6 +346,24 @@ public static class ExtensionsMethods
     //-----------------------------------------------------------------------------------
     public static List<string> SplitToLines(this string s)
     {
+        List<string> lines = new();
+
+        try
+        {
+            s = s.ReplaceLineEndings();
+            string[] split = s.Split(Environment.NewLine);
+            if (split.Length > 0) lines = split.ToList();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ExtensionsMethods SplitToLines: " + ex.Message);
+        }
+
+        return lines;
+    }
+
+    public static List<string> SplitToLinesOld(this string s)
+    {
         // Original non-optimized version: return source.Replace("\r\r\n", "\n").Replace("\r\n", "\n").Replace('\r', '\n').Replace('\u2028', '\n').Split('\n');
         List<string> lines = new();
 
@@ -400,7 +418,7 @@ public static class ExtensionsMethods
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ExtensionsMethods ToString<T>: " + ex.Message);
+            Debug.WriteLine("ExtensionsMethods SplitToLinesOld: " + ex.Message);
         }
 
         return lines;

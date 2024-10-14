@@ -137,11 +137,14 @@ public class ProcessConsole
         string? msg = e.Data;
         if (msg != null)
         {
-            Stdout = msg;
-            StandardDataReceived?.Invoke(this, e);
-
             // Add To Bag
-            StdoutBag.Add(msg);
+            if (!string.IsNullOrWhiteSpace(msg))
+            {
+                Stdout = msg;
+                StdoutBag.Add(msg);
+            }
+
+            StandardDataReceived?.Invoke(this, e);
         }
     }
 
@@ -150,11 +153,14 @@ public class ProcessConsole
         string? msg = e.Data;
         if (msg != null)
         {
-            Stderr = msg;
-            ErrorDataReceived?.Invoke(this, e);
-
             // Add To Bag
-            StderrBag.Add(msg);
+            if (!string.IsNullOrWhiteSpace(msg))
+            {
+                Stderr = msg;
+                StderrBag.Add(msg);
+            }
+
+            ErrorDataReceived?.Invoke(this, e);
         }
     }
 
@@ -163,7 +169,7 @@ public class ProcessConsole
     /// </summary>
     /// <param name="command">Command</param>
     /// <returns>Returns True if success</returns>
-    public async Task<bool> SendCommandAsync(string command, int delayMS = 200, int timeoutSec = 15)
+    public async Task<bool> SendCommandAsync(string command, int delayMS = 50, int timeoutSec = 15, string confirmMsg = "")
     {
         bool isSent = false;
 
@@ -171,7 +177,8 @@ public class ProcessConsole
         {
             if (Process_ != null && ProcessManager.FindProcessByPID(GetPid))
             {
-                Task wait = Task.Run(async () =>
+                // Delay
+                Task wait1 = Task.Run(async () =>
                 {
                     while (true)
                     {
@@ -181,15 +188,37 @@ public class ProcessConsole
                         if (n1 == n2) break;
                     }
                 });
-                try { await wait.WaitAsync(CancellationToken.None); } catch (Exception) { }
+                try { await wait1.WaitAsync(CancellationToken.None); } catch (Exception) { }
 
-
+                // Send Command
                 Task timeout = Task.Run(async () =>
                 {
                     await Process_.StandardInput.WriteLineAsync(command);
                     isSent = true;
                 });
                 try { await timeout.WaitAsync(TimeSpan.FromSeconds(timeoutSec)); } catch (Exception) { }
+
+                // Get Confirm
+                if (!string.IsNullOrWhiteSpace(confirmMsg))
+                {
+                    Task confirm = Task.Run(async () =>
+                    {
+                        while (true)
+                        {
+                            if (GetStdout.Equals(confirmMsg))
+                            {
+                                isSent = true;
+                                break;
+                            }
+                            else
+                            {
+                                isSent = false;
+                                await Task.Delay(delayMS);
+                            }
+                        }
+                    });
+                    try { await confirm.WaitAsync(TimeSpan.FromSeconds(timeoutSec)); } catch (Exception) { }
+                }
             }
         }
         catch (Exception ex)

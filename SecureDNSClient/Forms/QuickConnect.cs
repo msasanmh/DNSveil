@@ -343,7 +343,7 @@ public partial class FormMain
 
                             async Task<bool> runSetDns()
                             {
-                                await SetDNS(nicNameList);
+                                await SetDnsAsync(nicNameList);
 
                                 // Wait until DNS is set
                                 QuickConnectTimeout.Restart();
@@ -409,7 +409,7 @@ public partial class FormMain
             async Task<bool> runStartProxy()
             {
                 // Start Proxy
-                await StartProxy(false, false);
+                await StartProxyAsync(false, false);
 
                 // Wait for Proxy
                 QuickConnectTimeout.Restart();
@@ -762,7 +762,7 @@ public partial class FormMain
         // Stop Proxy
         if (stopProxy && (IsProxyActivated || IsProxyActivating))
         {
-            await StartProxy(true);
+            await StartProxyAsync(true);
 
             // Wait
             QuickConnectTimeout.Restart();

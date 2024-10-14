@@ -159,7 +159,7 @@ public class DnsReader
                 {
                     NetworkTool.GetUrlDetails(Dns, 53, out _, out string ipStr, out _, out _, out int port, out _, out _);
 
-                    if (NetworkTool.IsIp(ipStr, out _))
+                    if (NetworkTool.IsIP(ipStr, out _))
                     {
                         // Plain DNS UDP
                         SetIpPortHostPath(Dns, 53);

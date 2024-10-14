@@ -616,7 +616,7 @@ public class HttpRequest
                                 break;
                             }
                         }
-                        Debug.WriteLine($"HttpRequest SendAsync. URL: {hr.URI}, Host Header: {host}");
+                        //Debug.WriteLine($"HttpRequest SendAsync. URL: {hr.URI}, Host Header: {host}");
                         Debug.WriteLine("HttpRequest SendAsync: " + ex.GetInnerExceptions());
                     }
                     catch (Exception) { }

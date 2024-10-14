@@ -52,7 +52,7 @@ public static class CommonTools
         // Example www.google.com or gstatic.google.com
         // But NOT for google.com or IP address
 
-        if (NetworkTool.IsIp(hostname, out _)) return hostname;
+        if (NetworkTool.IsIP(hostname, out _)) return hostname;
 
         NetworkTool.GetHostDetails(hostname, 443, out _, out _, out string baseHost, out _, out _, out _);
 
@@ -61,62 +61,44 @@ public static class CommonTools
         return $"*.{baseHost}";
     }
 
-    public static bool IsCfIP(string ipString)
+    public static bool IsCfIP(string ipStr)
     {
         try
         {
-            List<string> cloudflareIPs = new()
+            bool isIp = NetworkTool.IsIP(ipStr, out _);
+            if (!isIp) return false;
+
+            List<string> cloudflareCIDRs = new()
             {
-                "103.21.244.0 - 103.21.244.255",
-                "103.22.200.0 - 103.22.200.255",
-                "103.31.4.0 - 103.31.5.255",
-                "104.16.0.0 - 104.31.255.255",
-                "108.162.192.0 - 108.162.207.255",
-                "131.0.72.0 - 131.0.75.255",
-                "141.101.64.0 - 141.101.65.255",
-                "162.158.0.0 - 162.158.3.255",
-                "172.64.0.0 - 172.67.255.255",
-                "173.245.48.0 - 173.245.48.255",
-                "188.114.96.0 - 188.114.99.255",
-                "190.93.240.0 - 190.93.243.255",
-                "197.234.240.0 - 197.234.243.255",
-                "198.41.128.0 - 198.41.143.255"
+                "103.21.244.0/22",
+                "103.22.200.0/22",
+                "103.31.4.0/22",
+                "104.16.0.0/13",
+                "104.24.0.0/14",
+                "108.162.192.0/18",
+                "131.0.72.0/22",
+                "141.101.64.0/18",
+                "162.158.0.0/15",
+                "172.64.0.0/13",
+                "173.245.48.0/20",
+                "188.114.96.0/20",
+                "190.93.240.0/20",
+                "197.234.240.0/22",
+                "198.41.128.0/17",
+                "2400:cb00::/32",
+                "2405:8100::/32",
+                "2405:b500::/32",
+                "2606:4700::/32",
+                "2803:f800::/32",
+                "2a06:98c0::/29",
+                "2c0f:f248::/32"
             };
 
-            string[] ips = ipString.Split('.');
-            int ip1 = int.Parse(ips[0]);
-            int ip2 = int.Parse(ips[1]);
-            int ip3 = int.Parse(ips[2]);
-            int ip4 = int.Parse(ips[3]);
-
-            for (int n = 0; n < cloudflareIPs.Count; n++)
+            for (int n = 0; n < cloudflareCIDRs.Count; n++)
             {
-                string ipRange = cloudflareIPs[n].Trim();
-
-                if (!string.IsNullOrEmpty(ipRange))
-                {
-                    string[] split = ipRange.Split('-', StringSplitOptions.TrimEntries);
-                    string ipMin = split[0].Trim();
-                    string ipMax = split[1].Trim();
-
-                    string[] ipMins = ipMin.Split('.');
-                    int ipMin1 = int.Parse(ipMins[0]);
-                    int ipMin2 = int.Parse(ipMins[1]);
-                    int ipMin3 = int.Parse(ipMins[2]);
-                    int ipMin4 = int.Parse(ipMins[3]);
-
-                    string[] ipMaxs = ipMax.Split('.');
-                    int ipMax1 = int.Parse(ipMaxs[0]);
-                    int ipMax2 = int.Parse(ipMaxs[1]);
-                    int ipMax3 = int.Parse(ipMaxs[2]);
-                    int ipMax4 = int.Parse(ipMaxs[3]);
-
-                    if (ip1 >= ipMin1 && ip1 <= ipMax1)
-                        if (ip2 >= ipMin2 && ip2 <= ipMax2)
-                            if (ip3 >= ipMin3 && ip3 <= ipMax3)
-                                if (ip4 >= ipMin4 && ip4 <= ipMax4)
-                                    return true;
-                }
+                string cidr = cloudflareCIDRs[n].Trim();
+                bool isInRange = NetworkTool.IsIpInRange(ipStr, cidr);
+                if (isInRange) return true;
             }
             return false;
         }

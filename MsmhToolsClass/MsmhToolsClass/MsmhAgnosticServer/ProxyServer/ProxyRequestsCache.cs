@@ -15,19 +15,19 @@ public class ProxyRequestsCache
     public class ApplyChangeSNI
     {
         public bool Apply { get; set; }
-        public string Event_ApplyChangeSNI { get; set; } = string.Empty;
+        public string Comment { get; set; } = string.Empty;
     }
 
     public class ApplyFragment
     {
         public bool Apply { get; set; }
-        public string Event_ApplyFragment { get; set; } = string.Empty;
+        public string Comment { get; set; } = string.Empty;
     }
 
     public class IsDestBlocked
     {
         public bool Apply { get; set; }
-        public string Event_IsDestBlocked { get; set; } = string.Empty;
+        public string Comment { get; set; } = string.Empty;
     }
 
     public class ProxyRequestsCacheResult
@@ -49,7 +49,7 @@ public class ProxyRequestsCache
             {
                 DateTime now = DateTime.UtcNow;
                 TimeSpan ts = now - cachedReq.dt;
-                if (ts >= TimeSpan.FromMinutes(30))
+                if (ts >= TimeSpan.FromHours(1)) // Cache Time
                 {
                     Caches.TryRemove(key, out _);
                 }

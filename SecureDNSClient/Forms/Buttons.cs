@@ -4,9 +4,11 @@ using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
-using System.Reflection;
+using MaxMind.GeoIP2;
+using MaxMind.GeoIP2.Responses;
+using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Security.Cryptography;
 
 namespace SecureDNSClient;
 
@@ -353,7 +355,7 @@ public partial class FormMain
     {
         if (IsExiting) return;
         if (IsInAction(true, true, true, true, true, true, true, true, true, false, true, out _)) return;
-        await SetDNS(GetNicNameSetting(CustomComboBoxNICs).NICs);
+        await SetDnsAsync(GetNicNameSetting(CustomComboBoxNICs).NICs);
 
         // Update NIC Status
         await UpdateStatusNicAsync();
@@ -413,7 +415,7 @@ public partial class FormMain
     {
         if (IsExiting) return;
         if (IsInAction(true, true, true, true, true, true, true, true, true, true, true, out _)) return;
-        await StartProxy();
+        await StartProxyAsync();
     }
 
     private async void CustomButtonSetProxy_Click(object sender, EventArgs e)
@@ -428,7 +430,7 @@ public partial class FormMain
         if (IsExiting) return;
         this.InvokeIt(() => CustomButtonPDpiApplyChanges.Text = "Applying");
         UpdateProxyBools = false;
-        await ApplyProxyDpiChanges();
+        await ApplyProxyDpiChangesAsync();
         UpdateProxyBools = true;
 
         await UpdateBoolProxyAsync();
@@ -672,25 +674,12 @@ public partial class FormMain
         }
     }
 
-    // Settings -> Connect
-    private void CustomButtonSettingDnsRules_Click(object sender, EventArgs e)
+    // Settings -> Rules
+    private void CustomButtonSettingRules_Click(object sender, EventArgs e)
     {
         if (IsExiting) return;
-        FileDirectory.CreateEmptyFile(SecureDNS.DnsRulesPath);
-        int notepad = ProcessManager.ExecuteOnly("notepad", null, SecureDNS.DnsRulesPath, false, false, SecureDNS.CurrentPath);
-        if (notepad == -1)
-        {
-            string msg = "Notepad is not installed on your system.";
-            CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
-        }
-    }
-
-    // Settings -> Share -> Advanced
-    private void CustomButtonSettingProxyRules_Click(object sender, EventArgs e)
-    {
-        if (IsExiting) return;
-        FileDirectory.CreateEmptyFile(SecureDNS.ProxyRulesPath);
-        int notepad = ProcessManager.ExecuteOnly("notepad", null, SecureDNS.ProxyRulesPath, false, false, SecureDNS.CurrentPath);
+        FileDirectory.CreateEmptyFile(SecureDNS.RulesPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", null, SecureDNS.RulesPath, false, false, SecureDNS.CurrentPath);
         if (notepad == -1)
         {
             string msg = "Notepad is not installed on your system.";

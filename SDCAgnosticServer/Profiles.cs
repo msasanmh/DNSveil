@@ -10,8 +10,7 @@ public class ServerProfile
     public AgnosticSettings? Settings { get; set; }
     public AgnosticSettingsSSL? SettingsSSL { get; set; }
     public AgnosticProgram.Fragment? Fragment { get; set; }
-    public AgnosticProgram.DnsRules? DnsRules { get; set; }
-    public AgnosticProgram.ProxyRules? ProxyRules { get; set; }
+    public AgnosticProgram.Rules? Rules { get; set; }
     public AgnosticProgram.DnsLimit? DnsLimit { get; set; }
 }
 
@@ -42,15 +41,10 @@ public static partial class Program
                         existServerProfile.Fragment = serverProfile.Fragment;
                         existServerProfile.AgnosticServer.EnableFragment(existServerProfile.Fragment);
                     }
-                    if (serverProfile.DnsRules != null)
+                    if (serverProfile.Rules != null)
                     {
-                        existServerProfile.DnsRules = serverProfile.DnsRules;
-                        existServerProfile.AgnosticServer.EnableDnsRules(existServerProfile.DnsRules);
-                    }
-                    if (serverProfile.ProxyRules != null)
-                    {
-                        existServerProfile.ProxyRules = serverProfile.ProxyRules;
-                        existServerProfile.AgnosticServer.EnableProxyRules(existServerProfile.ProxyRules);
+                        existServerProfile.Rules = serverProfile.Rules;
+                        existServerProfile.AgnosticServer.EnableRules(existServerProfile.Rules);
                     }
                     if (serverProfile.DnsLimit != null)
                     {

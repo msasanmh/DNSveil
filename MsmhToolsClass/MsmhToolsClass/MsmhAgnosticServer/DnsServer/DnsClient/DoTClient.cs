@@ -48,7 +48,13 @@ public class DoTClient
                 if (dnsServerIP.Equals(Reader.Host))
                     dnsServerIP = await Bootstrap.GetDnsIpAsync(Reader.Host, BootstrapIP, BootstrapPort, 3, true, ProxyScheme, ProxyUser, ProxyPass);
                 
-                tcpClient = new();
+                if (NetworkTool.IsIP(dnsServerIP, out IPAddress? ip) && ip != null)
+                {
+                    IPEndPoint ep = new(ip, Reader.Port);
+                    tcpClient = new(ep.AddressFamily);
+                }
+                else
+                    tcpClient = new();
                 tcpClient.SendTimeout = TimeoutMS;
                 tcpClient.ReceiveTimeout = TimeoutMS;
                 tcpClient.Client.NoDelay = true;

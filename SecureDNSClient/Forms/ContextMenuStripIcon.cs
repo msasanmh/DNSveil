@@ -167,7 +167,7 @@ public partial class FormMain
     private async void Proxy_Click(object? sender, EventArgs e)
     {
         if (IsExiting) return;
-        await StartProxy();
+        await StartProxyAsync();
     }
 
     private async void ProxySet_Click(object? sender, EventArgs e)
@@ -373,7 +373,7 @@ public partial class FormMain
                 IsProxyDeactivating = false;
             }
 
-            // Disconnect -  Kill all processes
+            // Disconnect -  Kill All Processes
             if (IsConnected || IsConnecting)
             {
                 IsDisconnecting = true;
@@ -399,6 +399,8 @@ public partial class FormMain
         async Task dcDns()
         {
             // Unset DNS
+            IsDNSSet = SetDnsOnNic_.IsDnsSet(CustomComboBoxNICs, out bool isDnsSetOn, out _);
+            IsDNSSetOn = isDnsSetOn;
             if (IsDNSSet || IsDNSSetting)
             {
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Unsetting DNS...{NL}", Color.LightGray));
@@ -414,6 +416,14 @@ public partial class FormMain
             await UpdateBoolProxyAsync();
             bool isEverythingDisconnected = IsEverythingDisconnected(out string debug);
             if (isEverythingDisconnected) break;
+            else
+            {
+                if (IsExiting && IsConnecting)
+                {
+                    await LogToDebugFileAsync(debug);
+                    break;
+                }
+            }
 
             if (!sw.IsRunning) sw.Start();
             if (sw.ElapsedMilliseconds > 10000)

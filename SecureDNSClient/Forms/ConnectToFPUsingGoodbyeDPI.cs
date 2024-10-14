@@ -20,7 +20,7 @@ public partial class FormMain
 
         // Get DoH Clean IP
         string dohCleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text.Trim();
-        bool isValid = NetworkTool.IsIPv4Valid(dohCleanIP, out IPAddress? _);
+        bool isValid = NetworkTool.IsIP(dohCleanIP, out IPAddress? _);
         if (!isValid)
         {
             string msg = $"Fake Proxy Clean IP Is Not Valid, Check Settings.{NL}";
@@ -38,21 +38,11 @@ public partial class FormMain
         // Get Insecure
         bool insecure = CustomCheckBoxInsecure.Checked;
 
-        // Get Cloudflare Clean IPv4
-        string cfCleanIPv4 = GetCfCleanIpSetting();
+        // Get Cloudflare Clean IP
+        string cfCleanIP = GetCfCleanIpSetting();
 
-        // Set DnsRules Content
-        string dnsRulesContent = $"{dohHost}|{dohCleanIP};";
-        if (CustomCheckBoxSettingDnsEnableRules.Checked)
-        {
-            try
-            {
-                string userDnsRules = await File.ReadAllTextAsync(SecureDNS.DnsRulesPath);
-                userDnsRules = userDnsRules.ReplaceLineEndings("\\n");
-                dnsRulesContent += $"\\n{userDnsRules}";
-            }
-            catch (Exception) { }
-        }
+        // Set Rules Content
+        string rulesContent = $"{dohHost}|{dohCleanIP};";
 
         // Kill GoodbyeDPI If It's Already Running
         await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
@@ -95,6 +85,7 @@ public partial class FormMain
         // Kill DnsServer If It's Already Running
         await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
         bool isCmdSent = false;
+        int consoleDelayMs = 50, consoleTimeoutSec = 15;
         PIDDnsServer = DnsConsole.Execute(SecureDNS.AgnosticServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
         await Task.Delay(50);
 
@@ -123,19 +114,18 @@ public partial class FormMain
 
         // Send DNS Profile
         string command = "Profile BypassWithGoodbyeDPI_DNS";
-        isCmdSent = await DnsConsole.SendCommandAsync(command);
+        isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Profile");
         if (!isCmdSent) return false;
 
         // Send DNS Settings
         command = $"Setting -Port={dnsPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
-        command += $" -AllowInsecure={insecure} -DNSs={dohUrl} -CfCleanIP={cfCleanIPv4}";
+        command += $" -AllowInsecure={insecure} -DNSs={dohUrl} -CfCleanIP={cfCleanIP}";
         command += $" -BootstrapIp={IPAddress.Loopback} -BootstrapPort={dnsPort}";
-        isCmdSent = await DnsConsole.SendCommandAsync(command);
+        isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
         if (!isCmdSent) return false;
 
         // Send DNS Rules Command
-        command = $"Programs DnsRules -Mode=Text -PathOrText=\"{dnsRulesContent}\"";
-        isCmdSent = await DnsConsole.SendCommandAsync(command);
+        isCmdSent = await ApplyRulesToDnsAsync(rulesContent);
         if (!isCmdSent) return false;
 
         // DoH Server
@@ -151,56 +141,38 @@ public partial class FormMain
 
                 // Send DoH Profile
                 command = "Profile BypassWithGoodbyeDPI_DoH";
-                isCmdSent = await DnsConsole.SendCommandAsync(command);
+                isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Profile");
                 if (!isCmdSent) return false;
 
                 // Send DoH Settings
                 command = $"Setting -Port={dohPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
                 command += $" -AllowInsecure={insecure} -DNSs=udp://{IPAddress.Loopback}:{dnsPort}";
                 command += $" -BootstrapIp={IPAddress.Loopback} -BootstrapPort={dnsPort}";
-                isCmdSent = await DnsConsole.SendCommandAsync(command);
+                isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
                 if (!isCmdSent) return false;
 
                 // Send SSL Settings
                 command = $"SSLSetting -Enable=True -RootCA_Path=\"{SecureDNS.IssuerCertPath}\" -RootCA_KeyPath=\"{SecureDNS.IssuerKeyPath}\" -Cert_Path=\"{SecureDNS.CertPath}\" -Cert_KeyPath=\"{SecureDNS.KeyPath}\"";
-                isCmdSent = await DnsConsole.SendCommandAsync(command);
+                isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: SSLSetting");
                 if (!isCmdSent) return false;
             }
         }
 
         // Send Write Requests To Log
-        isCmdSent = await DnsConsole.SendCommandAsync("Requests True");
+        isCmdSent = await DnsConsole.SendCommandAsync("Requests True", consoleDelayMs, consoleTimeoutSec, "Confirmed: Requests True");
         if (!isCmdSent) return false;
 
         // Send Parent Process Command
         command = $"ParentProcess -PID={Environment.ProcessId}";
-        isCmdSent = await DnsConsole.SendCommandAsync(command);
+        isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: ParentProcess");
         if (!isCmdSent) return false;
 
         // Send Start Command
-        isCmdSent = await DnsConsole.SendCommandAsync("Start");
+        isCmdSent = await DnsConsole.SendCommandAsync("Start", consoleDelayMs, 30, "Confirmed: Start");
         if (!isCmdSent) return false;
 
-        // Wait For Confirm Msg
-        bool confirmed = false;
-        Task wait2 = Task.Run(async () =>
-        {
-            while (true)
-            {
-                if (IsDisconnecting) break;
-                if (!ProcessManager.FindProcessByPID(PIDDnsServer)) break;
-                if (DnsConsole.GetStdoutBag.Contains("Confirmed"))
-                {
-                    confirmed = true;
-                    break;
-                }
-                await Task.Delay(25);
-            }
-        });
-        try { await wait2.WaitAsync(TimeSpan.FromSeconds(30)); } catch (Exception) { }
-
         GetBlockedDomainSetting(out string blockedDomainNoWww);
-        if (IsConnected && confirmed)
+        if (IsConnected)
         {
             string msgSuccess = $"DNS Server Executed.{NL}Bypassing...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgSuccess, Color.MediumSeaGreen));
@@ -240,9 +212,9 @@ public partial class FormMain
             }
         }
 
-        string msgFailed = "Error: Couldn't Start DNS Server!";
-        if (!confirmed) msgFailed = "Couldn't Get Confirm Message From Console.";
-        else if (ProcessManager.FindProcessByPID(PIDDnsServer) && !IsDNSConnected)
+        string msgFailed = "Couldn't Get Confirm Message From Console.";
+        if (!ProcessManager.FindProcessByPID(PIDDnsServer)) msgFailed = "Error: Couldn't Start DNS Server!";
+        else if (!IsDNSConnected && ProcessManager.FindProcessByPID(PIDDnsServer))
             msgFailed = $"DNS Can't Get Online (Check Domain: {blockedDomainNoWww}). Bypass Failed.";
         if (IsDisconnecting) msgFailed = "Task Canceled.";
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgFailed + NL, Color.IndianRed));

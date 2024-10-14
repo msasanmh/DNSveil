@@ -115,8 +115,9 @@ public partial class FormMain : Form
         // Set NotifyIcon Text
         NotifyIconMain.Text = Text;
 
-        // Create User Dir if not Exist
+        // Create UserData & Assets Dir If Not Exist
         FileDirectory.CreateEmptyDirectory(SecureDNS.UserDataDirPath);
+        FileDirectory.CreateEmptyDirectory(SecureDNS.AssetDirPath);
 
         // Move User Data and Certificate to the new location
         await MoveToNewLocationAsync();
@@ -138,10 +139,10 @@ public partial class FormMain : Form
         SplitContainerMain.BackColor = Color.IndianRed; // Drag Bar Color
         CustomTextBoxHTTPProxy.Enabled = true; // Connect -> Method 4
         CustomCheckBoxSettingQcSetProxy.Enabled = CustomCheckBoxSettingQcStartProxyServer.Checked; // Setting -> Qc -> Set Proxy
-        CustomTextBoxSettingProxyCfCleanIP.Enabled = CustomCheckBoxSettingProxyCfCleanIP.Checked; // Setting -> Share -> Advanced -> Cf Clean IP
 
         // Convert Old Proxy ProxyRules To New
-        OldProxyRulesToNew();
+        await OldProxyRulesToNewAsync();
+        await MergeOldDnsAndProxyRulesAsync();
 
         // Initialize Status
         InitializeStatus(CustomDataGridViewStatus);
@@ -238,11 +239,11 @@ public partial class FormMain : Form
         this.InvokeIt(() =>
         {
             if (!IsAppReady) text = "Getting Ready...";
-            SplitContainerMain.Visible = false;
             LabelMain.Text = text;
             LabelMain.Visible = true;
             LabelMain.BringToFront();
             LabelMainStopWatch.Restart();
+            SplitContainerMain.Visible = false;
         });
     }
 
@@ -265,9 +266,9 @@ public partial class FormMain : Form
         if (!LabelMain.Visible) return;
         this.InvokeIt(() =>
         {
+            SplitContainerMain.Visible = true;
             LabelMain.Visible = false;
             LabelMain.SendToBack();
-            SplitContainerMain.Visible = true;
         });
     }
 
@@ -585,10 +586,42 @@ public partial class FormMain : Form
         this.InvokeIt(() => CustomCheckBoxSettingQcSetProxy.Enabled = CustomCheckBoxSettingQcStartProxyServer.Checked);
     }
 
-    // Settings -> Share -> Advanced
-    private void CustomCheckBoxSettingProxyCfCleanIP_CheckedChanged(object sender, EventArgs e)
+    // Settings -> Rules
+    private void LinkLabelSettingRulesHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
     {
-        this.InvokeIt(() => CustomTextBoxSettingProxyCfCleanIP.Enabled = CustomCheckBoxSettingProxyCfCleanIP.Checked);
+        OpenLinks.OpenUrl("https://github.com/msasanmh/SecureDNSClient/blob/main/README.md#sdc-text-based-rules");
+    }
+
+    // Settings -> Geo Assets
+    private async void CustomCheckBoxGeoAsset_GeoAssets_CheckedChanged(object sender, EventArgs e)
+    {
+        try
+        {
+            if (sender is not CustomCheckBox ccb) return;
+            if (ccb.Checked)
+            {
+                // Get Controls
+                List<Control> controls = Controllers.GetChildControls(FlowLayoutPanelGeoAssets);
+
+                this.InvokeIt(() =>
+                {
+                    foreach (Control control in controls)
+                        if (control is CustomCheckBox cb) cb.Enabled = false;
+                });
+
+                await Assets_Download_Async();
+
+                this.InvokeIt(() =>
+                {
+                    foreach (Control control in controls)
+                        if (control is CustomCheckBox cb) cb.Enabled = true;
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("CustomCheckBoxGeoAsset_GeoAssets_CheckedChanged: " + ex.Message);
+        }
     }
 
     // Settings -> CPU
@@ -695,4 +728,5 @@ public partial class FormMain : Form
     {
         OpenLinks.OpenUrl("https://github.com/nonbarbari");
     }
+
 }

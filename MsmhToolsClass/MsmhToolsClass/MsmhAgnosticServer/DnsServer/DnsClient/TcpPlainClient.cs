@@ -35,7 +35,7 @@ public class TcpPlainClient
             {
                 IPEndPoint ep = new(IPAddress.Parse(Reader.Host), Reader.Port);
 
-                TcpClient tcpClient = new();
+                TcpClient tcpClient = new(ep.AddressFamily);
                 tcpClient.SendTimeout = TimeoutMS;
                 tcpClient.ReceiveTimeout = TimeoutMS;
                 tcpClient.Client.NoDelay = true;

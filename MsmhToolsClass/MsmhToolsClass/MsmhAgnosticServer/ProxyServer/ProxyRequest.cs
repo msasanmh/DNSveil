@@ -350,7 +350,7 @@ public class ProxyRequest
     public string Address { get; set; }
     public string AddressOrig { get; set; }
     public string AddressSNI { get; set; }
-    public bool AddressIsIp => NetworkTool.IsIp(AddressOrig, out _);
+    public bool AddressIsIp => NetworkTool.IsIP(AddressOrig, out _);
     public int Port { get; set; }
     public string UserId { get; set; }
     public string Password { get; set; }
@@ -383,8 +383,12 @@ public class ProxyRequest
 
     public bool IsDestBlocked { get; set; } = false;
 
-    public bool ApplyUpStreamProxy { get; set; } = false;
-    public AgnosticProgram.ProxyRules.ProxyRulesResult RulesResult { get; set; } = new();
+    public bool ApplyUpstreamProxy { get; set; } = false;
+    public bool ApplyUpstreamProxyToBlockedIPs { get; set; } = false;
+    public string? UpstreamProxyScheme { get; set; }
+    public string? UpstreamProxyUser { get; set; }
+    public string? UpstreamProxyPass { get; set; }
+    //public AgnosticProgram.ProxyRules.ProxyRulesResult RulesResult { get; set; } = new();
 
     /// <summary>
     /// Only for Socks5

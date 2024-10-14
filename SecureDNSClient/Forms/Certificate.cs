@@ -59,7 +59,7 @@ public partial class FormMain
                         if (IsProxyActivated && IsProxySSLDecryptionActive)
                         {
                             // Stop Proxy
-                            await StartProxy(true);
+                            await StartProxyAsync(true);
                             string msg = "Due To Certificate Changes You Need To Restart Proxy Server.";
                             CustomMessageBox.Show(this, msg, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }

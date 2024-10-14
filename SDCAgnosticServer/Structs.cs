@@ -89,22 +89,9 @@ public struct Key
             }
         }
 
-        public readonly struct DnsRules
+        public readonly struct Rules
         {
-            public static readonly string Name = "DnsRules";
-            public readonly struct Mode
-            {
-                public static readonly string Name = "Mode";
-                public static readonly string File = "File";
-                public static readonly string Text = "Text";
-                public static readonly string Disable = "Disable";
-            }
-            public static readonly string PathOrText = "PathOrText";
-        }
-
-        public readonly struct ProxyRules
-        {
-            public static readonly string Name = "ProxyRules";
+            public static readonly string Name = "Rules";
             public readonly struct Mode
             {
                 public static readonly string Name = "Mode";

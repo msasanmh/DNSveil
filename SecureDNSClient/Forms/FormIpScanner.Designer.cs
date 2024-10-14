@@ -44,14 +44,13 @@
             CustomContextMenuStripMain = new CustomControls.CustomContextMenuStrip();
             CustomLabelCheckWebsite = new CustomControls.CustomLabel();
             CustomTextBoxCheckWebsite = new CustomControls.CustomTextBox();
-            CustomLabelProxyPort = new CustomControls.CustomLabel();
-            CustomNumericUpDownProxyPort = new CustomControls.CustomNumericUpDown();
             CustomCheckBoxRandomScan = new CustomControls.CustomCheckBox();
             CustomLabelCheckIpWithThisPort = new CustomControls.CustomLabel();
             CustomNumericUpDownCheckIpWithThisPort = new CustomControls.CustomNumericUpDown();
+            CustomLabelSelectCIDR = new CustomControls.CustomLabel();
+            CustomComboBoxSelectCIDR = new CustomControls.CustomComboBox();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownDelay).BeginInit();
             ((System.ComponentModel.ISupportInitialize)CustomDataGridViewResult).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownProxyPort).BeginInit();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownCheckIpWithThisPort).BeginInit();
             SuspendLayout();
             // 
@@ -126,7 +125,7 @@
             CustomDataGridViewResult.ColumnHeadersBorder = true;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F);
             dataGridViewCellStyle1.ForeColor = Color.White;
             dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(73, 73, 73);
             dataGridViewCellStyle1.SelectionForeColor = Color.White;
@@ -136,14 +135,14 @@
             CustomDataGridViewResult.Columns.AddRange(new DataGridViewColumn[] { RealDelay, TCPDelay, PingDelay, CleanIP });
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = Color.DimGray;
-            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
             dataGridViewCellStyle2.ForeColor = Color.White;
             dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(97, 177, 255);
             dataGridViewCellStyle2.SelectionForeColor = Color.White;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
             CustomDataGridViewResult.DefaultCellStyle = dataGridViewCellStyle2;
             CustomDataGridViewResult.GridColor = Color.LightBlue;
-            CustomDataGridViewResult.Location = new Point(12, 170);
+            CustomDataGridViewResult.Location = new Point(12, 237);
             CustomDataGridViewResult.MultiSelect = false;
             CustomDataGridViewResult.Name = "CustomDataGridViewResult";
             CustomDataGridViewResult.ReadOnly = true;
@@ -156,7 +155,7 @@
             CustomDataGridViewResult.ShowCellErrors = false;
             CustomDataGridViewResult.ShowEditingIcon = false;
             CustomDataGridViewResult.ShowRowErrors = false;
-            CustomDataGridViewResult.Size = new Size(360, 229);
+            CustomDataGridViewResult.Size = new Size(360, 162);
             CustomDataGridViewResult.TabIndex = 7;
             CustomDataGridViewResult.MouseClick += CustomDataGridViewResult_MouseClick;
             // 
@@ -202,7 +201,7 @@
             CustomLabelChecking.BorderColor = Color.Blue;
             CustomLabelChecking.FlatStyle = FlatStyle.Flat;
             CustomLabelChecking.ForeColor = Color.White;
-            CustomLabelChecking.Location = new Point(12, 150);
+            CustomLabelChecking.Location = new Point(12, 200);
             CustomLabelChecking.Name = "CustomLabelChecking";
             CustomLabelChecking.RoundedCorners = 0;
             CustomLabelChecking.Size = new Size(146, 17);
@@ -215,6 +214,7 @@
             CustomContextMenuStripMain.BorderColor = Color.Blue;
             CustomContextMenuStripMain.ForeColor = Color.White;
             CustomContextMenuStripMain.Name = "CustomContextMenuStripMain";
+            CustomContextMenuStripMain.RoundedCorners = 0;
             CustomContextMenuStripMain.SameColorForSubItems = true;
             CustomContextMenuStripMain.SelectionColor = Color.LightBlue;
             CustomContextMenuStripMain.Size = new Size(61, 4);
@@ -227,7 +227,7 @@
             CustomLabelCheckWebsite.BorderColor = Color.Blue;
             CustomLabelCheckWebsite.FlatStyle = FlatStyle.Flat;
             CustomLabelCheckWebsite.ForeColor = Color.White;
-            CustomLabelCheckWebsite.Location = new Point(12, 45);
+            CustomLabelCheckWebsite.Location = new Point(12, 95);
             CustomLabelCheckWebsite.Name = "CustomLabelCheckWebsite";
             CustomLabelCheckWebsite.RoundedCorners = 0;
             CustomLabelCheckWebsite.Size = new Size(90, 17);
@@ -243,10 +243,10 @@
             CustomTextBoxCheckWebsite.BorderColor = Color.Blue;
             CustomTextBoxCheckWebsite.BorderSize = 1;
             CustomTextBoxCheckWebsite.CharacterCasing = CharacterCasing.Normal;
-            CustomTextBoxCheckWebsite.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            CustomTextBoxCheckWebsite.Font = new Font("Segoe UI", 9F);
             CustomTextBoxCheckWebsite.ForeColor = Color.White;
             CustomTextBoxCheckWebsite.HideSelection = true;
-            CustomTextBoxCheckWebsite.Location = new Point(108, 43);
+            CustomTextBoxCheckWebsite.Location = new Point(108, 93);
             CustomTextBoxCheckWebsite.MaxLength = 32767;
             CustomTextBoxCheckWebsite.Multiline = false;
             CustomTextBoxCheckWebsite.Name = "CustomTextBoxCheckWebsite";
@@ -262,35 +262,6 @@
             CustomTextBoxCheckWebsite.UsePasswordChar = false;
             CustomTextBoxCheckWebsite.WordWrap = true;
             // 
-            // CustomLabelProxyPort
-            // 
-            CustomLabelProxyPort.AutoSize = true;
-            CustomLabelProxyPort.BackColor = Color.DimGray;
-            CustomLabelProxyPort.Border = false;
-            CustomLabelProxyPort.BorderColor = Color.Blue;
-            CustomLabelProxyPort.FlatStyle = FlatStyle.Flat;
-            CustomLabelProxyPort.ForeColor = Color.White;
-            CustomLabelProxyPort.Location = new Point(12, 115);
-            CustomLabelProxyPort.Name = "CustomLabelProxyPort";
-            CustomLabelProxyPort.RoundedCorners = 0;
-            CustomLabelProxyPort.Size = new Size(67, 17);
-            CustomLabelProxyPort.TabIndex = 11;
-            CustomLabelProxyPort.Text = "Proxy Port:";
-            // 
-            // CustomNumericUpDownProxyPort
-            // 
-            CustomNumericUpDownProxyPort.BackColor = Color.DimGray;
-            CustomNumericUpDownProxyPort.BorderColor = Color.Blue;
-            CustomNumericUpDownProxyPort.BorderStyle = BorderStyle.FixedSingle;
-            CustomNumericUpDownProxyPort.Location = new Point(85, 113);
-            CustomNumericUpDownProxyPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
-            CustomNumericUpDownProxyPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-            CustomNumericUpDownProxyPort.Name = "CustomNumericUpDownProxyPort";
-            CustomNumericUpDownProxyPort.RoundedCorners = 5;
-            CustomNumericUpDownProxyPort.Size = new Size(55, 23);
-            CustomNumericUpDownProxyPort.TabIndex = 12;
-            CustomNumericUpDownProxyPort.Value = new decimal(new int[] { 8090, 0, 0, 0 });
-            // 
             // CustomCheckBoxRandomScan
             // 
             CustomCheckBoxRandomScan.BackColor = Color.DimGray;
@@ -299,7 +270,7 @@
             CustomCheckBoxRandomScan.Checked = true;
             CustomCheckBoxRandomScan.CheckState = CheckState.Checked;
             CustomCheckBoxRandomScan.ForeColor = Color.White;
-            CustomCheckBoxRandomScan.Location = new Point(167, 115);
+            CustomCheckBoxRandomScan.Location = new Point(14, 165);
             CustomCheckBoxRandomScan.Name = "CustomCheckBoxRandomScan";
             CustomCheckBoxRandomScan.SelectionColor = Color.LightBlue;
             CustomCheckBoxRandomScan.Size = new Size(134, 17);
@@ -315,7 +286,7 @@
             CustomLabelCheckIpWithThisPort.BorderColor = Color.Blue;
             CustomLabelCheckIpWithThisPort.FlatStyle = FlatStyle.Flat;
             CustomLabelCheckIpWithThisPort.ForeColor = Color.White;
-            CustomLabelCheckIpWithThisPort.Location = new Point(12, 80);
+            CustomLabelCheckIpWithThisPort.Location = new Point(12, 130);
             CustomLabelCheckIpWithThisPort.Name = "CustomLabelCheckIpWithThisPort";
             CustomLabelCheckIpWithThisPort.RoundedCorners = 0;
             CustomLabelCheckIpWithThisPort.Size = new Size(136, 17);
@@ -327,7 +298,7 @@
             CustomNumericUpDownCheckIpWithThisPort.BackColor = Color.DimGray;
             CustomNumericUpDownCheckIpWithThisPort.BorderColor = Color.Blue;
             CustomNumericUpDownCheckIpWithThisPort.BorderStyle = BorderStyle.FixedSingle;
-            CustomNumericUpDownCheckIpWithThisPort.Location = new Point(154, 78);
+            CustomNumericUpDownCheckIpWithThisPort.Location = new Point(154, 128);
             CustomNumericUpDownCheckIpWithThisPort.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
             CustomNumericUpDownCheckIpWithThisPort.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownCheckIpWithThisPort.Name = "CustomNumericUpDownCheckIpWithThisPort";
@@ -336,17 +307,47 @@
             CustomNumericUpDownCheckIpWithThisPort.TabIndex = 16;
             CustomNumericUpDownCheckIpWithThisPort.Value = new decimal(new int[] { 443, 0, 0, 0 });
             // 
+            // CustomLabelSelectCIDR
+            // 
+            CustomLabelSelectCIDR.AutoSize = true;
+            CustomLabelSelectCIDR.BackColor = Color.DimGray;
+            CustomLabelSelectCIDR.Border = false;
+            CustomLabelSelectCIDR.BorderColor = Color.Blue;
+            CustomLabelSelectCIDR.FlatStyle = FlatStyle.Flat;
+            CustomLabelSelectCIDR.ForeColor = Color.White;
+            CustomLabelSelectCIDR.Location = new Point(12, 52);
+            CustomLabelSelectCIDR.Name = "CustomLabelSelectCIDR";
+            CustomLabelSelectCIDR.RoundedCorners = 0;
+            CustomLabelSelectCIDR.Size = new Size(72, 17);
+            CustomLabelSelectCIDR.TabIndex = 18;
+            CustomLabelSelectCIDR.Text = "Select CIDR:";
+            // 
+            // CustomComboBoxSelectCIDR
+            // 
+            CustomComboBoxSelectCIDR.BackColor = Color.DimGray;
+            CustomComboBoxSelectCIDR.BorderColor = Color.Blue;
+            CustomComboBoxSelectCIDR.DrawMode = DrawMode.OwnerDrawVariable;
+            CustomComboBoxSelectCIDR.ForeColor = Color.White;
+            CustomComboBoxSelectCIDR.FormattingEnabled = true;
+            CustomComboBoxSelectCIDR.ItemHeight = 17;
+            CustomComboBoxSelectCIDR.Location = new Point(108, 49);
+            CustomComboBoxSelectCIDR.Name = "CustomComboBoxSelectCIDR";
+            CustomComboBoxSelectCIDR.RoundedCorners = 0;
+            CustomComboBoxSelectCIDR.SelectionColor = Color.DodgerBlue;
+            CustomComboBoxSelectCIDR.Size = new Size(200, 23);
+            CustomComboBoxSelectCIDR.TabIndex = 20;
+            // 
             // FormIpScanner
             // 
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.DimGray;
             ClientSize = new Size(384, 411);
+            Controls.Add(CustomComboBoxSelectCIDR);
+            Controls.Add(CustomLabelSelectCIDR);
             Controls.Add(CustomNumericUpDownCheckIpWithThisPort);
             Controls.Add(CustomLabelCheckIpWithThisPort);
             Controls.Add(CustomCheckBoxRandomScan);
-            Controls.Add(CustomNumericUpDownProxyPort);
-            Controls.Add(CustomLabelProxyPort);
             Controls.Add(CustomTextBoxCheckWebsite);
             Controls.Add(CustomLabelCheckWebsite);
             Controls.Add(CustomLabelChecking);
@@ -364,7 +365,6 @@
             FormClosing += FormIpScanner_FormClosing;
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownDelay).EndInit();
             ((System.ComponentModel.ISupportInitialize)CustomDataGridViewResult).EndInit();
-            ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownProxyPort).EndInit();
             ((System.ComponentModel.ISupportInitialize)CustomNumericUpDownCheckIpWithThisPort).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -385,10 +385,10 @@
         private DataGridViewTextBoxColumn CleanIP;
         private CustomControls.CustomLabel CustomLabelCheckWebsite;
         private CustomControls.CustomTextBox CustomTextBoxCheckWebsite;
-        private CustomControls.CustomLabel CustomLabelProxyPort;
-        private CustomControls.CustomNumericUpDown CustomNumericUpDownProxyPort;
         private CustomControls.CustomCheckBox CustomCheckBoxRandomScan;
         private CustomControls.CustomLabel CustomLabelCheckIpWithThisPort;
         private CustomControls.CustomNumericUpDown CustomNumericUpDownCheckIpWithThisPort;
+        private CustomControls.CustomLabel CustomLabelSelectCIDR;
+        private CustomControls.CustomComboBox CustomComboBoxSelectCIDR;
     }
 }

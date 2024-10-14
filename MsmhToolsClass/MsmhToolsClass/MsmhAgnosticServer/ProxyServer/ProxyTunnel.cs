@@ -13,7 +13,6 @@ internal class ProxyTunnel
     public ProxyClient RemoteClient;
     public ProxyRequest Req;
 
-    private readonly AgnosticSettings Settings_;
     private TcpClient? ProxifiedTcpClient_;
 
     // Handle SSL
@@ -26,12 +25,11 @@ internal class ProxyTunnel
     public readonly Stopwatch KillOnTimeout = new();
     public bool ManualDisconnect { get; set; } = false;
 
-    public ProxyTunnel(int connectionId, ProxyClient sc, ProxyRequest req, AgnosticSettings settings, AgnosticSettingsSSL settingsSSL)
+    public ProxyTunnel(int connectionId, ProxyClient sc, ProxyRequest req, AgnosticSettingsSSL settingsSSL)
     {
         ConnectionId = connectionId;
         Client = sc;
         Req = req;
-        Settings_ = settings;
         SettingsSSL_ = settingsSSL;
 
         try
@@ -105,8 +103,8 @@ internal class ProxyTunnel
             while(true)
             {
                 await Task.Delay(2000);
-                if (Settings_.ProxyTimeoutSec > 0 &&
-                    KillOnTimeout.ElapsedMilliseconds > TimeSpan.FromSeconds(Settings_.ProxyTimeoutSec).TotalMilliseconds)
+                if (Req.TimeoutSec > 0 &&
+                    KillOnTimeout.ElapsedMilliseconds > TimeSpan.FromSeconds(Req.TimeoutSec).TotalMilliseconds)
                 {
                     //string msg = $"Killed Request On Timeout({Req.TimeoutSec} Sec): {Req.AddressOrig}:{Req.Port}";
                     //Debug.WriteLine(msg);
@@ -127,7 +125,7 @@ internal class ProxyTunnel
         });
     }
 
-    public async void Open(AgnosticProgram.ProxyRules rulesProgram)
+    public async void Open()
     {
         try
         {
@@ -159,28 +157,24 @@ internal class ProxyTunnel
                 (Req.ProxyName == Proxy.Name.Socks5 && Req.Command == Socks.Commands.Connect))
             {
                 // Only Connect Can Support Upstream
-                bool applyUpStreamProxy = false;
-                if (Req.ApplyUpStreamProxy)
+                bool upStreamProxyApplied = false;
+                
+                if (Req.ApplyUpstreamProxy && !string.IsNullOrWhiteSpace(Req.UpstreamProxyScheme))
                 {
-                    if (!string.IsNullOrEmpty(Req.RulesResult.ProxyScheme))
-                        ProxifiedTcpClient_ = await rulesProgram.ConnectToUpStream(Req).ConfigureAwait(false);
-                    else
-                    {
-                        ProxifiedTcpClient proxifiedTcpClient = new(Settings_.UpstreamProxyScheme, Settings_.UpstreamProxyUser, Settings_.UpstreamProxyPass);
-                        var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(Req.Address, Req.Port).ConfigureAwait(false);
-                        if (upstream.isSuccess && upstream.proxifiedTcpClient != null)
-                            ProxifiedTcpClient_ = upstream.proxifiedTcpClient;
-                    }
+                    ProxifiedTcpClient proxifiedTcpClient = new(Req.UpstreamProxyScheme, Req.UpstreamProxyUser, Req.UpstreamProxyPass);
+                    var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(Req.Address, Req.Port).ConfigureAwait(false);
+                    if (upstream.isSuccess && upstream.proxifiedTcpClient != null)
+                        ProxifiedTcpClient_ = upstream.proxifiedTcpClient;
 
                     if (ProxifiedTcpClient_ != null)
                     {
-                        applyUpStreamProxy = true;
+                        upStreamProxyApplied = true;
                         RemoteClient.Socket_ = ProxifiedTcpClient_.Client;
                         ConnectHandler();
                     }
                 }
 
-                if (!applyUpStreamProxy)
+                if (!upStreamProxyApplied)
                 {
                     await RemoteClient.Socket_.ConnectAsync(Req.Address, Req.Port).ConfigureAwait(false);
                     ConnectHandler();
@@ -248,7 +242,8 @@ internal class ProxyTunnel
             }
 
             // Receive Data From Both EndPoints
-            if (SettingsSSL_.EnableSSL && Req.ApplyChangeSNI && !Req.AddressIsIp) // Cert Can't Be Valid When There's An IP Without A Domain. Like SOCKS4
+            bool ssl = Req.ApplyChangeSNI && !string.IsNullOrWhiteSpace(Req.AddressSNI) && !Req.AddressSNI.Equals(Req.AddressOrig) && !Req.AddressIsIp; // Cert Can't Be Valid When There's An IP Without A Domain. Like SOCKS4
+            if (ssl)
             {
                 ClientSSL = new(this);
                 OnDataReceived?.Invoke(this, EventArgs.Empty);
@@ -257,6 +252,7 @@ internal class ProxyTunnel
             else
             {
                 OnDataReceived?.Invoke(this, EventArgs.Empty);
+
                 Task ct = Client.StartReceiveAsync();
                 Task rt = RemoteClient.StartReceiveAsync();
                 await Task.WhenAll(ct, rt).ConfigureAwait(false); // Both Must Receive At The Same Time
@@ -273,20 +269,11 @@ internal class ProxyTunnel
     private async Task HttpHandler()
     {
         // Support Upstream Proxy For HTTP Get Method
-        if (Req.ApplyUpStreamProxy)
+        if (Req.ApplyUpstreamProxy && !string.IsNullOrWhiteSpace(Req.UpstreamProxyScheme))
         {
-            if (!string.IsNullOrEmpty(Req.RulesResult.ProxyScheme))
-            {
-                Req.HttpRequest.ProxyScheme = Req.RulesResult.ProxyScheme;
-                Req.HttpRequest.ProxyUser = Req.RulesResult.ProxyUser;
-                Req.HttpRequest.ProxyPass = Req.RulesResult.ProxyPass;
-            }
-            else
-            {
-                Req.HttpRequest.ProxyScheme = Settings_.UpstreamProxyScheme;
-                Req.HttpRequest.ProxyUser = Settings_.UpstreamProxyUser;
-                Req.HttpRequest.ProxyPass = Settings_.UpstreamProxyPass;
-            }
+            Req.HttpRequest.ProxyScheme = Req.UpstreamProxyScheme;
+            Req.HttpRequest.ProxyUser = Req.UpstreamProxyUser;
+            Req.HttpRequest.ProxyPass = Req.UpstreamProxyPass;
         }
         
         HttpRequestResponse hrr = await HttpRequest.SendAsync(Req.HttpRequest).ConfigureAwait(false);

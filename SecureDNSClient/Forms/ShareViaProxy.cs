@@ -8,7 +8,7 @@ namespace SecureDNSClient;
 public partial class FormMain
 {
     // ========================================== Start Proxy
-    private async Task StartProxy(bool stop = false, bool limitLog = false)
+    private async Task StartProxyAsync(bool stop = false, bool limitLog = false)
     {
         await Task.Run(async () =>
         {
@@ -65,7 +65,7 @@ public partial class FormMain
                 dnss += ",system";
 
                 // Get Cloudflare Clean IPv4
-                string cfCleanIPv4 = GetCfCleanIpSetting();
+                string cfCleanIP = GetCfCleanIpSetting();
 
                 // Get Bootstrap IP And Port
                 string bootstrapIp = GetBootstrapSetting(out int bootstrapPort).ToString();
@@ -83,6 +83,7 @@ public partial class FormMain
                 // Kill If It's Already Running
                 await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
                 bool isCmdSent = false;
+                int consoleDelayMs = 50, consoleTimeoutSec = 15;
                 PIDProxyServer = ProxyConsole.Execute(SecureDNS.AgnosticServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
                 await Task.Delay(100);
 
@@ -107,59 +108,62 @@ public partial class FormMain
                     await UpdateStatusShortOnBoolsChangedAsync();
                     return;
                 }
-
+                
                 // Send Set Profile
-                isCmdSent = await ProxyConsole.SendCommandAsync("Profile Proxy");
+                string setProfileCommand = "Profile Proxy";
+                isCmdSent = await ProxyConsole.SendCommandAsync(setProfileCommand, consoleDelayMs, consoleTimeoutSec, "Confirmed: Profile");
                 if (!isCmdSent)
                 {
-                    await FaildSendCommandMessageAsync();
+                    await FaildSendCommandMessageAsync(setProfileCommand);
                     return;
                 }
 
                 // Send Settings
                 string settingsCmd = $"Setting -Port={proxyPort} -WorkingMode=DnsAndProxy -MaxRequests={maxRequests} -DnsTimeoutSec=5 -ProxyTimeoutSec={proxyTimeoutSec}";
-                settingsCmd += $" -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80} -AllowInsecure=True -DNSs={dnss} -CfCleanIP={cfCleanIPv4}";
+                settingsCmd += $" -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80} -AllowInsecure=True -DNSs={dnss} -CfCleanIP={cfCleanIP}";
                 settingsCmd += $" -BootstrapIp={bootstrapIp} -BootstrapPort={bootstrapPort}";
                 settingsCmd += $" -ProxyScheme={upstream.ProxyScheme} -ProxyUser={upstream.ProxyUser} -ProxyPass={upstream.ProxyPass} -OnlyBlockedIPs={upstream.OnlyBlockedIPs}";
-                isCmdSent = await ProxyConsole.SendCommandAsync(settingsCmd);
+                isCmdSent = await ProxyConsole.SendCommandAsync(settingsCmd, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
                 if (!isCmdSent)
                 {
-                    await FaildSendCommandMessageAsync();
+                    await FaildSendCommandMessageAsync("Send Settings");
                     return;
                 }
 
                 // Send SSL Settings (HTTPS) / SSL Decryption / Fragment
-                bool isDpiBypassApplied = await ApplyProxyDpiChanges();
+                bool isDpiBypassApplied = await ApplyProxyDpiChangesAsync();
                 if (!isDpiBypassApplied)
                 {
-                    await FaildSendCommandMessageAsync();
+                    await FaildSendCommandMessageAsync("ApplyProxyDpiChanges");
                     return;
                 }
 
-                // Send ProxyRules
-                bool isRulesOk = await ApplyProxyRules();
+                // Send Rules
+                bool isRulesOk = await ApplyRulesToProxyAsync();
                 if (!isRulesOk)
                 {
-                    await FaildSendCommandMessageAsync();
+                    await FaildSendCommandMessageAsync("ApplyRulesToProxy");
                     return;
                 }
 
                 // Send Write Requests To Log
                 if (CustomCheckBoxProxyEventShowRequest.Checked)
                 {
-                    isCmdSent = await ProxyConsole.SendCommandAsync("Requests True");
+                    string showRequestsCommand = "Requests True";
+                    isCmdSent = await ProxyConsole.SendCommandAsync(showRequestsCommand, consoleDelayMs, consoleTimeoutSec, "Confirmed: Requests True");
                     if (!isCmdSent)
                     {
-                        await FaildSendCommandMessageAsync();
+                        await FaildSendCommandMessageAsync(showRequestsCommand);
                         return;
                     }
                 }
                 else
                 {
-                    isCmdSent = await ProxyConsole.SendCommandAsync("Requests False");
+                    string showRequestsCommand = "Requests False";
+                    isCmdSent = await ProxyConsole.SendCommandAsync(showRequestsCommand, consoleDelayMs, consoleTimeoutSec, "Confirmed: Requests False");
                     if (!isCmdSent)
                     {
-                        await FaildSendCommandMessageAsync();
+                        await FaildSendCommandMessageAsync(showRequestsCommand);
                         return;
                     }
                 }
@@ -167,19 +171,21 @@ public partial class FormMain
                 // Send Write Fragment Details To Log
                 if (CustomCheckBoxProxyEventShowChunkDetails.Checked)
                 {
-                    isCmdSent = await ProxyConsole.SendCommandAsync("FragmentDetails True");
+                    string fragmentDetailsCommand = "FragmentDetails True";
+                    isCmdSent = await ProxyConsole.SendCommandAsync(fragmentDetailsCommand, consoleDelayMs, consoleTimeoutSec, "Confirmed: FragmentDetails True");
                     if (!isCmdSent)
                     {
-                        await FaildSendCommandMessageAsync();
+                        await FaildSendCommandMessageAsync(fragmentDetailsCommand);
                         return;
                     }
                 }
                 else
                 {
-                    isCmdSent = await ProxyConsole.SendCommandAsync("FragmentDetails False");
+                    string fragmentDetailsCommand = "FragmentDetails False";
+                    isCmdSent = await ProxyConsole.SendCommandAsync(fragmentDetailsCommand, consoleDelayMs, consoleTimeoutSec, "Confirmed: FragmentDetails False");
                     if (!isCmdSent)
                     {
-                        await FaildSendCommandMessageAsync();
+                        await FaildSendCommandMessageAsync(fragmentDetailsCommand);
                         return;
                     }
                 }
@@ -187,21 +193,22 @@ public partial class FormMain
                 // Send Parent Process Command
                 string parentCommand = $"ParentProcess -PID={Environment.ProcessId}";
                 Debug.WriteLine(parentCommand);
-                isCmdSent = await ProxyConsole.SendCommandAsync(parentCommand);
+                isCmdSent = await ProxyConsole.SendCommandAsync(parentCommand, consoleDelayMs, consoleTimeoutSec, "Confirmed: ParentProcess");
                 if (!isCmdSent)
                 {
-                    await FaildSendCommandMessageAsync();
+                    await FaildSendCommandMessageAsync(parentCommand);
                     return;
                 }
 
                 // Send Start Command
-                await ProxyConsole.SendCommandAsync("Start");
+                await ProxyConsole.SendCommandAsync("Start", consoleDelayMs, 30, "Confirmed: Start");
                 await Task.Delay(200);
 
                 // Check For Successfull Communication With Console
-                isCmdSent = await ProxyConsole.SendCommandAsync("Out Proxy"); // Out <ProfileName>
+                string outCommand = "Out Proxy";
+                isCmdSent = await ProxyConsole.SendCommandAsync(outCommand); // Out <ProfileName>
                 string confirmMsg = "details|true";
-
+                
                 // Wait For Confirm Message
                 Task result = Task.Run(async () =>
                 {
@@ -213,10 +220,10 @@ public partial class FormMain
                     }
                 });
                 try { await result.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
-
+                
                 if (!isCmdSent || !ProxyConsole.GetStdout.ToLower().StartsWith(confirmMsg))
                 {
-                    await FaildSendCommandMessageAsync();
+                    await FaildSendCommandMessageAsync(outCommand);
                     return;
                 }
 
@@ -310,7 +317,7 @@ public partial class FormMain
                         await UpdateStatusShortOnBoolsChangedAsync();
 
                         // Clear LastProxyRulesPath
-                        LastProxyRulesPath = string.Empty;
+                        LastRulesPath = string.Empty;
 
                         // Write deactivated message to log
                         string msgDiactivated = $"Proxy Server Deactivated.{NL}";
@@ -348,12 +355,14 @@ public partial class FormMain
 
     // ========================================== Other Proxy Methods
 
-    public async Task FaildSendCommandMessageAsync()
+    public async Task FaildSendCommandMessageAsync(string command)
     {
         if (!IsDisconnectingAll && !IsQuickConnecting)
         {
             string msg = $"Couldn't Communicate With Proxy Console.{NL}";
-            msg += $"Please Make Sure You Have .NET Desktop v6 And ASP.NET Core v6 Installed On Your OS.{NL}";
+            msg += $"Command: {command}{NL}";
+            msg += $"1. Please Make Sure You Have .NET Desktop v6 And ASP.NET Core v6 Installed On Your OS.{NL}";
+            msg += $"2. White List \"{SecureDNS.AgnosticServerPath}\" In Your Anti-Virus Or Any Security Software You Have.{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
         }
 
@@ -363,7 +372,7 @@ public partial class FormMain
         await UpdateStatusShortOnBoolsChangedAsync();
     }
 
-    private async Task<bool> ApplyProxyDpiChanges()
+    private async Task<bool> ApplyProxyDpiChangesAsync()
     {
         // Return if DNS is setting or unsetting
         if (IsDNSSetting || IsDNSUnsetting) return false;
@@ -371,13 +380,13 @@ public partial class FormMain
         UpdateProxyBools = false;
         string command = GetFragmentProgramCommand();
         Debug.WriteLine(command);
-        bool isCommandSent = await ProxyConsole.SendCommandAsync(command);
+        bool isCommandSent = await ProxyConsole.SendCommandAsync(command, 50, 15, "Confirmed: Fragment");
         
         // Save LastFragmentProgramCommand
         if (isCommandSent) LastFragmentProgramCommand = command;
 
         // Apply SSL Decryption
-        bool isSSLDecryptionOk = await ApplyProxySSLDecryption();
+        bool isSSLDecryptionOk = await ApplyProxySSLDecryptionAsync();
         
         UpdateProxyBools = true;
         if (!isCommandSent || !isSSLDecryptionOk) return false;
@@ -425,7 +434,7 @@ public partial class FormMain
         fragmentMode = enableFragment ? AgnosticProgram.Fragment.Mode.Program : AgnosticProgram.Fragment.Mode.Disable;
     }
 
-    public async Task<bool> ApplyProxySSLDecryption()
+    public async Task<bool> ApplyProxySSLDecryptionAsync()
     {
         bool changeSni = false;
         this.InvokeIt(() => changeSni = CustomCheckBoxProxySSLChangeSni.Checked);
@@ -438,7 +447,7 @@ public partial class FormMain
             string command = $"SSLSetting -Enable=True -RootCA_Path=\"{SecureDNS.IssuerCertPath}\" -RootCA_KeyPath=\"{SecureDNS.IssuerKeyPath}\" -Cert_Path=\"{SecureDNS.CertPath}\" -Cert_KeyPath=\"{SecureDNS.KeyPath}\" -ChangeSni={changeSni} -DefaultSni={defaultSni}";
 
             Debug.WriteLine(command);
-            bool isSuccess = await ProxyConsole.SendCommandAsync(command);
+            bool isSuccess = await ProxyConsole.SendCommandAsync(command, 50, 15, "Confirmed: SSLSetting");
 
             if (isSuccess) LastDefaultSni = defaultSni;
             return isSuccess;
@@ -447,22 +456,76 @@ public partial class FormMain
         {
             string command = $"SSLSetting -Enable=False";
             Debug.WriteLine(command);
-            return await ProxyConsole.SendCommandAsync(command);
+            return await ProxyConsole.SendCommandAsync(command, 50, 15, "Confirmed: SSLSetting");
         }
     }
 
-    public async Task<bool> ApplyProxyRules()
+    public async Task<bool> ApplyRulesToProxyAsync()
     {
-        if (CustomCheckBoxSettingProxyEnableRules.Checked)
+        try
         {
-            string command = $"Programs ProxyRules -Mode=File -PathOrText=\"{SecureDNS.ProxyRulesPath}\"";
-            Debug.WriteLine(command);
-            bool success = await ProxyConsole.SendCommandAsync(command);
-            if (success) LastProxyRulesPath = SecureDNS.ProxyRulesPath;
-            return success;
-        }
+            List<string> rulesList = new();
 
-        return true;
+            bool customRules = false;
+            bool ir_ADS = false, ir_Domains = false, ir_CIDRs = false;
+
+            this.InvokeIt(() =>
+            {
+                customRules = CustomCheckBoxSettingEnableRules.Checked;
+                ir_ADS = CustomCheckBoxGeoAsset_IR_ADS.Checked;
+                ir_Domains = CustomCheckBoxGeoAsset_IR_Domains.Checked;
+                ir_CIDRs = CustomCheckBoxGeoAsset_IR_CIDRs.Checked;
+            });
+
+            if (customRules && File.Exists(SecureDNS.RulesPath))
+            {
+                List<string> customRulesList = new();
+                await customRulesList.LoadFromFileAsync(SecureDNS.RulesPath, true, true);
+                if (customRulesList.Count > 0) rulesList.AddRange(customRulesList);
+            }
+
+            // IR ADS Domains: Block
+            if (ir_ADS && File.Exists(SecureDNS.Asset_IR_ADS_Domains))
+            {
+                string rule = $"{SecureDNS.Asset_IR_ADS_Domains}|-;";
+                rulesList.Add(rule);
+            }
+
+            // IR Domains: Direct
+            if (ir_Domains && File.Exists(SecureDNS.Asset_IR_Domains))
+            {
+                string rule = $"{SecureDNS.Asset_IR_Domains}|--;";
+                rulesList.Add(rule);
+                rulesList.Add("*.ir|--;");
+            }
+
+            // IR CIDRs: Direct
+            if (ir_CIDRs && File.Exists(SecureDNS.Asset_IR_CIDRs))
+            {
+                string rule = $"{SecureDNS.Asset_IR_CIDRs}|--;";
+                rulesList.Add(rule);
+            }
+
+            if (rulesList.Count > 0)
+            {
+                // Save To Temp File
+                await rulesList.SaveToFileAsync(SecureDNS.Rules_Assets_Proxy);
+
+                // Send Command
+                string command = $"Programs Rules -Mode=File -PathOrText=\"{SecureDNS.Rules_Assets_Proxy}\"";
+                Debug.WriteLine(command);
+                bool success = await ProxyConsole.SendCommandAsync(command, 50, 30, "Confirmed: Rules");
+                if (success) LastRulesPath = SecureDNS.RulesPath;
+                return success;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ShareViaProxy ApplyRulesToProxyAsync: " + ex.Message);
+            return false;
+        }
     }
 
 }

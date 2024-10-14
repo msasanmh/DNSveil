@@ -4,6 +4,9 @@
     <_LastSelectedProfileId>D:\PPWin\SecureDNSClient\SecureDNSClient\Properties\PublishProfiles\X86.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Update="Forms\Assets.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\Buttons.cs">
       <SubType>Form</SubType>
     </Compile>

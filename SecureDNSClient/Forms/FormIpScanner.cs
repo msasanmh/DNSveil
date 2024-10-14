@@ -3,6 +3,7 @@ using MsmhToolsClass;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace SecureDNSClient;
@@ -38,6 +39,8 @@ public partial class FormIpScanner : Form
         ToolStripMenuItemCopy.Click += ToolStripMenuItemCopy_Click;
         CustomContextMenuStripMain.Items.Add(ToolStripMenuItemCopy);
 
+        FillComboBox(CustomComboBoxSelectCIDR);
+
         // Set Tooltips
         string msgCheckWebsite = "An open website with chosen CDN to check. e.g. https://www.cloudflare.com";
         CustomLabelCheckWebsite.SetToolTip(FormMain.MainToolTip, "Info", msgCheckWebsite);
@@ -71,8 +74,14 @@ public partial class FormIpScanner : Form
         CustomButtonStartStop.Left = CustomNumericUpDownDelay.Right + spaceHH;
         CustomButtonStartStop.Top = CustomNumericUpDownDelay.Top;
 
+        CustomLabelSelectCIDR.Left = spaceRight;
+        CustomLabelSelectCIDR.Top = CustomButtonStartStop.Bottom + spaceV;
+
+        CustomComboBoxSelectCIDR.Left = CustomLabelSelectCIDR.Right + spaceH;
+        CustomComboBoxSelectCIDR.Top = CustomLabelSelectCIDR.Top - 2;
+
         CustomLabelCheckWebsite.Left = spaceRight;
-        CustomLabelCheckWebsite.Top = CustomButtonStartStop.Bottom + spaceV;
+        CustomLabelCheckWebsite.Top = CustomLabelSelectCIDR.Bottom + (spaceV * 2);
 
         CustomTextBoxCheckWebsite.Left = CustomLabelCheckWebsite.Right + spaceH;
         CustomTextBoxCheckWebsite.Top = CustomLabelCheckWebsite.Top - 2;
@@ -83,14 +92,8 @@ public partial class FormIpScanner : Form
         CustomNumericUpDownCheckIpWithThisPort.Left = CustomLabelCheckIpWithThisPort.Right + spaceH;
         CustomNumericUpDownCheckIpWithThisPort.Top = CustomLabelCheckIpWithThisPort.Top - 2;
 
-        CustomLabelProxyPort.Left = spaceRight;
-        CustomLabelProxyPort.Top = CustomNumericUpDownCheckIpWithThisPort.Bottom + spaceV;
-
-        CustomNumericUpDownProxyPort.Left = CustomLabelProxyPort.Right + spaceH;
-        CustomNumericUpDownProxyPort.Top = CustomLabelProxyPort.Top - 2;
-
-        CustomCheckBoxRandomScan.Left = CustomNumericUpDownProxyPort.Right + spaceHH;
-        CustomCheckBoxRandomScan.Top = CustomLabelProxyPort.Top;
+        CustomCheckBoxRandomScan.Left = spaceRight;
+        CustomCheckBoxRandomScan.Top = CustomNumericUpDownCheckIpWithThisPort.Bottom + spaceV;
 
         CustomLabelChecking.Left = spaceRight;
         CustomLabelChecking.Top = CustomCheckBoxRandomScan.Bottom + spaceV;
@@ -108,50 +111,83 @@ public partial class FormIpScanner : Form
         Controllers.SetDarkControl(this);
     }
 
-    private void CustomButtonStartStop_Click(object sender, EventArgs e)
+    private static void FillComboBox(CustomComboBox ccb)
     {
         // Built-in CF IPs
-        string defaultCfIPs = "103.21.244.0 - 103.21.244.255\n";
-        defaultCfIPs += "103.22.200.0 - 103.22.200.255\n";
-        defaultCfIPs += "103.31.4.0 - 103.31.5.255\n";
-        defaultCfIPs += "104.16.0.0 - 104.31.255.255\n";
-        defaultCfIPs += "108.162.192.0 - 108.162.207.255\n";
-        defaultCfIPs += "131.0.72.0 - 131.0.75.255\n";
-        defaultCfIPs += "141.101.64.0 - 141.101.65.255\n";
-        defaultCfIPs += "162.158.0.0 - 162.158.3.255\n";
-        defaultCfIPs += "172.64.0.0 - 172.67.255.255\n";
-        defaultCfIPs += "173.245.48.0 - 173.245.48.255\n";
-        defaultCfIPs += "188.114.96.0 - 188.114.99.255\n";
-        defaultCfIPs += "190.93.240.0 - 190.93.243.255\n";
-        defaultCfIPs += "197.234.240.0 - 197.234.243.255\n";
-        defaultCfIPs += "198.41.128.0 - 198.41.143.255";
+        List<string> cloudflareCIDRs = new()
+        {
+            "103.21.244.0/22",
+            "103.22.200.0/22",
+            "103.31.4.0/22",
+            "104.16.0.0/13",
+            "104.24.0.0/14",
+            "108.162.192.0/18",
+            "131.0.72.0/22",
+            "141.101.64.0/18",
+            "162.158.0.0/15",
+            "172.64.0.0/13",
+            "173.245.48.0/20",
+            "188.114.96.0/20",
+            "190.93.240.0/20",
+            "197.234.240.0/22",
+            "198.41.128.0/17",
+            "2400:cb00::/32",
+            "2405:8100::/32",
+            "2405:b500::/32",
+            "2606:4700::/32",
+            "2803:f800::/32",
+            "2a06:98c0::/29",
+            "2c0f:f248::/32"
+        };
 
-        if (!Scanner.IsRunning)
-            start();
-        else
-            stop();
+        ccb.InvokeIt(() =>
+        {
+            ccb.DataSource = cloudflareCIDRs;
+            ccb.SetDarkControl();
+        });
+    }
+
+    private void CustomButtonStartStop_Click(object? sender, EventArgs? e)
+    {
+        if (!Scanner.IsRunning) start();
+        else stop();
 
         void start()
         {
-            // Start
-            CustomDataGridViewResult.Rows.Clear();
-
-            Scanner.SetIpRange(defaultCfIPs);
-            Scanner.CheckPort = Convert.ToInt32(CustomNumericUpDownCheckIpWithThisPort.Value);
-            Scanner.CheckWebsite = CustomTextBoxCheckWebsite.Text;
-            Scanner.ProxyServerPort = Convert.ToInt32(CustomNumericUpDownProxyPort.Value);
-            Scanner.RandomScan = CustomCheckBoxRandomScan.Checked;
-            Scanner.Timeout = Convert.ToInt32(CustomNumericUpDownDelay.Value * 1000);
-
-            Scanner.OnWorkingIpReceived -= Scanner_OnWorkingIpReceived;
-            Scanner.OnWorkingIpReceived += Scanner_OnWorkingIpReceived;
-            Scanner.OnFullReportChanged -= Scanner_OnFullReportChanged;
-            Scanner.OnFullReportChanged += Scanner_OnFullReportChanged;
-
-            if (!Scanner.IsRunning)
+            try
             {
-                Scanner.Start();
-                this.InvokeIt(() => CustomButtonStartStop.Text = "Stop");
+                string? cidr = string.Empty;
+                this.InvokeIt(() =>
+                {
+                    if (CustomComboBoxSelectCIDR.SelectedIndex == -1 && CustomComboBoxSelectCIDR.Items.Count > 0)
+                        CustomComboBoxSelectCIDR.SelectedIndex = 0;
+                    cidr = CustomComboBoxSelectCIDR.SelectedItem.ToString();
+                });
+                if (string.IsNullOrWhiteSpace(cidr)) return;
+
+                // Start
+                CustomDataGridViewResult.Rows.Clear();
+
+                Scanner.SetIpRange(new List<string> { cidr });
+                Scanner.CheckPort = Convert.ToInt32(CustomNumericUpDownCheckIpWithThisPort.Value);
+                Scanner.CheckWebsite = CustomTextBoxCheckWebsite.Text;
+                Scanner.RandomScan = CustomCheckBoxRandomScan.Checked;
+                Scanner.Timeout = Convert.ToInt32(CustomNumericUpDownDelay.Value * 1000);
+
+                Scanner.OnWorkingIpReceived -= Scanner_OnWorkingIpReceived;
+                Scanner.OnWorkingIpReceived += Scanner_OnWorkingIpReceived;
+                Scanner.OnFullReportChanged -= Scanner_OnFullReportChanged;
+                Scanner.OnFullReportChanged += Scanner_OnFullReportChanged;
+
+                if (!Scanner.IsRunning)
+                {
+                    Scanner.Start();
+                    this.InvokeIt(() => CustomButtonStartStop.Text = "Stop");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("FormIpScanner Start: " + ex.Message);
             }
         }
 
@@ -206,9 +242,10 @@ public partial class FormIpScanner : Form
 
                 CustomDataGridViewResult.Sort(CustomDataGridViewResult.Columns[0], ListSortDirection.Ascending);
                 CustomDataGridViewResult.EndEdit();
+
+                if (CustomDataGridViewResult.RowCount >= 20)
+                    CustomButtonStartStop_Click(null, null);
             });
-
-
         }
     }
 
@@ -271,6 +308,7 @@ public partial class FormIpScanner : Form
             AppSettings.AddSelectedControlAndProperty(typeof(CustomRadioButton), "Checked");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Text");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
+            AppSettings.AddSelectedControlAndProperty(typeof(CustomComboBox), "SelectedIndex");
 
             // Add AgnosticSettings to save
             AppSettings.AddSelectedSettings(this);

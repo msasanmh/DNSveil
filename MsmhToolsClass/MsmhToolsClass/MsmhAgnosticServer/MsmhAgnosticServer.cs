@@ -18,18 +18,11 @@ public partial class MsmhAgnosticServer
         FragmentProgram = fragmentProgram;
     }
 
-    //======================================= DnsRules Support
-    public AgnosticProgram.DnsRules DnsRulesProgram = new();
-    public void EnableDnsRules(AgnosticProgram.DnsRules dnsRules)
+    //======================================= Rules Support
+    public AgnosticProgram.Rules RulesProgram = new();
+    public void EnableRules(AgnosticProgram.Rules rules)
     {
-        DnsRulesProgram = dnsRules;
-    }
-
-    //======================================= ProxyRules Support
-    public AgnosticProgram.ProxyRules ProxyRulesProgram = new();
-    public void EnableProxyRules(AgnosticProgram.ProxyRules proxyRules)
-    {
-        ProxyRulesProgram = proxyRules;
+        RulesProgram = rules;
     }
 
     //======================================= DnsLimit Support
@@ -168,7 +161,7 @@ public partial class MsmhAgnosticServer
         try
         {
             if (OperatingSystem.IsWindows() && typeof(PerformanceCounter) != null)
-                CpuUsage = await ProcessManager.GetCpuUsage(Environment.ProcessId, 1000);
+                CpuUsage = await ProcessManager.GetCpuUsageAsync(Environment.ProcessId, 1000);
 
             if (CpuUsage >= Settings_.KillOnCpuUsage && Settings_.KillOnCpuUsage > 0)
             {
@@ -505,7 +498,7 @@ public partial class MsmhAgnosticServer
             aResult.Protocol == RequestProtocol.DoH)
         {
             // ===== Process DNS
-            await DnsTunnel.Process(aResult, DnsRulesProgram, DnsLimitProgram, DnsCaches, Settings_, OnRequestReceived);
+            await DnsTunnel.Process(aResult, RulesProgram, DnsLimitProgram, DnsCaches, Settings_, OnRequestReceived);
             aRequest.Disconnect();
         }
         else
@@ -538,8 +531,8 @@ public partial class MsmhAgnosticServer
                 }
 
                 // Create Tunnel
-                ProxyTunnel proxyTunnel = new(connectionId, proxyClient, req, Settings_, SettingsSSL_);
-                proxyTunnel.Open(ProxyRulesProgram);
+                ProxyTunnel proxyTunnel = new(connectionId, proxyClient, req, SettingsSSL_);
+                proxyTunnel.Open();
 
                 proxyTunnel.OnTunnelDisconnected += ProxyTunnel_OnTunnelDisconnected;
                 proxyTunnel.OnDataReceived += ProxyTunnel_OnDataReceived;
@@ -597,7 +590,7 @@ public partial class MsmhAgnosticServer
                         Stats.AddBytes(e.Buffer.Length, ByteType.Sent);
                     }
                 }
-
+                
                 t.KillOnTimeout.Restart();
                 await t.Client.StartReceiveAsync().ConfigureAwait(false);
                 t.KillOnTimeout.Restart();
@@ -632,7 +625,7 @@ public partial class MsmhAgnosticServer
                 t.ClientSSL.OnClientDataReceived += (s, e) =>
                 {
                     t.KillOnTimeout.Restart();
-
+                    
                     if (e.Buffer.Length > 0)
                     {
                         // Can't be implement here. Ex: "The WriteAsync method cannot be called when another write operation is pending"
@@ -645,7 +638,7 @@ public partial class MsmhAgnosticServer
                     }
                     t.ClientSSL.OnClientDataReceived -= null;
                 };
-
+                
                 t.ClientSSL.OnRemoteDataReceived += (s, e) =>
                 {
                     t.KillOnTimeout.Restart();

@@ -306,30 +306,17 @@ public class ProxyClientSSL
             
             // Update Client Stream
             ClientStream = sslStreamClient;
-
+            
             //===== Client Authentication
-            SslClientAuthenticationOptions optionsClient = new();
-
-            // Apply DontBypass Program
-            if (!req.ApplyChangeSNI)
-                optionsClient.TargetHost = req.AddressOrig;
-            else
+            SslClientAuthenticationOptions optionsClient = new()
             {
-                if (SettingsSSL_.ChangeSni)
-                {
-                    // Use Fake DNS/SNI List (Change SNI) To Bypass DPI
-                    optionsClient.TargetHost = req.AddressSNI;
-                }
-                else
-                {
-                    optionsClient.TargetHost = req.AddressOrig;
-                }
-            }
-            
-            optionsClient.EnabledSslProtocols = MsmhAgnosticServer.SSL_Protocols;
-            optionsClient.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
-            optionsClient.RemoteCertificateValidationCallback = MsmhAgnosticServer.Callback;
-            
+                // Apply DontBypass Program: Use Fake DNS/SNI List (Change SNI) To Bypass DPI
+                TargetHost = req.ApplyChangeSNI ? req.AddressSNI : req.AddressOrig,
+                EnabledSslProtocols = MsmhAgnosticServer.SSL_Protocols,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                RemoteCertificateValidationCallback = MsmhAgnosticServer.Callback
+            };
+
             SslStream sslStreamRemote = new(remoteStream, false, MsmhAgnosticServer.Callback, null);
             await sslStreamRemote.AuthenticateAsClientAsync(optionsClient, CancellationToken.None).ConfigureAwait(false);
 
@@ -342,7 +329,7 @@ public class ProxyClientSSL
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("======= DecryptHttpsTrafficAsync:\n" + ex.Message);
+            Debug.WriteLine($"======= DecryptHttpsTrafficAsync ({req.AddressOrig} => {req.AddressSNI}):\n" + ex.Message);
             return false;
         }
     }

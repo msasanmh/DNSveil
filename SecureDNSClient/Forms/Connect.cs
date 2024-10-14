@@ -1,5 +1,6 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
+using System.Diagnostics;
 using System.Net;
 using System.ServiceProcess;
 
@@ -29,7 +30,11 @@ public partial class FormMain
             {
                 // Connect
                 // Check Internet Connectivity
-                if (!IsInternetOnline) return false;
+                if (!IsInternetOnline)
+                {
+                    this.InvokeIt(() => CustomButtonConnect.Enabled = true);
+                    return false;
+                }
 
                 if (IsConnecting) return false;
                 IsConnecting = true;
@@ -438,4 +443,62 @@ public partial class FormMain
             }
         }
     }
+
+    public async Task<bool> ApplyRulesToDnsAsync(string? preRules)
+    {
+        try
+        {
+            List<string> rulesList = new();
+
+            // Add Pre-Rules
+            if (!string.IsNullOrEmpty(preRules))
+            {
+                List<string> preRulesList = preRules.SplitToLines();
+                if (preRulesList.Count > 0) rulesList.AddRange(preRulesList);
+            }
+
+            bool customRules = false;
+            bool ir_ADS = false;
+
+            this.InvokeIt(() =>
+            {
+                customRules = CustomCheckBoxSettingEnableRules.Checked;
+                ir_ADS = CustomCheckBoxGeoAsset_IR_ADS.Checked;
+            });
+
+            if (customRules && File.Exists(SecureDNS.RulesPath))
+            {
+                List<string> customRulesList = new();
+                await customRulesList.LoadFromFileAsync(SecureDNS.RulesPath, true, true);
+                if (customRulesList.Count > 0) rulesList.AddRange(customRulesList);
+            }
+
+            // IR ADS Domains: Block
+            if (ir_ADS && File.Exists(SecureDNS.Asset_IR_ADS_Domains))
+            {
+                string rule = $"{SecureDNS.Asset_IR_ADS_Domains}|-;";
+                rulesList.Add(rule);
+            }
+
+            if (rulesList.Count > 0)
+            {
+                // Save To Temp File
+                await rulesList.SaveToFileAsync(SecureDNS.Rules_Assets_DNS);
+
+                // Send Command
+                string command = $"Programs Rules -Mode=File -PathOrText=\"{SecureDNS.Rules_Assets_DNS}\"";
+                Debug.WriteLine(command);
+                bool success = await DnsConsole.SendCommandAsync(command, 50, 30, "Confirmed: Rules");
+                return success;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ShareViaProxy ApplyRulesToDnsAsync: " + ex.Message);
+            return false;
+        }
+    }
+
 }

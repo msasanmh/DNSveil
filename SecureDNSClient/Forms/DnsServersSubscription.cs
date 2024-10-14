@@ -30,7 +30,7 @@ public partial class FormMain
                         string temp = line;
                         int index = temp.LastIndexOf(':');
                         if (index != -1) temp = temp.Remove(index);
-                        if (NetworkTool.IsIp(temp, out _)) isIP = true;
+                        if (NetworkTool.IsIP(temp, out _)) isIP = true;
                     }
                 }
                 catch (Exception) { }
@@ -53,7 +53,7 @@ public partial class FormMain
                                 string temp = tempWithPort;
                                 int index = temp.LastIndexOf(':');
                                 if (index != -1) temp = temp.Remove(index);
-                                if (NetworkTool.IsIp(temp, out _))
+                                if (NetworkTool.IsIP(temp, out _))
                                 {
                                     isWithRelay = true;
                                     urls.Add(tempWithPort);

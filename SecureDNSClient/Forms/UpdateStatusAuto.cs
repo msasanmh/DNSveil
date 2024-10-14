@@ -158,12 +158,14 @@ public partial class FormMain
     private void CheckUpdateAuto()
     {
         if (!Program.IsStartup) Task.Run(async () => await CheckUpdateAsync());
+        Task.Run(async () => await Assets_Download_Async());
 
         System.Timers.Timer timer = new();
         timer.Interval = TimeSpan.FromHours(1).TotalMilliseconds;
         timer.Elapsed += (s, e) =>
         {
             Task.Run(async () => await CheckUpdateAsync());
+            Task.Run(async () => await Assets_Download_Async());
         };
         timer.Start();
     }
@@ -557,12 +559,12 @@ public partial class FormMain
                     IsProxyRunning = false; ProxyRequests = 0; ProxyMaxRequests = 1000; IsProxyFragmentActive = false;
                     IsProxySSLDecryptionActive = false; IsProxySSLChangeSniActive = false;
                     ProxyFragmentMode = AgnosticProgram.Fragment.Mode.Disable;
-                    ProxyRulesMode = AgnosticProgram.ProxyRules.Mode.Disable;
+                    RulesMode = AgnosticProgram.Rules.Mode.Disable;
                 }
                 else if (line.StartsWith("details"))
                 {
                     string[] split = line.Split('|');
-                    if (split.Length > 10)
+                    if (split.Length > 9)
                     {
                         if (bool.TryParse(split[1].ToLower(), out bool sharing)) IsProxyRunning = sharing;
                         if (int.TryParse(split[2].ToLower(), out int port)) ProxyPort = port;
@@ -577,9 +579,9 @@ public partial class FormMain
                         if (split[8].ToLower().Equals("disable")) ProxyFragmentMode = AgnosticProgram.Fragment.Mode.Disable;
                         else if (split[8].ToLower().Equals("program")) ProxyFragmentMode = AgnosticProgram.Fragment.Mode.Program;
 
-                        if (split[10].ToLower().Equals("disable")) ProxyRulesMode = AgnosticProgram.ProxyRules.Mode.Disable;
-                        else if (split[10].ToLower().Equals("file")) ProxyRulesMode = AgnosticProgram.ProxyRules.Mode.File;
-                        else if (split[10].ToLower().Equals("text")) ProxyRulesMode = AgnosticProgram.ProxyRules.Mode.Text;
+                        if (split[9].ToLower().Equals("disable")) RulesMode = AgnosticProgram.Rules.Mode.Disable;
+                        else if (split[9].ToLower().Equals("file")) RulesMode = AgnosticProgram.Rules.Mode.File;
+                        else if (split[9].ToLower().Equals("text")) RulesMode = AgnosticProgram.Rules.Mode.Text;
                     }
                 }
 
@@ -1271,12 +1273,12 @@ public partial class FormMain
             float sdc = -1, dnsserver = -1, proxyServer = -1;
             float goodbyeDpiBasic = -1, goodbyeDpiAdvanced = -1, goodbyeDpiBypass = -1;
 
-            Task a = Task.Run(async () => sdc = await ProcessManager.GetCpuUsage(Environment.ProcessId, delay));
-            Task b = Task.Run(async () => dnsserver = await ProcessManager.GetCpuUsage(PIDDnsServer, delay));
-            Task c = Task.Run(async () => proxyServer = await ProcessManager.GetCpuUsage(PIDProxyServer, delay));
-            Task d = Task.Run(async () => goodbyeDpiBasic = await ProcessManager.GetCpuUsage(PIDGoodbyeDPIBasic, delay));
-            Task e = Task.Run(async () => goodbyeDpiAdvanced = await ProcessManager.GetCpuUsage(PIDGoodbyeDPIAdvanced, delay));
-            Task f = Task.Run(async () => goodbyeDpiBypass = await ProcessManager.GetCpuUsage(PIDGoodbyeDPIBypass, delay));
+            Task a = Task.Run(async () => sdc = await ProcessManager.GetCpuUsageAsync(Environment.ProcessId, delay));
+            Task b = Task.Run(async () => dnsserver = await ProcessManager.GetCpuUsageAsync(PIDDnsServer, delay));
+            Task c = Task.Run(async () => proxyServer = await ProcessManager.GetCpuUsageAsync(PIDProxyServer, delay));
+            Task d = Task.Run(async () => goodbyeDpiBasic = await ProcessManager.GetCpuUsageAsync(PIDGoodbyeDPIBasic, delay));
+            Task e = Task.Run(async () => goodbyeDpiAdvanced = await ProcessManager.GetCpuUsageAsync(PIDGoodbyeDPIAdvanced, delay));
+            Task f = Task.Run(async () => goodbyeDpiBypass = await ProcessManager.GetCpuUsageAsync(PIDGoodbyeDPIBypass, delay));
 
             List<Task> tasksList = new();
             tasksList.Add(a);

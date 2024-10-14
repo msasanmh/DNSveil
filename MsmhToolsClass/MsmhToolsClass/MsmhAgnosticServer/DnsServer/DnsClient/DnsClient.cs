@@ -141,26 +141,56 @@ public class DnsClient
             {
                 TcpPlainClient tcpPlainClient = new(queryBuffer, dnsReader, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
                 result = await tcpPlainClient.GetResponseAsync().ConfigureAwait(false);
+
+                if (result.Length == 0 && !string.IsNullOrWhiteSpace(proxyScheme)) // Try Without Upstream
+                {
+                    tcpPlainClient = new(queryBuffer, dnsReader, timeoutMS, null, null, null, ct);
+                    result = await tcpPlainClient.GetResponseAsync().ConfigureAwait(false);
+                }
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoT)
             {
                 DoTClient doTClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
                 result = await doTClient.GetResponseAsync().ConfigureAwait(false);
+
+                if (result.Length == 0 && !string.IsNullOrWhiteSpace(proxyScheme)) // Try Without Upstream
+                {
+                    doTClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, null, null, null, ct);
+                    result = await doTClient.GetResponseAsync().ConfigureAwait(false);
+                }
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoH)
             {
                 DoHClient doHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
                 result = await doHClient.GetResponseAsync().ConfigureAwait(false);
+
+                if (result.Length == 0 && !string.IsNullOrWhiteSpace(proxyScheme)) // Try Without Upstream
+                {
+                    doHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, null, null, null, ct);
+                    result = await doHClient.GetResponseAsync().ConfigureAwait(false);
+                }
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.ObliviousDohTarget) // Not Implemented Yet
             {
                 ODoHClient oDoHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
                 result = await oDoHClient.GetResponseAsync().ConfigureAwait(false);
+
+                if (result.Length == 0 && !string.IsNullOrWhiteSpace(proxyScheme)) // Try Without Upstream
+                {
+                    oDoHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, null, null, null, ct);
+                    result = await oDoHClient.GetResponseAsync().ConfigureAwait(false);
+                }
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DnsCrypt || dnsReader.Protocol == DnsEnums.DnsProtocol.AnonymizedDNSCrypt)
             {
                 DNSCryptClient dnsCryptClient = new(queryBuffer, dnsReader, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
                 result = await dnsCryptClient.GetResponseAsync().ConfigureAwait(false);
+
+                if (result.Length == 0 && !string.IsNullOrWhiteSpace(proxyScheme)) // Try Without Upstream
+                {
+                    dnsCryptClient = new(queryBuffer, dnsReader, timeoutMS, null, null, null, ct);
+                    result = await dnsCryptClient.GetResponseAsync().ConfigureAwait(false);
+                }
             }
 
             //sw.Stop();

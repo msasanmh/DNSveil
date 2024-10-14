@@ -204,7 +204,7 @@ public class DNSCryptClient
                                     ep = new(Reader.DNSCryptRelayIP, Reader.DNSCryptRelayPort);
                                 }
 
-                                TcpClient tcpClient = new();
+                                TcpClient tcpClient = new(ep.AddressFamily);
                                 tcpClient.SendTimeout = TimeoutMS;
                                 tcpClient.ReceiveTimeout = TimeoutMS;
                                 tcpClient.Client.NoDelay = true;

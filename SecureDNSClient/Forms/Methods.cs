@@ -1,7 +1,9 @@
 ﻿using CustomControls;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
 using MsmhToolsClass;
+using MsmhToolsClass.MsmhAgnosticServer;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using SecureDNSClient.DPIBasic;
@@ -9,7 +11,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace SecureDNSClient;
@@ -24,39 +25,46 @@ public partial class FormMain
 
     private async Task LoadThemeAsync()
     {
-        if (!IsThemeApplied || !IsScreenHighDpiScaleApplied)
+        try
         {
-            Theme.LoadTheme(this, Theme.Themes.Dark);
-            Theme.SetColors(LabelMain);
-            CustomMessageBox.FormIcon = Properties.Resources.SecureDNSClient_Icon_Multi;
-            await Task.Delay(10);
-            List<Control> controls = Controllers.GetAllControls(this);
-            for (int i = 0; i < controls.Count; i++)
+            if (!IsThemeApplied || !IsScreenHighDpiScaleApplied)
             {
-                Control c = controls[i];
-                if (c is SplitContainer sc)
-                    if (sc.Name.EndsWith("Main"))
-                        this.InvokeIt(() => sc.Panel2.BackColor = BackColor.ChangeBrightness(-0.2f));
+                Theme.LoadTheme(this, Theme.Themes.Dark);
+                Theme.SetColors(LabelMain);
+                CustomMessageBox.FormIcon = Properties.Resources.SecureDNSClient_Icon_Multi;
+                await Task.Delay(10);
+                List<Control> controls = Controllers.GetAllControls(this);
+                for (int i = 0; i < controls.Count; i++)
+                {
+                    Control c = controls[i];
+                    if (c is SplitContainer sc)
+                        if (sc.Name.EndsWith("Main"))
+                            this.InvokeIt(() => sc.Panel2.BackColor = BackColor.ChangeBrightness(-0.2f));
+                }
+                this.InvokeIt(() => CustomCheckBoxSettingQcOnStartup.BackColor = BackColor.ChangeBrightness(-0.2f));
+                await ScreenHighDpiScaleStartup(this);
+
+                // Add colors and texts to About page
+                this.InvokeIt(() =>
+                {
+                    CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
+                    string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({ArchProcess.ToString().ToLower()})";
+                    CustomLabelAboutVersion.Text = aboutVer;
+                    CustomLabelAboutThis2.ForeColor = Color.IndianRed;
+                });
+
+                Controllers.SetDarkControl(this);
+
+                // Wait
+                //Debug.WriteLine("All Controls: " + controls.Count);
+                await Task.Delay(controls.Count);
+
+                IsThemeApplied = true;
             }
-            this.InvokeIt(() => CustomCheckBoxSettingQcOnStartup.BackColor = BackColor.ChangeBrightness(-0.2f));
-            await ScreenHighDpiScaleStartup(this);
-
-            // Add colors and texts to About page
-            this.InvokeIt(() =>
-            {
-                CustomLabelAboutThis.ForeColor = Color.DodgerBlue;
-                string aboutVer = $"v{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion} ({ArchProcess.ToString().ToLower()})";
-                CustomLabelAboutVersion.Text = aboutVer;
-                CustomLabelAboutThis2.ForeColor = Color.IndianRed;
-            });
-
-            Controllers.SetDarkControl(this);
-
-            // Wait
-            //Debug.WriteLine("All Controls: " + controls.Count);
-            await Task.Delay(controls.Count);
-
-            IsThemeApplied = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods LoadThemeAsync: " + ex.Message);
         }
     }
 
@@ -112,73 +120,87 @@ public partial class FormMain
     {
         await Task.Run(async () =>
         {
-            IsAppReady = false;
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Waiting For Network...{NL}", Color.Gray));
-            while (true)
+            try
             {
-                await Task.Delay(1000);
-                IPAddress bootstrapIP = GetBootstrapSetting(out _);
-                await UpdateBoolInternetStateAsync();
-                IsAppReady = NetState == NetworkTool.InternetState.Online;
-                if (IsAppReady) break;
+                IsAppReady = false;
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Waiting For Network...{NL}", Color.Gray));
+                while (true)
+                {
+                    await Task.Delay(1000);
+                    IPAddress bootstrapIP = GetBootstrapSetting(out _);
+                    await UpdateBoolInternetStateAsync();
+                    IsAppReady = NetState == NetworkTool.InternetState.Online;
+                    if (IsAppReady) break;
+                }
+                string msgReady = $"Network Detected (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgReady, Color.Gray));
             }
-            string msgReady = $"Network Detected (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgReady, Color.Gray));
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Methods GetAppReady: " + ex.Message);
+            }
         });
     }
 
     public async void StartupTask()
     {
-        StartupTaskExecuted = true;
-
-        string msgStartup = $"Startup Task Executed (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStartup, Color.Orange));
-
-        Hide();
-        Opacity = 0;
-        bool cancel = false;
-
-        // Wait for Startup Delay
-        Task wait = Task.Run(async () =>
+        try
         {
-            while (true)
+            StartupTaskExecuted = true;
+
+            string msgStartup = $"Startup Task Executed (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgStartup, Color.Orange));
+
+            Hide();
+            Opacity = 0;
+            bool cancel = false;
+
+            // Wait for Startup Delay
+            Task wait = Task.Run(async () =>
             {
-                if (IsCheckingStarted || IsConnecting || IsQuickConnecting || IsExiting)
+                while (true)
                 {
-                    cancel = true;
-                    break;
+                    if (IsCheckingStarted || IsConnecting || IsQuickConnecting || IsExiting)
+                    {
+                        cancel = true;
+                        break;
+                    }
+                    await Task.Delay(100);
                 }
-                await Task.Delay(100);
-            }
-        });
-        if (Program.StartupDelaySec > 0)
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(Program.StartupDelaySec)); } catch (Exception) { }
+            });
+            if (Program.StartupDelaySec > 0)
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(Program.StartupDelaySec)); } catch (Exception) { }
 
-        if (cancel) return;
+            if (cancel) return;
 
-        // Wait Until App Is Ready
-        Task waitNet = Task.Run(async () =>
+            // Wait Until App Is Ready
+            Task waitNet = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    if (IsAppReady) break;
+                    if (IsCheckingStarted || IsConnecting || IsQuickConnecting || IsExiting)
+                    {
+                        cancel = true;
+                        break;
+                    }
+                    await Task.Delay(500);
+                }
+            });
+            try { await waitNet.WaitAsync(CancellationToken.None); } catch (Exception) { }
+
+            if (cancel) return;
+
+            // Update NICs
+            await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
+
+            // Start Quick Connect (To User AgnosticSettings)
+            QcToUserSetting_Click(null, EventArgs.Empty);
+        }
+        catch (Exception ex)
         {
-            while (true)
-            {
-                if (IsAppReady) break;
-                if (IsCheckingStarted || IsConnecting || IsQuickConnecting || IsExiting)
-                {
-                    cancel = true;
-                    break;
-                }
-                await Task.Delay(500);
-            }
-        });
-        try { await waitNet.WaitAsync(CancellationToken.None); } catch (Exception) { }
-
-        if (cancel) return;
-
-        // Update NICs
-        await SetDnsOnNic_.UpdateNICs(CustomComboBoxNICs, GetBootstrapSetting(out int port), port);
-
-        // Start Quick Connect (To User AgnosticSettings)
-        QcToUserSetting_Click(null, EventArgs.Empty);
+            Debug.WriteLine("Methods StartupTask: " + ex.Message);
+        }
     }
 
     public static bool IsAppOnWindowsStartup(out bool isPathOk)
@@ -232,7 +254,7 @@ public partial class FormMain
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("IsAppOnWindowsStartup: " + ex.Message);
+            Debug.WriteLine("Methods IsAppOnWindowsStartup: " + ex.Message);
         }
 
         return isTaskExist;
@@ -266,51 +288,67 @@ public partial class FormMain
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ActivateWindowsStartup: " + ex.Message);
+            Debug.WriteLine("Methods ActivateWindowsStartup: " + ex.Message);
         }
     }
 
     public static bool IsAppOnWindowsStartupRegistry(out bool isPathOk)
     {
         isPathOk = false;
-        string appName = "SecureDnsClient";
-        string prefix = "cmd /c start \"SDC\" /b ";
-        string appPath = $"\"{Path.GetFullPath(Application.ExecutablePath)}\"";
-        string regPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-        RegistryKey? registry = Registry.CurrentUser.OpenSubKey(regPath, false);
-        if (registry == null) return false;
-        object? exist = registry.GetValue(appName, "false");
-        if (exist == null) return false;
-        if (exist.Equals("false")) return false;
-        string? existStr = exist as string;
-        if (!string.IsNullOrEmpty(existStr))
+
+        try
         {
-            if (existStr.StartsWith(prefix)) existStr = existStr[prefix.Length..];
-            if (existStr.Contains("\" "))
-                existStr = $"{existStr.Split("\" ")[0]}\"";
-            if (existStr.Equals(appPath)) isPathOk = true;
+            string appName = "SecureDnsClient";
+            string prefix = "cmd /c start \"SDC\" /b ";
+            string appPath = $"\"{Path.GetFullPath(Application.ExecutablePath)}\"";
+            string regPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+            RegistryKey? registry = Registry.CurrentUser.OpenSubKey(regPath, false);
+            if (registry == null) return false;
+            object? exist = registry.GetValue(appName, "false");
+            if (exist == null) return false;
+            if (exist.Equals("false")) return false;
+            string? existStr = exist as string;
+            if (!string.IsNullOrEmpty(existStr))
+            {
+                if (existStr.StartsWith(prefix)) existStr = existStr[prefix.Length..];
+                if (existStr.Contains("\" "))
+                    existStr = $"{existStr.Split("\" ")[0]}\"";
+                if (existStr.Equals(appPath)) isPathOk = true;
+            }
+
+            try { registry.Dispose(); } catch (Exception) { }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods IsAppOnWindowsStartupRegistry: " + ex.Message);
         }
 
-        try { registry.Dispose(); } catch (Exception) { }
         return true;
     }
 
     public static void ActivateWindowsStartupRegistry(bool active)
     {
-        int startupDelay = 5;
-        string appName = "SecureDnsClient";
-        string prefix = "cmd /c start \"SDC\" /b ";
-        string args = $"{prefix}\"{Path.GetFullPath(Application.ExecutablePath)}\" startup {startupDelay}";
-        string regPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-        RegistryKey? registry = Registry.CurrentUser.OpenSubKey(regPath, true);
-        if (registry != null)
+        try
         {
-            if (active)
-                registry.SetValue(appName, args);
-            else
-                registry.DeleteValue(appName, false);
+            int startupDelay = 5;
+            string appName = "SecureDnsClient";
+            string prefix = "cmd /c start \"SDC\" /b ";
+            string args = $"{prefix}\"{Path.GetFullPath(Application.ExecutablePath)}\" startup {startupDelay}";
+            string regPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+            RegistryKey? registry = Registry.CurrentUser.OpenSubKey(regPath, true);
+            if (registry != null)
+            {
+                if (active)
+                    registry.SetValue(appName, args);
+                else
+                    registry.DeleteValue(appName, false);
 
-            try { registry.Dispose(); } catch (Exception) { }
+                try { registry.Dispose(); } catch (Exception) { }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods ActivateWindowsStartupRegistry: " + ex.Message);
         }
     }
 
@@ -419,92 +457,108 @@ public partial class FormMain
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Delete {Path.GetFileName(filePath)} File: {ex.Message}");
+            Debug.WriteLine($"Methods DeleteFileOnSize {Path.GetFileName(filePath)} File: {ex.Message}");
         }
     }
 
     private async Task FlushDNSAsync(bool flush, bool register, bool release, bool renew, bool showMsg)
     {
-        if (IsFlushingDns) return;
-        if (flush == false && register == false && release == false && renew == false) return;
-        IsFlushingDns = true;
-        string remove = "Windows IP Configuration";
-        await Task.Run(async () =>
+        try
         {
-            string msg = $"{NL}Flushing DNS...{NL}";
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+            if (IsFlushingDns) return;
+            if (flush == false && register == false && release == false && renew == false) return;
+            IsFlushingDns = true;
+            string remove = "Windows IP Configuration";
+            await Task.Run(async () =>
+            {
+                string msg = $"{NL}Flushing DNS...{NL}";
+                if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
 
-            if (flush)
-            {
-                msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
-                if (showMsg)
+                if (flush)
                 {
-                    if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
-                    msg = msg.Replace(Environment.NewLine, string.Empty);
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flush: ", Color.DodgerBlue));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
-                }
-                
-                if (IsDNSConnected && !IsExiting) await DnsConsole.SendCommandAsync("flush");
-                if (IsProxyRunning && !IsExiting)
-                {
-                    UpdateProxyBools = false;
-                    await ProxyConsole.SendCommandAsync("flush");
-                    UpdateProxyBools = true;
-                }
-            }
-            
-            if (register)
-            {
-                msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
-                if (showMsg)
-                {
-                    if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
-                    msg = msg.Replace(Environment.NewLine, string.Empty);
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Register: ", Color.DodgerBlue));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
-                }
-            }
-            
-            if (release)
-            {
-                msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
-                if (showMsg)
-                {
-                    if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
-                    msg = msg.Replace(Environment.NewLine, string.Empty);
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Release: ", Color.DodgerBlue));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
-                }
-            }
-            
-            if (renew)
-            {
-                msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
-                if (showMsg)
-                {
-                    if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
-                    msg = msg.Replace(Environment.NewLine, string.Empty);
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Renew: ", Color.DodgerBlue));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
-                }
-            }
-            
-            //ProcessManager.Execute("netsh", "winsock reset"); // Needs PC Restart
+                    msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
+                    if (showMsg)
+                    {
+                        if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                        msg = msg.Replace(Environment.NewLine, string.Empty);
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Flush: ", Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+                    }
 
-            msg = $"Dns Flushed Successfully.{NL}";
-            if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
-        });
-        IsFlushingDns = false;
+                    if (IsDNSConnected && !IsExiting) await DnsConsole.SendCommandAsync("flush");
+                    if (IsProxyRunning && !IsExiting)
+                    {
+                        UpdateProxyBools = false;
+                        await ProxyConsole.SendCommandAsync("flush");
+                        UpdateProxyBools = true;
+                    }
+                }
+
+                if (register)
+                {
+                    msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
+                    if (showMsg)
+                    {
+                        if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                        msg = msg.Replace(Environment.NewLine, string.Empty);
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Register: ", Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+                    }
+                }
+
+                if (release)
+                {
+                    msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
+                    if (showMsg)
+                    {
+                        if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                        msg = msg.Replace(Environment.NewLine, string.Empty);
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Release: ", Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+                    }
+                }
+
+                if (renew)
+                {
+                    msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
+                    if (showMsg)
+                    {
+                        if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
+                        msg = msg.Replace(Environment.NewLine, string.Empty);
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"Renew: ", Color.DodgerBlue));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText($"{msg}{NL}", Color.LightGray));
+                    }
+                }
+
+                //ProcessManager.Execute("netsh", "winsock reset"); // Needs PC Restart
+
+                msg = $"Dns Flushed Successfully.{NL}";
+                if (showMsg) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+            });
+            IsFlushingDns = false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods FlushDNSAsync: " + ex.Message);
+        }
     }
 
     public static List<int> GetPids(bool includeGoodbyeDpi)
     {
         List<int> list = new();
-        int[] pids = { Environment.ProcessId, PIDDnsServer, PIDProxyServer };
-        int[] pidsGD = { PIDGoodbyeDPIBasic, PIDGoodbyeDPIAdvanced, PIDGoodbyeDPIBypass };
-        list.AddRange(pids);
-        if (includeGoodbyeDpi) list.AddRange(pidsGD);
+
+        try
+        {
+            int[] pids = { Environment.ProcessId, PIDDnsServer, PIDProxyServer };
+            int[] pidsGD = { PIDGoodbyeDPIBasic, PIDGoodbyeDPIAdvanced, PIDGoodbyeDPIBypass };
+            list.AddRange(pids);
+            if (includeGoodbyeDpi) list.AddRange(pidsGD);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods GetPids: " + ex.Message);
+        }
+
         return list.Distinct().ToList();
     }
 
@@ -542,323 +596,370 @@ public partial class FormMain
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("KillAll: " + ex.Message);
+                Debug.WriteLine("Methods KillAll: " + ex.Message);
             }
         });
     }
 
     public ProcessPriorityClass GetCPUPriority()
     {
-        if (CustomRadioButtonSettingCPUHigh.Checked)
-            return ProcessPriorityClass.High;
-        else if (CustomRadioButtonSettingCPUAboveNormal.Checked)
-            return ProcessPriorityClass.AboveNormal;
-        else if (CustomRadioButtonSettingCPUNormal.Checked)
+        try
+        {
+            if (CustomRadioButtonSettingCPUHigh.Checked)
+                return ProcessPriorityClass.High;
+            else if (CustomRadioButtonSettingCPUAboveNormal.Checked)
+                return ProcessPriorityClass.AboveNormal;
+            else if (CustomRadioButtonSettingCPUNormal.Checked)
+                return ProcessPriorityClass.Normal;
+            else if (CustomRadioButtonSettingCPUBelowNormal.Checked)
+                return ProcessPriorityClass.BelowNormal;
+            else if (CustomRadioButtonSettingCPULow.Checked)
+                return ProcessPriorityClass.Idle;
+            else
+                return ProcessPriorityClass.Normal;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods GetCPUPriority: " + ex.Message);
             return ProcessPriorityClass.Normal;
-        else if (CustomRadioButtonSettingCPUBelowNormal.Checked)
-            return ProcessPriorityClass.BelowNormal;
-        else if (CustomRadioButtonSettingCPULow.Checked)
-            return ProcessPriorityClass.Idle;
-        else
-            return ProcessPriorityClass.Normal;
+        }
     }
 
     public static bool IsDnsProtocolSupported(string dns)
     {
-        dns = dns.Trim();
-        StringComparison sc = StringComparison.OrdinalIgnoreCase;
-        if (dns.StartsWith("udp://", sc) || dns.StartsWith("tcp://", sc) || dns.StartsWith("http://", sc) || dns.StartsWith("https://", sc) ||
-            dns.StartsWith("h3://", sc) || dns.StartsWith("tls://", sc) || dns.StartsWith("quic://", sc) || dns.StartsWith("sdns://", sc))
-            return true;
-        else
-            return isPlainDnsWithUnusualPort(dns);
-
-        static bool isPlainDnsWithUnusualPort(string dns) // Support for plain DNS with unusual port
+        try
         {
-            if (dns.Contains(':'))
+            dns = dns.Trim();
+            StringComparison sc = StringComparison.OrdinalIgnoreCase;
+            if (dns.StartsWith("udp://", sc) || dns.StartsWith("tcp://", sc) || dns.StartsWith("http://", sc) || dns.StartsWith("https://", sc) ||
+                dns.StartsWith("h3://", sc) || dns.StartsWith("tls://", sc) || dns.StartsWith("quic://", sc) || dns.StartsWith("sdns://", sc))
+                return true;
+            else
+                return isPlainDnsWithUnusualPort(dns);
+
+            static bool isPlainDnsWithUnusualPort(string dns) // Support for plain DNS with unusual port
             {
-                NetworkTool.GetUrlDetails(dns, 53, out _, out string ipStr, out _, out _, out int port, out _, out _);
-                if (NetworkTool.IsIp(ipStr, out _)) return port >= 1 && port <= 65535;
+                if (dns.Contains(':'))
+                {
+                    NetworkTool.GetUrlDetails(dns, 53, out _, out string ipStr, out _, out _, out int port, out _, out _);
+                    if (NetworkTool.IsIP(ipStr, out _)) return port >= 1 && port <= 65535;
+                }
+                return false;
             }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods IsDnsProtocolSupported: " + ex.Message);
             return false;
         }
     }
 
     private void InitializeStatus(CustomDataGridView dgv)
     {
-        dgv.SelectionChanged += (s, e) => dgv.ClearSelection();
-        dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
-        dgv.BorderStyle = BorderStyle.None;
-        List<DataGridViewRow> rList = new();
-        for (int n = 0; n < 15; n++)
+        try
         {
-            DataGridViewRow row = new();
-            row.CreateCells(dgv, "cell0", "cell1");
-            row.Height = TextRenderer.MeasureText("It doesn't matter what we write here!", dgv.Font).Height + 7;
-
-            string cellName = n switch
+            dgv.SelectionChanged += (s, e) => dgv.ClearSelection();
+            dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
+            dgv.BorderStyle = BorderStyle.None;
+            List<DataGridViewRow> rList = new();
+            for (int n = 0; n < 15; n++)
             {
-                0 => "Internet Status",
-                1 => "Working Servers",
-                2 => "Is Connected",
-                3 => "Local DNS",
-                4 => "Local DNS Latency",
-                5 => "Local DoH",
-                6 => "Local DoH Latency",
-                7 => "Is DNS Set",
-                8 => "Is Sharing",
-                9 => "Proxy Requests",
-                10 => "Is Proxy Set",
-                11 => "Proxy DPI Bypass",
-                12 => "GoodbyeDPI",
-                13 => "CPU",
-                14 => "",
-                _ => string.Empty
-            };
+                DataGridViewRow row = new();
+                row.CreateCells(dgv, "cell0", "cell1");
+                row.Height = TextRenderer.MeasureText("It doesn't matter what we write here!", dgv.Font).Height + 7;
 
-            if (n % 2 == 0)
-                row.DefaultCellStyle.BackColor = BackColor;
-            else
-                row.DefaultCellStyle.BackColor = BackColor.ChangeBrightness(-0.2f);
+                string cellName = n switch
+                {
+                    0 => "Internet Status",
+                    1 => "Working Servers",
+                    2 => "Is Connected",
+                    3 => "Local DNS",
+                    4 => "Local DNS Latency",
+                    5 => "Local DoH",
+                    6 => "Local DoH Latency",
+                    7 => "Is DNS Set",
+                    8 => "Is Sharing",
+                    9 => "Proxy Requests",
+                    10 => "Is Proxy Set",
+                    11 => "Proxy DPI Bypass",
+                    12 => "GoodbyeDPI",
+                    13 => "CPU",
+                    14 => "",
+                    _ => string.Empty
+                };
 
-            row.Cells[0].Value = cellName;
-            row.Cells[1].Value = string.Empty;
-            rList.Add(row);
+                if (n % 2 == 0)
+                    row.DefaultCellStyle.BackColor = BackColor;
+                else
+                    row.DefaultCellStyle.BackColor = BackColor.ChangeBrightness(-0.2f);
+
+                row.Cells[0].Value = cellName;
+                row.Cells[1].Value = string.Empty;
+                rList.Add(row);
+            }
+
+            dgv.Rows.AddRange(rList.ToArray());
         }
-        
-        dgv.Rows.AddRange(rList.ToArray());
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods InitializeStatus: " + ex.Message);
+        }
     }
 
     private void InitializeNicStatus(CustomDataGridView dgv)
     {
-        ToolStripMenuItem toolStripMenuItemCopy = new();
-        toolStripMenuItemCopy.Text = "Copy Value";
-        toolStripMenuItemCopy.Click += (s, e) =>
+        try
         {
-            if (dgv.SelectedCells.Count > 0)
+            ToolStripMenuItem toolStripMenuItemCopy = new();
+            toolStripMenuItemCopy.Text = "Copy Value";
+            toolStripMenuItemCopy.Click += (s, e) =>
             {
-                string? value = dgv.CurrentRow.Cells[1].Value.ToString();
-                if (!string.IsNullOrEmpty(value))
+                if (dgv.SelectedCells.Count > 0)
                 {
-                    Clipboard.SetText(value);
+                    string? value = dgv.CurrentRow.Cells[1].Value.ToString();
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        Clipboard.SetText(value);
+                    }
                 }
-            }
-        };
-        CustomContextMenuStrip cms = new();
-        cms.Items.Add(toolStripMenuItemCopy);
+            };
+            CustomContextMenuStrip cms = new();
+            cms.Items.Add(toolStripMenuItemCopy);
 
-        dgv.MouseClick += (s, e) =>
-        {
-            if (e.Button == MouseButtons.Right)
+            dgv.MouseClick += (s, e) =>
             {
-                dgv.Select(); // Set Focus on Control
-                int currentMouseOverRow = dgv.HitTest(e.X, e.Y).RowIndex;
-                if (currentMouseOverRow != -1)
+                if (e.Button == MouseButtons.Right)
                 {
-                    dgv.Rows[currentMouseOverRow].Cells[0].Selected = true;
-                    dgv.Rows[currentMouseOverRow].Selected = true;
+                    dgv.Select(); // Set Focus on Control
+                    int currentMouseOverRow = dgv.HitTest(e.X, e.Y).RowIndex;
+                    if (currentMouseOverRow != -1)
+                    {
+                        dgv.Rows[currentMouseOverRow].Cells[0].Selected = true;
+                        dgv.Rows[currentMouseOverRow].Selected = true;
 
-                    Theme.SetColors(cms);
-                    cms.RoundedCorners = 5;
-                    cms.Show(dgv, e.X, e.Y);
+                        Theme.SetColors(cms);
+                        cms.RoundedCorners = 5;
+                        cms.Show(dgv, e.X, e.Y);
+                    }
+
                 }
-
-            }
-        };
-
-        //dgv.SelectionChanged += (s, e) => dgv.ClearSelection();
-        dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
-        dgv.BorderStyle = BorderStyle.None;
-        dgv.ShowCellToolTips = true;
-        List<DataGridViewRow> rList = new();
-        for (int n = 0; n < 14; n++)
-        {
-            DataGridViewRow row = new();
-            row.CreateCells(dgv, "cell0", "cell1");
-            row.Height = TextRenderer.MeasureText("It doesn't matter what we write here!", dgv.Font).Height + 4;
-
-            string cellName = n switch
-            {
-                0 => "Name",
-                1 => "Description",
-                2 => "Adapter Type",
-                3 => "Availability",
-                4 => "Status",
-                5 => "Net Status",
-                6 => "DNS Addresses",
-                7 => "Is IPv6 Enabled",
-                8 => "MAC Address",
-                9 => "Manufacturer",
-                10 => "Is Physical Adapter",
-                11 => "ServiceName",
-                12 => "Max Speed",
-                13 => "Time Of Last Reset",
-                _ => string.Empty
             };
 
-            if (n % 2 == 0)
-                row.DefaultCellStyle.BackColor = BackColor.ChangeBrightness(-0.2f);
-            else
-                row.DefaultCellStyle.BackColor = BackColor;
+            //dgv.SelectionChanged += (s, e) => dgv.ClearSelection();
+            dgv.CellBorderStyle = DataGridViewCellBorderStyle.None;
+            dgv.BorderStyle = BorderStyle.None;
+            dgv.ShowCellToolTips = true;
+            List<DataGridViewRow> rList = new();
+            for (int n = 0; n < 14; n++)
+            {
+                DataGridViewRow row = new();
+                row.CreateCells(dgv, "cell0", "cell1");
+                row.Height = TextRenderer.MeasureText("It doesn't matter what we write here!", dgv.Font).Height + 4;
 
-            row.Cells[0].Value = cellName;
-            row.Cells[1].Value = string.Empty;
-            row.Cells[0].ToolTipText = string.Empty;
-            row.Cells[1].ToolTipText = string.Empty;
-            rList.Add(row);
+                string cellName = n switch
+                {
+                    0 => "Name",
+                    1 => "Description",
+                    2 => "Adapter Type",
+                    3 => "Availability",
+                    4 => "Status",
+                    5 => "Net Status",
+                    6 => "DNS Addresses",
+                    7 => "Is IPv6 Enabled",
+                    8 => "MAC Address",
+                    9 => "Manufacturer",
+                    10 => "Is Physical Adapter",
+                    11 => "ServiceName",
+                    12 => "Max Speed",
+                    13 => "Time Of Last Reset",
+                    _ => string.Empty
+                };
+
+                if (n % 2 == 0)
+                    row.DefaultCellStyle.BackColor = BackColor.ChangeBrightness(-0.2f);
+                else
+                    row.DefaultCellStyle.BackColor = BackColor;
+
+                row.Cells[0].Value = cellName;
+                row.Cells[1].Value = string.Empty;
+                row.Cells[0].ToolTipText = string.Empty;
+                row.Cells[1].ToolTipText = string.Empty;
+                rList.Add(row);
+            }
+
+            dgv.Rows.AddRange(rList.ToArray());
         }
-
-        dgv.Rows.AddRange(rList.ToArray());
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods InitializeNicStatus: " + ex.Message);
+        }
     }
 
     private async Task CheckDPIWorksAsync(string host, int timeoutSec = 30) // Default .NET Timeout: 100 Sec
     {
-        if (IsDisconnecting || IsDisconnectingAll || StopQuickConnect) return;
-        if (CheckDpiBypassCTS.IsCancellationRequested) return;
-        UpdateProxyBools = false;
-
-        // Cancel Previous Task
-        CheckDpiBypassCTS.Cancel();
-        Task cancelWait = Task.Run(async () =>
+        try
         {
-            while (true)
-            {
-                await Task.Delay(100);
-                if (CheckDpiBypass == null) break;
-                if (CheckDpiBypass.Status == TaskStatus.Canceled) break;
-                if (CheckDpiBypass.Status == TaskStatus.Faulted) break;
-                if (CheckDpiBypass.Status == TaskStatus.RanToCompletion) break;
-            }
-            
-            if (CheckDpiBypass != null)
-            {
-                string msgCancel = $"Previous Check DPI Bypass: {CheckDpiBypass.Status}{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCancel, Color.DodgerBlue));
-            }
-        });
-        try { await cancelWait.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
+            if (IsDisconnecting || IsDisconnectingAll || StopQuickConnect) return;
+            if (CheckDpiBypassCTS.IsCancellationRequested) return;
+            UpdateProxyBools = false;
 
-        CheckDpiBypassCTS = new();
-        CheckDpiBypass = Task.Run(async () =>
-        {
-            if (string.IsNullOrWhiteSpace(host)) return;
-
-            // If there is no internet conectivity return
-            if (!IsInternetOnline) return;
-
-            // If In Action return
-            if (IsInAction(false, false, false, true, true, true, true, true, true, true, true, out _)) return;
-
-            // Write start DPI checking to log
-            string msgDPI = $"Checking DPI Bypass ({host})...{NL}";
-            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI, Color.LightGray));
-
-            // Don't Update Bools Here!!
-
-            // Wait for IsDPIActive
-            Task wait1 = Task.Run(async () =>
+            // Cancel Previous Task
+            CheckDpiBypassCTS.Cancel();
+            Task cancelWait = Task.Run(async () =>
             {
                 while (true)
                 {
-                    if (IsDPIActive) break;
                     await Task.Delay(100);
+                    if (CheckDpiBypass == null) break;
+                    if (CheckDpiBypass.Status == TaskStatus.Canceled) break;
+                    if (CheckDpiBypass.Status == TaskStatus.Faulted) break;
+                    if (CheckDpiBypass.Status == TaskStatus.RanToCompletion) break;
+                }
+
+                if (CheckDpiBypass != null)
+                {
+                    string msgCancel = $"Previous Check DPI Bypass: {CheckDpiBypass.Status}{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCancel, Color.DodgerBlue));
                 }
             });
-            try { await wait1.WaitAsync(TimeSpan.FromSeconds(5), CheckDpiBypassCTS.Token); } catch (Exception) { }
+            try { await cancelWait.WaitAsync(TimeSpan.FromSeconds(10)); } catch (Exception) { }
 
-            try
+            CheckDpiBypassCTS = new();
+            CheckDpiBypass = Task.Run(async () =>
             {
-                if (!IsDPIActive)
+                if (string.IsNullOrWhiteSpace(host)) return;
+
+                // If there is no internet conectivity return
+                if (!IsInternetOnline) return;
+
+                // If In Action return
+                if (IsInAction(false, false, false, true, true, true, true, true, true, true, true, out _)) return;
+
+                // Write start DPI checking to log
+                string msgDPI = $"Checking DPI Bypass ({host})...{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI, Color.LightGray));
+
+                // Don't Update Bools Here!!
+
+                // Wait for IsDPIActive
+                Task wait1 = Task.Run(async () =>
                 {
-                    // Write activate DPI first to log
-                    string msgDPI1 = $"Check DPI Bypass: ";
-                    string msgDPI2 = $"Activate DPI Bypass To Check.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
-                    
-                    return;
-                }
-
-                if (!IsDNSSet)
-                {
-                    // Write set DNS first to log
-                    string msgDPI1 = $"Check DPI Bypass: ";
-                    string msgDPI2 = $"Set DNS To Check.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.Orange));
-
-                    return;
-                }
-
-                string url = $"https://{host}/";
-                Uri uri = new(url, UriKind.Absolute);
-                
-                bool isProxyPortOpen = NetworkTool.IsPortOpen(ProxyPort);
-                Debug.WriteLine($"Is Proxy Port Open: {isProxyPortOpen}, Port: {ProxyPort}");
-
-                if (isProxyPortOpen && IsProxyDpiBypassActive)
-                {
-                    Debug.WriteLine("Proxy");
-
-                    string proxyScheme = $"http://{IPAddress.Loopback}:{ProxyPort}";
-
-                    msgDPI = $"Selecting DPI Bypass Method...{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI, Color.LightGray));
-
-                    StopWatchCheckDPIWorks.Restart();
-                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, false, false, proxyScheme, null, null, CheckDpiBypassCTS.Token);
-                    StopWatchCheckDPIWorks.Stop();
-                    Debug.WriteLine(hsc);
-                    if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
+                    while (true)
                     {
-                        msgSuccess();
+                        if (IsDPIActive) break;
+                        await Task.Delay(100);
                     }
-                    else msgFailed(hsc);
-                }
-                else
+                });
+                try { await wait1.WaitAsync(TimeSpan.FromSeconds(5), CheckDpiBypassCTS.Token); } catch (Exception) { }
+
+                try
                 {
-                    Debug.WriteLine("No Proxy");
-
-                    StopWatchCheckDPIWorks.Restart();
-                    HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, false, false, null, null, null, CheckDpiBypassCTS.Token);
-                    StopWatchCheckDPIWorks.Stop();
-
-                    if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
+                    if (!IsDPIActive)
                     {
-                        msgSuccess();
-                    }
-                    else msgFailed(hsc);
-                }
-
-                void msgSuccess()
-                {
-                    // Write Success to log
-                    if (IsDPIActive)
-                    {
-                        TimeSpan eTime = StopWatchCheckDPIWorks.Elapsed;
-                        eTime = TimeSpan.FromMilliseconds(Math.Round(eTime.TotalMilliseconds, 2));
-                        string eTimeStr = eTime.Seconds > 9 ? $"{eTime:ss\\.ff}" : $"{eTime:s\\.ff}";
+                        // Write activate DPI first to log
                         string msgDPI1 = $"Check DPI Bypass: ";
-                        string msgDPI2 = $"Successfully opened {host} in {eTimeStr} seconds.{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.MediumSeaGreen));
-                    }
-                    else
-                    {
-                        string msgCancel = $"Check DPI Bypass: Canceled.{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCancel, Color.LightGray));
-                    }
-                }
-
-                void msgFailed(HttpStatusCode hsc)
-                {
-                    // Write Status to log
-                    if (IsDPIActive && !CheckDpiBypassCTS.IsCancellationRequested)
-                    {
-                        string msgDPI1 = $"Check DPI Bypass: ";
-                        string msgDPI2 = $"{hsc}{NL}";
+                        string msgDPI2 = $"Activate DPI Bypass To Check.{NL}";
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
+
+                        return;
+                    }
+
+                    if (!IsDNSSet)
+                    {
+                        // Write set DNS first to log
+                        string msgDPI1 = $"Check DPI Bypass: ";
+                        string msgDPI2 = $"Set DNS To Check.{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.Orange));
+
+                        return;
+                    }
+
+                    string url = $"https://{host}/";
+                    Uri uri = new(url, UriKind.Absolute);
+
+                    bool isProxyPortOpen = NetworkTool.IsPortOpen(ProxyPort);
+                    Debug.WriteLine($"Is Proxy Port Open: {isProxyPortOpen}, Port: {ProxyPort}");
+
+                    if (isProxyPortOpen && IsProxyDpiBypassActive)
+                    {
+                        Debug.WriteLine("Proxy");
+
+                        string proxyScheme = $"http://{IPAddress.Loopback}:{ProxyPort}";
+
+                        msgDPI = $"Selecting DPI Bypass Method...{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI, Color.LightGray));
+
+                        StopWatchCheckDPIWorks.Restart();
+                        HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, false, false, proxyScheme, null, null, CheckDpiBypassCTS.Token);
+                        StopWatchCheckDPIWorks.Stop();
+                        Debug.WriteLine(hsc);
+                        if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
+                        {
+                            msgSuccess();
+                        }
+                        else msgFailed(hsc);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("No Proxy");
+
+                        StopWatchCheckDPIWorks.Restart();
+                        HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, false, false, null, null, null, CheckDpiBypassCTS.Token);
+                        StopWatchCheckDPIWorks.Stop();
+
+                        if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
+                        {
+                            msgSuccess();
+                        }
+                        else msgFailed(hsc);
+                    }
+
+                    void msgSuccess()
+                    {
+                        // Write Success to log
+                        if (IsDPIActive)
+                        {
+                            TimeSpan eTime = StopWatchCheckDPIWorks.Elapsed;
+                            eTime = TimeSpan.FromMilliseconds(Math.Round(eTime.TotalMilliseconds, 2));
+                            string eTimeStr = eTime.Seconds > 9 ? $"{eTime:ss\\.ff}" : $"{eTime:s\\.ff}";
+                            string msgDPI1 = $"Check DPI Bypass: ";
+                            string msgDPI2 = $"Successfully opened {host} in {eTimeStr} seconds.{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.MediumSeaGreen));
+                        }
+                        else
+                        {
+                            string msgCancel = $"Check DPI Bypass: Canceled.{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCancel, Color.LightGray));
+                        }
+                    }
+
+                    void msgFailed(HttpStatusCode hsc)
+                    {
+                        // Write Status to log
+                        if (IsDPIActive && !CheckDpiBypassCTS.IsCancellationRequested)
+                        {
+                            string msgDPI1 = $"Check DPI Bypass: ";
+                            string msgDPI2 = $"{hsc}{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.LightGray));
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI2, Color.IndianRed));
+                        }
+                        else
+                        {
+                            string msgCancel = $"Check DPI Bypass: Canceled.{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCancel, Color.LightGray));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Write Failed to log
+                    if (IsDPIActive && !CheckDpiBypassCTS.IsCancellationRequested)
+                    {
+                        string msgDPI1 = $"Check DPI Bypass:{ex.Message}{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.IndianRed));
                     }
                     else
                     {
@@ -866,32 +967,22 @@ public partial class FormMain
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCancel, Color.LightGray));
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                // Write Failed to log
-                if (IsDPIActive && !CheckDpiBypassCTS.IsCancellationRequested)
-                {
-                    string msgDPI1 = $"Check DPI Bypass:{ex.Message}{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI1, Color.IndianRed));
-                }
-                else
-                {
-                    string msgCancel = $"Check DPI Bypass: Canceled.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgCancel, Color.LightGray));
-                }
-            }
 
+                UpdateProxyBools = true;
+            });
+
+            try { await CheckDpiBypass.WaitAsync(CheckDpiBypassCTS.Token); } catch (Exception) { }
+
+            string msgTask = $"Check DPI Bypass: {CheckDpiBypass.Status}{NL}";
+            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgTask, Color.DodgerBlue));
+
+            StopWatchCheckDPIWorks.Reset();
             UpdateProxyBools = true;
-        });
-
-        try { await CheckDpiBypass.WaitAsync(CheckDpiBypassCTS.Token); } catch (Exception) { }
-
-        string msgTask = $"Check DPI Bypass: {CheckDpiBypass.Status}{NL}";
-        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgTask, Color.DodgerBlue));
-
-        StopWatchCheckDPIWorks.Reset();
-        UpdateProxyBools = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods CheckDPIWorksAsync: " + ex.Message);
+        }
     }
 
     private static async Task<bool> WarmUpProxyAsync(string host, string proxyScheme, int timeoutSec, CancellationToken ct)
@@ -919,7 +1010,7 @@ public partial class FormMain
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("WarmUpProxyAsync: " + ex.Message);
+            Debug.WriteLine("Methods WarmUpProxyAsync: " + ex.Message);
             return false;
         }
 
@@ -939,11 +1030,11 @@ public partial class FormMain
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("MoveToNewLocation: " + ex.Message);
+            Debug.WriteLine("Methods MoveToNewLocation: " + ex.Message);
         }
     }
 
-    public async void OldProxyRulesToNew()
+    public async Task OldProxyRulesToNewAsync()
     {
         try
         {
@@ -1134,11 +1225,7 @@ public partial class FormMain
             {
                 // Save ProxyRules To File
                 await proxyRules.SaveToFileAsync(SecureDNS.ProxyRulesPath);
-
-                // Enable ProxyRules CheckBox
-                this.InvokeIt(() => CustomCheckBoxSettingProxyEnableRules.Checked = true);
             }
-
 
             try
             {
@@ -1151,7 +1238,48 @@ public partial class FormMain
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("OldProxyRulesToNew: " + ex.Message);
+            Debug.WriteLine("Methods OldProxyRulesToNew: " + ex.Message);
+        }
+    }
+
+    public async Task MergeOldDnsAndProxyRulesAsync()
+    {
+        try
+        {
+            if (File.Exists(SecureDNS.RulesPath)) return;
+
+            bool dnsRulesExist = File.Exists(SecureDNS.DnsRulesPath);
+            bool proxyRulesExist = File.Exists(SecureDNS.ProxyRulesPath);
+
+            if (dnsRulesExist && !proxyRulesExist)
+            {
+                File.Copy(SecureDNS.DnsRulesPath, SecureDNS.RulesPath, false);
+                File.Move(SecureDNS.DnsRulesPath, Path.GetFullPath(Path.ChangeExtension(SecureDNS.DnsRulesPath, ".BAK")), true);
+                this.InvokeIt(() => CustomCheckBoxSettingEnableRules.Checked = true);
+                return;
+            }
+            else if (!dnsRulesExist && proxyRulesExist)
+            {
+                File.Copy(SecureDNS.ProxyRulesPath, SecureDNS.RulesPath, false);
+                File.Move(SecureDNS.ProxyRulesPath, Path.GetFullPath(Path.ChangeExtension(SecureDNS.ProxyRulesPath, ".BAK")), true);
+                this.InvokeIt(() => CustomCheckBoxSettingEnableRules.Checked = true);
+                return;
+            }
+            else if (dnsRulesExist && proxyRulesExist)
+            {
+                var merged = await AgnosticProgram.Rules.MergeAsync(AgnosticProgram.Rules.Mode.File, SecureDNS.DnsRulesPath, AgnosticProgram.Rules.Mode.File, SecureDNS.ProxyRulesPath);
+                List<string> rules = await AgnosticProgram.Rules.ConvertToTextRulesAsync(merged.Variables, merged.Defaults, merged.MainRulesList);
+
+                await rules.SaveToFileAsync(SecureDNS.RulesPath);
+                File.Move(SecureDNS.DnsRulesPath, Path.GetFullPath(Path.ChangeExtension(SecureDNS.DnsRulesPath, ".BAK")), true);
+                File.Move(SecureDNS.ProxyRulesPath, Path.GetFullPath(Path.ChangeExtension(SecureDNS.ProxyRulesPath, ".BAK")), true);
+                this.InvokeIt(() => CustomCheckBoxSettingEnableRules.Checked = true);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods MergeOldDnsAndProxyRulesAsync: " + ex.Message);
         }
     }
 

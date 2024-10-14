@@ -50,9 +50,13 @@ public partial class FormMain
 
         try
         {
+            bool isEnable = false;
+            this.InvokeIt(() => isEnable = CustomCheckBoxSettingProxyCfCleanIP.Checked);
+            if (!isEnable) return result;
+
             this.InvokeIt(() => result = CustomTextBoxSettingProxyCfCleanIP.Text.Trim());
-            bool isCfCleanIpv4Valid = NetworkTool.IsIPv4Valid(result, out IPAddress? _);
-            if (!isCfCleanIpv4Valid) result = string.Empty;
+            bool isCfCleanIpValid = NetworkTool.IsIP(result, out IPAddress? _);
+            if (!isCfCleanIpValid) result = string.Empty;
         }
         catch (Exception ex)
         {
@@ -162,7 +166,7 @@ public partial class FormMain
         int bootstrapPortD = SecureDNS.BootstrapDnsPort;
         try
         {
-            bool isBootstrap = NetworkTool.IsIPv4Valid(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? bootstrapIP);
+            bool isBootstrap = NetworkTool.IsIP(CustomTextBoxSettingBootstrapDnsIP.Text, out IPAddress? bootstrapIP);
             if (isBootstrap && bootstrapIP != null)
             {
                 bootstrap = bootstrapIP;

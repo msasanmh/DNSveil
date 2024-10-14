@@ -19,7 +19,7 @@ public class JsonTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("IsValidJson: " + ex.Message);
+            Debug.WriteLine("JsonTool IsValidJson: " + ex.Message);
         }
 
         return result;
@@ -40,13 +40,36 @@ public class JsonTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("IsValidJsonFile: " + ex.Message);
+            Debug.WriteLine("JsonTool IsValidJsonFile: " + ex.Message);
         }
 
         return result;
     }
 
-    public static List<string> GetValues(string jsonStr, List<string> path)
+    public struct JsonPath
+    {
+        public JsonPath() { }
+        /// <summary>
+        /// Key (Name) To Find
+        /// </summary>
+        public string Key { get; set; } = string.Empty;
+        /// <summary>
+        /// Break After N Elements
+        /// </summary>
+        public int Count { get; set; } = int.MaxValue;
+        /// <summary>
+        /// Conditions To Match
+        /// </summary>
+        public List<JsonCondition> Conditions { get; set; } = new();
+    }
+
+    public struct JsonCondition
+    {
+        public string Key { get; set; }
+        public string Value { get; set; }
+    }
+
+    public static List<string> GetValues(string jsonStr, List<JsonPath> path)
     {
         List<string> values = new();
 
@@ -62,7 +85,38 @@ public class JsonTool
             using JsonDocument jsonDocument = JsonDocument.Parse(jsonStr, jsonDocumentOptions);
             JsonElement json = jsonDocument.RootElement;
 
-            static List<JsonElement> loop(string path, List<JsonElement> elements)
+            static bool checkCondition(JsonPath path, JsonElement element)
+            {
+                bool go = false;
+
+                try
+                {
+                    int counted = 0;
+                    foreach (JsonCondition condition in path.Conditions)
+                    {
+                        foreach (JsonProperty jp in element.EnumerateObject())
+                        {
+                            // JSON is case sensitive to both field names and data
+                            if (condition.Key.Equals(jp.Name) &&
+                                condition.Value.Equals(jp.Value.ToString().Trim().Trim('"'), StringComparison.OrdinalIgnoreCase)) // True False
+                            {
+                                counted++;
+                            }
+                        }
+                        if (counted == path.Conditions.Count) break;
+                    }
+                    if (counted == path.Conditions.Count) go = true;
+                    if (path.Conditions.Count == 0) go = true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("JsonTool GetValues checkCondition: " + ex.Message);
+                }
+
+                return go;
+            }
+
+            static List<JsonElement> loop(JsonPath path, List<JsonElement> elements)
             {
                 List<JsonElement> jsonElements = new();
 
@@ -71,12 +125,20 @@ public class JsonTool
                     for (int n = 0; n < elements.Count; n++)
                     {
                         JsonElement element = elements[n];
-                        
+
                         if (element.ValueKind == JsonValueKind.Object)
                         {
-                            foreach (JsonProperty jp in element.EnumerateObject())
+                            bool go = checkCondition(path, element);
+                            if (go)
                             {
-                                if (path.Equals(jp.Name, StringComparison.OrdinalIgnoreCase)) jsonElements.Add(jp.Value);
+                                foreach (JsonProperty jp in element.EnumerateObject())
+                                {
+                                    if (path.Key.Equals(jp.Name))
+                                    {
+                                        jsonElements.Add(jp.Value);
+                                        break;
+                                    }
+                                }
                             }
                         }
                         else if (element.ValueKind == JsonValueKind.Array)
@@ -84,11 +146,13 @@ public class JsonTool
                             List<JsonElement> jsonElements2 = loop(path, element.EnumerateArray().ToList());
                             jsonElements.AddRange(jsonElements2);
                         }
+
+                        if (n + 1 >= path.Count && jsonElements.Count > 0) break;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("Json Tool, Get Values: " + ex.Message);
+                    Debug.WriteLine("JsonTool GetValues loop: " + ex.Message);
                 }
 
                 return jsonElements;
@@ -96,10 +160,43 @@ public class JsonTool
 
             if (path.Any())
             {
+                static List<string> loop2(List<JsonElement> elements)
+                {
+                    List<string> values = new();
+
+                    try
+                    {
+                        for (int n = 0; n < elements.Count; n++)
+                        {
+                            JsonElement element = elements[n];
+
+                            if (element.ValueKind == JsonValueKind.Array)
+                            {
+                                List<string> values2 = loop2(element.EnumerateArray().ToList());
+                                values.AddRange(values2);
+                            }
+                            else if (element.ValueKind == JsonValueKind.String ||
+                                element.ValueKind == JsonValueKind.Number ||
+                                element.ValueKind == JsonValueKind.True ||
+                                element.ValueKind == JsonValueKind.False ||
+                                element.ValueKind == JsonValueKind.Undefined)
+                            {
+                                values.Add(element.GetRawText().Trim().Trim('"'));
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("JsonTool GetValues loop2: " + ex.Message);
+                    }
+
+                    return values;
+                }
+
                 List<JsonElement> jsonElements = new();
                 for (int n = 0; n < path.Count; n++)
                 {
-                    string p = path[n];
+                    JsonPath p = path[n];
                     if (n == 0)
                     {
                         jsonElements = loop(p, new List<JsonElement>() { json });
@@ -110,19 +207,15 @@ public class JsonTool
                     }
                 }
 
-                for (int n = 0; n < jsonElements.Count; n++)
-                {
-                    JsonElement jsonElement = jsonElements[n];
-                    string output = jsonElement.GetRawText().Trim().Trim('"');
-                    if (!output.StartsWith('{') && !output.StartsWith('[')) values.Add(output);
-                }
+                values = loop2(jsonElements);
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Json Tool, Get Values: " + ex.Message);
+            Debug.WriteLine("JsonTool GetValues: " + ex.Message);
         }
 
         return values;
     }
+
 }
