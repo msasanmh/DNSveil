@@ -129,6 +129,9 @@ Then install [ASP.NET Core Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-
     - Block a domain and all it's sub-domains:\
     `example.com|-;`\
     `*.example.com|-;`
+    - Block CIDR (IP Range):\
+    `224.0.0.0/3|-;`\
+    `fe80::/10|-;`
 <br><br>
 * Example of Rules file:
 ```
