@@ -19,12 +19,12 @@ Server implementation: _DoH and Plain DNS (UDP & TCP)._
 **Requirements:** `.Net Destop Runtime 6` and `ASP.NET Core Runtime 6`
 
 For x64:\
-First install [.Net Destop Runtime x64 v6.0.31](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.31-windows-x64-installer)\
-Then install [ASP.NET Core Runtime x64 v6.0.31](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.31-windows-x64-installer)
+First install [.Net Destop Runtime x64 v6.0.35](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.35-windows-x64-installer)\
+Then install [ASP.NET Core Runtime x64 v6.0.35](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.35-windows-x64-installer)
 
 For x86:\
-First install [.Net Destop Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.31-windows-x86-installer)\
-Then install [ASP.NET Core Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.31-windows-x86-installer)
+First install [.Net Destop Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.35-windows-x86-installer)\
+Then install [ASP.NET Core Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.35-windows-x86-installer)
 
 [Microsoft .NET 6.0 Runtime Page](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 
@@ -123,7 +123,7 @@ Then install [ASP.NET Core Runtime x86 v6.0.31](https://dotnet.microsoft.com/en-
     `example.com|proxy:socks5://127.0.0.1:1080&user:UserName&pass:PassWord;`
     - Set a custom/fake SNI for a domain:\
     `*.googlevideo.com|sni:google.com;`
-    - Don't apply DPI bypass for a domain:\
+    - Direct: Don't apply DPI bypass and upstream proxy for a domain:\
     `example.com|--;`\
     `*.example.com|--;`
     - Block a domain and all it's sub-domains:\
