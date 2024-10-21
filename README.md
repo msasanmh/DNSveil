@@ -102,7 +102,6 @@ Then install [ASP.NET Core Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-
 ---
 
 ### DNSveil Text Based Rules
-### SDC Text Based Rules
 * Syntax (wildcard is supported):
     - `Domain` `|` `Rules` `;`
     - `CIDR` `|` `Rules` `;`
