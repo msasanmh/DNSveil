@@ -1,4 +1,4 @@
-# SDC - Secure DNS Client
+# DNSveil (formerly Secure DNS Client)
 
 ![GitHub all releases](https://img.shields.io/github/downloads/msasanmh/SecureDNSClient/total)
 ![GitHub top language](https://img.shields.io/github/languages/top/msasanmh/SecureDNSClient)
@@ -29,13 +29,13 @@ Then install [ASP.NET Core Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-
 [Microsoft .NET 6.0 Runtime Page](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 
 **Download:**\
-[Download latest version of SDC - Secure DNS Client](https://github.com/msasanmh/SecureDNSClient/releases/latest)
+[Download latest version of DNSveil](https://github.com/msasanmh/SecureDNSClient/releases/latest)
 
 ---
 
 ### Notes
-* SDC is not a VPN and it does not change your IP address, so your IP address is still visible to the websites you visit.
-* SDC is open source and super clean. If your Antivirus raise an alert it's False-Positive, any programmer can read the source and confirm it. some antivirus apps raise alert as PUA (Potentially Unwanted Application) for WinDivert which is used by GoodbyeDPI. If your antivirus detects WinDivert as a threat, add it to your exclusion list to ensure SDC functions as expected.
+* DNSveil is not a VPN and it does not change your IP address, so your IP address is still visible to the websites you visit.
+* DNSveil is open source and super clean. If your Antivirus raise an alert it's False-Positive, any programmer can read the source and confirm it. some antivirus apps raise alert as PUA (Potentially Unwanted Application) for WinDivert which is used by GoodbyeDPI. If your antivirus detects WinDivert as a threat, add it to your exclusion list to ensure DNSveil functions as expected.
 * After changing `Enable SSL Decryption` you need to restart your browser in order the changes to take effect.
 
 ---
@@ -91,7 +91,7 @@ Then install [ASP.NET Core Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-
 ### Proxy Server
 * Proxy server is use to bypass SNI/DNS based blocked websites.
 * How to use:
-    1. SDC DNS Server must be online and set to System.
+    1. DNSveil DNS Server must be online and set to System.
     2. Atleast one of DPI Bypass options must be active.
         - Fragment
         - SSL Decryption (by installing self-signed root certificate authority)
@@ -101,6 +101,7 @@ Then install [ASP.NET Core Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-
 
 ---
 
+### DNSveil Text Based Rules
 ### SDC Text Based Rules
 * Syntax (wildcard is supported):
     - `Domain` `|` `Rules` `;`
