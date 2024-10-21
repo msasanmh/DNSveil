@@ -1,9 +1,9 @@
 # DNSveil (formerly Secure DNS Client)
 
-![GitHub all releases](https://img.shields.io/github/downloads/msasanmh/SecureDNSClient/total)
-![GitHub top language](https://img.shields.io/github/languages/top/msasanmh/SecureDNSClient)
-![GitHub](https://img.shields.io/github/license/msasanmh/SecureDNSClient)
-![GitHub release (with filter)](https://img.shields.io/github/v/release/msasanmh/SecureDNSClient?link=https%3A%2F%2Fgithub.com%2Fmsasanmh%2FSecureDNSClient%2Freleases%2Flatest)
+![GitHub all releases](https://img.shields.io/github/downloads/msasanmh/DNSveil/total)
+![GitHub top language](https://img.shields.io/github/languages/top/msasanmh/DNSveil)
+![GitHub](https://img.shields.io/github/license/msasanmh/DNSveil)
+![GitHub release (with filter)](https://img.shields.io/github/v/release/msasanmh/DNSveil?link=https%3A%2F%2Fgithub.com%2Fmsasanmh%2FDNSveil%2Freleases%2Flatest)
 
 **A Secure DNS Client.** Using: _[Msmh Agnostic Server](https://github.com/msasanmh/MsmhAgnosticServer)_, _[DNSLookup](https://github.com/ameshkov/dnslookup)_ and _[GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI)_. (Windows only)
 
@@ -29,7 +29,7 @@ Then install [ASP.NET Core Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-
 [Microsoft .NET 6.0 Runtime Page](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 
 **Download:**\
-[Download latest version of DNSveil](https://github.com/msasanmh/SecureDNSClient/releases/latest)
+[Download latest version of DNSveil](https://github.com/msasanmh/DNSveil/releases/latest)
 
 ---
 
@@ -188,7 +188,7 @@ save.tube|--;
 
 ---
 
-[Find Videos in Help Directory.](https://github.com/msasanmh/SecureDNSClient/tree/main/Help)\
+[Find Videos in Help Directory.](https://github.com/msasanmh/DNSveil/tree/main/Help)\
 [Another Guide.](https://rentry.co/SecureDNSClient)
 
 
