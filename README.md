@@ -133,9 +133,9 @@ Then install [ASP.NET Core Runtime x86 v6.0.35](https://dotnet.microsoft.com/en-
     `224.0.0.0/3|-;`\
     `fe80::/10|-;`
 <br><br>
----
-Example of Rules file:
+* Example of Rules file:
 <br>
+
 ```
 // Variables
 SmartDns1 = https://one.YourSmartDnsServer.net/dns-query;
