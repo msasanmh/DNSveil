@@ -6,13 +6,15 @@
 
 حالا در این روش ما اون دامنه ای که مسئول قطع پخش ویدوهاست رو از پراکسی عبور میدیم تا فکر کنه که تبلیغات داره لود میشه.
 
+# در ویدئو گفته شده از HTTP استفاده کنید که اشتباست. لطفا از SOCKS5 استفاده کنید.
+
 **ویدئوی آموزشی:**\
 https://drive.google.com/file/d/1nXcF6c4KtcaSHxmRtNFxeic6PYctuBwg/view?usp=sharing
 
 **قوانین استفده شده در ویدئو:**
 ```
 // Variables
-OblivionProxy = http://127.0.0.1:8086;
+OblivionProxy = socks5://127.0.0.1:8086;
 
 // Youtube Playback Issue
 *.googleapis.com|proxy:OblivionProxy;
