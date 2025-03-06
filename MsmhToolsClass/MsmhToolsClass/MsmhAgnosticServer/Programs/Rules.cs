@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using static MsmhToolsClass.MsmhAgnosticServer.AgnosticProgram.Rules;
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
@@ -29,17 +28,6 @@ public partial class AgnosticProgram
         private List<string> Rules_List { get; set; } = new();
         private List<Tuple<string, string>> Variables { get; set; } = new(); // x = domain.com;
         private Defaults Default { get; set; } = new();
-        //private List<int> Default_BlockPort { get; set; } = new(); // blockport:80,53;
-        //private List<string> Default_Dnss { get; set; } = new(); // dns:;
-        //private string Default_DnsDomain { get; set; } = string.Empty; // dnsdomain:;
-        //private string Default_DnsProxyScheme { get; set; } = string.Empty; // dnsproxy:;
-        //private string Default_DnsProxyUser { get; set; } = string.Empty; // &user:
-        //private string Default_DnsProxyPass { get; set; } = string.Empty; // &pass:
-        //private string Default_Sni { get; set; } = string.Empty; // sni:;
-        //private string Default_ProxyScheme { get; set; } = string.Empty; // proxy:;
-        //private bool Default_ProxyIfBlock { get; set; } = false; // &ifblock:1
-        //private string Default_ProxyUser { get; set; } = string.Empty; // &user:
-        //private string Default_ProxyPass { get; set; } = string.Empty; // &pass:
         private List<MainRules> MainRules_List { get; set; } = new();
 
         public class Defaults
@@ -217,6 +205,11 @@ public partial class AgnosticProgram
                     if (fullAddress.EndsWith('"')) fullAddress = fullAddress.TrimEnd('"');
                     if (fullAddress.StartsWith('/')) fullAddress = fullAddress.TrimStart('/');
                     if (fullAddress.EndsWith('/')) fullAddress = fullAddress.TrimEnd('/');
+                    if (fullAddress.StartsWith('[') && fullAddress.EndsWith(']'))
+                    {
+                        fullAddress = fullAddress.TrimStart('[');
+                        fullAddress = fullAddress.TrimEnd(']');
+                    }
 
                     bool isPath = false;
                     try

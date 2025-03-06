@@ -311,6 +311,15 @@ public partial class FormMain
         }
     }
 
+    private static async Task DeleteGoodbyeDpiAndWinDivertServices_Async()
+    {
+        string service1 = "GoodbyeDPI", service2 = "WinDivert";
+        await ServiceTool.DeleteWhereAsync(service1);
+        await DriverTool.DeleteWhereAsync(service1);
+        await ServiceTool.DeleteWhereAsync(service2);
+        await DriverTool.DeleteWhereAsync(service2);
+    }
+
     private async void GoodbyeDPIDeactive(bool deactiveBasic, bool deactiveAdvanced)
     {
         if (!deactiveBasic && !deactiveAdvanced) return;
@@ -320,11 +329,17 @@ public partial class FormMain
 
         // Kill GoodbyeDPI Basic
         if (deactiveBasic)
+        {
             await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBasic);
+            await DeleteGoodbyeDpiAndWinDivertServices_Async();
+        }
 
         // Kill GoodbyeDPI Advanced
         if (deactiveAdvanced)
+        {
             await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIAdvanced);
+            await DeleteGoodbyeDpiAndWinDivertServices_Async();
+        }
 
         Task wait1 = Task.Run(async () =>
         {

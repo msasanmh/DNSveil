@@ -17,6 +17,8 @@ internal static partial class Program
             // e.g. (If Contains Space Must Be In Double Quotation ")
             // -Domain=google.com -DNSs=dns1,dns2 -TimeoutMS=5000 -DoubleCheck=True
             // -Domain=google.com -DNSs="dns 1, dns 2" -TimeoutMS=5000 -DoubleCheck=True
+            // -Domain=google.com -DNSs=dns -TimeoutMS=5000 -Insecure=True -BootstrapIP=8.8.8.8 -BootstrapPort=53 -DoubleCheck=True
+            // -Domain=google.com -DNSs=dns -TimeoutMS=5000 -Insecure=True -BootstrapIP=8.8.8.8 -BootstrapPort=53 -ProxyScheme= -DoubleCheck=True
 
             // Title
             string title = $"SDC Lookup v{Assembly.GetExecutingAssembly().GetName().Version}";

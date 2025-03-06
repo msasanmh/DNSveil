@@ -318,15 +318,15 @@ public class SetDnsOnNic
 
     public async Task SetDns(string nicName)
     {
-        await Task.Run(async () => await NetworkTool.SetDnsIPv4(nicName, IPAddress.Loopback.ToString()));
-        await Task.Run(async () => await NetworkTool.SetDnsIPv6(nicName, IPAddress.IPv6Loopback.ToString()));
+        await Task.Run(async () => await NetworkTool.SetDnsIPv4Async(nicName, IPAddress.Loopback.ToString()));
+        await Task.Run(async () => await NetworkTool.SetDnsIPv6Async(nicName, IPAddress.IPv6Loopback.ToString()));
         SaveToFile();
     }
 
     public async Task SetDns(NetworkInterface nic)
     {
-        await Task.Run(async () => await NetworkTool.SetDnsIPv4(nic, IPAddress.Loopback.ToString()));
-        await Task.Run(async () => await NetworkTool.SetDnsIPv6(nic, IPAddress.IPv6Loopback.ToString()));
+        await Task.Run(async () => await NetworkTool.SetDnsIPv4Async(nic, IPAddress.Loopback.ToString()));
+        await Task.Run(async () => await NetworkTool.SetDnsIPv6Async(nic, IPAddress.IPv6Loopback.ToString()));
         SaveToFile();
     }
 
@@ -342,8 +342,8 @@ public class SetDnsOnNic
     public async Task UnsetDnsToDHCP(string nicName)
     {
         if (string.IsNullOrEmpty(nicName)) return;
-        await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName));
-        await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName));
+        await Task.Run(async () => await NetworkTool.UnsetDnsIPv4Async(nicName));
+        await Task.Run(async () => await NetworkTool.UnsetDnsIPv6Async(nicName));
         SaveToFile();
     }
 
@@ -382,32 +382,32 @@ public class SetDnsOnNic
         {
             if (NetworkTool.IsIP(ipv4_2, out IPAddress? ip42) && ip42 != null && NetworkTool.IsIPv4(ip42))
             {
-                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName, ipv4_1, ipv4_2));
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4Async(nicName, ipv4_1, ipv4_2));
             }
             else
             {
-                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName, ipv4_1, null));
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4Async(nicName, ipv4_1, null));
             }
         }
         else
         {
-            await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName));
+            await Task.Run(async () => await NetworkTool.UnsetDnsIPv4Async(nicName));
         }
 
         if (NetworkTool.IsIP(ipv6_1, out IPAddress? ip61) && ip61 != null && NetworkTool.IsIPv6(ip61))
         {
             if (NetworkTool.IsIP(ipv6_2, out IPAddress? ip62) && ip62 != null && NetworkTool.IsIPv6(ip62))
             {
-                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName, ipv6_1, ipv6_2));
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6Async(nicName, ipv6_1, ipv6_2));
             }
             else
             {
-                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName, ipv6_1, null));
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6Async(nicName, ipv6_1, null));
             }
         }
         else
         {
-            await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName));
+            await Task.Run(async () => await NetworkTool.UnsetDnsIPv6Async(nicName));
         }
 
         SaveToFile();
@@ -451,8 +451,8 @@ public class SetDnsOnNic
             for (int n = 0; n < nicNames.Count; n++)
             {
                 string nicName = nicNames[n].Trim();
-                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName));
-                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName));
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4Async(nicName));
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6Async(nicName));
             }
         }
     }
@@ -476,8 +476,8 @@ public class SetDnsOnNic
             for (int n = 0; n < nicNames.Count; n++)
             {
                 string nicName = nicNames[n].Trim();
-                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4(nicName, dns1, dns2));
-                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6(nicName));
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv4Async(nicName, dns1, dns2));
+                await Task.Run(async () => await NetworkTool.UnsetDnsIPv6Async(nicName));
             }
         }
     }

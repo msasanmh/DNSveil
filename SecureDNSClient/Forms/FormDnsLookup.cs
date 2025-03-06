@@ -10,7 +10,7 @@ namespace SecureDNSClient;
 
 public partial class FormDnsLookup : Form
 {
-    // AgnosticSettings XML path
+    // Settings XML path
     private static readonly string SettingsXmlPath = SecureDNS.SettingsXmlDnsLookup;
     private readonly Settings AppSettings;
     private List<string> ResultList = new();
@@ -41,7 +41,7 @@ public partial class FormDnsLookup : Form
         ednsopt += $"{Environment.NewLine}65074:3132333435363738";
         CustomLabelEDNSOPT.SetToolTip(FormMain.MainToolTip, "Info", ednsopt);
 
-        // Initialize and load AgnosticSettings
+        // Initialize and load Settings
         if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
             AppSettings = new(this, SettingsXmlPath);
         else
@@ -312,10 +312,10 @@ public partial class FormDnsLookup : Form
             AppSettings.AddSelectedControlAndProperty(typeof(CustomTextBox), "Texts");
             AppSettings.AddSelectedControlAndProperty(typeof(CustomCheckBox), "Checked");
 
-            // Add AgnosticSettings to save
+            // Add Settings to save
             AppSettings.AddSelectedSettings(this);
 
-            // Save Application AgnosticSettings
+            // Save Application Settings
             await AppSettings.SaveAsync(SettingsXmlPath);
             await Task.Delay(100);
             IsExitDone = true;

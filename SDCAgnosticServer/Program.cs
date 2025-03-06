@@ -98,6 +98,15 @@ public static partial class Program
     [STAThread]
     static async Task Main()
     {
+        try
+        {
+            // Setting Culture Is Necessary To Read Args In Any Windows Display Language Other Than English
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+        }
+        catch (Exception) { }
+
         // Title
         string title = $"Msmh Agnostic Server v{Assembly.GetExecutingAssembly().GetName().Version}";
         if (OperatingSystem.IsWindows()) Console.Title = title;
@@ -112,7 +121,7 @@ public static partial class Program
         // Exit When Parent Terminated
         ExitAuto();
 
-        // Execute Wainting Commands
+        // Execute Waiting Commands
         ExecuteCommands();
 
         // Read Commands
@@ -132,30 +141,6 @@ public static partial class Program
                 {
                     Environment.Exit(0);
                     await ProcessManager.KillProcessByPidAsync(Environment.ProcessId);
-                }
-            }
-        });
-    }
-
-    private static async Task ReadCommandsAsync()
-    {
-        await Task.Run(() =>
-        {
-            uint n = 0;
-            while (true)
-            {
-                try
-                {
-                    string? input = Console.ReadLine();
-                    if (!string.IsNullOrWhiteSpace(input))
-                    {
-                        n++;
-                        WaitingInputCommands.TryAdd(n, input);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine("ReadCommandsAsync: " + ex.Message);
                 }
             }
         });
@@ -184,9 +169,9 @@ public static partial class Program
                         var sortedCommandsList = commandsList.OrderBy(x => x.Key);
                         foreach (KeyValuePair<uint, string> command in sortedCommandsList)
                         {
-                            await ExecuteCommandsAsync(command.Value);
                             WaitingInputCommands.TryRemove(command.Key, out _);
-                            //Debug.WriteLine($"{command.Key}");
+                            await ExecuteCommandsAsync(command.Value);
+                            //Debug.WriteLine($"{command.Key}: {command.Value}");
                             await Task.Delay(25);
                         }
                     }
@@ -197,6 +182,52 @@ public static partial class Program
                 }
             }
         });
+    }
+
+    private static async Task ReadCommandsAsync()
+    {
+        await Task.Run(() =>
+        {
+            uint n = 0;
+            while (true)
+            {
+                try
+                {
+                    string? input = Console.ReadLine();
+                    if (input != null)
+                    {
+                        n++;
+                        WaitingInputCommands.TryAdd(n, input);
+                        //Debug.WriteLine($"{n}: {input}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("ReadCommandsAsync: " + ex.Message);
+                }
+            }
+        });
+    }
+
+    internal static async Task<string?> ReadLineConsoleAsync()
+    {
+        try
+        {
+            while (WaitingInputCommands.IsEmpty) await Task.Delay(50);
+            List<KeyValuePair<uint, string>> commandsList = WaitingInputCommands.ToList();
+            if (commandsList.Count > 0)
+            {
+                KeyValuePair<uint, string> command = commandsList[^1];
+                WaitingInputCommands.TryRemove(command.Key, out _);
+                return command.Value;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ReadCommandsAsync: " + ex.Message);
+        }
+
+        return null;
     }
 
     private static async Task MainDetailsAsync(string profileName)
@@ -376,11 +407,11 @@ public static partial class Program
             string result = $"\n{Key.Programs.Fragment.Name} Mode: {fragmentProgram.FragmentMode}";
             if (fragmentProgram.FragmentMode == AgnosticProgram.Fragment.Mode.Program)
             {
-                result += $"\nBefore Sni Chunks: {fragmentProgram.BeforeSniChunks}";
-                result += $"\nChunks Mode: {fragmentProgram.DPIChunkMode}";
-                result += $"\n\"{fragmentProgram.DPIChunkMode}\" Chunks: {fragmentProgram.SniChunks}";
+                result += $"\nBefore Sni Chunks: {fragmentProgram.ChunksBeforeSNI}";
+                result += $"\nChunks Mode: {fragmentProgram.SniChunkMode}";
+                result += $"\n\"{fragmentProgram.SniChunkMode}\" Chunks: {fragmentProgram.ChunksSNI}";
                 result += $"\nAnti-Pattern Offset: {fragmentProgram.AntiPatternOffset} Chunks";
-                result += $"\nFragment Delay: {fragmentProgram.FragmentDelay} ms";
+                result += $"\nFragment Delay: {fragmentProgram.FragmentDelayMS} ms";
             }
             await WriteToStdoutAsync(result, ConsoleColor.Green, true, Key.Programs.Fragment.Name);
 
@@ -470,8 +501,8 @@ public static partial class Program
                 if (sf.AgnosticServer.IsRunning)
                 {
                     string addressMsg = string.Empty;
-                    bool isIPv4Supported = NetworkTool.IsIPv4Supported();
-                    bool isIPv6Supported = NetworkTool.IsIPv6Supported();
+                    bool isIPv4Supported = NetworkTool.IsIPv4SupportedByOS();
+                    bool isIPv6Supported = NetworkTool.IsIPv6SupportedByOS();
 
                     if (isIPv4Supported || isIPv6Supported)
                         addressMsg += $"\nListning On:";
@@ -596,11 +627,11 @@ public static partial class Program
                         {
                             baseCmd = $"{Key.Programs.Name} {Key.Programs.Fragment.Name}";
                             cmd = $"{baseCmd} -{Key.Programs.Fragment.Mode.Name}={sf.Fragment.FragmentMode}";
-                            cmd += $" -{Key.Programs.Fragment.Mode.Program.BeforeSniChunks}={sf.Fragment.BeforeSniChunks}";
-                            cmd += $" -{Key.Programs.Fragment.Mode.Program.ChunkMode.Name}={sf.Fragment.DPIChunkMode}";
-                            cmd += $" -{Key.Programs.Fragment.Mode.Program.SniChunks}={sf.Fragment.SniChunks}";
+                            cmd += $" -{Key.Programs.Fragment.Mode.Program.BeforeSniChunks}={sf.Fragment.ChunksBeforeSNI}";
+                            cmd += $" -{Key.Programs.Fragment.Mode.Program.ChunkMode.Name}={sf.Fragment.SniChunkMode}";
+                            cmd += $" -{Key.Programs.Fragment.Mode.Program.SniChunks}={sf.Fragment.ChunksSNI}";
                             cmd += $" -{Key.Programs.Fragment.Mode.Program.AntiPatternOffset}={sf.Fragment.AntiPatternOffset}";
-                            cmd += $" -{Key.Programs.Fragment.Mode.Program.FragmentDelay}={sf.Fragment.FragmentDelay}";
+                            cmd += $" -{Key.Programs.Fragment.Mode.Program.FragmentDelay}={sf.Fragment.FragmentDelayMS}";
                             commands.Add(cmd);
                         }
 

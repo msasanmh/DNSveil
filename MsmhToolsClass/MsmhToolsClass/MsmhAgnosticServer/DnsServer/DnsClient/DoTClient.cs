@@ -63,7 +63,7 @@ public class DoTClient
                 ProxifiedTcpClient proxifiedTcpClient = new(ProxyScheme, ProxyUser, ProxyPass);
                 var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(dnsServerIP, Reader.Port);
                 if (upstream.isSuccess && upstream.proxifiedTcpClient != null) tcpClient = upstream.proxifiedTcpClient;
-
+                
                 if (!upstream.isSuccess)
                     await tcpClient.Client.ConnectAsync(dnsServerIP, Reader.Port, CT).ConfigureAwait(false);
 
@@ -82,7 +82,7 @@ public class DoTClient
                 if (sslStream.IsAuthenticated && sslStream.CanWrite)
                 {
                     await sslStream.WriteAsync(QueryBuffer, CT).ConfigureAwait(false);
-
+                    
                     if (sslStream.CanRead)
                     {
                         byte[] buffer = new byte[MsmhAgnosticServer.MaxDataSize];

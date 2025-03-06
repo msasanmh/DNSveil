@@ -5,7 +5,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-// MSMH Agnostic Server - CopyRight GPLv3 MSasanMH (msasanmh@gmail.com) 2023 - 2024
+// MSMH Agnostic Server - CopyRight GPLv3 MSasanMH (msasanmh@gmail.com) 2023 - 2025
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
@@ -83,7 +83,7 @@ public partial class MsmhAgnosticServer
         await SettingsSSL_.Build().ConfigureAwait(false);
     }
 
-    public void Start(AgnosticSettings settings)
+    public async Task StartAsync(AgnosticSettings settings)
     {
         try
         {
@@ -91,7 +91,7 @@ public partial class MsmhAgnosticServer
             IsRunning = true;
 
             Settings_ = settings;
-            Settings_.Initialize();
+            await Settings_.InitializeAsync();
 
             // Set Default DNSs
             if (Settings_.DNSs.Count == 0) Settings_.DNSs = AgnosticSettings.DefaultDNSs();
@@ -117,10 +117,21 @@ public partial class MsmhAgnosticServer
             MainThread = new(threadStart);
             if (OperatingSystem.IsWindows()) MainThread.SetApartmentState(ApartmentState.STA);
             MainThread.Start();
+
+            // Wait
+            Task wait = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    if (IsRunning) break;
+                    await Task.Delay(100);
+                }
+            });
+            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("MsmhAgnosticServer Start: " + ex.Message);
+            Debug.WriteLine("MsmhAgnosticServer StartAsync: " + ex.Message);
         }
     }
 
@@ -284,10 +295,10 @@ public partial class MsmhAgnosticServer
             // Make Port Free
             if (OperatingSystem.IsWindows())
             {
-                List<int> pids = ProcessManager.GetProcessPidsByUsingPort(Settings_.ListenerPort);
+                List<int> pids = await ProcessManager.GetProcessPidsByUsingPortAsync(Settings_.ListenerPort);
                 foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
                 await Task.Delay(5);
-                pids = ProcessManager.GetProcessPidsByUsingPort(Settings_.ListenerPort);
+                pids = await ProcessManager.GetProcessPidsByUsingPortAsync(Settings_.ListenerPort);
                 foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
             }
 
@@ -520,16 +531,16 @@ public partial class MsmhAgnosticServer
                     req = await ProxyRequest.RequestSocks5(proxyClient, aResult.FirstBuffer, CTS_PR.Token).ConfigureAwait(false);
                 else if (aResult.Protocol == RequestProtocol.SniProxy)
                     req = await ProxyRequest.RequestSniProxy(aResult.SNI, Settings_.ListenerPort, CTS_PR.Token).ConfigureAwait(false);
-
+                
                 // Apply Programs
                 req = await ApplyPrograms(aResult.Local_EndPoint.Address, req).ConfigureAwait(false);
-
+                
                 if (req == null)
                 {
                     aRequest.Disconnect();
                     return;
                 }
-
+                
                 // Create Tunnel
                 ProxyTunnel proxyTunnel = new(connectionId, proxyClient, req, SettingsSSL_);
                 proxyTunnel.Open();
@@ -559,7 +570,7 @@ public partial class MsmhAgnosticServer
             pt.ClientSSL?.Disconnect();
 
             TunnelManager_.Remove(pt);
-            //Debug.WriteLine($"{pt.Req.Address} Disconnected");
+            Debug.WriteLine($"{pt.Req.Address} Disconnected");
         }
         catch (Exception ex)
         {

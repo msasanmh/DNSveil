@@ -1450,10 +1450,10 @@ public static partial class Program
                                 // Kill PIDs
                                 if (OperatingSystem.IsWindows())
                                 {
-                                    List<int> pids = ProcessManager.GetProcessPidsByUsingPort(sf.Settings.ListenerPort);
+                                    List<int> pids = await ProcessManager.GetProcessPidsByUsingPortAsync(sf.Settings.ListenerPort);
                                     foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
                                     await Task.Delay(5);
-                                    pids = ProcessManager.GetProcessPidsByUsingPort(sf.Settings.ListenerPort);
+                                    pids = await ProcessManager.GetProcessPidsByUsingPortAsync(sf.Settings.ListenerPort);
                                     foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
                                 }
 
@@ -1473,7 +1473,7 @@ public static partial class Program
                                 if (sf.Fragment != null) sf.AgnosticServer.EnableFragment(sf.Fragment);
                                 if (sf.Rules != null) sf.AgnosticServer.EnableRules(sf.Rules);
                                 if (sf.DnsLimit != null) sf.AgnosticServer.EnableDnsLimit(sf.DnsLimit);
-                                sf.AgnosticServer.Start(sf.Settings);
+                                await sf.AgnosticServer.StartAsync(sf.Settings);
                                 await Task.Delay(50);
                                 if (sf.AgnosticServer.IsRunning)
                                 {

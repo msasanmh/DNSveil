@@ -11,7 +11,7 @@ public class OsTool
         try
         {
             if (!OperatingSystem.IsWindows()) return false;
-            WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+            using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
             WindowsPrincipal windowsPrincipal = new(currentIdentity);
             return windowsPrincipal.IsInRole(WindowsBuiltInRole.Administrator);
         }
@@ -34,6 +34,16 @@ public class OsTool
         }
 
         return result;
+    }
+
+    public static bool IsWindows10OrGreater(int build = -1)
+    {
+        return Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Build >= build;
+    }
+
+    public static bool IsWindows11OrGreater(int build = 22000)
+    {
+        return Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Build >= build;
     }
 
     public static bool IsLightTheme()

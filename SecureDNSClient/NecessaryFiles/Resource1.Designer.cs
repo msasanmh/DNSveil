@@ -133,10 +133,10 @@ namespace SecureDNSClient.NecessaryFiles {
         /// <summary>
         ///   Looks up a localized string similar to dnslookup-X64 1.11.1
         ///dnslookup-X86 1.11.1
-        ///sdclookup-X64 1.1.0
-        ///sdclookup-X86 1.1.0
-        ///sdcagnosticserver-X64 3.1.5
-        ///sdcagnosticserver-X86 3.1.5
+        ///sdclookup-X64 1.1.1
+        ///sdclookup-X86 1.1.1
+        ///sdcagnosticserver-X64 3.1.6
+        ///sdcagnosticserver-X86 3.1.6
         ///goodbyedpi-X64 0.2.2
         ///goodbyedpi-X86 0.2.2.
         /// </summary>

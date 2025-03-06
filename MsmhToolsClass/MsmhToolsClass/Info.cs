@@ -46,9 +46,9 @@ public static class Info
             string idPrincipal = Environment.MachineName + Environment.UserName;
             string idDateTime = DateTime.UtcNow.ToString("yyyyMMddHHmmssfffffff", CultureInfo.InvariantCulture);
             string idInt1 = $"{Guid.NewGuid().GetHashCode()}";
-            if (idInt1.StartsWith('-')) idInt1 = idInt1.Replace("-", string.Empty);
+            if (idInt1.StartsWith('-')) idInt1 = idInt1.TrimStart('-');
             string idInt2 = $"{BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0)}";
-            if (idInt2.StartsWith('-')) idInt2 = idInt2.Replace("-", string.Empty);
+            if (idInt2.StartsWith('-')) idInt2 = idInt2.TrimStart('-');
             string result = idPrincipal + idDateTime + idInt1 + idInt2;
             return getEncodedId ? EncodingTool.GetSHA512(result).ToLower() : result;
         }

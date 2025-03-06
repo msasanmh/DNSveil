@@ -165,7 +165,7 @@ internal class ProxyTunnel
                     var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(Req.Address, Req.Port).ConfigureAwait(false);
                     if (upstream.isSuccess && upstream.proxifiedTcpClient != null)
                         ProxifiedTcpClient_ = upstream.proxifiedTcpClient;
-
+                    
                     if (ProxifiedTcpClient_ != null)
                     {
                         upStreamProxyApplied = true;

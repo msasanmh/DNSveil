@@ -38,7 +38,7 @@ public partial class FormMain
 
                 // Check Port
                 int proxyPort = GetProxyPortSetting();
-                bool isPortOk = GetListeningPort(proxyPort, "Change Proxy Server Port From Settings.", Color.IndianRed);
+                bool isPortOk = await GetListeningPortAsync(proxyPort, "Change Proxy Server Port From Settings.", Color.IndianRed);
                 if (!isPortOk)
                 {
                     UpdateProxyBools = true;
@@ -60,7 +60,7 @@ public partial class FormMain
                 bool blockPort80 = GetBlockPort80Setting();
 
                 // Get DNSs
-                bool isIPv6SupportedByOS = NetworkTool.IsIPv6Supported();
+                bool isIPv6SupportedByOS = NetworkTool.IsIPv6SupportedByOS();
                 string dnss = isIPv6SupportedByOS ? $"udp://[{IPAddress.IPv6Loopback}]:53" : $"udp://{IPAddress.Loopback}:53";
                 dnss += ",system";
 
@@ -238,24 +238,24 @@ public partial class FormMain
                     string msgProxy0 = $"Local Proxy Server (HTTP, HTTPS, SOCKS4, SOCKS4A, SOCKS5):{NL}";
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy0, Color.LightGray));
 
-                    string msgProxy1 = $"{IPAddress.Loopback}:{proxyPort}";
+                    string msgProxy1 = NetworkTool.IpToUrl(string.Empty, IPAddress.Loopback, proxyPort, string.Empty);
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy1 + NL, Color.DodgerBlue));
 
                     if (LocalIP != null)
                     {
-                        string msgProxy2 = $"{LocalIP}:{proxyPort}";
+                        string msgProxy2 = NetworkTool.IpToUrl(string.Empty, LocalIP, proxyPort, string.Empty);
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy2 + NL, Color.DodgerBlue));
                     }
                     
                     if (isIPv6SupportedByOS)
                     {
-                        string msgProxy3 = $"[{IPAddress.IPv6Loopback}]:{proxyPort}";
+                        string msgProxy3 = NetworkTool.IpToUrl(string.Empty, IPAddress.IPv6Loopback, proxyPort, string.Empty);
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy3 + NL, Color.DodgerBlue));
 
                         IPAddress? localIPv6 = NetworkTool.GetLocalIPv6();
                         if (localIPv6 != null)
                         {
-                            string msgProxy4 = $"[{localIPv6}]:{proxyPort}";
+                            string msgProxy4 = NetworkTool.IpToUrl(string.Empty, localIPv6, proxyPort, string.Empty);
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgProxy4 + NL, Color.DodgerBlue));
                         }
                     }
@@ -419,7 +419,7 @@ public partial class FormMain
             0 => AgnosticProgram.Fragment.ChunkMode.SNI,
             1 => AgnosticProgram.Fragment.ChunkMode.SniExtension,
             2 => AgnosticProgram.Fragment.ChunkMode.AllExtensions,
-            _ => AgnosticProgram.Fragment.ChunkMode.AllExtensions,
+            _ => AgnosticProgram.Fragment.ChunkMode.SNI,
         };
 
         int sniChunks0 = -1, antiPatternOffset0 = -1, fragmentDelay0 = -1;

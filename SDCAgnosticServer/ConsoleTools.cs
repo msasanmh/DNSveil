@@ -46,14 +46,14 @@ public static class ConsoleTools
     {
         try
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 if (!string.IsNullOrEmpty(msg)) Console.Out.WriteLine(msg);
                 if (type == typeof(bool))
                 {
                     while (true)
                     {
-                        string? cmd = Console.ReadLine();
+                        string? cmd = await Program.ReadLineConsoleAsync();
                         if (cmd == null) continue;
                         if (cmd == string.Empty) break;
 
@@ -75,7 +75,7 @@ public static class ConsoleTools
                 {
                     while (true)
                     {
-                        string? cmd = Console.ReadLine();
+                        string? cmd = await Program.ReadLineConsoleAsync();
                         if (cmd == null) continue;
                         if (cmd == string.Empty) break;
 
@@ -88,7 +88,7 @@ public static class ConsoleTools
                         else
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Out.WriteLine("Wrong Number. Try Again.");
+                            Console.Out.WriteLine($"{cmd} Wrong Number. Try Again.");
                             Console.ResetColor();
                         }
                     }
@@ -97,7 +97,7 @@ public static class ConsoleTools
                 {
                     while (true)
                     {
-                        string? cmd = Console.ReadLine();
+                        string? cmd = await Program.ReadLineConsoleAsync();
                         if (cmd == null) continue;
                         if (cmd == string.Empty) break;
 
@@ -119,7 +119,7 @@ public static class ConsoleTools
                 {
                     while (true)
                     {
-                        string? cmd = Console.ReadLine();
+                        string? cmd = await Program.ReadLineConsoleAsync();
                         if (cmd == null) continue;
 
                         if (!string.IsNullOrEmpty(cmd) || !string.IsNullOrWhiteSpace(cmd))

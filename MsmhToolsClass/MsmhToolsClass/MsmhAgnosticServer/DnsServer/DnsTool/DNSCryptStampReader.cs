@@ -39,8 +39,8 @@ public class DNSCryptStampReader
     {
         PlainDNS,
         DnsCrypt,
-        DoH,
         DoT,
+        DoH,
         DoQ,
         ObliviousDohTarget,
         AnonymizedDNSCryptRelay,
@@ -52,8 +52,8 @@ public class DNSCryptStampReader
     {
         public static readonly string PlainDNS = "Plain DNS";
         public static readonly string DnsCrypt = "DNSCrypt";
-        public static readonly string DoH = "DNS-Over-HTTPS";
         public static readonly string DoT = "DNS-Over-TLS";
+        public static readonly string DoH = "DNS-Over-HTTPS";
         public static readonly string DoQ = "DNS-Over-Quic";
         public static readonly string ObliviousDohTarget = "Oblivious DoH Target";
         public static readonly string AnonymizedDNSCryptRelay = "Anonymized DNSCrypt Relay";

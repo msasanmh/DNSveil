@@ -33,7 +33,7 @@ public class ProxyRequest
                 };
                 
                 Proxy.Name proxyName = httpRequest.URI.Scheme.Equals("http") ? Proxy.Name.HTTP : Proxy.Name.HTTPS;
-                if (httpRequest.UserAgent.Equals("SDC - Secure DNS Client", StringComparison.OrdinalIgnoreCase)) proxyName = Proxy.Name.Test;
+                if (httpRequest.UserAgent.Equals("DNSveil - A Secure DNS Client", StringComparison.OrdinalIgnoreCase)) proxyName = Proxy.Name.Test;
                 
                 // I Set User and Pass to none (I don't support Auth)
                 string user = string.Empty, pass = string.Empty;

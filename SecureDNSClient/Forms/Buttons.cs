@@ -1,14 +1,8 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
 using MsmhToolsWinFormsClass.Themes;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
-using MaxMind.GeoIP2;
-using MaxMind.GeoIP2.Responses;
-using System.Net;
-using System.Text;
-using System.Security.Cryptography;
 
 namespace SecureDNSClient;
 
@@ -306,13 +300,13 @@ public partial class FormMain
         if (CustomButtonEnableDisableNicIPv6.Text.Contains("Enable"))
         {
             CustomButtonEnableDisableNicIPv6.Text = "Enabling...";
-            await NetworkTool.EnableNicIPv6(nicName);
+            await NetworkTool.EnableNicIPv6Async(nicName);
             await Task.Delay(500);
         }
         else
         {
             CustomButtonEnableDisableNicIPv6.Text = "Disabling...";
-            await NetworkTool.DisableNicIPv6(nicName);
+            await NetworkTool.DisableNicIPv6Async(nicName);
             await Task.Delay(500);
         }
 

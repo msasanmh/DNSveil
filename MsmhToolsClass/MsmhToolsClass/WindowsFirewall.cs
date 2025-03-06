@@ -29,8 +29,8 @@ public class WindowsFirewall
             try
             {
                 string args = $"/c netsh advfirewall show allprofiles | find \"State\"";
-                string output = await ProcessManager.ExecuteAsync("cmd", null, args, true, true);
-                return output.Contains("ON");
+                var p = await ProcessManager.ExecuteAsync("cmd", null, args, true, true);
+                return p.IsSeccess && p.Output.Contains("ON");
             }
             catch (Exception ex)
             {
@@ -50,8 +50,8 @@ public class WindowsFirewall
             try
             {
                 string args = $"advfirewall firewall show rule name=\"{ruleName}\"";
-                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-                return output.Contains("Ok.");
+                var p = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return p.IsSeccess && p.Output.Contains("Ok.");
             }
             catch (Exception ex)
             {
@@ -79,8 +79,8 @@ public class WindowsFirewall
                 if (isRuleExist)
                     args = $"advfirewall firewall set rule name=\"{ruleName}\" new program=\"{exePath}\" dir={dir} action={action} enable=yes profile=any localip=any remoteip=any protocol=any interfacetype=any";
 
-                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-                return output.Contains("Ok.");
+                var p = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return p.IsSeccess && p.Output.Contains("Ok.");
             }
             catch (Exception ex)
             {
@@ -153,8 +153,8 @@ public class WindowsFirewall
             try
             {
                 string args = $"netsh advfirewall firewall set rule name=\"{ruleName}\" new enable=no";
-                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-                return output.Contains("Ok.");
+                var p = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return p.IsSeccess && p.Output.Contains("Ok.");
             }
             catch (Exception ex)
             {
@@ -175,8 +175,8 @@ public class WindowsFirewall
             try
             {
                 string args = $"netsh advfirewall firewall set rule name=\"{ruleName}\" new enable=yes";
-                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-                return output.Contains("Ok.");
+                var p = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return p.IsSeccess && p.Output.Contains("Ok.");
             }
             catch (Exception ex)
             {
@@ -197,8 +197,8 @@ public class WindowsFirewall
             try
             {
                 string args = $"advfirewall firewall delete rule name=\"{ruleName}\"";
-                string output = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
-                return output.Contains("Ok.");
+                var p = await ProcessManager.ExecuteAsync("netsh", null, args, true, true);
+                return p.IsSeccess && p.Output.Contains("Ok.");
             }
             catch (Exception ex)
             {

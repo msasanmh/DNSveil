@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace MsmhToolsClass;
 
@@ -7,16 +6,23 @@ public static class OpenLinks
 {
     public static void OpenFolderFromFileName(string fileName)
     {
-        string? folderName = Path.GetDirectoryName(fileName);
-        if (string.IsNullOrEmpty(folderName)) return;
-        if (Info.IsRunningOnWindows)
+        try
         {
-            var argument = @"/select, " + fileName;
-            Process.Start("explorer.exe", argument);
+            string? folderName = Path.GetDirectoryName(fileName);
+            if (string.IsNullOrEmpty(folderName)) return;
+            if (Info.IsRunningOnWindows)
+            {
+                var argument = @"/select, " + fileName;
+                Process.Start("explorer.exe", argument);
+            }
+            else
+            {
+                OpenFolder(folderName);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            OpenFolder(folderName);
+            Debug.WriteLine("OpenLinks OpenFolderFromFileName: " + ex.Message);
         }
     }
 
@@ -50,7 +56,7 @@ public static class OpenLinks
             }
             else if (Info.IsRunningOnLinux)
             {
-                var process = new Process
+                Process process = new()
                 {
                     EnableRaisingEvents = false,
                     StartInfo = { FileName = "xdg-open", Arguments = item }
@@ -58,9 +64,9 @@ public static class OpenLinks
                 process.Start();
             }
         }
-        catch (Exception exception)
+        catch (Exception ex)
         {
-            Debug.WriteLine($"Cannot open {type}: {item}{Environment.NewLine}{Environment.NewLine}{exception.Source}: {exception.Message}");
+            Debug.WriteLine($"OpenLinks Cannot open {type}: {item}{Environment.NewLine}{Environment.NewLine}{ex.Source}: {ex.Message}");
         }
     }
 }

@@ -41,7 +41,6 @@ public class Settings
         }
     }
 
-    private readonly char Delimiter = '|';
     public Settings(Control form, string? xmlFilePath = null)
     {
         if (xmlFilePath != null)
@@ -158,6 +157,7 @@ public class Settings
                 for (int n2 = 0; n2 < properties.Length; n2++)
                 {
                     PropertyInfo property = properties[n2];
+                    if (!property.CanRead || !property.CanWrite) continue;
                     List<Setting> settingList = SettingList.ToList(); // ToList: Fix: Collection was modified; enumeration operation may not execute.
                     for (int n3 = 0; n3 < settingList.Count; n3++)
                     {
@@ -169,7 +169,8 @@ public class Settings
                                 TypeConverter typeConverter = TypeDescriptor.GetConverter(property.PropertyType);
                                 if (typeConverter.CanConvertFrom(typeof(string)))
                                 {
-                                    property.SetValue(control, typeConverter.ConvertFrom(setting.PropertyValue), null);
+                                    if (property.CanRead && property.CanWrite)
+                                        property.SetValue(control, typeConverter.ConvertFrom(setting.PropertyValue), null);
                                     break;
                                 }
                             }
@@ -178,7 +179,8 @@ public class Settings
                                 Debug.WriteLine(property.Name + ": " + ex1.Message);
                                 try
                                 {
-                                    property.SetValue(control, Convert.ChangeType(setting.PropertyValue, property.PropertyType), null);
+                                    if (property.CanRead && property.CanWrite)
+                                        property.SetValue(control, Convert.ChangeType(setting.PropertyValue, property.PropertyType), null);
                                     break;
                                 }
                                 catch (Exception ex2)
@@ -223,12 +225,14 @@ public class Settings
         {
             try
             {
-                XmlWriterSettings xmlWriterSettings = new();
-                xmlWriterSettings.WriteEndDocumentOnClose = true;
-                xmlWriterSettings.Async = true;
-                xmlWriterSettings.Indent = true;
-                xmlWriterSettings.OmitXmlDeclaration = true;
-                xmlWriterSettings.Encoding = new UTF8Encoding(false);
+                XmlWriterSettings xmlWriterSettings = new()
+                {
+                    WriteEndDocumentOnClose = true,
+                    Async = true,
+                    Indent = true,
+                    OmitXmlDeclaration = true,
+                    Encoding = new UTF8Encoding(false)
+                };
                 using XmlWriter xmlWriter = XmlWriter.Create(xmlFilePath, xmlWriterSettings);
                 await XDoc.SaveAsync(xmlWriter, CancellationToken.None);
             }
@@ -237,21 +241,6 @@ public class Settings
                 Debug.WriteLine($"Save Settings: {ex.Message}");
             }
         });
-    }
-
-    private void SaveToFileAsTXT(string txtFilePath)
-    {
-        using FileStream fileStream = new(txtFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-        using StreamWriter streamWriter = new(fileStream);
-        for (int n = 0; n < SettingList.Count; n++)
-        {
-            var setting = SettingList[n];
-            if (string.IsNullOrWhiteSpace(setting.ControlName) && string.IsNullOrWhiteSpace(setting.PropertyName) && setting.PropertyValue != null)
-            {
-                object line = setting.ControlName + Delimiter + setting.PropertyName + Delimiter + setting.PropertyValue;
-                streamWriter.WriteLine(line.ToString());
-            }
-        }
     }
 
     /// <summary>
@@ -335,6 +324,7 @@ public class Settings
             for (int n2 = 0; n2 < properties.Length; n2++)
             {
                 PropertyInfo property = properties[n2];
+                if (!property.CanRead || !property.CanWrite) continue;
                 string propertyName = property.Name;
 
                 try

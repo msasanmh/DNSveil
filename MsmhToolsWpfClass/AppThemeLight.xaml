@@ -1,0 +1,45 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:themes="clr-namespace:MsmhToolsWpfClass.Themes">
+
+    <Color x:Key="{x:Static themes:AppTheme.BackgroundColor}">#EEEEEE</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.BackgroundBrush}" Color="{DynamicResource {x:Static themes:AppTheme.BackgroundColor}}"/>
+    
+    <Color x:Key="{x:Static themes:AppTheme.BackgroundDarkerColor}">#BBBBBB</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.BackgroundDarkerBrush}" Color="{DynamicResource {x:Static themes:AppTheme.BackgroundDarkerColor}}"/>
+
+    <Color x:Key="{x:Static themes:AppTheme.BorderColor}">#005A9C</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.BorderBrush}" Color="{DynamicResource {x:Static themes:AppTheme.BorderColor}}"/>
+
+    <Color x:Key="{x:Static themes:AppTheme.ForegroundColor}">#212121</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.ForegroundBrush}" Color="{DynamicResource {x:Static themes:AppTheme.ForegroundColor}}"/>
+    
+    <Color x:Key="{x:Static themes:AppTheme.ForegroundDarkerColor}">#1A1A1A</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.ForegroundDarkerBrush}" Color="{DynamicResource {x:Static themes:AppTheme.ForegroundDarkerColor}}"/>
+
+    <Color x:Key="{x:Static themes:AppTheme.SelectedItemColor}">#3DCCCCCC</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.SelectedItemBrush}" Color="{DynamicResource {x:Static themes:AppTheme.SelectedItemColor}}"/>
+
+    <!-- Const Colors -->
+    <Color x:Key="{x:Static themes:AppTheme.DodgerBlueColor}">#005A9C</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.DodgerBlueBrush}" Color="{DynamicResource {x:Static themes:AppTheme.DodgerBlueColor}}"/>
+
+    <Color x:Key="{x:Static themes:AppTheme.DodgerBlueColorTransparent}">#3D005A9C</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.DodgerBlueBrushTransparent}" Color="{DynamicResource {x:Static themes:AppTheme.DodgerBlueColorTransparent}}"/>
+
+    <Color x:Key="{x:Static themes:AppTheme.IndianRedColor}">#CD5C5C</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.IndianRedBrush}" Color="{DynamicResource {x:Static themes:AppTheme.IndianRedColor}}"/>
+
+    <Color x:Key="{x:Static themes:AppTheme.IndianRedColorTransparent}">#3DCD5C5C</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.IndianRedBrushTransparent}" Color="{DynamicResource {x:Static themes:AppTheme.IndianRedColorTransparent}}"/>
+
+    <Color x:Key="{x:Static themes:AppTheme.MediumSeaGreenColor}">#3CB371</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.MediumSeaGreenBrush}" Color="{DynamicResource {x:Static themes:AppTheme.MediumSeaGreenColor}}"/>
+
+    <Color x:Key="{x:Static themes:AppTheme.MediumSeaGreenColorTransparent}">#3D3CB371</Color>
+    <SolidColorBrush x:Key="{x:Static themes:AppTheme.MediumSeaGreenBrushTransparent}" Color="{DynamicResource {x:Static themes:AppTheme.MediumSeaGreenColorTransparent}}"/>
+
+    <Thickness x:Key="{x:Static themes:AppTheme.BorderThickness}">1</Thickness>
+
+
+</ResourceDictionary>

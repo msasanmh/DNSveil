@@ -335,9 +335,9 @@ public partial class FormMain
     /// </summary>
     /// <param name="portToCheck">Port</param>
     /// <returns>Returns True if everything's ok</returns>
-    public bool GetListeningPort(int portToCheck, string message, Color color)
+    public async Task<bool> GetListeningPortAsync(int portToCheck, string message, Color color)
     {
-        List<int> pids = ProcessManager.GetProcessPidsByUsingPort(portToCheck);
+        List<int> pids = await ProcessManager.GetProcessPidsByUsingPortAsync(portToCheck);
         bool isPortOpen = pids.Any();
         if (isPortOpen)
         {

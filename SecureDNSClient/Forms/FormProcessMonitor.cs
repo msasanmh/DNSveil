@@ -32,7 +32,7 @@ public partial class FormProcessMonitor : Form
     private void FormProcessMonitor_Shown(object? sender, EventArgs e)
     {
         // Is IPv6 Supported By OS
-        bool isIPv6SupportedByOS = NetworkTool.IsIPv6Supported();
+        bool isIPv6SupportedByOS = NetworkTool.IsIPv6SupportedByOS();
 
         CustomRichTextBox logDown = CustomRichTextBoxDown;
 

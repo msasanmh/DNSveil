@@ -27,7 +27,7 @@ public class ProxifiedTcpClient
                 if (ProxyScheme.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) || ProxyScheme.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase))
                 {
                     HttpTcpClient httpTcpClient = new(proxyHost, proxyPort, ProxyUser, ProxyPass);
-                    TcpClient? proxifiedClient = await httpTcpClient.CreateConnection(host, port).ConfigureAwait(false);
+                    TcpClient? proxifiedClient = await httpTcpClient.CreateConnectionAsync(host, port).ConfigureAwait(false);
                     if (proxifiedClient != null)
                     {
                         return (true, proxifiedClient);
@@ -36,7 +36,7 @@ public class ProxifiedTcpClient
                 else if (ProxyScheme.StartsWith("socks5://", StringComparison.InvariantCultureIgnoreCase))
                 {
                     Socks5TcpClient socks5TcpClient = new(proxyHost, proxyPort, ProxyUser, ProxyPass);
-                    TcpClient? proxifiedClient = await socks5TcpClient.CreateConnection(host, port).ConfigureAwait(false);
+                    TcpClient? proxifiedClient = await socks5TcpClient.CreateConnectionAsync(host, port).ConfigureAwait(false);
                     if (proxifiedClient != null)
                     {
                         return (true, proxifiedClient);

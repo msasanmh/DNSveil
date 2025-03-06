@@ -98,8 +98,7 @@ public class Socks5TcpClient
     /// <param name="proxyPassword">Proxy authentication password.</param>
     public Socks5TcpClient(string proxyHost, int proxyPort, string? proxyUsername, string? proxyPassword)
     {
-        if (proxyPort <= 0 || proxyPort > 65535)
-            return; // "port must be greater than zero and less than 65535"
+        if (proxyPort <= 0 || proxyPort > 65535) return;
 
         _proxyHost = proxyHost;
         _proxyPort = proxyPort;
@@ -120,18 +119,13 @@ public class Socks5TcpClient
     /// Returns an open TcpClient object that can be used normally to communicate
     /// with the destination server
     /// </returns>
-    public async Task<TcpClient?> CreateConnection(string destinationHost, int destinationPort)
+    public async Task<TcpClient?> CreateConnectionAsync(string destinationHost, int destinationPort)
     {
-        if (string.IsNullOrEmpty(destinationHost))
-            return null;
-
-        if (destinationPort <= 0 || destinationPort > 65535)
-            return null; // "port must be greater than zero and less than 65535"
-
         try
         {
+            if (string.IsNullOrEmpty(destinationHost)) return null;
+            if (destinationPort <= 0 || destinationPort > 65535) return null;
             if (string.IsNullOrEmpty(_proxyHost)) return null;
-
             if (_proxyPort <= 0 || _proxyPort > 65535) return null;
 
             //  create new tcp client object to the proxy server
@@ -144,10 +138,20 @@ public class Socks5TcpClient
             DetermineClientAuthMethod();
 
             // negotiate which authentication methods are supported / accepted by the server
-            await NegotiateServerAuthMethod();
+            bool isSuccess = await NegotiateServerAuthMethodAsync();
+            if (!isSuccess)
+            {
+                _tcpClient = null;
+                return null;
+            }
 
             // send a connect command to the proxy server for destination host and port
-            await SendCommand(SOCKS5_CMD_CONNECT, destinationHost, destinationPort);
+            isSuccess = await SendCommandAsync(SOCKS5_CMD_CONNECT, destinationHost, destinationPort);
+            if (!isSuccess)
+            {
+                _tcpClient = null;
+                return null;
+            }
 
             // remove the private reference to the tcp client so the proxy object does not keep it
             // return the open proxied tcp client object to the caller for normal use
@@ -177,137 +181,149 @@ public class Socks5TcpClient
             _proxyAuthMethod = SocksAuthentication.None;
     }
 
-    private async Task NegotiateServerAuthMethod()
+    private async Task<bool> NegotiateServerAuthMethodAsync()
     {
-        if (_tcpClient == null) return;
+        bool isSuccess = false;
 
-        //  get a reference to the network stream
-        NetworkStream stream = _tcpClient.GetStream();
-
-        // SERVER AUTHENTICATION REQUEST
-        // The client connects to the server, and sends a version
-        // identifier/method selection message:
-        //
-        //      +----+----------+----------+
-        //      |VER | NMETHODS | METHODS  |
-        //      +----+----------+----------+
-        //      | 1  |    1     | 1 to 255 |
-        //      +----+----------+----------+
-
-        byte[] authRequest = new byte[4];
-        authRequest[0] = SOCKS5_VERSION_NUMBER;
-        authRequest[1] = SOCKS5_AUTH_NUMBER_OF_AUTH_METHODS_SUPPORTED;
-        authRequest[2] = SOCKS5_AUTH_METHOD_NO_AUTHENTICATION_REQUIRED;
-        authRequest[3] = SOCKS5_AUTH_METHOD_USERNAME_PASSWORD;
-
-        //  send the request to the server specifying authentication types supported by the client.
-        await stream.WriteAsync(authRequest);
-
-        //  SERVER AUTHENTICATION RESPONSE
-        //  The server selects from one of the methods given in METHODS, and
-        //  sends a METHOD selection message:
-        //
-        //     +----+--------+
-        //     |VER | METHOD |
-        //     +----+--------+
-        //     | 1  |   1    |
-        //     +----+--------+
-        //
-        //  If the selected METHOD is X'FF', none of the methods listed by the
-        //  client are acceptable, and the client MUST close the connection.
-        //
-        //  The values currently defined for METHOD are:
-        //   * X'00' NO AUTHENTICATION REQUIRED
-        //   * X'01' GSSAPI
-        //   * X'02' USERNAME/PASSWORD
-        //   * X'03' to X'7F' IANA ASSIGNED
-        //   * X'80' to X'FE' RESERVED FOR PRIVATE METHODS
-        //   * X'FF' NO ACCEPTABLE METHODS
-
-        //  receive the server response 
-        byte[] response = new byte[2];
-        await stream.ReadAsync(response);
-
-        //  the first byte contains the socks version number (e.g. 5)
-        //  the second byte contains the auth method acceptable to the proxy server
-        byte acceptedAuthMethod = response[1];
-
-        // if the server does not accept any of our supported authenication methods then throw an error
-        if (acceptedAuthMethod == SOCKS5_AUTH_METHOD_REPLY_NO_ACCEPTABLE_METHODS)
+        try
         {
-            _tcpClient.Close();
-            string msg = "The proxy destination does not accept the supported proxy client authentication methods.";
-            Debug.WriteLine(msg);
-            return;
-        }
+            if (_tcpClient == null) return isSuccess;
 
-        // if the server accepts a username and password authentication and none is provided by the user then throw an error
-        if (acceptedAuthMethod == SOCKS5_AUTH_METHOD_USERNAME_PASSWORD && _proxyAuthMethod == SocksAuthentication.None)
-        {
-            _tcpClient.Close();
-            string msg = "The proxy destination requires a username and password for authentication. If you received this error attempting to connect to the Tor network provide an string empty value for ProxyUserName and ProxyPassword.";
-            Debug.WriteLine(msg);
-            return;
-        }
+            //  get a reference to the network stream
+            NetworkStream stream = _tcpClient.GetStream();
 
-        if (acceptedAuthMethod == SOCKS5_AUTH_METHOD_USERNAME_PASSWORD)
-        {
-
-            // USERNAME / PASSWORD SERVER REQUEST
-            // Once the SOCKS V5 server has started, and the client has selected the
-            // Username/Password Authentication protocol, the Username/Password
-            // subnegotiation begins.  This begins with the client producing a
-            // Username/Password request:
+            // SERVER AUTHENTICATION REQUEST
+            // The client connects to the server, and sends a version
+            // identifier/method selection message:
             //
-            //       +----+------+----------+------+----------+
-            //       |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
-            //       +----+------+----------+------+----------+
-            //       | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
-            //       +----+------+----------+------+----------+
+            //      +----+----------+----------+
+            //      |VER | NMETHODS | METHODS  |
+            //      +----+----------+----------+
+            //      | 1  |    1     | 1 to 255 |
+            //      +----+----------+----------+
 
-            // create a data structure (binary array) containing credentials
-            // to send to the proxy server which consists of clear username and password data
-            byte[] credentials = new byte[_proxyUsername.Length + _proxyPassword.Length + 3];
+            byte[] authRequest = new byte[4];
+            authRequest[0] = SOCKS5_VERSION_NUMBER;
+            authRequest[1] = SOCKS5_AUTH_NUMBER_OF_AUTH_METHODS_SUPPORTED;
+            authRequest[2] = SOCKS5_AUTH_METHOD_NO_AUTHENTICATION_REQUIRED;
+            authRequest[3] = SOCKS5_AUTH_METHOD_USERNAME_PASSWORD;
 
-            // for SOCKS5 username/password authentication the VER field must be set to 0x01
-            //  http://en.wikipedia.org/wiki/SOCKS
-            //      field 1: version number, 1 byte (must be 0x01)"
-            credentials[0] = 0x01;
-            credentials[1] = (byte)_proxyUsername.Length;
-            Array.Copy(Encoding.ASCII.GetBytes(_proxyUsername), 0, credentials, 2, _proxyUsername.Length);
-            credentials[_proxyUsername.Length + 2] = (byte)_proxyPassword.Length;
-            Array.Copy(Encoding.ASCII.GetBytes(_proxyPassword), 0, credentials, _proxyUsername.Length + 3, _proxyPassword.Length);
+            //  send the request to the server specifying authentication types supported by the client.
+            await stream.WriteAsync(authRequest);
 
-            // USERNAME / PASSWORD SERVER RESPONSE
-            // The server verifies the supplied UNAME and PASSWD, and sends the
-            // following response:
+            //  SERVER AUTHENTICATION RESPONSE
+            //  The server selects from one of the methods given in METHODS, and
+            //  sends a METHOD selection message:
             //
-            //   +----+--------+
-            //   |VER | STATUS |
-            //   +----+--------+
-            //   | 1  |   1    |
-            //   +----+--------+
+            //     +----+--------+
+            //     |VER | METHOD |
+            //     +----+--------+
+            //     | 1  |   1    |
+            //     +----+--------+
             //
-            // A STATUS field of X'00' indicates success. If the server returns a
-            // `failure' (STATUS value other than X'00') status, it MUST close the
-            // connection.
+            //  If the selected METHOD is X'FF', none of the methods listed by the
+            //  client are acceptable, and the client MUST close the connection.
+            //
+            //  The values currently defined for METHOD are:
+            //   * X'00' NO AUTHENTICATION REQUIRED
+            //   * X'01' GSSAPI
+            //   * X'02' USERNAME/PASSWORD
+            //   * X'03' to X'7F' IANA ASSIGNED
+            //   * X'80' to X'FE' RESERVED FOR PRIVATE METHODS
+            //   * X'FF' NO ACCEPTABLE METHODS
 
-            // transmit credentials to the proxy server
-            await stream.WriteAsync(credentials);
+            //  receive the server response 
+            byte[] response = new byte[2];
+            await stream.ReadAsync(response);
 
-            // read the response from the proxy server
-            byte[] crResponse = new byte[2];
-            await stream.ReadAsync(crResponse);
+            //  the first byte contains the socks version number (e.g. 5)
+            //  the second byte contains the auth method acceptable to the proxy server
+            byte acceptedAuthMethod = response[1];
 
-            // check to see if the proxy server accepted the credentials
-            if (crResponse[1] != 0)
+            // if the server does not accept any of our supported authenication methods then throw an error
+            if (acceptedAuthMethod == SOCKS5_AUTH_METHOD_REPLY_NO_ACCEPTABLE_METHODS)
             {
                 _tcpClient.Close();
-                string msg = "Proxy authentification failure! The proxy server has reported that the userid and/or password is not valid.";
+                string msg = "The proxy destination does not accept the supported proxy client authentication methods.";
                 Debug.WriteLine(msg);
-                return;
+                return isSuccess;
+            }
+
+            // if the server accepts a username and password authentication and none is provided by the user then throw an error
+            if (acceptedAuthMethod == SOCKS5_AUTH_METHOD_USERNAME_PASSWORD && _proxyAuthMethod == SocksAuthentication.None)
+            {
+                _tcpClient.Close();
+                string msg = "The proxy destination requires a username and password for authentication. If you received this error attempting to connect to the Tor network provide an string empty value for ProxyUserName and ProxyPassword.";
+                Debug.WriteLine(msg);
+                return isSuccess;
+            }
+
+            if (acceptedAuthMethod == SOCKS5_AUTH_METHOD_USERNAME_PASSWORD)
+            {
+
+                // USERNAME / PASSWORD SERVER REQUEST
+                // Once the SOCKS V5 server has started, and the client has selected the
+                // Username/Password Authentication protocol, the Username/Password
+                // subnegotiation begins.  This begins with the client producing a
+                // Username/Password request:
+                //
+                //       +----+------+----------+------+----------+
+                //       |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
+                //       +----+------+----------+------+----------+
+                //       | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
+                //       +----+------+----------+------+----------+
+
+                // create a data structure (binary array) containing credentials
+                // to send to the proxy server which consists of clear username and password data
+                byte[] credentials = new byte[_proxyUsername.Length + _proxyPassword.Length + 3];
+
+                // for SOCKS5 username/password authentication the VER field must be set to 0x01
+                //  http://en.wikipedia.org/wiki/SOCKS
+                //      field 1: version number, 1 byte (must be 0x01)"
+                credentials[0] = 0x01;
+                credentials[1] = (byte)_proxyUsername.Length;
+                Array.Copy(Encoding.ASCII.GetBytes(_proxyUsername), 0, credentials, 2, _proxyUsername.Length);
+                credentials[_proxyUsername.Length + 2] = (byte)_proxyPassword.Length;
+                Array.Copy(Encoding.ASCII.GetBytes(_proxyPassword), 0, credentials, _proxyUsername.Length + 3, _proxyPassword.Length);
+
+                // USERNAME / PASSWORD SERVER RESPONSE
+                // The server verifies the supplied UNAME and PASSWD, and sends the
+                // following response:
+                //
+                //   +----+--------+
+                //   |VER | STATUS |
+                //   +----+--------+
+                //   | 1  |   1    |
+                //   +----+--------+
+                //
+                // A STATUS field of X'00' indicates success. If the server returns a
+                // `failure' (STATUS value other than X'00') status, it MUST close the
+                // connection.
+
+                // transmit credentials to the proxy server
+                await stream.WriteAsync(credentials);
+
+                // read the response from the proxy server
+                byte[] crResponse = new byte[2];
+                await stream.ReadAsync(crResponse);
+
+                // check to see if the proxy server accepted the credentials
+                if (crResponse[1] != 0)
+                {
+                    _tcpClient.Close();
+                    string msg = "Proxy authentification failure! The proxy server has reported that the userid and/or password is not valid.";
+                    Debug.WriteLine(msg);
+                    return isSuccess;
+                }
             }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Socks5TcpClient NegotiateServerAuthMethodAsync: " + ex.Message);
+        }
+
+        isSuccess = true;
+        return isSuccess;
     }
 
     private static byte GetDestAddressType(string host)
@@ -317,185 +333,226 @@ public class Socks5TcpClient
         if (!result || ipAddr == null)
             return SOCKS5_ADDRTYPE_DOMAIN_NAME;
 
-        return ipAddr.AddressFamily switch
+        byte b = ipAddr.AddressFamily switch
         {
             AddressFamily.InterNetwork => SOCKS5_ADDRTYPE_IPV4,
             AddressFamily.InterNetworkV6 => SOCKS5_ADDRTYPE_IPV6,
-            _ => throw new Exception($"The host addess {host} of type \'{Enum.GetName(typeof(AddressFamily), ipAddr.AddressFamily)}\' is not a supported address type. The supported types are InterNetwork and InterNetworkV6."),
+            _ => 0x00
         };
+
+        if (b == 0x00) Debug.WriteLine($"The host addess {host} of type \'{ipAddr.AddressFamily}\' is not a supported address type. The supported types are InterNetwork and InterNetworkV6.");
+        return b;
     }
 
     private static byte[]? GetDestAddressBytes(byte addressType, string host)
     {
-        switch (addressType)
+        try
         {
-            case SOCKS5_ADDRTYPE_IPV4:
-            case SOCKS5_ADDRTYPE_IPV6:
-                return IPAddress.Parse(host).GetAddressBytes();
-            case SOCKS5_ADDRTYPE_DOMAIN_NAME:
-                //  create a byte array to hold the host name bytes plus one byte to store the length
-                byte[] bytes = new byte[host.Length + 1];
-                //  if the address field contains a fully-qualified domain name.  The first
-                //  octet of the address field contains the number of octets of name that
-                //  follow, there is no terminating NUL octet.
-                bytes[0] = Convert.ToByte(host.Length);
-                Encoding.ASCII.GetBytes(host).CopyTo(bytes, 1);
-                return bytes;
-            default:
-                return null;
+            switch (addressType)
+            {
+                case SOCKS5_ADDRTYPE_IPV4:
+                case SOCKS5_ADDRTYPE_IPV6:
+                    return IPAddress.Parse(host).GetAddressBytes();
+                case SOCKS5_ADDRTYPE_DOMAIN_NAME:
+                    //  create a byte array to hold the host name bytes plus one byte to store the length
+                    byte[] bytes = new byte[host.Length + 1];
+                    //  if the address field contains a fully-qualified domain name.  The first
+                    //  octet of the address field contains the number of octets of name that
+                    //  follow, there is no terminating NUL octet.
+                    bytes[0] = Convert.ToByte(host.Length);
+                    Encoding.ASCII.GetBytes(host).CopyTo(bytes, 1);
+                    return bytes;
+                default:
+                    return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Socks5TcpClient GetDestAddressBytes: " + ex.Message);
+            return null;
         }
     }
 
-    private static byte[] GetDestPortBytes(int value)
+    private static byte[]? GetDestPortBytes(int value)
     {
-        byte[] array = new byte[2];
-        array[0] = Convert.ToByte(value / 256);
-        array[1] = Convert.ToByte(value % 256);
-        return array;
+        try
+        {
+            byte[] array = new byte[2];
+            array[0] = Convert.ToByte(value / 256);
+            array[1] = Convert.ToByte(value % 256);
+            return array;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Socks5TcpClient GetDestPortBytes: " + ex.Message);
+            return null;
+        }
     }
 
-    private async Task SendCommand(byte command, string destinationHost, int destinationPort)
+    private async Task<bool> SendCommandAsync(byte command, string destinationHost, int destinationPort)
     {
-        if (_tcpClient == null) return;
+        bool isSuccess = false;
 
-        NetworkStream stream = _tcpClient.GetStream();
+        try
+        {
+            if (_tcpClient == null) return isSuccess;
 
-        byte addressType = GetDestAddressType(destinationHost);
-        byte[]? destAddr = GetDestAddressBytes(addressType, destinationHost);
-        if (destAddr == null) return;
+            NetworkStream stream = _tcpClient.GetStream();
 
-        byte[] destPort = GetDestPortBytes(destinationPort);
+            byte addressType = GetDestAddressType(destinationHost);
+            if (addressType == 0x00) return isSuccess;
 
-        //  The connection request is made up of 6 bytes plus the
-        //  length of the variable address byte array
-        //
-        //  +----+-----+-------+------+----------+----------+
-        //  |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
-        //  +----+-----+-------+------+----------+----------+
-        //  | 1  |  1  | X'00' |  1   | Variable |    2     |
-        //  +----+-----+-------+------+----------+----------+
-        //
-        // * VER protocol version: X'05'
-        // * CMD
-        //   * CONNECT X'01'
-        //   * BIND X'02'
-        //   * UDP ASSOCIATE X'03'
-        // * RSV RESERVED
-        // * ATYP address itemType of following address
-        //   * IP V4 address: X'01'
-        //   * DOMAINNAME: X'03'
-        //   * IP V6 address: X'04'
-        // * DST.ADDR desired destination address
-        // * DST.PORT desired destination port in network octet order            
+            byte[]? destAddr = GetDestAddressBytes(addressType, destinationHost);
+            if (destAddr == null) return isSuccess;
 
-        byte[] request = new byte[4 + destAddr.Length + 2];
-        request[0] = SOCKS5_VERSION_NUMBER;
-        request[1] = command;
-        request[2] = SOCKS5_RESERVED;
-        request[3] = addressType;
-        destAddr.CopyTo(request, 4);
-        destPort.CopyTo(request, 4 + destAddr.Length);
+            byte[]? destPort = GetDestPortBytes(destinationPort);
+            if (destPort == null) return isSuccess;
 
-        // send connect request.
-        await stream.WriteAsync(request);
+            //  The connection request is made up of 6 bytes plus the
+            //  length of the variable address byte array
+            //
+            //  +----+-----+-------+------+----------+----------+
+            //  |VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
+            //  +----+-----+-------+------+----------+----------+
+            //  | 1  |  1  | X'00' |  1   | Variable |    2     |
+            //  +----+-----+-------+------+----------+----------+
+            //
+            // * VER protocol version: X'05'
+            // * CMD
+            //   * CONNECT X'01'
+            //   * BIND X'02'
+            //   * UDP ASSOCIATE X'03'
+            // * RSV RESERVED
+            // * ATYP address itemType of following address
+            //   * IP V4 address: X'01'
+            //   * DOMAINNAME: X'03'
+            //   * IP V6 address: X'04'
+            // * DST.ADDR desired destination address
+            // * DST.PORT desired destination port in network octet order            
 
-        //  PROXY SERVER RESPONSE
-        //  +----+-----+-------+------+----------+----------+
-        //  |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
-        //  +----+-----+-------+------+----------+----------+
-        //  | 1  |  1  | X'00' |  1   | Variable |    2     |
-        //  +----+-----+-------+------+----------+----------+
-        //
-        // * VER protocol version: X'05'
-        // * REP Reply field:
-        //   * X'00' succeeded
-        //   * X'01' general SOCKS server failure
-        //   * X'02' connection not allowed by ruleset
-        //   * X'03' Network unreachable
-        //   * X'04' Host unreachable
-        //   * X'05' Connection refused
-        //   * X'06' TTL expired
-        //   * X'07' Command not supported
-        //   * X'08' Address itemType not supported
-        //   * X'09' to X'FF' unassigned
-        // RSV RESERVED
-        // ATYP address itemType of following address
+            byte[] request = new byte[4 + destAddr.Length + 2];
+            request[0] = SOCKS5_VERSION_NUMBER;
+            request[1] = command;
+            request[2] = SOCKS5_RESERVED;
+            request[3] = addressType;
+            destAddr.CopyTo(request, 4);
+            destPort.CopyTo(request, 4 + destAddr.Length);
 
-        byte[] response = new byte[255];
+            // send connect request.
+            await stream.WriteAsync(request);
 
-        // read proxy server response
-        await stream.ReadAsync(response);
+            //  PROXY SERVER RESPONSE
+            //  +----+-----+-------+------+----------+----------+
+            //  |VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
+            //  +----+-----+-------+------+----------+----------+
+            //  | 1  |  1  | X'00' |  1   | Variable |    2     |
+            //  +----+-----+-------+------+----------+----------+
+            //
+            // * VER protocol version: X'05'
+            // * REP Reply field:
+            //   * X'00' succeeded
+            //   * X'01' general SOCKS server failure
+            //   * X'02' connection not allowed by ruleset
+            //   * X'03' Network unreachable
+            //   * X'04' Host unreachable
+            //   * X'05' Connection refused
+            //   * X'06' TTL expired
+            //   * X'07' Command not supported
+            //   * X'08' Address itemType not supported
+            //   * X'09' to X'FF' unassigned
+            // RSV RESERVED
+            // ATYP address itemType of following address
 
-        byte replyCode = response[1];
+            byte[] response = new byte[255];
 
-        //  evaluate the reply code for an error condition
-        if (replyCode != SOCKS5_CMD_REPLY_SUCCEEDED)
-            HandleProxyCommandError(response, destinationHost, destinationPort);
+            // read proxy server response
+            await stream.ReadAsync(response);
+
+            byte replyCode = response[1];
+
+            //  evaluate the reply code for an error condition
+            if (replyCode != SOCKS5_CMD_REPLY_SUCCEEDED)
+                HandleProxyCommandError(response, destinationHost, destinationPort);
+            else
+                isSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Socks5TcpClient SendCommand: " + ex.Message);
+        }
+
+        return isSuccess;
     }
 
     private static void HandleProxyCommandError(byte[] response, string destinationHost, int destinationPort)
     {
-        byte replyCode = response[1];
-        byte addrType = response[3];
-        string addr = "";
-        short port = 0;
-
-        switch (addrType)
+        try
         {
-            case SOCKS5_ADDRTYPE_DOMAIN_NAME:
-                int addrLen = Convert.ToInt32(response[4]);
-                byte[] addrBytes = new byte[addrLen];
-                for (int i = 0; i < addrLen; i++)
-                    addrBytes[i] = response[i + 5];
-                addr = Encoding.ASCII.GetString(addrBytes);
-                byte[] portBytesDomain = new byte[2];
-                portBytesDomain[0] = response[6 + addrLen];
-                portBytesDomain[1] = response[5 + addrLen];
-                port = BitConverter.ToInt16(portBytesDomain, 0);
-                break;
+            byte replyCode = response[1];
+            byte addrType = response[3];
+            string addr = "";
+            short port = 0;
 
-            case SOCKS5_ADDRTYPE_IPV4:
-                byte[] ipv4Bytes = new byte[4];
-                for (int i = 0; i < 4; i++)
-                    ipv4Bytes[i] = response[i + 4];
-                IPAddress ipv4 = new(ipv4Bytes);
-                addr = ipv4.ToString();
-                byte[] portBytesIpv4 = new byte[2];
-                portBytesIpv4[0] = response[9];
-                portBytesIpv4[1] = response[8];
-                port = BitConverter.ToInt16(portBytesIpv4, 0);
-                break;
+            switch (addrType)
+            {
+                case SOCKS5_ADDRTYPE_DOMAIN_NAME:
+                    int addrLen = Convert.ToInt32(response[4]);
+                    byte[] addrBytes = new byte[addrLen];
+                    for (int i = 0; i < addrLen; i++)
+                        addrBytes[i] = response[i + 5];
+                    addr = Encoding.ASCII.GetString(addrBytes);
+                    byte[] portBytesDomain = new byte[2];
+                    portBytesDomain[0] = response[6 + addrLen];
+                    portBytesDomain[1] = response[5 + addrLen];
+                    port = BitConverter.ToInt16(portBytesDomain, 0);
+                    break;
 
-            case SOCKS5_ADDRTYPE_IPV6:
-                byte[] ipv6Bytes = new byte[16];
-                for (int i = 0; i < 16; i++)
-                    ipv6Bytes[i] = response[i + 4];
-                IPAddress ipv6 = new(ipv6Bytes);
-                addr = ipv6.ToString();
-                byte[] portBytesIpv6 = new byte[2];
-                portBytesIpv6[0] = response[21];
-                portBytesIpv6[1] = response[20];
-                port = BitConverter.ToInt16(portBytesIpv6, 0);
-                break;
+                case SOCKS5_ADDRTYPE_IPV4:
+                    byte[] ipv4Bytes = new byte[4];
+                    for (int i = 0; i < 4; i++)
+                        ipv4Bytes[i] = response[i + 4];
+                    IPAddress ipv4 = new(ipv4Bytes);
+                    addr = ipv4.ToString();
+                    byte[] portBytesIpv4 = new byte[2];
+                    portBytesIpv4[0] = response[9];
+                    portBytesIpv4[1] = response[8];
+                    port = BitConverter.ToInt16(portBytesIpv4, 0);
+                    break;
+
+                case SOCKS5_ADDRTYPE_IPV6:
+                    byte[] ipv6Bytes = new byte[16];
+                    for (int i = 0; i < 16; i++)
+                        ipv6Bytes[i] = response[i + 4];
+                    IPAddress ipv6 = new(ipv6Bytes);
+                    addr = ipv6.ToString();
+                    byte[] portBytesIpv6 = new byte[2];
+                    portBytesIpv6[0] = response[21];
+                    portBytesIpv6[1] = response[20];
+                    port = BitConverter.ToInt16(portBytesIpv6, 0);
+                    break;
+            }
+
+            string proxyErrorText = replyCode switch
+            {
+                SOCKS5_CMD_REPLY_GENERAL_SOCKS_SERVER_FAILURE => "a general socks destination failure occurred",
+                SOCKS5_CMD_REPLY_CONNECTION_NOT_ALLOWED_BY_RULESET => "the connection is not allowed by proxy destination rule set",
+                SOCKS5_CMD_REPLY_NETWORK_UNREACHABLE => "the network was unreachable",
+                SOCKS5_CMD_REPLY_HOST_UNREACHABLE => "the host was unreachable",
+                SOCKS5_CMD_REPLY_CONNECTION_REFUSED => "the connection was refused by the remote network",
+                SOCKS5_CMD_REPLY_TTL_EXPIRED => "the time to live (TTL) has expired",
+                SOCKS5_CMD_REPLY_COMMAND_NOT_SUPPORTED => "the command issued by the proxy client is not supported by the proxy destination",
+                SOCKS5_CMD_REPLY_ADDRESS_TYPE_NOT_SUPPORTED => "the address type specified is not supported",
+                _ => $"an unknown SOCKS reply with the code value '{replyCode}' was received",
+            };
+            string responseText = response != null ? Utils.HexEncode(response) : "";
+            string exceptionMsg = $"Proxy Error: {proxyErrorText} for destination host {destinationHost} port number {destinationPort}. Server response (hex): {responseText}.";
+
+            Debug.WriteLine(exceptionMsg);
         }
-
-        string proxyErrorText = replyCode switch
+        catch (Exception ex)
         {
-            SOCKS5_CMD_REPLY_GENERAL_SOCKS_SERVER_FAILURE => "a general socks destination failure occurred",
-            SOCKS5_CMD_REPLY_CONNECTION_NOT_ALLOWED_BY_RULESET => "the connection is not allowed by proxy destination rule set",
-            SOCKS5_CMD_REPLY_NETWORK_UNREACHABLE => "the network was unreachable",
-            SOCKS5_CMD_REPLY_HOST_UNREACHABLE => "the host was unreachable",
-            SOCKS5_CMD_REPLY_CONNECTION_REFUSED => "the connection was refused by the remote network",
-            SOCKS5_CMD_REPLY_TTL_EXPIRED => "the time to live (TTL) has expired",
-            SOCKS5_CMD_REPLY_COMMAND_NOT_SUPPORTED => "the command issued by the proxy client is not supported by the proxy destination",
-            SOCKS5_CMD_REPLY_ADDRESS_TYPE_NOT_SUPPORTED => "the address type specified is not supported",
-            _ => $"an unknown SOCKS reply with the code value '{replyCode}' was received",
-        };
-        string responseText = response != null ? Utils.HexEncode(response) : "";
-        string exceptionMsg = $"Proxy Error: {proxyErrorText} for destination host {destinationHost} port number {destinationPort}. Server response (hex): {responseText}.";
-
-        Debug.WriteLine(exceptionMsg);
-        return;
+            Debug.WriteLine("Socks5TcpClient HandleProxyCommandError: " + ex.Message);
+        }
     }
 
 }

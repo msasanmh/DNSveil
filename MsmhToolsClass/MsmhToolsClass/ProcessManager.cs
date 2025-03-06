@@ -149,157 +149,106 @@ public static class ProcessManager
     /// <summary>
     /// Returns stdout or Stderr after process finished.
     /// </summary>
-    public static async Task<string> ExecuteAsync(string processName, Dictionary<string, string>? environmentVariables = null, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
+    public static async Task<(bool IsSeccess, string Output)> ExecuteAsync(string processName, Dictionary<string, string>? environmentVariables = null, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal, int timeoutSec = 30)
     {
-        return await Task.Run(async () =>
+        bool isSuccess = false;
+        string output = string.Empty;
+        Process? process0 = null;
+
+        Task task = Task.Run(async () =>
         {
-            // Create process
-            Process process0 = new();
-            process0.StartInfo.FileName = processName;
-
-            if (environmentVariables != null)
-            {
-                try
-                {
-                    foreach (KeyValuePair<string, string> kvp in environmentVariables)
-                        process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
-                }
-                catch (Exception) { }
-            }
-
-            if (args != null)
-                process0.StartInfo.Arguments = args;
-
-            if (hideWindow)
-            {
-                process0.StartInfo.CreateNoWindow = true;
-                process0.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            }
-            else
-            {
-                process0.StartInfo.CreateNoWindow = false;
-                process0.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-            }
-
-            if (runAsAdmin)
-            {
-                process0.StartInfo.Verb = "runas";
-            }
-            else
-            {
-                process0.StartInfo.Verb = "";
-            }
-
-            // Redirect input output to get ability of reading process output
-            process0.StartInfo.UseShellExecute = false;
-            process0.StartInfo.RedirectStandardInput = false; // We're not sending
-            process0.StartInfo.RedirectStandardOutput = true;
-            process0.StartInfo.RedirectStandardError = true;
-
-            if (workingDirectory != null)
-                process0.StartInfo.WorkingDirectory = workingDirectory;
-
             try
             {
+                // Create Process
+                process0 = new();
+                process0.StartInfo.FileName = processName;
+
+                if (environmentVariables != null)
+                {
+                    try
+                    {
+                        foreach (KeyValuePair<string, string> kvp in environmentVariables)
+                            process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+                    }
+                    catch (Exception) { }
+                }
+
+                if (args != null)
+                    process0.StartInfo.Arguments = args;
+
+                if (hideWindow)
+                {
+                    process0.StartInfo.CreateNoWindow = true;
+                    process0.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                }
+                else
+                {
+                    process0.StartInfo.CreateNoWindow = false;
+                    process0.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+                }
+
+                if (runAsAdmin)
+                {
+                    process0.StartInfo.Verb = "runas";
+                }
+                else
+                {
+                    process0.StartInfo.Verb = "";
+                }
+
+                // Redirect input output to get ability of reading process output
+                process0.StartInfo.UseShellExecute = false;
+                process0.StartInfo.RedirectStandardInput = false; // We're not sending
+                process0.StartInfo.RedirectStandardOutput = true;
+                process0.StartInfo.RedirectStandardError = true;
+
+                if (workingDirectory != null)
+                    process0.StartInfo.WorkingDirectory = workingDirectory;
+
                 process0.Start();
 
                 // Set process priority
                 process0.PriorityClass = processPriorityClass;
 
-                string stdout = process0.StandardOutput.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
-                string errout = process0.StandardError.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
-                string output = stdout + Environment.NewLine + errout;
+                string stdout = await process0.StandardOutput.ReadToEndAsync();
+                stdout = stdout.ReplaceLineEndings(Environment.NewLine);
+                string errout = await process0.StandardError.ReadToEndAsync();
+                errout = errout.ReplaceLineEndings(Environment.NewLine);
+                output = stdout + Environment.NewLine + errout;
 
-                // Wait for process to finish
+                // Wait For Process To Finish
                 await process0.WaitForExitAsync();
-                process0.Dispose();
-
-                return output;
+                isSuccess = true;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
-                process0.Dispose();
-                return string.Empty;
+                Debug.WriteLine("ProcessManager ExecuteAsync 1: " + ex.Message);
+                output = ex.Message;
+            }
+            finally
+            {
+                process0?.Dispose();
             }
         });
-    }
-    //-----------------------------------------------------------------------------------
-    /// <summary>
-    /// Returns stdout or Stderr after process finished. Set waitForExit to false to get out Process.
-    /// </summary>
-    public static string Execute(out Process process, string processName, Dictionary<string, string>? environmentVariables = null, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal, bool waitForExit = true)
-    {
-        // Create process
-        Process process0 = new();
-        process = process0;
-        process0.StartInfo.FileName = processName;
-
-        if (environmentVariables != null)
-        {
-            foreach (KeyValuePair<string, string> kvp in environmentVariables)
-                process.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
-        }
-
-        if (args != null)
-            process0.StartInfo.Arguments = args;
-
-        if (hideWindow)
-        {
-            process0.StartInfo.CreateNoWindow = true;
-            process0.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-        }
-        else
-        {
-            process0.StartInfo.CreateNoWindow = false;
-            process0.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-        }
-
-        if (runAsAdmin)
-        {
-            process0.StartInfo.Verb = "runas";
-        }
-        else
-        {
-            process0.StartInfo.Verb = "";
-        }
-
-        // Redirect input output to get ability of sending and reading process output
-        process0.StartInfo.UseShellExecute = false;
-        process0.StartInfo.RedirectStandardInput = true;
-        process0.StartInfo.RedirectStandardOutput = true;
-        process0.StartInfo.RedirectStandardError = true;
-
-        if (workingDirectory != null)
-            process0.StartInfo.WorkingDirectory = workingDirectory;
 
         try
         {
-            process0.Start();
-
-            // Set process priority
-            process0.PriorityClass = processPriorityClass;
-
-            string stdout = process0.StandardOutput.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
-            string errout = process0.StandardError.ReadToEnd().ReplaceLineEndings(Environment.NewLine);
-            string output = stdout + Environment.NewLine + errout;
-
-            // Wait for process to finish
-            if (waitForExit)
-            {
-                process0.WaitForExit();
-                process0.Dispose();
-            }
-
-            return output;
+            await task.WaitAsync(TimeSpan.FromSeconds(timeoutSec));
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
-            return string.Empty;
+            Debug.WriteLine("ProcessManager ExecuteAsync 2: " + ex.Message);
+            output = ex.Message;
         }
+        finally
+        {
+            process0?.Dispose();
+        }
+
+        return (isSuccess, output);
     }
     //-----------------------------------------------------------------------------------
+    
     /// <summary>
     /// Execute and returns PID, if fails return -1
     /// </summary>
@@ -476,7 +425,7 @@ public static class ProcessManager
     /// <summary>
     /// Returns A List Of PIDs (Windows Only)
     /// </summary>
-    public static List<int> GetProcessPidsByUsingPort(int port)
+    public static async Task<List<int>> GetProcessPidsByUsingPortAsync(int port)
     {
         List<int> list = new();
         if (!OperatingSystem.IsWindows()) return list;
@@ -484,31 +433,34 @@ public static class ProcessManager
         try
         {
             string netstatArgs = "-a -n -o";
-            string? stdout = Execute(out Process process, "netstat", null, netstatArgs);
-            if (!string.IsNullOrWhiteSpace(stdout))
+            var p = await ExecuteAsync("netstat", null, netstatArgs);
+            if (p.IsSeccess)
             {
-                List<string> lines = stdout.SplitToLines();
-                for (int n = 0; n < lines.Count; n++)
+                string? stdout = p.Output;
+                if (!string.IsNullOrWhiteSpace(stdout))
                 {
-                    string line = lines[n].Trim();
-                    if (!string.IsNullOrEmpty(line) && line.Contains($":{port} ") && !line.Contains("ESTABLISHED") && !line.Contains("FIN_WAIT_2"))
+                    List<string> lines = stdout.SplitToLines();
+                    for (int n = 0; n < lines.Count; n++)
                     {
-                        string[] splitLine = line.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                        
-                        if (splitLine.Length > 2)
+                        string line = lines[n].Trim();
+                        if (!string.IsNullOrEmpty(line) && line.Contains($":{port} ") && !line.Contains("ESTABLISHED") && !line.Contains("FIN_WAIT_2"))
                         {
-                            string localAddress = splitLine[1];
-                            if (localAddress.EndsWith($":{port}"))
+                            string[] splitLine = line.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+                            if (splitLine.Length > 2)
                             {
-                                string pidStr = splitLine[^1]; // Last Column Is PID
-                                bool isBool = int.TryParse(pidStr, out int pid);
-                                if (isBool && pid != 0 && !list.IsContain(pid)) list.Add(pid);
+                                string localAddress = splitLine[1];
+                                if (localAddress.EndsWith($":{port}"))
+                                {
+                                    string pidStr = splitLine[^1]; // Last Column Is PID
+                                    bool isBool = int.TryParse(pidStr, out int pid);
+                                    if (isBool && pid != 0 && !list.IsContain(pid)) list.Add(pid);
+                                }
                             }
                         }
                     }
                 }
             }
-            process?.Dispose();
         }
         catch (Exception ex)
         {
@@ -571,7 +523,7 @@ public static class ProcessManager
             parentPid = Convert.ToInt32(mo["ParentProcessId"]);
         }
         catch (Exception) { }
-        
+
         return parentPid;
     }
     //-----------------------------------------------------------------------------------

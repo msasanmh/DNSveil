@@ -301,6 +301,7 @@ public partial class FormMain
                         await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIAdvanced);
                         IsGoodbyeDPIBasicActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBasic);
                         IsGoodbyeDPIAdvancedActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIAdvanced);
+                        await DeleteGoodbyeDpiAndWinDivertServices_Async();
                         if (!IsGoodbyeDPIBasicActive && !IsGoodbyeDPIAdvancedActive) break;
                         await Task.Delay(100);
                     }
@@ -321,6 +322,7 @@ public partial class FormMain
                     {
                         await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
                         IsBypassGoodbyeDpiActive = ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass);
+                        await DeleteGoodbyeDpiAndWinDivertServices_Async();
                         if (!IsBypassGoodbyeDpiActive) break;
                         await Task.Delay(100);
                     }

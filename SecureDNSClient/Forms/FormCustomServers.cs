@@ -252,7 +252,7 @@ public partial class FormCustomServers : Form
     private static XDocument CreateXmlCS()
     {
         XDocument doc = new();
-        XElement group = new("AgnosticSettings");
+        XElement group = new("Settings");
         group.Add(new XElement("CustomDnsList"));
         doc.Add(group);
         return doc;

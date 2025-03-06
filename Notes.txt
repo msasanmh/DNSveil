@@ -1,1 +1,10 @@
 Microsoft.Diagnostics.Tracing.TraceEvent v3.1.9 Is Incompatible With WinForms Designer.
+
+Colors
+Foreground			#EEEEEE
+Foreground_Darker	#BBBBBB
+Dark    			#212121
+Darker      		#1A1A1A
+Dodger Blue			#005A9C
+Indian Red			#CD5C5C
+MediumSeaGreen		#3CB371

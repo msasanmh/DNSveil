@@ -11,7 +11,7 @@ public class WebAPI
 
         try
         {
-            Uri uri = new(url);
+            Uri uri = new(url, UriKind.Absolute);
             HttpRequest hr = new()
             {
                 Method = HttpMethod.Get,
@@ -20,7 +20,24 @@ public class WebAPI
                 URI = uri
             };
             HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
-            bytes = hrr.Data;
+            if (hrr.IsSuccess)
+            {
+                bytes = hrr.Data;
+            }
+            else
+            {
+                // Try With System Proxy
+                string systemProxyScheme = NetworkTool.GetSystemProxy();
+                if (!string.IsNullOrWhiteSpace(systemProxyScheme))
+                {
+                    hr.ProxyScheme = systemProxyScheme;
+                    hrr = await HttpRequest.SendAsync(hr);
+                    if (hrr.IsSuccess)
+                    {
+                        bytes = hrr.Data;
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -40,7 +57,7 @@ public class WebAPI
 
         try
         {
-            Uri apiMain = new($"https://api.github.com/repos/{owner}/{repo}/releases/latest");
+            Uri apiMain = new($"https://api.github.com/repos/{owner}/{repo}/releases/latest", UriKind.Absolute);
             HttpRequest hr = new()
             {
                 Method = HttpMethod.Get,
@@ -57,8 +74,8 @@ public class WebAPI
 
             List<JsonTool.JsonPath> path = new()
             {
-                new JsonTool.JsonPath() {Key = "assets", Count = 1, Conditions = new()},
-                new JsonTool.JsonPath() {Key = "browser_download_url", Conditions = new()}
+                new JsonTool.JsonPath("assets", 1),
+                new JsonTool.JsonPath("browser_download_url")
             };
 
             relaeseURLs = JsonTool.GetValues(json, path);
@@ -67,7 +84,7 @@ public class WebAPI
         {
             Debug.WriteLine("WebAPI Github_Latest_Release_Async: " + ex.Message);
         }
-
+        
         return relaeseURLs;
     }
 
@@ -81,7 +98,7 @@ public class WebAPI
 
         try
         {
-            Uri apiMain = new($"https://api.github.com/repos/{owner}/{repo}/releases");
+            Uri apiMain = new($"https://api.github.com/repos/{owner}/{repo}/releases", UriKind.Absolute);
             HttpRequest hr = new()
             {
                 Method = HttpMethod.Get,
@@ -98,17 +115,17 @@ public class WebAPI
 
             List<JsonTool.JsonPath> path = new()
             {
-                new JsonTool.JsonPath() {Key = "assets", Count = 1, Conditions = new List<JsonTool.JsonCondition> { new() { Key = "prerelease", Value = "true" } }},
-                new JsonTool.JsonPath() {Key = "browser_download_url", Conditions = new()}
+                new JsonTool.JsonPath("assets", 1) { Conditions = new() { new("prerelease", "true") } },
+                new JsonTool.JsonPath("browser_download_url") { Conditions = new() }
             };
-            
+
             relaeseURLs = JsonTool.GetValues(json, path);
         }
         catch (Exception ex)
         {
             Debug.WriteLine("WebAPI Github_Latest_PreRelease_Async: " + ex.Message);
         }
-
+        
         return relaeseURLs;
     }
 
@@ -118,7 +135,7 @@ public class WebAPI
 
         try
         {
-            Uri apiMain = new("https://api.cloudflare.com/client/v4/ips");
+            Uri apiMain = new("https://api.cloudflare.com/client/v4/ips", UriKind.Absolute);
             HttpRequest hr = new()
             {
                 Method = HttpMethod.Get,
@@ -135,14 +152,14 @@ public class WebAPI
 
             List<JsonTool.JsonPath> pathIPv4 = new()
             {
-                new JsonTool.JsonPath() {Key = "result", Count = 1, Conditions = new()},
-                new JsonTool.JsonPath() {Key = "ipv4_cidrs", Conditions = new()}
+                new JsonTool.JsonPath("result", 1),
+                new JsonTool.JsonPath("ipv4_cidrs")
             };
 
             List<JsonTool.JsonPath> pathIPv6 = new()
             {
-                new JsonTool.JsonPath() {Key = "result", Count = 1, Conditions = new()},
-                new JsonTool.JsonPath() {Key = "ipv6_cidrs", Conditions = new()}
+                new JsonTool.JsonPath("result", 1),
+                new JsonTool.JsonPath("ipv6_cidrs")
             };
 
             result.AddRange(JsonTool.GetValues(json, pathIPv4));
@@ -167,7 +184,7 @@ public class WebAPI
             HttpRequestMessage request = new()
             {
                 Method = HttpMethod.Get,
-                RequestUri = new Uri($"https://ipqualityscore.com/api/json/url?key={apiKey}&url={url}"),
+                RequestUri = new Uri($"https://ipqualityscore.com/api/json/url?key={apiKey}&url={url}", UriKind.Absolute),
                 Headers =
                 {
                     { "accept", "application/json" }
@@ -182,7 +199,7 @@ public class WebAPI
 
                 List<JsonTool.JsonPath> path = new()
                 {
-                    new JsonTool.JsonPath() {Key = "risk_score", Conditions = new()}
+                    new JsonTool.JsonPath("risk_score")
                 };
 
                 List<string> strings = JsonTool.GetValues(jsonString, path);

@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup />
+  <ItemGroup>
+    <Compile Update="WpfInputBox.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="WpfNumericUpDown.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="WpfButton.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="WpfMessageBox.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="WpfToastDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="WpfToggleSwitch.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="WpfWindow.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="AppThemeLight.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="WpfInputBox.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="WpfNumericUpDown.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="WpfButton.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Styles.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="AppThemeDark.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="WpfMessageBox.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="WpfToastDialog.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="WpfToggleSwitch.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+</Project>

@@ -17,11 +17,7 @@ public static class Bootstrap
             }
             else
             {
-                string bootstrap;
-                if (NetworkTool.IsIPv6(bootstrapIP))
-                    bootstrap = $"tcp://[{bootstrapIP}]:{bootstrapPort}"; // TCP Usually Don't Get Hijack! - IPv6
-                else
-                    bootstrap = $"tcp://{bootstrapIP}:{bootstrapPort}"; // TCP Usually Don't Get Hijack! - IPv4
+                string bootstrap = NetworkTool.IpToUrl("tcp", bootstrapIP, bootstrapPort, string.Empty); // TCP Usually Don't Get Hijack!
                 IPAddress ip = await GetIP.GetIpFromDnsAddressAsync(domain, bootstrap, false, timeoutSec, getIPv6, IPAddress.None, 0, proxyScheme, proxyUser, proxyPass);
                 if (ip != IPAddress.None && ip != IPAddress.IPv6None) domainIP = ip.ToString();
             }

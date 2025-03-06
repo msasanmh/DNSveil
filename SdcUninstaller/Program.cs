@@ -42,6 +42,9 @@ internal static class Program
             await ProcessManager.KillProcessByNameAsync("goodbyedpi", true);
             await ProcessManager.KillProcessByNameAsync("SecureDNSClient", true);
 
+            // Delete GoodbyeDPI And WinDivert Services
+            await DeleteGoodbyeDpiAndWinDivertServices_Async();
+
             // Remove Startup
             ActivateWindowsStartup(false);
 
@@ -117,6 +120,15 @@ internal static class Program
         {
             Debug.WriteLine("Main Entry Point: " + ex.Message);
         }
+    }
+
+    private static async Task DeleteGoodbyeDpiAndWinDivertServices_Async()
+    {
+        string service1 = "GoodbyeDPI", service2 = "WinDivert";
+        await ServiceTool.DeleteWhereAsync(service1);
+        await DriverTool.DeleteWhereAsync(service1);
+        await ServiceTool.DeleteWhereAsync(service2);
+        await DriverTool.DeleteWhereAsync(service2);
     }
 
     public static void ActivateWindowsStartup(bool active)

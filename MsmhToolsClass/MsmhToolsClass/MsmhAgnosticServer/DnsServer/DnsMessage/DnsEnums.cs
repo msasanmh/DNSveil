@@ -8,29 +8,52 @@ public class DnsEnums
         UDP,
         TCP,
         DnsCrypt,
-        AnonymizedDNSCrypt, // DnsCrypt + AnonymizedDNSCryptRelay
-        DoH,
         DoT,
+        DoH,
         DoQ,
-        ObliviousDohTarget,
-        AnonymizedDNSCryptRelay,
-        ObliviousDohRelay,
+        AnonymizedDNSCrypt, // DnsCrypt + AnonymizedDNSCryptRelay
+        ObliviousDoH, // ObliviousDohTarget + ObliviousDohRelay
+        AnonymizedDNSCryptRelay, // Relay For DnsCrypt
+        ObliviousDohTarget, // A DoH That Supports Relay
+        ObliviousDohRelay, // Relay For ODoH
         Unknown
     }
 
     public readonly struct DnsProtocolName
     {
-        public static readonly string UDP = "UDP Plain DNS";
-        public static readonly string TCP = "TCP Plain DNS";
-        public static readonly string DnsCrypt = "DNSCrypt";
-        public static readonly string AnonymizedDNSCrypt = "Anonymized DNSCrypt";
-        public static readonly string DoH = "DNS-Over-HTTPS";
-        public static readonly string DoT = "DNS-Over-TLS";
-        public static readonly string DoQ = "DNS-Over-Quic";
-        public static readonly string ObliviousDohTarget = "Oblivious DoH Target";
-        public static readonly string AnonymizedDNSCryptRelay = "Anonymized DNSCrypt Relay";
-        public static readonly string ObliviousDohRelay = "Oblivious DoH Relay";
-        public static readonly string Unknown = "Unknown";
+        public const string System = "Operating System";
+        public const string UDP = "UDP Plain DNS";
+        public const string TCP = "TCP Plain DNS";
+        public const string DnsCrypt = "DNSCrypt";
+        public const string DoT = "DNS-Over-TLS";
+        public const string DoH = "DNS-Over-HTTPS";
+        public const string DoQ = "DNS-Over-Quic";
+        public const string AnonymizedDNSCrypt = "Anonymized DNSCrypt";
+        public const string ObliviousDoH = "Oblivious DoH";
+        public const string AnonymizedDNSCryptRelay = "Anonymized DNSCrypt Relay";
+        public const string ObliviousDohTarget = "Oblivious DoH Target";
+        public const string ObliviousDohRelay = "Oblivious DoH Relay";
+        public const string Unknown = "Unknown";
+    }
+
+    public static DnsProtocol GetDnsProtocolByName(string dnsProtocolName)
+    {
+        return dnsProtocolName switch
+        {
+            DnsProtocolName.System => DnsProtocol.System,
+            DnsProtocolName.UDP => DnsProtocol.UDP,
+            DnsProtocolName.TCP => DnsProtocol.TCP,
+            DnsProtocolName.DnsCrypt => DnsProtocol.DnsCrypt,
+            DnsProtocolName.DoT => DnsProtocol.DoT,
+            DnsProtocolName.DoH => DnsProtocol.DoH,
+            DnsProtocolName.DoQ => DnsProtocol.DoQ,
+            DnsProtocolName.AnonymizedDNSCrypt => DnsProtocol.AnonymizedDNSCrypt,
+            DnsProtocolName.ObliviousDoH => DnsProtocol.ObliviousDoH,
+            DnsProtocolName.AnonymizedDNSCryptRelay => DnsProtocol.AnonymizedDNSCryptRelay,
+            DnsProtocolName.ObliviousDohTarget => DnsProtocol.ObliviousDohTarget,
+            DnsProtocolName.ObliviousDohRelay => DnsProtocol.ObliviousDohRelay,
+            _ => DnsProtocol.Unknown
+        };
     }
 
     public enum QR : ushort // 1 Bit

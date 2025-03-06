@@ -8,89 +8,88 @@ public class TextTool
 {
     public async static Task<List<string>> GetLinksAsync(string line)
     {
+        line = line.Trim();
         List<string> links = new();
 
-        await Task.Run(async () =>
+        try
         {
-            try
+            async static Task<List<string>> getLinksInternalAsync(string interLine)
             {
-                string find = "://";
-                if (line.Contains(find))
+                List<string> interLinks = new();
+
+                await Task.Run(async () =>
                 {
-                    int start = line.IndexOf(find);
-                    int end = start;
-                    if (start != -1)
+                    try
                     {
-                        while (true)
+                        string find = "://";
+                        if (interLine.Contains(find))
                         {
-                            start--;
+                            int start = interLine.IndexOf(find);
+                            int end = start;
                             if (start != -1)
                             {
-                                char startChar = line[start];
-                                if (startChar.Equals(' '))
+                                while (true)
                                 {
-                                    start++;
-                                    break;
+                                    start--;
+                                    if (start != -1)
+                                    {
+                                        char startChar = interLine[start];
+                                        if (startChar.Equals(' '))
+                                        {
+                                            start++;
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        start++;
+                                        break;
+                                    }
+                                }
+
+                                while (true)
+                                {
+                                    end++;
+                                    if (end < interLine.Length)
+                                    {
+                                        char endChar = interLine[end];
+                                        if (endChar.Equals(' ')) break;
+                                    }
+                                    else break;
+                                }
+
+                                if (end > start)
+                                {
+                                    string interLink = interLine[start..end];
+                                    interLinks.Add(interLink);
+                                    interLine = interLine.Replace(interLink, string.Empty);
+                                    interLinks.AddRange(await GetLinksAsync(interLine));
                                 }
                             }
-                            else
-                            {
-                                start++;
-                                break;
-                            }
-                        }
-
-                        while (true)
-                        {
-                            end++;
-                            if (end < line.Length)
-                            {
-                                char endChar = line[end];
-                                if (endChar.Equals(' ')) break;
-                            }
-                            else break;
-                        }
-
-                        if (end > start)
-                        {
-                            string link = line[start..end];
-                            links.Add(link);
-                            line = line.Replace(link, string.Empty);
-                            links.AddRange(await GetLinksAsync(line));
                         }
                     }
-                }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("TextTool GetLinksAsync getLinksInternalAsync: " + ex.Message);
+                    }
+                });
+
+                return interLinks;
             }
-            catch (Exception ex)
+
+            string[] lines = line.Split(' ', StringSplitOptions.RemoveEmptyEntries); // Split Line By Space Saves Memory Usage
+            for (int n = 0; n < lines.Length; n++)
             {
-                Debug.WriteLine("GetLinks: " + ex.Message);
+                string subLine = lines[n].Trim();
+                links.AddRange(await getLinksInternalAsync(subLine));
             }
-        });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("TextTool GetLinksAsync: " + ex.Message);
+        }
 
         return links;
-    }
-
-    public static string RemoveText(string text, char startChar, char endChar)
-    {
-        if (text.Contains(startChar) && text.Contains(endChar))
-        {
-            try
-            {
-                while (true)
-                {
-                    int start = text.IndexOf(startChar);
-                    int end = text.IndexOf(endChar);
-                    if (start != -1 && end != -1)
-                    {
-                        if (end > start) text = text.Remove(start, end - start + 1);
-                        else text = text.Remove(end, 1);
-                    }
-                    else break;
-                }
-            }
-            catch (Exception) { }
-        }
-        return text;
     }
 
     public static async Task<string> RemoveTextAsync(string text, char startChar, char endChar, bool replaceWithSpace = false)
@@ -101,6 +100,8 @@ public class TextTool
             {
                 try
                 {
+                    text = Regex.Replace(text, $"\\{startChar}.*?\\{endChar}", " ");
+
                     while (true)
                     {
                         int start = text.IndexOf(startChar);
@@ -132,11 +133,16 @@ public class TextTool
 
             html = await RemoveTextAsync(html, '<', '>', replaceTagsWithSpace);
             html = await RemoveTextAsync(html, '{', '}', replaceTagsWithSpace);
+            html = await RemoveTextAsync(html, '(', ')', replaceTagsWithSpace); // For MarkDown
+            html = await RemoveTextAsync(html, '[', ']', replaceTagsWithSpace); // For MarkDown
 
-            List<string> result = new();
             string[] lines = html.ReplaceLineEndings().Split(Environment.NewLine, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            result.AddRange(lines);
-            html = WebUtility.HtmlDecode(result.ToString(Environment.NewLine).Trim());
+            html = WebUtility.HtmlDecode(lines.ToList().ToString(Environment.NewLine));
+
+            // For MarkDown
+            html = html.Replace('|', ' ');
+            html = html.Replace(":heavy_check_mark:", " ", StringComparison.OrdinalIgnoreCase);
+            html = html.ReplaceLineEndings().Split(Environment.NewLine, StringSplitOptions.TrimEntries).ToList().ToString(Environment.NewLine);
         }
         catch (Exception) { }
         return html;

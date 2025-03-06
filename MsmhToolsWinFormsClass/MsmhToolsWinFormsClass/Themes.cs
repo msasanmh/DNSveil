@@ -1,18 +1,17 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
-using System.Windows.Forms;
 
 namespace MsmhToolsWinFormsClass.Themes;
 
 public static class Theme
 {
-    // DodgerBlue: HEX value: #1E90FF RGB value: 30,144,255
+    // DodgerBlue: HEX value: #005A9C RGB value: 0,90,156
     // IndianRed: HEX value: #CD5C5C RGB value: 205,92,92
     //=======================================================================================
     public struct Themes
     {
-        public const string Light = "Light";
-        public const string Dark = "Dark";
+        public const string Light = nameof(Light);
+        public const string Dark = nameof(Dark);
     }
     //=======================================================================================
     public static void LoadTheme(Form form, string theme, bool getParentBackColor = false)

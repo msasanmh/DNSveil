@@ -10,23 +10,8 @@ internal class Program
     static async Task Main(string[] args)
     {
         MsmhAgnosticServer server1 = new();
-        MsmhAgnosticServer server2 = new();
 
         server1.OnRequestReceived += Server_OnRequestReceived;
-        server2.OnRequestReceived += Server_OnRequestReceived;
-
-        string dohUrl = "https://dns.cloudflare.com/dns-query";
-        string dohHost = "dns.cloudflare.com";
-        string dohCleanIP = "104.16.132.229";
-        string cfClenIP = "172.66.192.140";
-
-        // Set DnsRules Content
-        string dnsRulesContent = $"{dohHost}|{dohCleanIP};";
-
-        // Set ProxyRules Content (Apply Fake DNS and White List Program)
-        string proxyRulesContent = $"{dohHost}|{dohCleanIP};";
-        proxyRulesContent += $"\n{dohCleanIP}|+;";
-        //proxyRulesContent += $"\n*|-;"; // Block Other Requests
 
         List<string> dnsServers1 = new()
         {
@@ -44,7 +29,6 @@ internal class Program
             //"https://45.90.29.204:443/dns-query",
             //"udp://208.67.222.222:5353",
             //"9.9.9.9:9953",
-            dohUrl
         };
 
         AgnosticSettings settings1 = new()
@@ -52,124 +36,24 @@ internal class Program
             Working_Mode = AgnosticSettings.WorkingMode.DnsAndProxy,
             ListenerPort = 8080,
             DnsTimeoutSec = 10,
-            ProxyTimeoutSec = 60,
+            ProxyTimeoutSec = 1000,
             MaxRequests = 1000000,
             KillOnCpuUsage = 40,
             DNSs = dnsServers1,
-            BootstrapIpAddress = IPAddress.Loopback,
-            BootstrapPort = 8080,
+            BootstrapIpAddress = IPAddress.Parse("8.8.8.8"),
+            BootstrapPort = 53,
             AllowInsecure = false,
-            BlockPort80 = true,
-            CloudflareCleanIP = cfClenIP,
-            UpstreamProxyScheme = $"socks5://{IPAddress.Loopback}:8080",
-            //ApplyUpstreamOnlyToBlockedIps = true
+            BlockPort80 = false,
+            UpstreamProxyScheme = $"http://fodev.org:8118", // http://fodev.org:8118
+            ApplyUpstreamOnlyToBlockedIps = false
         };
 
         AgnosticProgram.Fragment fragment = new();
         fragment.Set(AgnosticProgram.Fragment.Mode.Program, 50, AgnosticProgram.Fragment.ChunkMode.SNI, 5, 2, 1);
         server1.EnableFragment(fragment);
 
-        AgnosticProgram.Rules dnsRules1 = new();
-        await dnsRules1.SetAsync(AgnosticProgram.Rules.Mode.Text, dnsRulesContent);
-        server1.EnableRules(dnsRules1);
+        await server1.StartAsync(settings1);
 
-        AgnosticProgram.Rules proxyRules1 = new();
-        await proxyRules1.SetAsync(AgnosticProgram.Rules.Mode.Text, proxyRulesContent);
-        server1.EnableRules(proxyRules1);
-
-
-        List<string> dnsServers2 = new()
-        {
-            $"udp://{IPAddress.Loopback}:8080"
-        };
-
-        AgnosticSettings settings2 = new()
-        {
-            Working_Mode = AgnosticSettings.WorkingMode.Dns,
-            ListenerPort = 443,
-            DnsTimeoutSec = 10,
-            DNSs = dnsServers2,
-            MaxRequests = 1000000,
-            BootstrapIpAddress = IPAddress.Loopback,
-            BootstrapPort = 8080,
-            AllowInsecure = false,
-            //UpstreamProxyScheme = "socks5://192.168.1.120:10808",
-            //ApplyUpstreamOnlyToBlockedIps = true
-        };
-
-        AgnosticSettingsSSL settingsSSL = new(true)
-        {
-            EnableSSL = true,
-            //ChangeSni = true,
-            //DefaultSni = "speedtest.net",
-        };
-        
-        await server2.EnableSSL(settingsSSL);
-
-        AgnosticProgram.DnsLimit dnsLimit = new();
-        dnsLimit.Set(true, false, AgnosticProgram.DnsLimit.LimitDoHPathsMode.Text, "msasanmhX");
-        server2.EnableDnsLimit(dnsLimit);
-
-        server1.Start(settings1);
-        server2.Start(settings2);
-
-
-
-        DnsMessage dmQ1 = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.UDP, "youtube.com", DnsEnums.RRType.A, DnsEnums.CLASS.IN);
-        DnsMessage.TryWrite(dmQ1, out byte[] dmQBytes1);
-        DnsMessage dmQ2 = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.DoH, "mail.yahoo.com", DnsEnums.RRType.A, DnsEnums.CLASS.IN);
-        DnsMessage.TryWrite(dmQ2, out byte[] dmQBytes2);
-        string dns = "udp://127.0.0.1:8080";
-        string doh = "https://127.0.0.1:443/msasanmhX/dns-query";
-        //doh = "https://dns-cloudflare.com/dns-query";
-
-        IPAddress bootIP = IPAddress.Parse("8.8.8.8");
-        int bootPort = 53;
-
-
-
-        HttpRequest httpRequest = new()
-        {
-            URI = new Uri("https://google.com"),
-            ProxyScheme = "socks5://127.0.0.1:443",
-            TimeoutMS = 5000
-        };
-
-
-        int n = 0;
-
-
-        //tt1();
-        //tt1();
-        //tt1();
-        //tt2();
-        //tt2();
-        //tt2();
-
-
-        async void tt1()
-        {
-            while (true)
-            {
-                //await Task.Delay(50);
-                n++;
-                await DnsClient.QueryAsync(dmQBytes1, DnsEnums.DnsProtocol.UDP, dns, true, bootIP, bootPort, 1000, CancellationToken.None);
-                //HttpRequest.SendAsync(httpRequest);
-                //if (n == 5000) break;
-            }
-        }
-
-        async void tt2()
-        {
-            while (true)
-            {
-                //await Task.Delay(50);
-                n++;
-                await DnsClient.QueryAsync(dmQBytes2, DnsEnums.DnsProtocol.DoH, doh, true, bootIP, bootPort, 1000, CancellationToken.None);
-                //HttpRequest.SendAsync(httpRequest);
-                if (n == 5000) break;
-            }
-        }
 
 
         Console.ReadLine();

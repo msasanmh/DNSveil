@@ -16,9 +16,7 @@ internal static class Utils
     /// <remarks>e.g. 0x55 ==> "55", also left pads with 0 so that 0x01 is "01" and not "1"</remarks>
     public static string HexEncode(byte[] data)
     {
-        if (data == null)
-            throw new ArgumentNullException(nameof(data));
-
+        if (data == null) return string.Empty;
         return HexEncode(data, false, data.Length);
     }
 

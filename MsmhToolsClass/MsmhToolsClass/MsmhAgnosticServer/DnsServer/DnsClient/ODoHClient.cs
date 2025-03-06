@@ -35,7 +35,7 @@ public class ODoHClient
     {
         byte[] result = Array.Empty<byte>();
 
-        return result; // Not Implemented Yet
+        //return result; // Not Implemented Yet
 
         Task task = Task.Run(async () =>
         {
@@ -65,7 +65,7 @@ public class ODoHClient
                     UriBuilder oDoHConfigUriBuilder = new()
                     {
                         Scheme = scheme,
-                        Host = relayServerIP,
+                        Host = relayReader.Host,
                         Port = relayReader.Port,
                         Path = oDoHConfigPath
                     };
@@ -84,6 +84,7 @@ public class ODoHClient
                         ProxyPass = ProxyPass,
                     };
                     oDoHConfigHr.Headers.Add("host", relayReader.Host); // In Case Of Using Bootstrap
+                    if (NetworkTool.IsIP(relayServerIP, out IPAddress? rsIP) && rsIP != null) oDoHConfigHr.AddressIP = rsIP;
 
                     HttpRequestResponse oDoHConfigHrr = await HttpRequest.SendAsync(oDoHConfigHr).ConfigureAwait(false);
 
@@ -122,7 +123,7 @@ public class ODoHClient
                         UriBuilder uriBuilder = new()
                         {
                             Scheme = scheme,
-                            Host = relayServerIP,
+                            Host = relayReader.Host,
                             Port = relayReader.Port,
                             Path = path
                         };
@@ -143,6 +144,7 @@ public class ODoHClient
                             ProxyPass = ProxyPass,
                         };
                         hr.Headers.Add("host", relayReader.Host); // In Case Of Using Bootstrap
+                        if (NetworkTool.IsIP(relayServerIP, out IPAddress? rsIP2) && rsIP2 != null) oDoHConfigHr.AddressIP = rsIP2;
 
                         if (relayReader.Scheme.Equals("h3://")) hr.IsHttp3 = true;
 

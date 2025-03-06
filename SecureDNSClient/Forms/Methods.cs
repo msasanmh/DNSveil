@@ -476,7 +476,8 @@ public partial class FormMain
 
                 if (flush)
                 {
-                    msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
+                    var p = await ProcessManager.ExecuteAsync("ipconfig", null, "/flushdns", true, true);
+                    msg = p.Output;
                     if (showMsg)
                     {
                         if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
@@ -496,7 +497,8 @@ public partial class FormMain
 
                 if (register)
                 {
-                    msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
+                    var p = await ProcessManager.ExecuteAsync("ipconfig", null, "/registerdns", true, true);
+                    msg = p.Output;
                     if (showMsg)
                     {
                         if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
@@ -508,7 +510,8 @@ public partial class FormMain
 
                 if (release)
                 {
-                    msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
+                    var p = await ProcessManager.ExecuteAsync("ipconfig", null, "/release", true, true);
+                    msg = p.Output;
                     if (showMsg)
                     {
                         if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);
@@ -520,7 +523,8 @@ public partial class FormMain
 
                 if (renew)
                 {
-                    msg = await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
+                    var p = await ProcessManager.ExecuteAsync("ipconfig", null, "/renew", true, true);
+                    msg = p.Output;
                     if (showMsg)
                     {
                         if (msg.Contains(remove)) msg = msg.Replace(remove, string.Empty);

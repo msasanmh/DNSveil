@@ -53,10 +53,8 @@ public partial class MsmhAgnosticServer
                 {
                     req.ApplyFragment = IsFragmentActive;
                     req.ApplyChangeSNI = IsFakeSniActive;
-                    if (!string.IsNullOrEmpty(rr.Sni) && !rr.Sni.Equals(req.AddressOrig))
-                        req.AddressSNI = rr.Sni;
-                    if (rr.ApplyUpStreamProxy && !string.IsNullOrWhiteSpace(rr.ProxyScheme) &&
-                        !IsUpstreamEqualToServerAddress(rr.ProxyScheme))
+                    if (!string.IsNullOrEmpty(rr.Sni) && !rr.Sni.Equals(req.AddressOrig)) req.AddressSNI = rr.Sni;
+                    if (rr.ApplyUpStreamProxy && !string.IsNullOrWhiteSpace(rr.ProxyScheme) && !IsUpstreamEqualToServerAddress(rr.ProxyScheme))
                     {
                         req.ApplyUpstreamProxy = true;
                         req.ApplyUpstreamProxyToBlockedIPs = rr.ApplyUpStreamProxyToBlockedIPs;
@@ -267,7 +265,7 @@ public partial class MsmhAgnosticServer
                             {
                                 if (req.AddressIsIp)
                                 {
-                                    bool canPing = await NetworkTool.CanPing(req.AddressOrig, 3000);
+                                    bool canPing = await NetworkTool.CanPingAsync(req.AddressOrig, 3000);
                                     req.IsDestBlocked = !canPing;
                                 }
                                 else

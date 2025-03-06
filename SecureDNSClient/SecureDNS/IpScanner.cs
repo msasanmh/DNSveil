@@ -175,7 +175,7 @@ public class IpScanner
                             {
                                 Stopwatch pingDelay = new();
                                 pingDelay.Start();
-                                bool canPing = await NetworkTool.CanPing(ipOut, Timeout);
+                                bool canPing = await NetworkTool.CanPingAsync(ipOut, Timeout);
                                 pingDelay.Stop();
 
                                 if (canPing) pingDelayOut = Convert.ToInt32(pingDelay.ElapsedMilliseconds);
@@ -192,7 +192,7 @@ public class IpScanner
                             {
                                 Stopwatch tcpDelay = new();
                                 tcpDelay.Start();
-                                bool canTcpConnect = await NetworkTool.CanTcpConnect(ipOut, CheckPort, Timeout);
+                                bool canTcpConnect = await NetworkTool.CanTcpConnectAsync(ipOut, CheckPort, Timeout);
                                 tcpDelay.Stop();
 
                                 if (canTcpConnect) tcpDelayOut = Convert.ToInt32(tcpDelay.ElapsedMilliseconds);

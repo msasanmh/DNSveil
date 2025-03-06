@@ -190,7 +190,7 @@ public partial class FormMain
                     if (!ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass)) break;
                     if (!IsInternetOnline) break;
 
-                    List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
+                    List<int> pids = await ProcessManager.GetProcessPidsByUsingPortAsync(53);
                     foreach (int pid in pids) if (pid != PIDDnsServer) await ProcessManager.KillProcessByPidAsync(pid);
 
                     await UpdateBoolDnsOnceAsync(timeoutMS, blockedDomainNoWww);

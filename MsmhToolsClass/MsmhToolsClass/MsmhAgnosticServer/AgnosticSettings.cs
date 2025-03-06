@@ -119,43 +119,38 @@ public class AgnosticSettings
 
     public AgnosticSettings()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            ProcessManager.ExecuteOnly("ipconfig", null, "/flushdns", true, true);
-            IsIPv4SupportedByISP = NetworkTool.IsIpProtocolReachable("8.8.8.8");
-            IsIPv6SupportedByISP = NetworkTool.IsIpProtocolReachable("2001:4860:4860::8888");
-        }
-        else
-        {
-            IsIPv4SupportedByISP = true;
-            IsIPv6SupportedByISP = true;
-        }
-
-        IsIPv4SupportedByOS = NetworkTool.IsIPv4Supported();
-        IsIPv6SupportedByOS = NetworkTool.IsIPv6Supported();
+        IsIPv4SupportedByISP = true;
+        IsIPv6SupportedByISP = true;
+        
+        IsIPv4SupportedByOS = NetworkTool.IsIPv4SupportedByOS();
+        IsIPv6SupportedByOS = NetworkTool.IsIPv6SupportedByOS();
 
         ListenerIP = IsIPv6SupportedByOS ? IPAddress.IPv6Any : IsIPv4SupportedByOS ? IPAddress.Any : null;
     }
 
-    public void Initialize()
+    public async Task InitializeAsync()
     {
         try
         {
+            if (OperatingSystem.IsWindows()) ProcessManager.ExecuteOnly("ipconfig", null, "/flushdns", true, true);
+            IsIPv4SupportedByISP = await NetworkTool.IsIpProtocolSupportedByISPAsync("8.8.8.8", 6000);
+            IsIPv6SupportedByISP = await NetworkTool.IsIpProtocolSupportedByISPAsync("2001:4860:4860::8888", 6000);
+
             if (ListenerIP != null) ServerEndPoint = new(ListenerIP, ListenerPort);
 
-            ServerUdpDnsAddress = $"udp://{IPAddress.Loopback}:{ListenerPort}";
-            ServerTcpDnsAddress = $"tcp://{IPAddress.Loopback}:{ListenerPort}";
-            ServerDohDnsAddress = $"https://{IPAddress.Loopback}:{ListenerPort}/dns-query";
-            ServerHttpProxyAddress = $"http://{IPAddress.Loopback}:{ListenerPort}";
-            ServerSocks5ProxyAddress = $"socks5://{IPAddress.Loopback}:{ListenerPort}";
+            ServerUdpDnsAddress = NetworkTool.IpToUrl("udp", IPAddress.Loopback, ListenerPort, string.Empty);
+            ServerTcpDnsAddress = NetworkTool.IpToUrl("tcp", IPAddress.Loopback, ListenerPort, string.Empty);
+            ServerDohDnsAddress = NetworkTool.IpToUrl("https", IPAddress.Loopback, ListenerPort, "dns-query");
+            ServerHttpProxyAddress = NetworkTool.IpToUrl("http", IPAddress.Loopback, ListenerPort, string.Empty);
+            ServerSocks5ProxyAddress = NetworkTool.IpToUrl("socks5", IPAddress.Loopback, ListenerPort, string.Empty);
 
             if (ServerEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                ServerUdpDnsAddress = $"udp://[{IPAddress.IPv6Loopback}]:{ListenerPort}";
-                ServerTcpDnsAddress = $"tcp://[{IPAddress.IPv6Loopback}]:{ListenerPort}";
-                ServerDohDnsAddress = $"https://[{IPAddress.IPv6Loopback}]:{ListenerPort}/dns-query";
-                ServerHttpProxyAddress = $"http://[{IPAddress.IPv6Loopback}]:{ListenerPort}";
-                ServerSocks5ProxyAddress = $"socks5://[{IPAddress.IPv6Loopback}]:{ListenerPort}";
+                ServerUdpDnsAddress = NetworkTool.IpToUrl("udp", IPAddress.IPv6Loopback, ListenerPort, string.Empty);
+                ServerTcpDnsAddress = NetworkTool.IpToUrl("tcp", IPAddress.IPv6Loopback, ListenerPort, string.Empty);
+                ServerDohDnsAddress = NetworkTool.IpToUrl("https", IPAddress.IPv6Loopback, ListenerPort, "dns-query");
+                ServerHttpProxyAddress = NetworkTool.IpToUrl("http", IPAddress.IPv6Loopback, ListenerPort, string.Empty);
+                ServerSocks5ProxyAddress = NetworkTool.IpToUrl("socks5", IPAddress.IPv6Loopback, ListenerPort, string.Empty);
             }
         }
         catch (Exception ex)

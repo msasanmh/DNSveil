@@ -2,7 +2,6 @@
 using MsmhToolsClass.MsmhAgnosticServer;
 using System.Diagnostics;
 using System.Net;
-using System.Runtime.ConstrainedExecution;
 
 namespace SecureDNSClient;
 
@@ -82,44 +81,50 @@ public class CheckDns
         bool isDnsOnline = false;
         int dnsLatency = -1;
         string args = $"-Domain={domain} -DNSs=\"{dnsServer}\" -TimeoutMS={timeoutMS} -DoubleCheck=True";
-        string dnsLookupResult = await ProcessManager.ExecuteAsync(SecureDNS.SDCLookupPath, null, args, true, true, SecureDNS.BinaryDirPath);
-        if (!string.IsNullOrEmpty(dnsLookupResult))
+        var p = await ProcessManager.ExecuteAsync(SecureDNS.SDCLookupPath, null, args, true, true, SecureDNS.BinaryDirPath);
+        if (p.IsSeccess)
         {
-            try
+            string dnsLookupResult = p.Output;
+            if (!string.IsNullOrEmpty(dnsLookupResult))
             {
-                List<string> lines = dnsLookupResult.ReplaceLineEndings().Split(Environment.NewLine).ToList();
-                if (lines.Count >= 2)
+                try
                 {
-                    bool isBool = bool.TryParse(lines[1].Trim(), out bool isDnsOnlineValue);
-                    if (isBool) isDnsOnline = isDnsOnlineValue;
+                    List<string> lines = dnsLookupResult.ReplaceLineEndings().Split(Environment.NewLine).ToList();
+                    if (lines.Count >= 2)
+                    {
+                        bool isBool = bool.TryParse(lines[1].Trim(), out bool isDnsOnlineValue);
+                        if (isBool) isDnsOnline = isDnsOnlineValue;
 
-                    bool isInt = int.TryParse(lines[0].Trim(), out int dnsLatencyValue);
-                    if (isInt) dnsLatency = isDnsOnline ? dnsLatencyValue : -1;
+                        bool isInt = int.TryParse(lines[0].Trim(), out int dnsLatencyValue);
+                        if (isInt) dnsLatency = isDnsOnline ? dnsLatencyValue : -1;
+                    }
                 }
+                catch (Exception) { }
             }
-            catch (Exception) { }
+
+            bool isGoogleSafeSearchEnabled = false, isBingSafeSearchEnabled = false;
+            bool isYoutubeRestricted = false, isAdultFilter = false;
+            if (CheckForFilters && isDnsOnline)
+            {
+                var (IsGoogleSafeSearch, IsBingSafeSearch, IsYoutubeRestricted, IsAdultFilter) = await CheckDnsFiltersAsync(DNS);
+                isGoogleSafeSearchEnabled = IsGoogleSafeSearch;
+                isBingSafeSearchEnabled = IsBingSafeSearch;
+                isYoutubeRestricted = IsYoutubeRestricted;
+                isAdultFilter = IsAdultFilter;
+            }
+
+            return new CheckDnsResult
+            {
+                IsDnsOnline = isDnsOnline,
+                DnsLatency = dnsLatency,
+                IsGoogleSafeSearchEnabled = isGoogleSafeSearchEnabled,
+                IsBingSafeSearchEnabled = isBingSafeSearchEnabled,
+                IsYoutubeRestricted = isYoutubeRestricted,
+                IsAdultFilter = isAdultFilter
+            };
         }
 
-        bool isGoogleSafeSearchEnabled = false, isBingSafeSearchEnabled = false;
-        bool isYoutubeRestricted = false, isAdultFilter = false;
-        if (CheckForFilters && isDnsOnline)
-        {
-            var (IsGoogleSafeSearch, IsBingSafeSearch, IsYoutubeRestricted, IsAdultFilter) = await CheckDnsFiltersAsync(DNS);
-            isGoogleSafeSearchEnabled = IsGoogleSafeSearch;
-            isBingSafeSearchEnabled = IsBingSafeSearch;
-            isYoutubeRestricted = IsYoutubeRestricted;
-            isAdultFilter = IsAdultFilter;
-        }
-
-        return new CheckDnsResult
-        {
-            IsDnsOnline = isDnsOnline,
-            DnsLatency = dnsLatency,
-            IsGoogleSafeSearchEnabled = isGoogleSafeSearchEnabled,
-            IsBingSafeSearchEnabled = isBingSafeSearchEnabled,
-            IsYoutubeRestricted = isYoutubeRestricted,
-            IsAdultFilter = isAdultFilter
-        };
+        return new CheckDnsResult();
     }
 
     /// <summary>

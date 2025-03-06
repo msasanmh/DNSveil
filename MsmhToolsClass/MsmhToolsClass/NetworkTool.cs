@@ -7,14 +7,69 @@ using System.Management.Automation;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace MsmhToolsClass;
 
 public static class NetworkTool
 {
-    public static bool IsIPv4Supported()
+    public static string IpToUrl(string scheme, IPAddress ip, int port, string path)
+    {
+        string url = string.Empty;
+        scheme = scheme.Trim();
+        string defaultScheme = "https";
+        path = path.Trim();
+
+        try
+        {
+            bool schemeIsNullOrWhiteSpace = string.IsNullOrWhiteSpace(scheme);
+            if (!schemeIsNullOrWhiteSpace && scheme.EndsWith("://")) scheme = scheme.TrimEnd("://");
+
+            UriBuilder ub = new()
+            {
+                Scheme = schemeIsNullOrWhiteSpace ? defaultScheme : scheme,
+                Host = ip.ToString(),
+                Port = port > 0 ? port : 443,
+                Path = path
+            };
+
+            url = ub.Uri.ToString();
+            if (schemeIsNullOrWhiteSpace && url.StartsWith($"{defaultScheme}://"))
+                url = url.TrimStart($"{defaultScheme}://");
+            if (url.EndsWith('/')) url = url.TrimEnd('/');
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool IpToUrl: " + ex.Message);
+        }
+
+        return url;
+    }
+
+    /// <summary>
+    /// Int To IPv4
+    /// </summary>
+    /// <param name="ipInt"></param>
+    /// <returns>Returns IPv4, If Fail: IPAddress.None</returns>
+    public static IPAddress IntToIPv4(int ipInt)
+    {
+        IPAddress ip = IPAddress.None;
+
+        try
+        {
+            string ipStr = $"{(ipInt & 0xFF)}.{(ipInt >> 8 & 0xFF)}.{(ipInt >> 16 & 0xFF)}.{(ipInt >> 24 & 0xFF)}";
+            bool isValid = NetworkTool.IsIPv4Valid(ipStr, out IPAddress? ipOut);
+            if (isValid && ipOut != null) ip = ipOut;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("IntToIPv4: " + ex.Message);
+        }
+
+        return ip;
+    }
+
+    public static bool IsIPv4SupportedByOS()
     {
         bool result = false;
         Socket? socket = null;
@@ -33,7 +88,7 @@ public static class NetworkTool
         return result;
     }
 
-    public static bool IsIPv6Supported()
+    public static bool IsIPv6SupportedByOS()
     {
         bool result = false;
         Socket? socket = null;
@@ -50,6 +105,16 @@ public static class NetworkTool
 
         socket?.Dispose();
         return result;
+    }
+
+    /// <summary>
+    /// Is IP Protocol Supported By ISP (By Ping)
+    /// </summary>
+    /// <param name="ipStr">Ipv4 Or Ipv6</param>
+    /// <returns></returns>
+    public static async Task<bool> IsIpProtocolSupportedByISPAsync(string ipStr, int timeoutMS)
+    {
+        return await CanPingAsync(ipStr, timeoutMS);
     }
 
     public static HttpMethod ParseHttpMethod(string method)
@@ -80,25 +145,33 @@ public static class NetworkTool
     {
         string result = string.Empty;
         string baseHost = string.Empty;
-        if (!OperatingSystem.IsWindows()) return (result, baseHost);
-        if (!await IsInternetAliveByNicAsync()) return (result, baseHost); // nslookup takes time when there is no internet access
 
-        string content = await ProcessManager.ExecuteAsync("nslookup", null, ip, true, true);
-        if (string.IsNullOrEmpty(content)) return (result, baseHost);
-        content = content.ToLower();
-        string[] split = content.Split(Environment.NewLine);
-        for (int n = 0; n < split.Length; n++)
+        try
         {
-            string line = split[n];
-            if (line.Contains("name:"))
+            if (!OperatingSystem.IsWindows()) return (result, baseHost);
+            if (!await IsInternetAliveByNicAsync()) return (result, baseHost); // nslookup takes time when there is no internet access
+
+            var p = await ProcessManager.ExecuteAsync("nslookup", null, ip, true, true);
+            if (!p.IsSeccess) return (result, baseHost);
+            string content = p.Output.ToLower();
+            string[] split = content.Split(Environment.NewLine);
+            for (int n = 0; n < split.Length; n++)
             {
-                result = line.Replace("name:", string.Empty).Trim();
-                if (result.Contains('.'))
+                string line = split[n];
+                if (line.Contains("name:"))
                 {
-                    GetHostDetails(result, 0, out _, out _, out baseHost, out _, out _, out _);
+                    result = line.Replace("name:", string.Empty).Trim();
+                    if (result.Contains('.'))
+                    {
+                        GetHostDetails(result, 0, out _, out _, out baseHost, out _, out _, out _);
+                    }
+                    break;
                 }
-                break;
             }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool IpToHostAsync: " + ex.Message);
         }
 
         return (result, baseHost);
@@ -108,7 +181,7 @@ public static class NetworkTool
     /// Restart NAT Driver - Windows Only
     /// </summary>
     /// <returns></returns>
-    public static async Task RestartNATDriver()
+    public static async Task RestartNATDriverAsync()
     {
         if (!OperatingSystem.IsWindows()) return;
         // Solve: "bind: An attempt was made to access a socket in a way forbidden by its access permissions"
@@ -121,25 +194,18 @@ public static class NetworkTool
         catch (Exception) { }
     }
 
-    public static int GetNextPort(int currentPort)
-    {
-        currentPort = currentPort < 65535 ? currentPort + 1 : currentPort - 1;
-        return currentPort;
-    }
-
     public static Uri? UrlToUri(string url)
     {
         try
         {
-            string[] split1 = url.Split("//");
+            string[] split = url.Split("//");
             string prefix = "https://";
-            for (int n1 = 0; n1 < split1.Length; n1++)
+            for (int n = 0; n < split.Length; n++)
             {
-                if (n1 > 0)
+                if (n > 0)
                 {
-                    prefix += split1[n1];
-                    if (n1 < split1.Length - 1)
-                        prefix += "//";
+                    prefix += split[n];
+                    if (n < split.Length - 1) prefix += "//";
                 }
             }
 
@@ -201,7 +267,7 @@ public static class NetworkTool
                 {
                     if (n != 0) outPath += split[n] + "/";
                 }
-                if (outPath.Length > 1 && outPath.EndsWith("/")) outPath = outPath.TrimEnd(slash.ToCharArray());
+                if (outPath.Length > 1 && outPath.EndsWith("/")) outPath = outPath.TrimEnd(slash);
                 if (!outPath.Equals("/")) path = outPath;
             }
 
@@ -312,6 +378,12 @@ public static class NetworkTool
                 if (ip.IsIPv6LinkLocal) return true;
                 if (ip.IsIPv6SiteLocal) return true;
                 if (ip.IsIPv6UniqueLocal) return true;
+                if (ip.Equals(IPAddress.None)) return true;
+                if (ip.Equals(IPAddress.IPv6None)) return true;
+                if (ip.Equals(IPAddress.Any)) return true;
+                if (ip.Equals(IPAddress.IPv6Any)) return true;
+                if (ip.Equals(IPAddress.Loopback)) return true;
+                if (ip.Equals(IPAddress.IPv6Loopback)) return true;
             }
             
             List<string> localCIDRs = new()
@@ -331,6 +403,7 @@ public static class NetworkTool
                 "203.0.113.0/24",
                 "224.0.0.0/3",
                 "::/127",
+                "1::/127",
                 "fc00::/7",
                 "fe80::/10",
                 "ff00::/8"
@@ -505,8 +578,11 @@ public static class NetworkTool
     public static bool IsIP(string ipStr, out IPAddress? ip)
     {
         ip = null;
-        if (!string.IsNullOrEmpty(ipStr))
-            return IPAddress.TryParse(ipStr, out ip);
+        try
+        {
+            if (!string.IsNullOrEmpty(ipStr)) return IPAddress.TryParse(ipStr, out ip);
+        }
+        catch (Exception) { }
         return false;
     }
 
@@ -630,34 +706,23 @@ public static class NetworkTool
         return isInRange;
     }
 
-    /// <summary>
-    /// Is IP Protocol Supported By ISP (Windows Only)
-    /// </summary>
-    /// <param name="ipStr">Ipv4 Or Ipv6</param>
-    /// <returns></returns>
-    public static bool IsIpProtocolReachable(string ipStr)
+    public static int GetNextPort(int currentPort)
     {
-        if (!OperatingSystem.IsWindows()) return true;
-        string args = $"-n 1 {ipStr}";
-        string content = ProcessManager.Execute(out _, "ping", null, args, true, false);
-        return !content.Contains("transmit failed") && !content.Contains("General failure");
+        try
+        {
+            if (currentPort < 1) currentPort = 1;
+            if (currentPort > 65535) currentPort = 65535;
+            currentPort = currentPort < 65535 ? currentPort + 1 : currentPort - 1;
+        }
+        catch (Exception) { }
+        return currentPort;
     }
 
     /// <summary>
     /// All Platforms
     /// </summary>
     /// <param name="port">Port</param>
-    public static bool IsPortOpen(int port)
-    {
-        if (OperatingSystem.IsWindows()) return ProcessManager.GetProcessPidsByUsingPort(port).Any();
-        else return !IsPortAvailable(port);
-    }
-
-    /// <summary>
-    /// All Platforms
-    /// </summary>
-    /// <param name="port">Port</param>
-    public static bool IsPortAvailable(int port)
+    public static bool IsPortFree(int port)
     {
         bool isAvailable = true;
 
@@ -665,20 +730,23 @@ public static class NetworkTool
         {
             IPGlobalProperties iPGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
 
-            try
+            if (isAvailable)
             {
-                TcpConnectionInformation[] tcps = iPGlobalProperties.GetActiveTcpConnections();
-                for (int n = 0; n < tcps.Length; n++)
+                try
                 {
-                    TcpConnectionInformation tcp = tcps[n];
-                    if (tcp.LocalEndPoint.Port == port)
+                    TcpConnectionInformation[] tcps = iPGlobalProperties.GetActiveTcpConnections();
+                    for (int n = 0; n < tcps.Length; n++)
                     {
-                        isAvailable = false;
-                        break;
+                        TcpConnectionInformation tcp = tcps[n];
+                        if (tcp.LocalEndPoint.Port == port)
+                        {
+                            isAvailable = false;
+                            break;
+                        }
                     }
                 }
+                catch (Exception) { isAvailable = false; }
             }
-            catch (Exception) { }
 
             if (isAvailable)
             {
@@ -695,12 +763,39 @@ public static class NetworkTool
                         }
                     }
                 }
-                catch (Exception) { }
+                catch (Exception) { isAvailable = false; }
+            }
+
+            if (isAvailable)
+            {
+                try
+                {
+                    IPEndPoint[] tcps = iPGlobalProperties.GetActiveTcpListeners();
+                    for (int n = 0; n < tcps.Length; n++)
+                    {
+                        IPEndPoint ep = tcps[n];
+                        if (ep.Port == port)
+                        {
+                            isAvailable = false;
+                            break;
+                        }
+                    }
+                }
+                catch (Exception) { isAvailable = false; }
             }
         }
-        catch (Exception) { }
+        catch (Exception) { isAvailable = false; }
 
         return isAvailable;
+    }
+
+    /// <summary>
+    /// All Platforms
+    /// </summary>
+    /// <param name="port">Port</param>
+    public static bool IsPortOpen(int port)
+    {
+        return !IsPortFree(port);
     }
 
     public static bool IsPortOpen(string host, int port, double timeoutSeconds)
@@ -717,6 +812,48 @@ public static class NetworkTool
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Get A Free Random Port
+    /// </summary>
+    /// <returns>Returns 0 If Fail</returns>
+    public static async Task<int> GetAFreePortAsync()
+    {
+        return await Task.Run(async () =>
+        {
+            try
+            {
+                Random rnd = new();
+                int port;
+                while (true)
+                {
+                    port = rnd.Next(0, 65535);
+                    if (IsPortFree(port)) break;
+                }
+                return port;
+            }
+            catch (Exception)
+            {
+                int port = 0;
+                try
+                {
+                    Socket socket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    if (socket.LocalEndPoint is IPEndPoint endPoint) port = endPoint.Port;
+                    try
+                    {
+                        socket.Shutdown(SocketShutdown.Both);
+                        socket.Close();
+                        socket.Dispose();
+                    }
+                    catch (Exception) { }
+                    await Task.Delay(100);
+                }
+                catch (Exception) { }
+                return port;
+            }
+        });
     }
 
     public class NICResult
@@ -904,7 +1041,7 @@ public static class NetworkTool
         ProcessManager.ExecuteOnly("netsh", null, args, true, true);
     }
 
-    public static async Task<bool> EnableNicIPv6(string nicName)
+    public static async Task<bool> EnableNicIPv6Async(string nicName)
     {
         bool success = false;
         string args = $"Enable-NetAdapterBinding -Name '{nicName}' -ComponentID ms_tcpip6";
@@ -931,7 +1068,7 @@ public static class NetworkTool
         return success;
     }
 
-    public static async Task<bool> DisableNicIPv6(string nicName)
+    public static async Task<bool> DisableNicIPv6Async(string nicName)
     {
         bool success = false;
         string args = $"Disable-NetAdapterBinding -Name \"{nicName}\" -ComponentID ms_tcpip6";
@@ -994,7 +1131,7 @@ public static class NetworkTool
     /// <param name="nicName">NIC Name</param>
     /// <param name="dnsServers">Comma seperated list of DNS server addresses</param>
     /// <remarks>Requires a reference to the System.Management namespace</remarks>
-    public static async Task SetDnsIPv4(string nicName, string dnsServers)
+    public static async Task SetDnsIPv4Async(string nicName, string dnsServers)
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation
@@ -1033,13 +1170,13 @@ public static class NetworkTool
     /// <param name="nic">NIC address</param>
     /// <param name="dnsServers">Comma seperated list of DNS server addresses</param>
     /// <remarks>Requires a reference to the System.Management namespace</remarks>
-    public static async Task SetDnsIPv4(NetworkInterface nic, string dnsServers)
+    public static async Task SetDnsIPv4Async(NetworkInterface nic, string dnsServers)
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation
         if (nic == null) return;
 
-        await SetDnsIPv4(nic.Name, dnsServers);
+        await SetDnsIPv4Async(nic.Name, dnsServers);
     }
 
     /// <summary>
@@ -1048,7 +1185,7 @@ public static class NetworkTool
     /// <param name="nicName">NIC Name</param>
     /// <param name="dnsServers">Comma seperated list of DNS server addresses</param>
     /// <remarks>Requires a reference to the System.Management namespace</remarks>
-    public static async Task SetDnsIPv6(string nicName, string dnsServers)
+    public static async Task SetDnsIPv6Async(string nicName, string dnsServers)
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation
@@ -1087,20 +1224,20 @@ public static class NetworkTool
     /// <param name="nic">NIC address</param>
     /// <param name="dnsServers">Comma seperated list of DNS server addresses</param>
     /// <remarks>Requires a reference to the System.Management namespace</remarks>
-    public static async Task SetDnsIPv6(NetworkInterface nic, string dnsServers)
+    public static async Task SetDnsIPv6Async(NetworkInterface nic, string dnsServers)
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation
         if (nic == null) return;
 
-        await SetDnsIPv6(nic.Name, dnsServers);
+        await SetDnsIPv6Async(nic.Name, dnsServers);
     }
 
     /// <summary>
     /// Unset IPv4 DNS to DHCP (Windows Only)
     /// </summary>
     /// <param name="nicName">Network Interface Name</param>
-    public static async Task UnsetDnsIPv4(string nicName)
+    public static async Task UnsetDnsIPv4Async(string nicName)
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
@@ -1125,13 +1262,13 @@ public static class NetworkTool
     /// Unset IPv4 DNS to DHCP (Windows Only)
     /// </summary>
     /// <param name="nic">Network Interface</param>
-    public static async Task UnsetDnsIPv4(NetworkInterface nic)
+    public static async Task UnsetDnsIPv4Async(NetworkInterface nic)
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
         if (nic == null) return;
 
-        await UnsetDnsIPv4(nic.Name);
+        await UnsetDnsIPv4Async(nic.Name);
     }
 
     /// <summary>
@@ -1140,11 +1277,11 @@ public static class NetworkTool
     /// <param name="nic">Network Interface</param>
     /// <param name="dns1">Primary</param>
     /// <param name="dns2">Secondary</param>
-    public static async Task UnsetDnsIPv4(NetworkInterface nic, string dns1, string? dns2)
+    public static async Task UnsetDnsIPv4Async(NetworkInterface nic, string dns1, string? dns2)
     {
         string dnsServers = dns1;
         if (!string.IsNullOrEmpty(dns2)) dnsServers += $",{dns2}";
-        await SetDnsIPv4(nic, dnsServers);
+        await SetDnsIPv4Async(nic, dnsServers);
     }
 
     /// <summary>
@@ -1153,18 +1290,18 @@ public static class NetworkTool
     /// <param name="nicName">Network Interface Name</param>
     /// <param name="dns1">Primary</param>
     /// <param name="dns2">Secondary</param>
-    public static async Task UnsetDnsIPv4(string nicName, string dns1, string? dns2)
+    public static async Task UnsetDnsIPv4Async(string nicName, string dns1, string? dns2)
     {
         string dnsServers = dns1;
         if (!string.IsNullOrEmpty(dns2)) dnsServers += $",{dns2}";
-        await SetDnsIPv4(nicName, dnsServers);
+        await SetDnsIPv4Async(nicName, dnsServers);
     }
 
     /// <summary>
     /// Unset IPv6 DNS to DHCP (Windows Only)
     /// </summary>
     /// <param name="nicName">Network Interface Name</param>
-    public static async Task UnsetDnsIPv6(string nicName)
+    public static async Task UnsetDnsIPv6Async(string nicName)
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
@@ -1181,7 +1318,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("UnsetDnsIPv6: " + ex.Message);
+            Debug.WriteLine("UnsetDnsIPv6Async: " + ex.Message);
         }
     }
 
@@ -1189,13 +1326,13 @@ public static class NetworkTool
     /// Unset IPv6 DNS to DHCP (Windows Only)
     /// </summary>
     /// <param name="nic">Network Interface</param>
-    public static async Task UnsetDnsIPv6(NetworkInterface nic)
+    public static async Task UnsetDnsIPv6Async(NetworkInterface nic)
     {
         if (!OperatingSystem.IsWindows()) return;
         // Requires Elevation - Can't Unset DNS when there is no Internet connectivity but netsh can :)
         if (nic == null) return;
         
-        await UnsetDnsIPv6(nic.Name);
+        await UnsetDnsIPv6Async(nic.Name);
     }
 
     /// <summary>
@@ -1204,11 +1341,11 @@ public static class NetworkTool
     /// <param name="nic">Network Interface</param>
     /// <param name="dns1">Primary</param>
     /// <param name="dns2">Secondary</param>
-    public static async Task UnsetDnsIPv6(NetworkInterface nic, string dns1, string? dns2)
+    public static async Task UnsetDnsIPv6Async(NetworkInterface nic, string dns1, string? dns2)
     {
         string dnsServers = dns1;
         if (!string.IsNullOrEmpty(dns2)) dnsServers += $",{dns2}";
-        await SetDnsIPv6(nic, dnsServers);
+        await SetDnsIPv6Async(nic, dnsServers);
     }
 
     /// <summary>
@@ -1217,15 +1354,15 @@ public static class NetworkTool
     /// <param name="nicName">Network Interface Name</param>
     /// <param name="dns1">Primary</param>
     /// <param name="dns2">Secondary</param>
-    public static async Task UnsetDnsIPv6(string nicName, string dns1, string? dns2)
+    public static async Task UnsetDnsIPv6Async(string nicName, string dns1, string? dns2)
     {
         string dnsServers = dns1;
         if (!string.IsNullOrEmpty(dns2)) dnsServers += $",{dns2}";
-        await SetDnsIPv6(nicName, dnsServers);
+        await SetDnsIPv6Async(nicName, dnsServers);
     }
 
     /// <summary>
-    /// Is DNS Set to 127.0.0.1 - Using Nslookup (Windows Only)
+    /// Is DNS Set to 127.0.0.1 - Using Nslookup (Windows Only) // Hangs
     /// </summary>
     public static async Task<(bool IsSet, string Host, string IP)> IsDnsSetToLocalAsync()
     {
@@ -1234,10 +1371,10 @@ public static class NetworkTool
         if (!OperatingSystem.IsWindows()) return (result, host, ip);
         if (!await IsInternetAliveByNicAsync()) return (result, host, ip); // nslookup takes time when there is no internet access
 
-        string content = await ProcessManager.ExecuteAsync("nslookup", null, "0.0.0.0", true, true);
+        var p = await ProcessManager.ExecuteAsync("nslookup", null, "0.0.0.0", true, true);
         //string content = ProcessManager.Execute(out _, "nslookup", null, "0.0.0.0", true, true);
-        if (string.IsNullOrEmpty(content)) return (result, host, ip);
-        content = content.ToLower();
+        if (!p.IsSeccess) return (result, host, ip);
+        string content = p.Output.ToLower();
         string[] split = content.Split(Environment.NewLine);
         for (int n = 0; n < split.Length; n++)
         {
@@ -1257,49 +1394,6 @@ public static class NetworkTool
             }
         }
         return (result, host, ip);
-    }
-
-    /// <summary>
-    /// Check if DNS is set to Static or DHCP using netsh (Windows Only)
-    /// </summary>
-    /// <param name="nic">Network Interface</param>
-    /// <param name="dnsServer1">Primary DNS Server</param>
-    /// <param name="dnsServer2">Secondary DNS Server</param>
-    /// <returns>True = Static, False = DHCP</returns>
-    public static bool IsDnsSet(NetworkInterface nic, out string dnsServer1, out string dnsServer2)
-    {
-        dnsServer1 = dnsServer2 = string.Empty;
-        if (!OperatingSystem.IsWindows()) return false;
-        if (nic == null) return false;
-
-        string processName = "netsh";
-        string processArgs = $"interface ipv4 show dnsservers {nic.Name}";
-        string stdout = ProcessManager.Execute(out _, processName, null, processArgs, true, true);
-
-        List<string> lines = stdout.SplitToLines();
-        for (int n = 0; n < lines.Count; n++)
-        {
-            string line = lines[n];
-            // Get Primary
-            if (line.Contains(": ") && line.Contains('.') && line.Count(c => c == '.') == 3)
-            {
-                string[] split = line.Split(": ");
-                if (split.Length > 1)
-                {
-                    dnsServer1 = split[1].Trim();
-                    Debug.WriteLine($"DNS 1: {dnsServer1}");
-                }
-            }
-
-            // Get Secondary
-            if (!line.Contains(": ") && line.Contains('.') && line.Count(c => c == '.') == 3)
-            {
-                dnsServer2 = line.Trim();
-                Debug.WriteLine($"DNS 2: {dnsServer2}");
-            }
-        }
-        //Debug.WriteLine(stdout);
-        return !stdout.Contains("DHCP");
     }
 
     /// <summary>
@@ -1418,7 +1512,7 @@ public static class NetworkTool
         }
     }
 
-    public static async Task<HttpStatusCode> GetHttpStatusCodeAsync(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, bool isAgnosticProxyTest = false, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
+    public static async Task<HttpStatusCode> GetHttpStatusCodeAsync(string urlOrDomain, string? ipStr, int timeoutMs, bool useSystemProxy, bool isAgnosticProxyTest = false, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
     {
         HttpStatusCode result = HttpStatusCode.RequestTimeout;
         if (string.IsNullOrWhiteSpace(urlOrDomain)) return result;
@@ -1426,9 +1520,7 @@ public static class NetworkTool
         try
         {
             GetUrlDetails(urlOrDomain.Trim(), 443, out string scheme, out string host, out _, out _, out int port, out string path, out _);
-            string origHost = host;
             if (string.IsNullOrEmpty(scheme)) scheme = "https://";
-            if (!string.IsNullOrWhiteSpace(ip)) host = ip.Trim();
 
             UriBuilder uriBuilder = new()
             {
@@ -1463,8 +1555,9 @@ public static class NetworkTool
                 ProxyUser = proxyUser,
                 ProxyPass = proxyPass,
             };
-            hr.Headers.Add("host", origHost); // In Case Of Using IP
-            if (isAgnosticProxyTest) hr.UserAgent = "SDC - Secure DNS Client"; // Proxy Test Protocol Depends On This
+            hr.Headers.Add("host", host); // In Case Of Using IP
+            if (!string.IsNullOrEmpty(ipStr) && IsIP(ipStr, out IPAddress? ip) && ip != null) hr.AddressIP = ip;
+            if (isAgnosticProxyTest) hr.UserAgent = "DNSveil - A Secure DNS Client"; // Proxy Test Protocol Depends On This
 
             HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
 
@@ -1475,7 +1568,7 @@ public static class NetworkTool
         return result;
     }
 
-    public static async Task<string> GetHeadersAsync(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    public static async Task<string> GetHeadersAsync(string urlOrDomain, string? ipStr, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
         string result = string.Empty;
         if (string.IsNullOrWhiteSpace(urlOrDomain)) return result;
@@ -1483,9 +1576,7 @@ public static class NetworkTool
         try
         {
             GetUrlDetails(urlOrDomain.Trim(), 443, out string scheme, out string host, out _, out _, out int port, out string path, out _);
-            string origHost = host;
             if (string.IsNullOrEmpty(scheme)) scheme = "https://";
-            if (!string.IsNullOrWhiteSpace(ip)) host = ip.Trim();
             bool firstTrySuccess = false;
 
             try
@@ -1523,8 +1614,8 @@ public static class NetworkTool
                     ProxyUser = proxyUser,
                     ProxyPass = proxyPass,
                 };
-                hr.Headers.Add("host", origHost); // In Case Of Using IP
-
+                hr.Headers.Add("host", host); // In Case Of Using IP
+                if (!string.IsNullOrEmpty(ipStr) && IsIP(ipStr, out IPAddress? ip) && ip != null) hr.AddressIP = ip;
                 HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
 
                 List<string> resultList = new()
@@ -1554,114 +1645,11 @@ public static class NetworkTool
             {
                 if (!firstTrySuccess && !urlOrDomain.Contains("://www."))
                 {
-                    urlOrDomain = $"{scheme}www.{origHost}:{port}{path}";
-                    result = await GetHeadersAsync(urlOrDomain, ip, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
+                    urlOrDomain = $"{scheme}www.{host}:{port}{path}";
+                    result = await GetHeadersAsync(urlOrDomain, ipStr, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
                 }
             }
             catch (Exception) { }
-        }
-        catch (Exception) { }
-
-        return result;
-    }
-
-    public static async Task<string> GetHeadersOLD(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
-    {
-        if (string.IsNullOrWhiteSpace(urlOrDomain)) return string.Empty;
-        HttpResponseMessage? response = null;
-
-        urlOrDomain = urlOrDomain.Trim();
-        GetUrlDetails(urlOrDomain, 443, out string scheme, out string host, out _, out _, out int port, out string path, out _);
-        if (string.IsNullOrEmpty(scheme))
-        {
-            scheme = "https://";
-            urlOrDomain = $"{scheme}{host}:{port}{path}";
-        }
-        string url = urlOrDomain;
-        //Debug.WriteLine("GetHeaders: " + url);
-        if (!string.IsNullOrEmpty(ip))
-        {
-            ip = ip.Trim();
-            url = $"{scheme}{ip}:{port}{path}";
-            //Debug.WriteLine("GetHeaders: " + url);
-        }
-
-        try
-        {
-            Uri uri = new(url, UriKind.Absolute);
-
-            using HttpClientHandler handler = new();
-            handler.AllowAutoRedirect = true;
-            if (useSystemProxy)
-            {
-                // WebRequest.GetSystemWebProxy() Can't always detect System Proxy
-                proxyScheme = GetSystemProxy(); // Reading from Registry
-                if (!string.IsNullOrEmpty(proxyScheme))
-                {
-                    //Debug.WriteLine("GetHeaders: " + proxyScheme);
-                    NetworkCredential credential = CredentialCache.DefaultNetworkCredentials;
-                    handler.Proxy = new WebProxy(proxyScheme, true, null, credential);
-                    handler.Credentials = credential;
-                    handler.UseProxy = true;
-                }
-                else
-                {
-                    Debug.WriteLine("GetHeaders: System Proxy Is Null.");
-                    handler.UseProxy = false;
-                }
-            }
-            else if (!string.IsNullOrEmpty(proxyScheme))
-            {
-                //Debug.WriteLine("GetHeaders: " + proxyScheme);
-                NetworkCredential credential = new(proxyUser, proxyPass);
-                handler.Proxy = new WebProxy(proxyScheme, true, null, credential);
-                handler.Credentials = credential;
-                handler.UseProxy = true;
-            }
-            else handler.UseProxy = false;
-
-            // Ignore Cert Check To Make It Faster
-            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-            handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
-
-            // Get Only Header
-            using HttpRequestMessage message = new(HttpMethod.Get, uri);
-            message.Headers.TryAddWithoutValidation("User-Agent", "Other");
-            message.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml");
-            message.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate");
-            message.Headers.TryAddWithoutValidation("Accept-Charset", "ISO-8859-1");
-
-            if (!string.IsNullOrEmpty(ip))
-            {
-                message.Headers.TryAddWithoutValidation("host", host);
-            }
-
-            using HttpClient httpClient = new(handler);
-            httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
-            response = await httpClient.SendAsync(message, CancellationToken.None);
-        }
-        catch (Exception) { }
-
-        string result = string.Empty;
-
-        try
-        {
-            if (response != null)
-            {
-                result += response.StatusCode.ToString();
-                //Debug.WriteLine("GetHeaders: " + result);
-                result += Environment.NewLine + response.Headers.ToString();
-                try { response.Dispose(); } catch (Exception) { }
-            }
-            result = result.ReplaceLineEndings();
-            if (result.StartsWith(Environment.NewLine)) result = result.TrimStart(Environment.NewLine);
-            result = result.Trim();
-
-            if (string.IsNullOrEmpty(result) && !urlOrDomain.Contains("://www."))
-            {
-                urlOrDomain = $"{scheme}www.{host}:{port}{path}";
-                result = await GetHeadersAsync(urlOrDomain, ip, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
-            }
         }
         catch (Exception) { }
 
@@ -1838,7 +1826,7 @@ public static class NetworkTool
         }
     }
 
-    public static async Task<bool> IsHostBlocked(string host, int port, int timeoutMS)
+    public static async Task<bool> IsHostBlockedAsync(string host, int port, int timeoutMS)
     {
         string url;
         if (port == 80) url = $"http://{host}:{port}";
@@ -1846,13 +1834,13 @@ public static class NetworkTool
         return !await IsWebsiteOnlineAsync(url, null, timeoutMS, false);
     }
 
-    public static async Task<bool> CanPing(string host, int timeoutMS)
+    public static async Task<bool> CanPingAsync(string host, int timeoutMS)
     {
         host = host.Trim();
         if (string.IsNullOrEmpty(host)) return false;
         if (host.Equals("0.0.0.0")) return false;
         if (host.Equals("::0")) return false;
-        Task<bool> task = Task.Run(() =>
+        Task<bool> task = Task.Run(async () =>
         {
             try
             {
@@ -1860,9 +1848,9 @@ public static class NetworkTool
                 PingReply? reply;
                 bool isIp = IsIP(host, out IPAddress? ip);
                 if (isIp && ip != null)
-                    reply = ping.Send(ip, timeoutMS);
+                    reply = await ping.SendPingAsync(ip, timeoutMS);
                 else
-                    reply = ping.Send(host, timeoutMS);
+                    reply = await ping.SendPingAsync(host, timeoutMS);
 
                 if (reply == null) return false;
 
@@ -1878,7 +1866,7 @@ public static class NetworkTool
         try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
     }
 
-    public static async Task<bool> CanTcpConnect(IPAddress ip, int port, int timeoutMS)
+    public static async Task<bool> CanTcpConnectAsync(IPAddress ip, int port, int timeoutMS)
     {
         var task = Task.Run(async () =>
         {
@@ -1901,7 +1889,7 @@ public static class NetworkTool
         try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
     }
 
-    public static async Task<bool> CanTcpConnect(string host, int port, int timeoutMS)
+    public static async Task<bool> CanTcpConnectAsync(string host, int port, int timeoutMS)
     {
         var task = Task.Run(async () =>
         {
@@ -1923,7 +1911,7 @@ public static class NetworkTool
         try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
     }
 
-    public static async Task<bool> CanUdpConnect(IPAddress ip, int port, int timeoutMS)
+    public static async Task<bool> CanUdpConnectAsync(IPAddress ip, int port, int timeoutMS)
     {
         var task = Task.Run(async () =>
         {
@@ -1943,7 +1931,7 @@ public static class NetworkTool
         try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
     }
 
-    public static async Task<bool> CanUdpConnect(string host, int port, int timeoutMS)
+    public static async Task<bool> CanUdpConnectAsync(string host, int port, int timeoutMS)
     {
         var task = Task.Run(async () =>
         {
@@ -1962,7 +1950,7 @@ public static class NetworkTool
         try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
     }
 
-    public static async Task<bool> CanConnect(string host, int port, int timeoutMS)
+    public static async Task<bool> CanConnectAsync(string host, int port, int timeoutMS)
     {
         var task = Task.Run(async () =>
         {

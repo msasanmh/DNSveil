@@ -229,7 +229,6 @@ public partial class FormStampGenerator : Form
         string msgSuccess = "Stamp Encrypted Successfully.";
 
         string result = "sdns://";
-        DNSCryptStampGenerator generator = new();
 
         try
         {
@@ -242,7 +241,7 @@ public partial class FormStampGenerator : Form
                     string ipPort = ip;
                     if (port != DNSCryptStampReader.DefaultPort.PlainDNS)
                         ipPort += $":{port}";
-                    result = generator.GeneratePlainDns(ipPort, isDNSSec, isNoLog, isNoFilter);
+                    result = DNSCryptStampGenerator.GeneratePlainDns(ipPort, isDNSSec, isNoLog, isNoFilter);
                     Status(msgSuccess, Color.MediumSeaGreen);
                 }
             }
@@ -259,7 +258,7 @@ public partial class FormStampGenerator : Form
                     string ipPort = ip;
                     if (port != DNSCryptStampReader.DefaultPort.DnsCrypt)
                         ipPort += $":{port}";
-                    result = generator.GenerateDNSCrypt(ipPort, publicKey, provider, isDNSSec, isNoLog, isNoFilter);
+                    result = DNSCryptStampGenerator.GenerateDNSCrypt(ipPort, publicKey, provider, isDNSSec, isNoLog, isNoFilter);
                     Status(msgSuccess, Color.MediumSeaGreen);
                 }
             }
@@ -274,7 +273,7 @@ public partial class FormStampGenerator : Form
                     string hostPort = host;
                     if (port != DNSCryptStampReader.DefaultPort.DoH)
                         hostPort += $":{port}";
-                    result = generator.GenerateDoH(ip, hash, hostPort, path, null, isDNSSec, isNoLog, isNoFilter);
+                    result = DNSCryptStampGenerator.GenerateDoH(ip, hash, hostPort, path, null, isDNSSec, isNoLog, isNoFilter);
                     Status(msgSuccess, Color.MediumSeaGreen);
                 }
             }
@@ -289,7 +288,7 @@ public partial class FormStampGenerator : Form
                     string hostPort = host;
                     if (port != DNSCryptStampReader.DefaultPort.DoT)
                         hostPort += $":{port}";
-                    result = generator.GenerateDoT(ip, hash, hostPort, null, isDNSSec, isNoLog, isNoFilter);
+                    result = DNSCryptStampGenerator.GenerateDoT(ip, hash, hostPort, null, isDNSSec, isNoLog, isNoFilter);
                     Status(msgSuccess, Color.MediumSeaGreen);
                 }
             }
@@ -301,7 +300,7 @@ public partial class FormStampGenerator : Form
                     Status(msgHost, Color.IndianRed);
                 else
                 {
-                    result = generator.GenerateDoQ(ip, hash, $"{host}:{port}", null, isDNSSec, isNoLog, isNoFilter);
+                    result = DNSCryptStampGenerator.GenerateDoQ(ip, hash, $"{host}:{port}", null, isDNSSec, isNoLog, isNoFilter);
                     Status(msgSuccess, Color.MediumSeaGreen);
                 }
             }
@@ -311,7 +310,7 @@ public partial class FormStampGenerator : Form
                     Status(msgHost, Color.IndianRed);
                 else
                 {
-                    result = generator.GenerateObliviousDohTarget($"{host}:{port}", path, isDNSSec, isNoLog, isNoFilter);
+                    result = DNSCryptStampGenerator.GenerateObliviousDohTarget($"{host}:{port}", path, isDNSSec, isNoLog, isNoFilter);
                     Status(msgSuccess, Color.MediumSeaGreen);
                 }
             }
@@ -321,7 +320,7 @@ public partial class FormStampGenerator : Form
                     Status(msgIp, Color.IndianRed);
                 else
                 {
-                    result = generator.GenerateAnonymizedDNSCryptRelay($"{ip}:{port}");
+                    result = DNSCryptStampGenerator.GenerateAnonymizedDNSCryptRelay($"{ip}:{port}");
                     Status(msgSuccess, Color.MediumSeaGreen);
                 }
             }
@@ -333,7 +332,7 @@ public partial class FormStampGenerator : Form
                     Status(msgHost, Color.IndianRed);
                 else
                 {
-                    result = generator.GenerateObliviousDohRelay(ip, hash, $"{host}:{port}", path, null, isDNSSec, isNoLog, isNoFilter);
+                    result = DNSCryptStampGenerator.GenerateObliviousDohRelay(ip, hash, $"{host}:{port}", path, null, isDNSSec, isNoLog, isNoFilter);
                     Status(msgSuccess, Color.MediumSeaGreen);
                 }
             }

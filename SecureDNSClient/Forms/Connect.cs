@@ -174,7 +174,11 @@ public partial class FormMain
                 {
                     // Kill Processes
                     await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
-                    await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
+                    if (ProcessManager.FindProcessByPID(PIDGoodbyeDPIBypass))
+                    {
+                        await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
+                        await DeleteGoodbyeDpiAndWinDivertServices_Async();
+                    }
                 }
 
                 // To See Status Immediately
@@ -216,16 +220,16 @@ public partial class FormMain
         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgConnecting, Color.MediumSeaGreen));
 
         // Solve: "bind: An attempt was made to access a socket in a way forbidden by its access permissions"
-        if (!Program.IsStartup) await NetworkTool.RestartNATDriver();
+        if (!Program.IsStartup) await NetworkTool.RestartNATDriverAsync();
 
         // Check Plain DNS Port
-        List<int> pids = ProcessManager.GetProcessPidsByUsingPort(53);
+        List<int> pids = await ProcessManager.GetProcessPidsByUsingPortAsync(53);
         foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
         await Task.Delay(5);
-        pids = ProcessManager.GetProcessPidsByUsingPort(53);
+        pids = await ProcessManager.GetProcessPidsByUsingPortAsync(53);
         foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
 
-        bool portDns = GetListeningPort(53, "You Need To Resolve The Conflict.", Color.IndianRed);
+        bool portDns = await GetListeningPortAsync(53, "You Need To Resolve The Conflict.", Color.IndianRed);
         if (!portDns)
         {
             IsEverythingDisconnected(out string stat);
@@ -240,9 +244,9 @@ public partial class FormMain
         if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
         {
             int dohPort = GetDohPortSetting();
-            pids = ProcessManager.GetProcessPidsByUsingPort(dohPort);
+            pids = await ProcessManager.GetProcessPidsByUsingPortAsync(dohPort);
             foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
-            bool portDoH = GetListeningPort(dohPort, "You Need To Resolve The Conflict.", Color.IndianRed);
+            bool portDoH = await GetListeningPortAsync(dohPort, "You Need To Resolve The Conflict.", Color.IndianRed);
             if (!portDoH)
             {
                 IsConnecting = false;
@@ -373,7 +377,7 @@ public partial class FormMain
             }
 
             // Is IPv6 Supported By OS
-            bool isIPv6SupportedByOS = NetworkTool.IsIPv6Supported();
+            bool isIPv6SupportedByOS = NetworkTool.IsIPv6SupportedByOS();
 
             // Update Local IP
             LocalIP = NetworkTool.GetLocalIPv4();
@@ -402,38 +406,30 @@ public partial class FormMain
             // Write local DoH addresses to log
             if (CustomRadioButtonSettingWorkingModeDNSandDoH.Checked)
             {
-                string msgLocalDoH1 = "Local DNS Over HTTPS:";
+                string msgLocalDoH0 = "Local DNS-Over-HTTPS:";
                 if (!limitLog)
-                    if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH1, Color.LightGray));
+                    if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH0, Color.LightGray));
 
-                string msgLocalDoH2;
-                if (ConnectedDohPort == 443)
-                    msgLocalDoH2 = $"{NL}https://{loopbackIPv4}/dns-query";
-                else
-                    msgLocalDoH2 = $"{NL}https://{loopbackIPv4}:{ConnectedDohPort}/dns-query";
+                string msgLocalDoH1 = NetworkTool.IpToUrl("https", loopbackIPv4, ConnectedDohPort, "dns-query");
+                msgLocalDoH1 = $"{NL}{msgLocalDoH1}";
+                if (!limitLog)
+                    if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH1, Color.DodgerBlue));
+
                 if (isIPv6SupportedByOS)
                 {
-                    if (ConnectedDohPort == 443)
-                        msgLocalDoH2 += $"{NL}https://[{loopbackIPv6}]/dns-query";
-                    else
-                        msgLocalDoH2 += $"{NL}https://[{loopbackIPv6}]:{ConnectedDohPort}/dns-query";
+                    string msgLocalDoH2 = NetworkTool.IpToUrl("https", loopbackIPv6, ConnectedDohPort, "dns-query");
+                    msgLocalDoH2 = $"{NL}{msgLocalDoH2}";
+                    if (!limitLog)
+                        if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH2, Color.DodgerBlue));
                 }
-                msgLocalDoH2 += NL;
-                if (!limitLog)
-                    if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH2, Color.DodgerBlue));
-
+                
                 // Connect Status - Local DoH Loopback IP
-                this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{NL}{msgLocalDoH1}"));
-                this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{msgLocalDoH2}", Color.DodgerBlue));
+                this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{NL}{msgLocalDoH0}"));
+                this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{msgLocalDoH1}", Color.DodgerBlue));
 
                 if (LocalIP != null)
                 {
-                    string msgLocalDoH3;
-                    if (ConnectedDohPort == 443)
-                        msgLocalDoH3 = $"https://{LocalIP}/dns-query";
-                    else
-                        msgLocalDoH3 = $"https://{LocalIP}:{ConnectedDohPort}/dns-query";
-                    msgLocalDoH3 += NL;
+                    string msgLocalDoH3 = NL + NetworkTool.IpToUrl("https", LocalIP, ConnectedDohPort, "dns-query") + NL;
                     if (!limitLog)
                         if (writeToLog) this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgLocalDoH3, Color.DodgerBlue));
 

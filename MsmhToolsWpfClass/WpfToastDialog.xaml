@@ -1,0 +1,61 @@
+﻿<Window x:Name="MainWindow" x:Class="MsmhToolsWpfClass.WpfToastDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MsmhToolsWpfClass"
+        xmlns:themes="clr-namespace:MsmhToolsWpfClass.Themes"
+        Background="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ShowInTaskbar="False"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:WpfToastDialog, IsDesignTimeCreatable=True}"
+        UseLayoutRounding="True"
+        MinWidth="20" MinHeight="5"
+        Width="Auto" Height="Auto"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        Loaded="MainWindow_Loaded" Closing="MainWindow_Closing" Closed="MainWindow_Closed">
+    <Window.Style>
+        <Style>
+            <Setter Property="WindowChrome.WindowChrome">
+                <Setter.Value>
+                    <WindowChrome CaptionHeight="0" CornerRadius="0" GlassFrameThickness="1" NonClientFrameEdges="None" ResizeBorderThickness="0" UseAeroCaptionButtons="False"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Style>
+    <Window.Clip>
+        <RectangleGeometry x:Name="XNameIsNecessaryToAvoidDataBindingBug"
+                           RadiusX="5"
+                           RadiusY="5">
+            <RectangleGeometry.Rect>
+                <MultiBinding Converter="{local:SizeToRectMultiConverter}">
+                    <Binding Path="ActualWidth" ElementName="MainWindow"/>
+                    <Binding Path="ActualHeight" ElementName="MainWindow"/>
+                </MultiBinding>
+            </RectangleGeometry.Rect>
+        </RectangleGeometry>
+    </Window.Clip>
+    <Border CornerRadius="5" BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="{DynamicResource {x:Static themes:AppTheme.BorderBrush}}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="5"/>
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="1" Margin="10,0,10,0"
+                       MaxWidth="{Binding Path=MaxWidth, ElementName=MainWindow, Converter={x:Static local:SubtractConverter.Instance}, ConverterParameter=10}"
+                       MaxHeight="{Binding Path=MaxHeight, ElementName=MainWindow, Converter={x:Static local:DivideConverter.Instance}, ConverterParameter=3}">
+                <Image x:Name="PART_Image" DockPanel.Dock="Left" Margin="0,0,7.5,0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Stretch="None" SnapsToDevicePixels="True"
+                       RenderOptions.EdgeMode="Aliased"/>
+                <TextBlock x:Name="PART_MessageTextBlock" DockPanel.Dock="Left" Margin="7.5,0,0,0" VerticalAlignment="Center"
+                           Text="Sample Message"
+                           TextWrapping="Wrap"
+                           FontWeight="Medium"/>
+            </DockPanel>
+        </Grid>
+    </Border>
+</Window>

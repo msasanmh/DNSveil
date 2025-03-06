@@ -33,7 +33,7 @@ public class DoHClient
     public async Task<byte[]> GetResponseAsync()
     {
         byte[] result = Array.Empty<byte>();
-
+        
         Task task = Task.Run(async () =>
         {
             try
@@ -48,7 +48,7 @@ public class DoHClient
                 UriBuilder uriBuilder = new()
                 {
                     Scheme = scheme,
-                    Host = dnsServerIP,
+                    Host = Reader.Host,
                     Port = Reader.Port,
                     Path = Reader.Path
                 };
@@ -66,10 +66,11 @@ public class DoHClient
                     AllowInsecure = AllowInsecure,
                     ProxyScheme = ProxyScheme,
                     ProxyUser = ProxyUser,
-                    ProxyPass = ProxyPass,
+                    ProxyPass = ProxyPass
                 };
                 hr.Headers.Add("host", Reader.Host); // In Case Of Using Bootstrap
-
+                if (NetworkTool.IsIP(dnsServerIP, out IPAddress? ip) && ip != null) hr.AddressIP = ip;
+                
                 if (Reader.Scheme.Equals("h3://")) hr.IsHttp3 = true;
                 
                 HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);

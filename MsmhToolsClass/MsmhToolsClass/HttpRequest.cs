@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -145,6 +146,10 @@ public class HttpRequest
     public CancellationToken CT { get; set; } = default;
     public bool IsForHttpProxy { get; set; } = false;
     public Uri? URI { get; set; }
+    /// <summary>
+    /// Connect To This IP (Host's IP Retrieved From A DNS Server) - Will Be Ignored If ProxyScheme Is Set.
+    /// </summary>
+    public IPAddress AddressIP { get; set; } = IPAddress.None;
     public byte[] DataToSend { get; set; } = Array.Empty<byte>();
     public HttpMethod Method { get; set; } = HttpMethod.Get;
     public bool IsHttp3 { get; set; } = false;
@@ -174,6 +179,7 @@ public class HttpRequest
         {
             result += $"{nameof(IsForHttpProxy)}: {IsForHttpProxy}\r\n";
             if (URI != null) result += $"{nameof(URI)}: {URI}\r\n";
+            if (AddressIP != IPAddress.None) result += $"{nameof(AddressIP)}: {AddressIP}\r\n";
             if (DataToSend.Length > 0) result += $"{nameof(DataToSend)}: {Convert.ToHexString(DataToSend)}\r\n";
             result += $"{nameof(Method)}: {Method}\r\n";
             result += $"{nameof(ContentType)}: {ContentType}\r\n";
@@ -358,7 +364,7 @@ public class HttpRequest
     public static async Task<HttpRequestResponse> SendAsync(HttpRequest hr)
     {
         HttpRequestResponse hrr = new();
-
+        
         Task task = Task.Run(async () =>
         {
             try
@@ -366,34 +372,85 @@ public class HttpRequest
                 static bool callback(object sender, X509Certificate? cert, X509Chain? chain, SslPolicyErrors sslPolicyErrors) => true;
                 SslProtocols protocols = SslProtocols.None | SslProtocols.Tls12 | SslProtocols.Tls13;
 
-                HttpClientHandler handler = new()
-                {
-                    SslProtocols = protocols,
-                    AllowAutoRedirect = hr.AllowAutoRedirect
-                };
+                HttpClient? httpClient;
 
-                // Ignore Cert Check
-                if (hr.AllowInsecure)
+                if (hr.AddressIP == IPAddress.None || !string.IsNullOrEmpty(hr.ProxyScheme))
                 {
-                    handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-                    handler.ServerCertificateCustomValidationCallback = callback;
+                    HttpClientHandler handler = new()
+                    {
+                        SslProtocols = protocols,
+                        AllowAutoRedirect = hr.AllowAutoRedirect
+                    };
+
+                    // Ignore Cert Check
+                    if (hr.AllowInsecure)
+                    {
+                        handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                        handler.ServerCertificateCustomValidationCallback = callback;
+                    }
+                    
+                    if (!string.IsNullOrEmpty(hr.ProxyScheme))
+                    {
+                        NetworkCredential credential = new(hr.ProxyUser, hr.ProxyPass);
+                        handler.Proxy = new WebProxy(hr.ProxyScheme, true, null, credential);
+                        handler.Credentials = credential;
+                        handler.UseProxy = true;
+                    }
+                    else handler.UseProxy = false;
+
+                    if (hr.Certificate != null)
+                    {
+                        handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                        handler.ClientCertificates.Add(hr.Certificate);
+                    }
+
+                    httpClient = new(handler);
                 }
-
-                if (!string.IsNullOrEmpty(hr.ProxyScheme))
+                else
                 {
-                    NetworkCredential credential = new(hr.ProxyUser, hr.ProxyPass);
-                    handler.Proxy = new WebProxy(hr.ProxyScheme, true, null, credential);
-                    handler.Credentials = credential;
-                    handler.UseProxy = true;
-                }
-                else handler.UseProxy = false;
+                    SocketsHttpHandler handler = new()
+                    {
+                        ConnectCallback = async (context, ct) =>
+                        {
+                            // This Doesn't Send SNI To Upstream Proxy
+                            Socket socket = new(SocketType.Stream, ProtocolType.Tcp)
+                            {
+                                NoDelay = true // Turn Off Nagle's Algorithm
+                            };
 
-                if (hr.Certificate != null)
-                {
-                    handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-                    handler.ClientCertificates.Add(hr.Certificate);
-                }
+                            await socket.ConnectAsync(hr.AddressIP, context.DnsEndPoint.Port, ct);
+                            return new NetworkStream(socket, ownsSocket: true);
+                        }
+                    };
+                    
+                    handler.SslOptions.EnabledSslProtocols = protocols;
+                    handler.AllowAutoRedirect = hr.AllowAutoRedirect;
 
+                    // Ignore Cert Check
+                    if (hr.AllowInsecure)
+                    {
+                        handler.SslOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
+                        handler.SslOptions.RemoteCertificateValidationCallback = callback;
+                    }
+                    
+                    if (!string.IsNullOrEmpty(hr.ProxyScheme))
+                    {
+                        NetworkCredential credential = new(hr.ProxyUser, hr.ProxyPass);
+                        handler.Proxy = new WebProxy(hr.ProxyScheme, true, null, credential);
+                        handler.Credentials = credential;
+                        handler.UseProxy = true;
+                    }
+                    else handler.UseProxy = false;
+
+                    if (hr.Certificate != null)
+                    {
+                        handler.SslOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
+                        handler.SslOptions.ClientCertificates?.Add(hr.Certificate);
+                    }
+
+                    httpClient = new(handler, disposeHandler: true);
+                }
+                
                 HttpContent? content = null;
                 if (hr.DataToSend.Length > 0 && hr.Method != HttpMethod.Get && hr.Method != HttpMethod.Head)
                 {
@@ -402,7 +459,6 @@ public class HttpRequest
                         content.Headers.ContentType = new MediaTypeHeaderValue(hr.ContentType);
                 }
 
-                HttpClient httpClient = new(handler);
                 httpClient.Timeout = TimeSpan.FromMilliseconds(hr.TimeoutMS);
                 httpClient.DefaultRequestHeaders.ExpectContinue = false;
                 httpClient.DefaultRequestHeaders.ConnectionClose = true;
@@ -508,7 +564,6 @@ public class HttpRequest
                 {
                     _ = Task.Run(() =>
                     {
-                        handler.Dispose();
                         content?.Dispose();
                         message.Dispose();
                         httpClient.Dispose();

@@ -7,7 +7,7 @@ public class SystemDnsClient
     private byte[] QueryBuffer { get; set; } = Array.Empty<byte>();
     private int TimeoutMS { get; set; } = 5;
     private CancellationToken CT { get; set; }
-    public static DnsEnums.DnsProtocol Protocol { get; private set; } = DnsEnums.DnsProtocol.UDP;
+    private static DnsEnums.DnsProtocol Protocol { get; set; } = DnsEnums.DnsProtocol.UDP;
 
     public SystemDnsClient(byte[] queryBuffer, int timeoutMS, CancellationToken cT)
     {

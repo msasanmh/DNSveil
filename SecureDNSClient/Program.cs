@@ -111,6 +111,15 @@ internal static partial class Program
         }
         GC.KeepAlive(mutex);
 
+        bool isAlreadyRunning = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName).Length > 1;
+        if (isAlreadyRunning)
+        {
+            MessageBox.Show($"{productName} is already running.");
+            Environment.Exit(0);
+            Application.Exit();
+            return;
+        }
+
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
         Application.ThreadException += Application_ThreadException;
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;

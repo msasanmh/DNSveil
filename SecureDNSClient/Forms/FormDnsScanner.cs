@@ -574,7 +574,7 @@ public partial class FormDnsScanner : Form
                         if (Exit) break;
                         if (!ProcessManager.FindProcessByPID(PidDnsServer)) break;
 
-                        List<int> pids = ProcessManager.GetProcessPidsByUsingPort(port);
+                        List<int> pids = await ProcessManager.GetProcessPidsByUsingPortAsync(port);
                         foreach (int pid in pids) if (pid != PidDnsServer) await ProcessManager.KillProcessByPidAsync(pid);
 
                         CheckDns.CheckDnsResult cdr = await checkDns.CheckDnsExternalAsync(domainToCheck, localDns, 2000);

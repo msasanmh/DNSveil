@@ -1,0 +1,54 @@
+﻿<Window x:Name="RootWindow"
+        x:Class="DNSveil.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DNSveil"
+        xmlns:resources="clr-namespace:MsmhToolsWpfClass.Themes;assembly=MsmhToolsWpfClass"
+        xmlns:MsmhToolsWpfClass="clr-namespace:MsmhToolsWpfClass;assembly=MsmhToolsWpfClass"
+        mc:Ignorable="d"
+        Title="DNSveil" MinWidth="1000" MinHeight="600" Icon="/DNSveil.png"
+        Background="{DynamicResource {x:Static resources:AppTheme.BackgroundBrush}}"
+        Foreground="{DynamicResource {x:Static resources:AppTheme.ForegroundBrush}}"
+        Loaded="RootWindow_Loaded" ContentRendered="RootWindow_ContentRendered">
+
+    <Grid x:Name="GridMain">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <MsmhToolsWpfClass:WpfSplitPanelH x:Name="MainSplitPanel" Panel1Percent="75">
+            <MsmhToolsWpfClass:WpfSplitPanelH.Panel1>
+                <DockPanel LastChildFill="True">
+                    <Frame x:Name="FrameStatus" DockPanel.Dock="Right" Margin="1,2,2,2" Content="Frame Status" Source="/PageTest.xaml" Width="200" Background="MediumSeaGreen"/>
+                    <TabControl x:Name="MainTabControl" DockPanel.Dock="Left" Margin="2,2,1,2" HorizontalAlignment="Stretch" TabStripPlacement="Top">
+                        <TabItem Header="Home">
+                            <StackPanel>
+                                <MsmhToolsWpfClass:WpfButton x:Name="ManageServers" Content="Manage Servers" Click="ManageServers_Click"/>
+                                <MsmhToolsWpfClass:WpfNumericUpDown Value="10" Minimum="0" Maximum="12" Step="2" ValueChanged="IntegerUpDown_ValueChanged" Margin="0,0,0,150" HorizontalAlignment="Center" Height="50" Width="89"/>
+                                <MsmhToolsWpfClass:WpfButton Content="X" BorderBrush="#FFD23F3F" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" RoundButton="True"/>
+                            </StackPanel>
+                        </TabItem>
+                        <TabItem Header="TabItem">
+                            <Grid/>
+                        </TabItem>
+                        <TabItem Header="TabItem">
+                            <Grid/>
+                        </TabItem>
+
+                    </TabControl>
+                </DockPanel>
+            </MsmhToolsWpfClass:WpfSplitPanelH.Panel1>
+            <MsmhToolsWpfClass:WpfSplitPanelH.Panel2>
+                <GroupBox Header="Log" MinHeight="0">
+
+                </GroupBox>
+            </MsmhToolsWpfClass:WpfSplitPanelH.Panel2>
+        </MsmhToolsWpfClass:WpfSplitPanelH>
+        <DockPanel Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Disabled" Margin="0">
+            <MsmhToolsWpfClass:WpfButton x:Name="ButtonView" Content="View" Margin="4,4,10,4" Click="ButtonView_Click" HorizontalAlignment="Left"/>
+            <MsmhToolsWpfClass:WpfButton x:Name="ButtonExit" Content="Exit" DockPanel.Dock="Right" Margin="10,4,4,4" Click="ButtonExit_Click" HorizontalAlignment="Right"/>
+        </DockPanel>
+    </Grid>
+</Window>

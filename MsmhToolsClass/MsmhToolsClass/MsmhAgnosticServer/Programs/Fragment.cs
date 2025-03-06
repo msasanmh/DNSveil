@@ -8,11 +8,11 @@ public partial class AgnosticProgram
     public class Fragment
     {
         public Mode FragmentMode { get; private set; } = Mode.Disable;
-        public ChunkMode DPIChunkMode { get; private set; }
-        public int BeforeSniChunks { get; private set; } = 0;
-        public int SniChunks { get; private set; } = 0;
+        public ChunkMode SniChunkMode { get; private set; }
+        public int ChunksBeforeSNI { get; private set; } = 0;
+        public int ChunksSNI { get; private set; } = 0;
         public int AntiPatternOffset { get; private set; } = 2;
-        public int FragmentDelay { get; private set; } = 0;
+        public int FragmentDelayMS { get; private set; } = 0;
         public string? DestHostname { get; set; }
         public int DestPort { get; set; }
 
@@ -20,14 +20,14 @@ public partial class AgnosticProgram
 
         public Fragment() { }
 
-        public void Set(Mode mode, int beforeSniChunks, ChunkMode chunkMode, int sniChunks, int antiPatternOffset, int fragmentDelay)
+        public void Set(Mode mode, int chunksBeforeSNI, ChunkMode sniChunkMode, int chunksSNI, int antiPatternOffset, int fragmentDelayMS)
         {
             FragmentMode = mode;
-            BeforeSniChunks = beforeSniChunks;
-            DPIChunkMode = chunkMode;
-            SniChunks = sniChunks;
+            ChunksBeforeSNI = chunksBeforeSNI;
+            SniChunkMode = sniChunkMode;
+            ChunksSNI = chunksSNI;
             AntiPatternOffset = antiPatternOffset;
-            FragmentDelay = fragmentDelay;
+            FragmentDelayMS = fragmentDelayMS;
         }
 
         public enum Mode
@@ -41,6 +41,17 @@ public partial class AgnosticProgram
             SNI,
             SniExtension,
             AllExtensions
+        }
+
+        public static ChunkMode GetChunkModeByName(string name)
+        {
+            name = name.Trim();
+            if (name.Equals(nameof(ChunkMode.SNI), StringComparison.OrdinalIgnoreCase)) return ChunkMode.SNI;
+            if (name.Equals(nameof(ChunkMode.SniExtension), StringComparison.OrdinalIgnoreCase)) return ChunkMode.SniExtension;
+            if (name.Equals("Sni Extension", StringComparison.OrdinalIgnoreCase)) return ChunkMode.SniExtension;
+            if (name.Equals(nameof(ChunkMode.AllExtensions), StringComparison.OrdinalIgnoreCase)) return ChunkMode.AllExtensions;
+            if (name.Equals("All Extensions", StringComparison.OrdinalIgnoreCase)) return ChunkMode.AllExtensions;
+            return ChunkMode.SNI; // Default
         }
 
         public class ProgramMode
@@ -62,21 +73,21 @@ public partial class AgnosticProgram
                     Random random = new();
 
                     // Anti Pattern Fragment Chunks
-                    int beforeSniChunks = random.Next(bp.BeforeSniChunks - offset, bp.BeforeSniChunks + offset);
+                    int beforeSniChunks = random.Next(bp.ChunksBeforeSNI - offset, bp.ChunksBeforeSNI + offset);
                     if (beforeSniChunks <= 0) beforeSniChunks = 1;
                     if (beforeSniChunks > Data.Length) beforeSniChunks = Data.Length;
 
-                    int sniChunks = random.Next(bp.SniChunks - offset, bp.SniChunks + offset);
+                    int sniChunks = random.Next(bp.ChunksSNI - offset, bp.ChunksSNI + offset);
                     if (sniChunks <= 0) sniChunks = 1;
                     if (sniChunks > Data.Length) sniChunks = Data.Length;
 
                     //await TestAsync(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
 
-                    if (bp.DPIChunkMode == ChunkMode.AllExtensions)
+                    if (bp.SniChunkMode == ChunkMode.AllExtensions)
                         await SendDataInFragmentAllExtensionsAsync(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
-                    else if (bp.DPIChunkMode == ChunkMode.SniExtension)
+                    else if (bp.SniChunkMode == ChunkMode.SniExtension)
                         await SendDataInFragmentSniExtensionAsync(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
-                    else if (bp.DPIChunkMode == ChunkMode.SNI)
+                    else if (bp.SniChunkMode == ChunkMode.SNI)
                         await SendDataInFragmentSNIAsync(Data, Socket, beforeSniChunks, sniChunks, offset, bp);
                 }
                 catch (Exception) { }
@@ -432,7 +443,7 @@ public partial class AgnosticProgram
                             byte[] fragmentData = packets[i];
                             if (socket == null) return;
                             await socket.SendAsync(fragmentData, SocketFlags.None);
-                            if (bp.FragmentDelay > 0) await Task.Delay(bp.FragmentDelay);
+                            if (bp.FragmentDelayMS > 0) await Task.Delay(bp.FragmentDelayMS);
                         }
                         catch (Exception ex)
                         {

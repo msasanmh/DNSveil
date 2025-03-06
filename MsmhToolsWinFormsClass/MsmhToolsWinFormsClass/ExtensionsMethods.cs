@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using CustomControls;
@@ -35,12 +34,7 @@ public static class ExtensionsMethods
     {
         if (IsWindows10OrGreater(17763))
         {
-            var attribute = DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1;
-            if (IsWindows10OrGreater(18985))
-            {
-                attribute = DWMWA_USE_IMMERSIVE_DARK_MODE;
-            }
-
+            int attribute = IsWindows10OrGreater(18985) ? DWMWA_USE_IMMERSIVE_DARK_MODE : DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1;
             int useImmersiveDarkMode = enabled ? 1 : 0;
             return NativeMethods.DwmSetWindowAttribute(handle, attribute, ref useImmersiveDarkMode, sizeof(int)) == 0;
         }
