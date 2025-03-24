@@ -719,7 +719,7 @@ public static class NetworkTool
     }
 
     /// <summary>
-    /// All Platforms
+    /// Is Port Free To Listen (All Platforms)
     /// </summary>
     /// <param name="port">Port</param>
     public static bool IsPortFree(int port)
@@ -738,7 +738,7 @@ public static class NetworkTool
                     for (int n = 0; n < tcps.Length; n++)
                     {
                         TcpConnectionInformation tcp = tcps[n];
-                        if (tcp.LocalEndPoint.Port == port)
+                        if (tcp.LocalEndPoint.Port == port && tcp.State == TcpState.Listen)
                         {
                             isAvailable = false;
                             break;

@@ -47,8 +47,21 @@ public partial class FormMain : Form
         int sdcagnosticserverResult = Info.VersionCompare(sdcagnosticserverNewVer, sdcagnosticserverOldVer);
         int goodbyedpiResult = Info.VersionCompare(goodbyedpiNewVer, goodbyedpiOldVer);
 
+        // Fix GoodbyeDPI
+        bool fixUpdateGoodbyDpi = false;
+        try
+        {
+            int fixGoodbyeDpiResult = Info.VersionCompare("0.2.2", goodbyedpiOldVer);
+            if (fixGoodbyeDpiResult == 0 && File.Exists(SecureDNS.WinDivert))
+            {
+                byte[] gdBytes = await File.ReadAllBytesAsync(SecureDNS.WinDivert);
+                if (gdBytes.Length >= 30000) fixUpdateGoodbyDpi = true;
+            }
+        }
+        catch (Exception) { }
+
         // Check Missing/Update Binaries
-        if (!CheckNecessaryFiles(false) || dnslookupResult == 1 || sdclookupResult == 1 || sdcagnosticserverResult == 1 || goodbyedpiResult == 1)
+        if (!CheckNecessaryFiles(false) || dnslookupResult == 1 || sdclookupResult == 1 || sdcagnosticserverResult == 1 || goodbyedpiResult == 1 || fixUpdateGoodbyDpi)
         {
             string msg1 = $"Creating/Updating {arch} Binaries. Please Wait..." + NL;
             CustomRichTextBoxLog.AppendText(msg1, Color.LightGray);
@@ -89,19 +102,22 @@ public partial class FormMain : Form
                         await File.WriteAllBytesAsync(SecureDNS.AgnosticServerPath, NecessaryFiles.Resource1.SDCAgnosticServer_X86);
                 }
 
-                if (!File.Exists(SecureDNS.GoodbyeDpi) || goodbyedpiResult == 1)
+                if (goodbyedpiResult == 1 || fixUpdateGoodbyDpi)
+                    await DeleteGoodbyeDpiAndWinDivertServices_Async();
+
+                if (!File.Exists(SecureDNS.GoodbyeDpi) || goodbyedpiResult == 1 || fixUpdateGoodbyDpi)
                     if (arch == Architecture.X64 || arch == Architecture.X86)
                         await File.WriteAllBytesAsync(SecureDNS.GoodbyeDpi, NecessaryFiles.Resource1.goodbyedpi);
 
-                if (!File.Exists(SecureDNS.WinDivert))
+                if (!File.Exists(SecureDNS.WinDivert) || fixUpdateGoodbyDpi)
                     if (arch == Architecture.X64 || arch == Architecture.X86)
                         await File.WriteAllBytesAsync(SecureDNS.WinDivert, NecessaryFiles.Resource1.WinDivert);
 
-                if (!File.Exists(SecureDNS.WinDivert32))
+                if (!File.Exists(SecureDNS.WinDivert32) || fixUpdateGoodbyDpi)
                     if (arch == Architecture.X64 || arch == Architecture.X86)
                         await File.WriteAllBytesAsync(SecureDNS.WinDivert32, NecessaryFiles.Resource1.WinDivert32);
 
-                if (!File.Exists(SecureDNS.WinDivert64))
+                if (!File.Exists(SecureDNS.WinDivert64) || fixUpdateGoodbyDpi)
                     if (arch == Architecture.X64 || arch == Architecture.X86)
                         await File.WriteAllBytesAsync(SecureDNS.WinDivert64, NecessaryFiles.Resource1.WinDivert64);
 

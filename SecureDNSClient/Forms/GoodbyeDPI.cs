@@ -313,6 +313,7 @@ public partial class FormMain
 
     private static async Task DeleteGoodbyeDpiAndWinDivertServices_Async()
     {
+        await Task.Delay(100);
         string service1 = "GoodbyeDPI", service2 = "WinDivert";
         await ServiceTool.DeleteWhereAsync(service1);
         await DriverTool.DeleteWhereAsync(service1);

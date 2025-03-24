@@ -11,112 +11,6 @@
 
     <BorderGapMaskConverter x:Key="BorderGapMaskConverter"/>
 
-    <!-- WpfSplitPanelH -->
-    <Style TargetType="{x:Type local:WpfSplitPanelH}">
-        <Setter Property="Width" Value="Auto"/>
-        <Setter Property="Height" Value="Auto"/>
-        <Setter Property="Background" Value="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static themes:AppTheme.BorderBrush}}"/>
-        <Setter Property="BorderThickness" Value="{DynamicResource {x:Static themes:AppTheme.BorderThickness}}"/>
-        <Setter Property="Foreground" Value="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"/>
-        <Setter Property="FontWeight" Value="Medium"/>
-        <Setter Property="Margin" Value="1"/>
-        <Setter Property="OverridesDefaultStyle" Value="true"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:WpfSplitPanelH}">
-                    <Border x:Name="Border" Margin="0" SnapsToDevicePixels="True" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
-                        <Grid x:Name="PART_MainGrid">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="{Binding Panel1GridLength}"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="{Binding Panel2GridLength}"/>
-                            </Grid.RowDefinitions>
-                            <Grid x:Name="PART_Content1Grid" Grid.Row="0" Margin="2">
-                                <ContentPresenter Content="{TemplateBinding Panel1}" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                            </Grid>
-                            <GridSplitter x:Name="PART_GridSplitter" Grid.Row="1" Margin="0,0,0,0" MinHeight="4" MaxHeight="4"
-                                          ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"
-                                          HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                                          Background="{TemplateBinding SplitterBrush}"/>
-                            <Border x:Name="PART_SplitterBorder" Grid.Row="1" Margin="0,4,0,0" MinHeight="4" MaxHeight="4" BorderThickness="0"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                                    Background="{TemplateBinding SplitterBrush}">
-                                <Border.Style>
-                                    <Style TargetType="{x:Type Border}">
-                                        <Setter Property="Cursor" Value="Hand"/>
-                                    </Style>
-                                </Border.Style>
-                            </Border>
-                            <Grid x:Name="PART_Content2Grid" Grid.Row="2" Margin="2">
-                                <ContentPresenter Content="{TemplateBinding Panel2}" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                            </Grid>
-                        </Grid>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsEnabled" Value="false">
-                            <Setter Property="Opacity" TargetName="Border" Value="0.5"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- WpfSplitPanelV -->
-    <Style TargetType="{x:Type local:WpfSplitPanelV}">
-        <Setter Property="Width" Value="Auto"/>
-        <Setter Property="Height" Value="Auto"/>
-        <Setter Property="Background" Value="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static themes:AppTheme.BorderBrush}}"/>
-        <Setter Property="BorderThickness" Value="{DynamicResource {x:Static themes:AppTheme.BorderThickness}}"/>
-        <Setter Property="Foreground" Value="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"/>
-        <Setter Property="FontWeight" Value="Medium"/>
-        <Setter Property="Margin" Value="1"/>
-        <Setter Property="OverridesDefaultStyle" Value="true"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:WpfSplitPanelV}">
-                    <Border x:Name="Border" Margin="0" SnapsToDevicePixels="True" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
-                        <Grid x:Name="PART_MainGrid">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="{Binding Panel1GridLength}"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="{Binding Panel2GridLength}"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid x:Name="PART_Content1Grid" Grid.Column="0" Margin="2">
-                                <ContentPresenter Content="{TemplateBinding Panel1}" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                            </Grid>
-                            <GridSplitter x:Name="PART_GridSplitter" Grid.Column="1" Margin="0,0,0,0" MinWidth="4" MaxWidth="4"
-                                      ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
-                                      HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                                      Background="{TemplateBinding SplitterBrush}"/>
-                            <Border x:Name="PART_SplitterBorder" Grid.Column="1" Margin="4,0,0,0" MinWidth="4" MaxWidth="4" BorderThickness="0"
-                                    HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                                Background="{TemplateBinding SplitterBrush}">
-                                <Border.Style>
-                                    <Style TargetType="{x:Type Border}">
-                                        <Setter Property="Cursor" Value="Hand"/>
-                                    </Style>
-                                </Border.Style>
-                            </Border>
-                            <Grid x:Name="PART_Content2Grid" Grid.Column="2" Margin="2">
-                                <ContentPresenter Content="{TemplateBinding Panel2}" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                            </Grid>
-                        </Grid>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsEnabled" Value="false">
-                            <Setter Property="Opacity" TargetName="Border" Value="0.5"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <!-- WpfFlyoutGroupBox -->
     <Style TargetType="{x:Type local:WpfFlyoutGroupBox}">
         <Setter Property="Width" Value="Auto"/>
@@ -180,9 +74,7 @@
             <DataTemplate x:Key="Close">
                 <Grid UseLayoutRounding="True">
                     <Path Data="M1,0 L6,5 L11,0 L12,1 L7,6 L12,11 L11,12 L6,7 L1,12 L0,11 L5,6 L0,1 z"
-                          Width="12" Height="12" UseLayoutRounding="True"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
                           Fill="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrush}}"/>
                 </Grid>
             </DataTemplate>
@@ -276,6 +168,213 @@
         </Setter>
     </Style>
 
+    <!-- WpfHelpFly -->
+    <Style TargetType="{x:Type local:WpfHelpFly}">
+        <Style.Resources>
+            <DataTemplate x:Key="Close">
+                <Grid UseLayoutRounding="True">
+                    <Path Data="M1,0 L6,5 L11,0 L12,1 L7,6 L12,11 L11,12 L6,7 L1,12 L0,11 L5,6 L0,1 z"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Fill="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrush}}"/>
+                </Grid>
+            </DataTemplate>
+        </Style.Resources>
+        <Setter Property="Width" Value="Auto"/>
+        <Setter Property="Height" Value="Auto"/>
+        <Setter Property="Background" Value="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"/>
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="BorderThickness" Value="{DynamicResource {x:Static themes:AppTheme.BorderThickness}}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="OverridesDefaultStyle" Value="true"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:WpfHelpFly}">
+                    <Grid x:Name="PART_MainGrid">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid x:Name="PART_HeaderGrid" Grid.Row="0" Background="Transparent" Margin="{TemplateBinding Padding}">
+                            <TextBlock x:Name="PART_HiddenText" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       Text="i" TextWrapping="NoWrap"
+                                       ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                       ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                       FontSize="{TemplateBinding FontSize, Converter={x:Static local:SubtractConverter.Instance}, ConverterParameter=2}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       Visibility="Visible" Opacity="0"/>
+                            <Ellipse x:Name="PART_CircleEllipse" Stretch="Uniform" UseLayoutRounding="True" Focusable="False" StrokeThickness="1"
+                                     Width="{Binding ElementName=PART_HiddenText, Path=ActualHeight, Converter={x:Static local:SubtractConverter.Instance}, ConverterParameter=0}"
+                                     Height="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Width}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Fill="{TemplateBinding Foreground}"
+                                     Stroke="{TemplateBinding BorderBrush}"/>
+                            <Path x:Name="PART_HelpPath" Stretch="Uniform" UseLayoutRounding="True" Focusable="False"
+                                  Data="M 0 3 L 3 3 L 3 0 L 0 0 Z M 0 4 L 3 4 L 3 13 L 0 13 L 0 4 Z"
+                                  Width="{Binding ElementName=PART_HiddenText, Path=ActualHeight, Converter={x:Static local:SubtractConverter.Instance}, ConverterParameter=6}"
+                                  Height="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Width}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Fill="{TemplateBinding BorderBrush}"/>
+                            <Grid.Style>
+                                <Style TargetType="{x:Type Grid}">
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                </Style>
+                            </Grid.Style>
+                        </Grid>
+                        <Popup x:Name="PART_Popup" Grid.Row="1" PlacementTarget="{Binding ElementName=PART_HeaderStackPanel}" Placement="Bottom" AllowsTransparency="True" PopupAnimation="Fade">
+                            <Border x:Name="PART_PopupBorder" Margin="0" SnapsToDevicePixels="True" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+                                <StackPanel Orientation="Vertical">
+                                    <Grid Background="{Binding HeaderBrush}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Margin="5,0,5,0" Text="{TemplateBinding Header}" HorizontalAlignment="Left"/>
+                                        <local:WpfButton x:Name="PART_CloseButton"
+                                                     Grid.Column="1"
+                                                     VerticalAlignment="Stretch"
+                                                     Background="Transparent"
+                                                     MouseOverBrush="{DynamicResource {x:Static themes:AppTheme.IndianRedBrush}}"
+                                                     RippleBrush="White"
+                                                     BorderThickness="0"
+                                                     WindowChrome.IsHitTestVisibleInChrome="True"
+                                                     ContentTemplate="{StaticResource Close}"
+                                                     Stretch="None"
+                                                     RoundButton="True"
+                                                     IsTabStop="False"/>
+                                    </Grid>
+                                    <ContentPresenter Margin="8" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Fill" TargetName="PART_CircleEllipse" Value="{Binding BorderBrush}"/>
+                            <Setter Property="Stroke" TargetName="PART_CircleEllipse" Value="{Binding Foreground}"/>
+                            <Setter Property="Fill" TargetName="PART_HelpPath" Value="{Binding Foreground}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Opacity" TargetName="PART_MainGrid" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- WpfSplitPanelH -->
+    <Style TargetType="{x:Type local:WpfSplitPanelH}">
+        <Setter Property="Width" Value="Auto"/>
+        <Setter Property="Height" Value="Auto"/>
+        <Setter Property="Background" Value="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static themes:AppTheme.BorderBrush}}"/>
+        <Setter Property="BorderThickness" Value="{DynamicResource {x:Static themes:AppTheme.BorderThickness}}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Margin" Value="1"/>
+        <Setter Property="OverridesDefaultStyle" Value="true"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:WpfSplitPanelH}">
+                    <Border x:Name="Border" Margin="0" SnapsToDevicePixels="True" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid x:Name="PART_MainGrid">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="{Binding Panel1GridLength}"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="{Binding Panel2GridLength}"/>
+                            </Grid.RowDefinitions>
+                            <Grid x:Name="PART_Content1Grid" Grid.Row="0" Margin="2">
+                                <ContentPresenter Content="{TemplateBinding Panel1}" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Grid>
+                            <GridSplitter x:Name="PART_GridSplitter" Grid.Row="1" Margin="0,0,0,0" MinHeight="4" MaxHeight="4"
+                                          ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"
+                                          HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                                          Background="{TemplateBinding SplitterBrush}"/>
+                            <Border x:Name="PART_SplitterBorder" Grid.Row="1" Margin="0,4,0,0" MinHeight="4" MaxHeight="4" BorderThickness="0"
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                                    Background="{TemplateBinding SplitterBrush}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                            <Grid x:Name="PART_Content2Grid" Grid.Row="2" Margin="2">
+                                <ContentPresenter Content="{TemplateBinding Panel2}" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Opacity" TargetName="Border" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- WpfSplitPanelV -->
+    <Style TargetType="{x:Type local:WpfSplitPanelV}">
+        <Setter Property="Width" Value="Auto"/>
+        <Setter Property="Height" Value="Auto"/>
+        <Setter Property="Background" Value="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static themes:AppTheme.BorderBrush}}"/>
+        <Setter Property="BorderThickness" Value="{DynamicResource {x:Static themes:AppTheme.BorderThickness}}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Margin" Value="1"/>
+        <Setter Property="OverridesDefaultStyle" Value="true"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:WpfSplitPanelV}">
+                    <Border x:Name="Border" Margin="0" SnapsToDevicePixels="True" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid x:Name="PART_MainGrid">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{Binding Panel1GridLength}"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="{Binding Panel2GridLength}"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid x:Name="PART_Content1Grid" Grid.Column="0" Margin="2">
+                                <ContentPresenter Content="{TemplateBinding Panel1}" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Grid>
+                            <GridSplitter x:Name="PART_GridSplitter" Grid.Column="1" Margin="0,0,0,0" MinWidth="4" MaxWidth="4"
+                                          ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                                          HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                                          Background="{TemplateBinding SplitterBrush}"/>
+                            <Border x:Name="PART_SplitterBorder" Grid.Column="1" Margin="4,0,0,0" MinWidth="4" MaxWidth="4" BorderThickness="0"
+                                    HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                                    Background="{TemplateBinding SplitterBrush}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                            <Grid x:Name="PART_Content2Grid" Grid.Column="2" Margin="2">
+                                <ContentPresenter Content="{TemplateBinding Panel2}" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Opacity" TargetName="Border" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- WpfWindow -->
     <Style TargetType="{x:Type local:WpfWindow}">
         <Style.Resources>
@@ -300,9 +399,7 @@
             <DataTemplate x:Key="Minimize">
                 <Grid>
                     <Path Data="M0,5 L12,5 L12,6 L0,6 z"
-                          Width="12" Height="12" UseLayoutRounding="True"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
                           Fill="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrush}}"/>
                 </Grid>
             </DataTemplate>
@@ -327,9 +424,7 @@
             <DataTemplate x:Key="Maximize">
                 <Grid>
                     <Path Data="M1,1  L1 ,11 L11,11 L11,1 z M0,0 L12,0 L12,12 L0,12 z"
-                          Width="12" Height="12" UseLayoutRounding="True"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
                           Fill="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrush}}"/>
                 </Grid>
             </DataTemplate>
@@ -354,9 +449,7 @@
             <DataTemplate x:Key="Restore">
                 <Grid UseLayoutRounding="True">
                     <Path Data="M1,3 L1,11 L9,11 L9,3 z M3,1 L3,2 L10,2 L10,9 L11,9 L11,1 z M2 ,0 L12,0 L12,10 L10,10 L10,12 L0,12 L0,2 L2 ,2 z"
-                          Width="12" Height="12" UseLayoutRounding="True"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
                           Fill="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrush}}"/>
                 </Grid>
             </DataTemplate>
@@ -381,9 +474,7 @@
             <DataTemplate x:Key="Close">
                 <Grid UseLayoutRounding="True">
                     <Path Data="M1,0 L6,5 L11,0 L12,1 L7,6 L12,11 L11,12 L6,7 L1,12 L0,11 L5,6 L0,1 z"
-                          Width="12" Height="12" UseLayoutRounding="True"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
                           Fill="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrush}}"/>
                 </Grid>
             </DataTemplate>

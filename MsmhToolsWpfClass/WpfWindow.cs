@@ -101,6 +101,7 @@ public partial class WpfWindow : Window
         DataContext = this;
         WindowStyle = WindowStyle.None;
         AllowsTransparency = GetMinCornerRadius > 0;
+        UseLayoutRounding = true; // Ensuring That Everything Aligns Nicely On The High-DPI Screens
         Icon = this.GetApplicationIcon().ToImageSource();
         SystemMenu_MenuItem.Header = "Show System Menu";
         SystemMenu_ContextMenu.Items.Add(SystemMenu_MenuItem);

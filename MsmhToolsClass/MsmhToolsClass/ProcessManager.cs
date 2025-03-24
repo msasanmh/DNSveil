@@ -248,7 +248,7 @@ public static class ProcessManager
         return (isSuccess, output);
     }
     //-----------------------------------------------------------------------------------
-    
+
     /// <summary>
     /// Execute and returns PID, if fails return -1
     /// </summary>
@@ -425,7 +425,7 @@ public static class ProcessManager
     /// <summary>
     /// Returns A List Of PIDs (Windows Only)
     /// </summary>
-    public static async Task<List<int>> GetProcessPidsByUsingPortAsync(int port)
+    public static async Task<List<int>> GetProcessPidsByUsingPortAsync(int port, bool onlyListeningPorts = true)
     {
         List<int> list = new();
         if (!OperatingSystem.IsWindows()) return list;
@@ -443,10 +443,10 @@ public static class ProcessManager
                     for (int n = 0; n < lines.Count; n++)
                     {
                         string line = lines[n].Trim();
-                        if (!string.IsNullOrEmpty(line) && line.Contains($":{port} ") && !line.Contains("ESTABLISHED") && !line.Contains("FIN_WAIT_2"))
+                        if (!string.IsNullOrEmpty(line) && line.Contains($":{port} "))
                         {
+                            if (onlyListeningPorts && line.StartsWith("TCP") && !line.Contains("LISTENING")) continue;
                             string[] splitLine = line.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-
                             if (splitLine.Length > 2)
                             {
                                 string localAddress = splitLine[1];
@@ -464,7 +464,7 @@ public static class ProcessManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ProcessManager GetProcessPidsByUsingPort: " + ex.Message);
+            Debug.WriteLine("ProcessManager GetProcessPidsByUsingPortAsync: " + ex.Message);
         }
 
         return list;

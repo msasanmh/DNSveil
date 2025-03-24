@@ -65,49 +65,55 @@
                             <ColumnDefinition Width="20*"/>
                             <ColumnDefinition Width="20*"/>
                         </Grid.ColumnDefinitions>
-                        <Border x:Name="Import_Border" Grid.Column="0" Margin="0,0,2,0" Style="{DynamicResource BorderStyle}">
-                            <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="Import_FlyoutOverlay" Margin="4" StaysOpen="True" Placement="Top" Header="Import" VerticalAlignment="Center" FlyoutChanged="Import_FlyoutOverlay_FlyoutChanged">
-                                <Grid Margin="2">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <StackPanel Grid.Row="0" Orientation="Vertical">
-                                        <MsmhToolsWpfClass:WpfButton x:Name="ImportBrowseButton" Margin="0,0,0,10" Content="Browse DVLS Or XML File" Click="ImportBrowseButton_Click"/>
-                                        <TextBlock Margin="0,0,0,10" Text="Select Groups To Import:"/>
-                                        <ListBox x:Name="Import_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                                            <ListBox.ItemTemplate>
-                                                <DataTemplate>
-                                                    <CheckBox x:Name="Import_CheckBox" IsChecked="{Binding Enabled}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Import_CheckBox_CheckedUnchecked" Unchecked="Import_CheckBox_CheckedUnchecked"/>
-                                                </DataTemplate>
-                                            </ListBox.ItemTemplate>
-                                        </ListBox>
-                                    </StackPanel>
-                                    <MsmhToolsWpfClass:WpfButton x:Name="ImportButton" Grid.Row="1" Content="Import" Click="ImportButton_Click"/>
-                                </Grid>
-                            </MsmhToolsWpfClass:WpfFlyoutOverlay>
-                        </Border>
-                        <Border x:Name="Export_Border" Grid.Column="1" Margin="2,0,0,0" Style="{DynamicResource BorderStyle}">
-                            <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="Export_FlyoutOverlay" Margin="4" Placement="Top" Header="Export" VerticalAlignment="Center" FlyoutChanged="Export_FlyoutOverlay_FlyoutChanged">
-                                <Grid Margin="2">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <StackPanel Grid.Row="0" Orientation="Vertical">
-                                        <TextBlock Margin="0,0,0,10" Text="Select Groups To Export:"/>
-                                        <ListBox x:Name="Export_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                                            <ListBox.ItemTemplate>
-                                                <DataTemplate>
-                                                    <CheckBox x:Name="Export_CheckBox" IsChecked="{Binding Enabled}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Export_CheckBox_CheckedUnchecked" Unchecked="Export_CheckBox_CheckedUnchecked"/>
-                                                </DataTemplate>
-                                            </ListBox.ItemTemplate>
-                                        </ListBox>
-                                    </StackPanel>
-                                    <MsmhToolsWpfClass:WpfButton x:Name="ExportButton" Grid.Row="1" Content="Export" Click="ExportButton_Click"/>
-                                </Grid>
-                            </MsmhToolsWpfClass:WpfFlyoutOverlay>
-                        </Border>
+                        <Grid Grid.Column="0" Margin="0,0,2,0">
+                            <Border x:Name="Import_Border" Style="{DynamicResource BorderStyle}">
+                                <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="Import_FlyoutOverlay" Margin="4" StaysOpen="True" Placement="Top" Header="Import" VerticalAlignment="Center" FlyoutChanged="Import_FlyoutOverlay_FlyoutChanged">
+                                    <Grid Margin="2">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0" Orientation="Vertical">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="ImportBrowseButton" Margin="0,0,0,10" Content="Browse DVLS Or XML File" Click="ImportBrowseButton_Click"/>
+                                            <TextBlock Margin="0,0,0,10" Text="Select Groups To Import:"/>
+                                            <ListBox x:Name="Import_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox x:Name="Import_CheckBox" IsChecked="{Binding Enabled}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Import_CheckBox_CheckedUnchecked" Unchecked="Import_CheckBox_CheckedUnchecked"/>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </StackPanel>
+                                        <MsmhToolsWpfClass:WpfButton x:Name="ImportButton" Grid.Row="1" Content="Import" Click="ImportButton_Click"/>
+                                    </Grid>
+                                </MsmhToolsWpfClass:WpfFlyoutOverlay>
+                            </Border>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Groups_Import" Placement="Top"/>
+                        </Grid>
+                        <Grid Grid.Column="1" Margin="2,0,0,0">
+                            <Border x:Name="Export_Border" Style="{DynamicResource BorderStyle}">
+                                <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="Export_FlyoutOverlay" Margin="4" Placement="Top" Header="Export" VerticalAlignment="Center" FlyoutChanged="Export_FlyoutOverlay_FlyoutChanged">
+                                    <Grid Margin="2">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0" Orientation="Vertical">
+                                            <TextBlock Margin="0,0,0,10" Text="Select Groups To Export:"/>
+                                            <ListBox x:Name="Export_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox x:Name="Export_CheckBox" IsChecked="{Binding Enabled}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Export_CheckBox_CheckedUnchecked" Unchecked="Export_CheckBox_CheckedUnchecked"/>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </StackPanel>
+                                        <MsmhToolsWpfClass:WpfButton x:Name="ExportButton" Grid.Row="1" Content="Export" Click="ExportButton_Click"/>
+                                    </Grid>
+                                </MsmhToolsWpfClass:WpfFlyoutOverlay>
+                            </Border>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Groups_Export" Placement="Top"/>
+                        </Grid>
                     </Grid>
                 </DockPanel>
                 <DataGrid x:Name="DGG" DockPanel.Dock="Top" Width="Auto" AutoGenerateColumns="False" PreviewKeyDown="DGG_PreviewKeyDown" PreviewMouseRightButtonDown="DGG_PreviewMouseRightButtonDown"  SelectionChanged="DGG_SelectionChanged">
@@ -209,6 +215,22 @@
                                         <CheckBox x:Name="SubscriptionFilter_Bing_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Bing Safe Search"/>
                                         <CheckBox x:Name="SubscriptionFilter_Youtube_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Youtube Restricted"/>
                                         <CheckBox x:Name="SubscriptionFilter_Adult_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Adult Blocked"/>
+                                        <MsmhToolsWpfClass:WpfHelpFly Placement="Right">
+                                            <StackPanel Orientation="Vertical">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="True" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   Must Be Censored."/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="{x:Null}" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   You Don't Care If It's Censored Or Not."/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="False" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   Must Be Uncensored."/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </MsmhToolsWpfClass:WpfHelpFly>
                                     </WrapPanel>
                                 </GroupBox>
                                 <TextBlock x:Name="SubscriptionFilter_Info_TextBlock" DockPanel.Dock="Top" Margin="5,2,5,3" HorizontalAlignment="Center" Text="Total Servers: 0"/>
@@ -233,7 +255,10 @@
                                     <TextBlock x:Name="SubscriptionScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
                                     <ProgressBar x:Name="SubscriptionScanProgressBar" Margin="0,0,0,10"/>
                                     <StackPanel Orientation="Horizontal">
-                                        <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionScanButton" Margin="0,0,10,0" MinWidth="120" Content="Scan" Click="SubscriptionScanButton_Click"/>
+                                        <Grid Margin="0,0,10,0">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionScanButton" MinWidth="120" Content="Scan" Click="SubscriptionScanButton_Click"/>
+                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Subscription_ScanButton" Placement="Top"/>
+                                        </Grid>
                                         <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionSortButton" MinWidth="120" Content="Sort" Click="SubscriptionSortButton_Click"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -324,6 +349,22 @@
                                         <CheckBox x:Name="AnonDNSCryptFilter_Bing_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Bing Safe Search"/>
                                         <CheckBox x:Name="AnonDNSCryptFilter_Youtube_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Youtube Restricted"/>
                                         <CheckBox x:Name="AnonDNSCryptFilter_Adult_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Adult Blocked"/>
+                                        <MsmhToolsWpfClass:WpfHelpFly Placement="Right">
+                                            <StackPanel Orientation="Vertical">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="True" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   Must Be Censored."/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="{x:Null}" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   You Don't Care If It's Censored Or Not."/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="False" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   Must Be Uncensored."/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </MsmhToolsWpfClass:WpfHelpFly>
                                     </WrapPanel>
                                 </GroupBox>
                                 <TextBlock x:Name="AnonDNSCryptFilter_Info_TextBlock" DockPanel.Dock="Top" Margin="5,2,5,3" HorizontalAlignment="Center" Text="Total Servers: 0"/>
@@ -348,7 +389,10 @@
                                     <TextBlock x:Name="AnonDNSCryptScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
                                     <ProgressBar x:Name="AnonDNSCryptScanProgressBar" Margin="0,0,0,10"/>
                                     <StackPanel Orientation="Horizontal">
-                                        <MsmhToolsWpfClass:WpfButton x:Name="AnonDNSCryptScanButton" Margin="0,0,10,0" MinWidth="120" Content="Scan" Click="AnonDNSCryptScanButton_Click"/>
+                                        <Grid Margin="0,0,10,0">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="AnonDNSCryptScanButton" MinWidth="120" Content="Scan" Click="AnonDNSCryptScanButton_Click"/>
+                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_AnonDNSCrypt_ScanButton" Placement="Top"/>
+                                        </Grid>
                                         <MsmhToolsWpfClass:WpfButton x:Name="AnonDNSCryptSortButton" MinWidth="120" Content="Sort" Click="AnonDNSCryptSortButton_Click"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -450,6 +494,22 @@
                                         <CheckBox x:Name="FragmentDoHFilter_Bing_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Bing Safe Search"/>
                                         <CheckBox x:Name="FragmentDoHFilter_Youtube_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Youtube Restricted"/>
                                         <CheckBox x:Name="FragmentDoHFilter_Adult_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Adult Blocked"/>
+                                        <MsmhToolsWpfClass:WpfHelpFly Placement="Right">
+                                            <StackPanel Orientation="Vertical">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="True" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   Must Be Censored."/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="{x:Null}" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   You Don't Care If It's Censored Or Not."/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="False" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   Must Be Uncensored."/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </MsmhToolsWpfClass:WpfHelpFly>
                                     </WrapPanel>
                                 </GroupBox>
                                 <GroupBox DockPanel.Dock="Top" Header="Fragment Settings">
@@ -506,7 +566,10 @@
                                     <TextBlock x:Name="FragmentDoHScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
                                     <ProgressBar x:Name="FragmentDoHScanProgressBar" Margin="0,0,0,10"/>
                                     <StackPanel Orientation="Horizontal">
-                                        <MsmhToolsWpfClass:WpfButton x:Name="FragmentDoHScanButton" Margin="0,0,10,0" MinWidth="120" Content="Scan" Click="FragmentDoHScanButton_Click"/>
+                                        <Grid Margin="0,0,10,0">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="FragmentDoHScanButton" MinWidth="120" Content="Scan" Click="FragmentDoHScanButton_Click"/>
+                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_FragmentDoH_ScanButton" Placement="Top"/>
+                                        </Grid>
                                         <MsmhToolsWpfClass:WpfButton x:Name="FragmentDoHSortButton" MinWidth="120" Content="Sort" Click="FragmentDoHSortButton_Click"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -618,6 +681,22 @@
                                         <CheckBox x:Name="CustomFilter_Bing_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Bing Safe Search"/>
                                         <CheckBox x:Name="CustomFilter_Youtube_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Youtube Restricted"/>
                                         <CheckBox x:Name="CustomFilter_Adult_CheckBox" Margin="5,3,10,5" IsThreeState="True" IsChecked="False" Content="Adult Blocked"/>
+                                        <MsmhToolsWpfClass:WpfHelpFly Placement="Right">
+                                            <StackPanel Orientation="Vertical">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="True" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   Must Be Censored."/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="{x:Null}" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   You Don't Care If It's Censored Or Not."/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <CheckBox Margin="0,0,10,0" IsChecked="False" IsHitTestVisible="False"/>
+                                                    <TextBlock Text="&#x2192;   Must Be Uncensored."/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </MsmhToolsWpfClass:WpfHelpFly>
                                     </WrapPanel>
                                 </GroupBox>
                                 <TextBlock x:Name="CustomFilter_Info_TextBlock" DockPanel.Dock="Top" Margin="5,2,5,3" HorizontalAlignment="Center" Text="Total Servers: 0"/>
@@ -642,7 +721,10 @@
                                     <TextBlock x:Name="CustomScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
                                     <ProgressBar x:Name="CustomScanProgressBar" Margin="0,0,0,10"/>
                                     <StackPanel Orientation="Horizontal">
-                                        <MsmhToolsWpfClass:WpfButton x:Name="CustomScanButton" Margin="0,0,10,0" MinWidth="120" Content="Scan" Click="CustomScanButton_Click"/>
+                                        <Grid Margin="0,0,10,0">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="CustomScanButton" MinWidth="120" Content="Scan" Click="CustomScanButton_Click"/>
+                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Custom_ScanButton" Placement="Top"/>
+                                        </Grid>
                                         <MsmhToolsWpfClass:WpfButton x:Name="CustomSortButton" MinWidth="120" Content="Sort" Click="CustomSortButton_Click"/>
                                     </StackPanel>
                                 </StackPanel>

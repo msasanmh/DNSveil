@@ -98,7 +98,7 @@
                         </Grid.ColumnDefinitions>
                         <Border x:Name="checkBoxBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="1" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
                             <Grid x:Name="markGrid">
-                                <Path x:Name="optionMark" Data="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z " Fill="{TemplateBinding Foreground}" Margin="1" Opacity="0" Stretch="None"/>
+                                <Path x:Name="optionMark" Data="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z " Fill="{TemplateBinding Foreground}" Margin="1" Stretch="Uniform" Opacity="0"/>
                                 <Rectangle x:Name="indeterminateMark" Fill="{TemplateBinding Foreground}" Margin="2" Opacity="0"/>
                             </Grid>
                         </Border>
@@ -150,7 +150,7 @@
                     <Border x:Name="templateRoot" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="true">
                         <Border x:Name="splitBorder" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,0,0,0" HorizontalAlignment="Right" Margin="0" SnapsToDevicePixels="true" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}">
                             <Viewbox Stretch="Uniform" VerticalAlignment="Center">
-                                <Path x:Name="arrow" Data="M 0 0 L 0 4 L 6 10 L 12 4 L 12 0 L 6 6 L 0 0 Z" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Center" Margin="2" VerticalAlignment="Center"/>
+                                <Path x:Name="arrow" Data="M 0 0 L 0 4 L 6 10 L 12 4 L 12 0 L 6 6 L 0 0 Z" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Center" Margin="2" Stretch="Uniform" VerticalAlignment="Center"/>
                             </Viewbox>
                         </Border>
                     </Border>
@@ -471,7 +471,7 @@
                                     <Binding Path="ViewportHeight" RelativeSource="{RelativeSource Mode=TemplatedParent}"/>
                                 </MultiBinding>
                             </RepeatButton.Visibility>
-                            <Path Data="{StaticResource UpArrow}" Fill="{StaticResource Menu.Static.Foreground}"/>
+                            <Path Data="{StaticResource UpArrow}" Fill="{StaticResource Menu.Static.Foreground}" Stretch="None"/>
                         </RepeatButton>
                         <RepeatButton Command="{x:Static ScrollBar.LineDownCommand}" CommandTarget="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}}" Grid.Column="0" Focusable="false" Grid.Row="2" Style="{StaticResource MenuScrollButton}">
                             <RepeatButton.Visibility>
@@ -482,7 +482,7 @@
                                     <Binding Path="ViewportHeight" RelativeSource="{RelativeSource Mode=TemplatedParent}"/>
                                 </MultiBinding>
                             </RepeatButton.Visibility>
-                            <Path Data="{StaticResource DownArrow}" Fill="{StaticResource Menu.Static.Foreground}"/>
+                            <Path Data="{StaticResource DownArrow}" Fill="{StaticResource Menu.Static.Foreground}" Stretch="None"/>
                         </RepeatButton>
                     </Grid>
                 </ControlTemplate>
@@ -497,7 +497,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <ContentPresenter x:Name="Icon" ContentSource="Icon" HorizontalAlignment="Center" Height="16" Margin="3" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center" Width="16"/>
-                <Path x:Name="GlyphPanel" Data="{StaticResource Checkmark}" FlowDirection="LeftToRight" Fill="{StaticResource Menu.Static.Foreground}" Margin="3" VerticalAlignment="Center" Visibility="Collapsed"/>
+                <Path x:Name="GlyphPanel" Data="{StaticResource Checkmark}" FlowDirection="LeftToRight" Fill="{StaticResource Menu.Static.Foreground}" Margin="3" Stretch="None" VerticalAlignment="Center" Visibility="Collapsed"/>
                 <ContentPresenter ContentSource="Header" Grid.Column="1" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
             </Grid>
         </Border>
@@ -533,7 +533,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <ContentPresenter x:Name="Icon" ContentSource="Icon" HorizontalAlignment="Center" Height="16" Margin="3" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center" Width="16"/>
-                <Path x:Name="GlyphPanel" Data="{StaticResource Checkmark}" FlowDirection="LeftToRight" Fill="{TemplateBinding Foreground}" Margin="3" VerticalAlignment="Center" Visibility="Collapsed"/>
+                <Path x:Name="GlyphPanel" Data="{StaticResource Checkmark}" FlowDirection="LeftToRight" Fill="{TemplateBinding Foreground}" Margin="3" Stretch="None" VerticalAlignment="Center" Visibility="Collapsed"/>
                 <ContentPresenter ContentSource="Header" Grid.Column="1" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
                 <Popup x:Name="PART_Popup" AllowsTransparency="true" Focusable="false" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource Mode=TemplatedParent}}" Placement="Bottom" PopupAnimation="{DynamicResource {x:Static SystemParameters.MenuPopupAnimationKey}}" PlacementTarget="{Binding ElementName=templateRoot}">
                     <Border x:Name="SubMenuBorder" Background="{StaticResource Menu.Static.Background}" BorderBrush="{StaticResource Menu.Static.Border}" BorderThickness="1" Padding="2">
@@ -587,7 +587,7 @@
                 </Grid.ColumnDefinitions>
                 <ContentPresenter x:Name="Icon" ContentSource="Icon" HorizontalAlignment="Center" Height="16" Margin="3" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center" Width="16"/>
                 <Border x:Name="GlyphPanel" Background="{StaticResource MenuItem.Selected.Background}" BorderBrush="{StaticResource MenuItem.Selected.Border}" BorderThickness="1" ClipToBounds="False" HorizontalAlignment="Center" Height="22" Margin="-1,0,0,0" VerticalAlignment="Center" Visibility="Hidden" Width="22">
-                    <Path x:Name="Glyph" Data="{StaticResource Checkmark}" FlowDirection="LeftToRight" Fill="{StaticResource Menu.Static.Foreground}" Height="11" Width="10"/>
+                    <Path x:Name="Glyph" Data="{StaticResource Checkmark}" FlowDirection="LeftToRight" Fill="{StaticResource Menu.Static.Foreground}" Height="11" Width="10" Stretch="None"/>
                 </Border>
                 <ContentPresenter x:Name="menuHeaderContainer" ContentSource="Header" Grid.Column="2" HorizontalAlignment="Left" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center"/>
                 <TextBlock x:Name="menuGestureText" Grid.Column="4" Margin="{TemplateBinding Padding}" Opacity="0.7" Text="{TemplateBinding InputGestureText}" VerticalAlignment="Center"/>
@@ -630,11 +630,11 @@
                 </Grid.ColumnDefinitions>
                 <ContentPresenter x:Name="Icon" ContentSource="Icon" HorizontalAlignment="Center" Height="16" Margin="3" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center" Width="16"/>
                 <Border x:Name="GlyphPanel" Background="{StaticResource MenuItem.Highlight.Background}" BorderBrush="{StaticResource MenuItem.Highlight.Border}" BorderThickness="1" Height="22" Margin="-1,0,0,0" VerticalAlignment="Center" Visibility="Hidden" Width="22">
-                    <Path x:Name="Glyph" Data="{StaticResource Checkmark}" FlowDirection="LeftToRight" Fill="{StaticResource Menu.Static.Foreground}" Height="11" Width="9"/>
+                    <Path x:Name="Glyph" Data="{StaticResource Checkmark}" FlowDirection="LeftToRight" Fill="{StaticResource Menu.Static.Foreground}" Height="11" Width="9" Stretch="None"/>
                 </Border>
                 <ContentPresenter ContentSource="Header" Grid.Column="2" HorizontalAlignment="Left" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="4" Margin="{TemplateBinding Padding}" Opacity="0.7" Text="{TemplateBinding InputGestureText}" VerticalAlignment="Center"/>
-                <Path x:Name="RightArrow" Grid.Column="5" Data="{StaticResource RightArrow}" Fill="{StaticResource Menu.Static.Foreground}" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                <Path x:Name="RightArrow" Grid.Column="5" Data="{StaticResource RightArrow}" Fill="{StaticResource Menu.Static.Foreground}" HorizontalAlignment="Left" Margin="10,4,0,4" Stretch="Uniform" VerticalAlignment="Center"/>
                 <Popup x:Name="PART_Popup" AllowsTransparency="true" Focusable="false" HorizontalOffset="-2" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource Mode=TemplatedParent}}" Placement="Right" PopupAnimation="{DynamicResource {x:Static SystemParameters.MenuPopupAnimationKey}}" VerticalOffset="-3">
                     <Border x:Name="SubMenuBorder" CornerRadius="5" Background="{StaticResource Menu.Static.Background}" BorderBrush="{StaticResource Menu.Static.Border}" BorderThickness="1" Padding="2">
                         <ScrollViewer x:Name="SubMenuScrollViewer" Style="{DynamicResource {ComponentResourceKey ResourceId=MenuScrollViewer, TypeInTargetAssembly={x:Type FrameworkElement}}}">
@@ -923,7 +923,16 @@
         <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
     </Style>
-    
+
+    <!-- Ellipse -->
+    <Style TargetType="{x:Type Ellipse}">
+        <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+        <Setter Property="RenderOptions.EdgeMode" Value="Unspecified"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+    </Style>
+
     <!-- Expander -->
     <Style x:Key="ExpanderDownHeaderStyle" TargetType="{x:Type ToggleButton}">
         <Setter Property="Template">
@@ -936,7 +945,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Ellipse x:Name="circle" Fill="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=Foreground}" HorizontalAlignment="Center" Height="19" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" VerticalAlignment="Center" Width="19"/>
-                            <Path x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" SnapsToDevicePixels="false" StrokeThickness="2" VerticalAlignment="Center"/>
+                            <Path x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" SnapsToDevicePixels="false" StrokeThickness="2" VerticalAlignment="Center" Margin="5" Stretch="Uniform"/>
                             <ContentPresenter x:Name="contentPresenter" Grid.Column="1" HorizontalAlignment="Left" Margin="4,0,0,0" RecognizesAccessKey="True" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
@@ -980,7 +989,7 @@
                                     </TransformGroup>
                                 </Grid.LayoutTransform>
                                 <Ellipse x:Name="circle" Fill="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=Foreground}" HorizontalAlignment="Center" Height="19" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" VerticalAlignment="Center" Width="19"/>
-                                <Path x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" SnapsToDevicePixels="false" StrokeThickness="2" VerticalAlignment="Center"/>
+                                <Path x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" SnapsToDevicePixels="false" StrokeThickness="2" VerticalAlignment="Center" Margin="5" Stretch="Uniform"/>
                             </Grid>
                             <ContentPresenter x:Name="contentPresenter" Grid.Column="1" HorizontalAlignment="Left" Margin="4,0,0,0" RecognizesAccessKey="True" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
                         </Grid>
@@ -1025,7 +1034,7 @@
                                     </TransformGroup>
                                 </Grid.LayoutTransform>
                                 <Ellipse x:Name="circle" Fill="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=Foreground}" HorizontalAlignment="Center" Height="19" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" VerticalAlignment="Center" Width="19"/>
-                                <Path x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" SnapsToDevicePixels="false" StrokeThickness="2" VerticalAlignment="Center"/>
+                                <Path x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" SnapsToDevicePixels="false" StrokeThickness="2" VerticalAlignment="Center" Margin="5" Stretch="Uniform"/>
                             </Grid>
                             <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="Center" Margin="0,4,0,0" RecognizesAccessKey="True" Grid.Row="1" SnapsToDevicePixels="True" VerticalAlignment="Top"/>
                         </Grid>
@@ -1070,7 +1079,7 @@
                                     </TransformGroup>
                                 </Grid.LayoutTransform>
                                 <Ellipse x:Name="circle" Fill="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=Foreground}" HorizontalAlignment="Center" Height="19" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" VerticalAlignment="Center" Width="19"/>
-                                <Path x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" SnapsToDevicePixels="false" StrokeThickness="2" VerticalAlignment="Center"/>
+                                <Path x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type Expander}}, Path=BorderBrush}" SnapsToDevicePixels="false" StrokeThickness="2" VerticalAlignment="Center" Margin="5" Stretch="Uniform"/>
                             </Grid>
                             <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="Center" Margin="0,4,0,0" RecognizesAccessKey="True" Grid.Row="1" SnapsToDevicePixels="True" VerticalAlignment="Top"/>
                         </Grid>
@@ -1308,6 +1317,15 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- Path -->
+    <Style TargetType="{x:Type Path}">
+        <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+        <Setter Property="RenderOptions.EdgeMode" Value="Unspecified"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
     </Style>
 
     <!-- ProgressBar -->
@@ -1723,6 +1741,11 @@
         <!-- TextBlock Doesn't Support VerticalAlignment Of Its Content (I'm Setting Bottom Padding Instead) -->
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Padding" Value="0,0,0,2"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+        <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
         <Style.Triggers>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.5"/>
@@ -1747,6 +1770,11 @@
         <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+        <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type TextBoxBase}">
@@ -1802,6 +1830,20 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- ToolTip -->
+    <Style TargetType="{x:Type ToolTip}">
+        <Style.Resources>
+            <Style TargetType="{x:Type Border}">
+                <Setter Property="CornerRadius" Value="5"/>
+                <Setter Property="Padding" Value="8,4,8,4"/>
+            </Style>
+        </Style.Resources>
+        <Setter Property="Background" Value="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static themes:AppTheme.BorderBrush}}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"/>
     </Style>
 
     <!-- Window -->

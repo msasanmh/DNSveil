@@ -205,25 +205,40 @@ public partial class ManageServersWindow : WpfWindow
                     await Task.Delay(100);
                 }
             });
-            
+
+            // Set Helps
+            Help_Groups_Import.Content = $"Restore Your Backup.{NL}Import Groups From File.";
+            Help_Groups_Export.Content = $"Backup Your Groups.{NL}Export Groups To File.";
+            string helpScan = $"You Really Don't Need To Scan Servers!{NL}The App Will Automatically Scan Them In The Background.{NL}You Can Adjust Scan Time In";
+            Help_Subscription_ScanButton.Content = $"{helpScan} \"Subscription Options\".";
+            Help_AnonDNSCrypt_ScanButton.Content = $"{helpScan} \"Anonymized DNSCrypt Options\".";
+            Help_FragmentDoH_ScanButton.Content = $"{helpScan} \"Fragment DoH Options\".";
+            Help_Custom_ScanButton.Content = $"{helpScan} \"Custom Options\".";
+
+            // Set Max Size Of Import/Export
             Import_ListBox.MaxWidth = SystemParameters.PrimaryScreenWidth * 70 / 100;
             Import_ListBox.MaxHeight = SystemParameters.PrimaryScreenHeight * 70 / 100;
             Export_ListBox.MaxWidth = Import_ListBox.MaxWidth;
             Export_ListBox.MaxHeight = Import_ListBox.MaxHeight;
 
+            // Update Toggles By Value
             Subscription_ToggleSourceByUrlByFile(SubscriptionSourceToggleSwitch.IsChecked);
             AnonDNSCrypt_RelayByUrlByFileToggleSwitch(AnonDNSCryptRelayByUrlByFileToggleSwitch.IsChecked);
             AnonDNSCrypt_TargetByUrlByFileToggleSwitch(AnonDNSCryptTargetByUrlByFileToggleSwitch.IsChecked);
             FragmentDoH_ToggleSourceByUrlByManual(FragmentDoHSourceByUrlByManualToggleSwitch.IsChecked);
             Custom_ToggleSourceByUrlByFileByManual(CustomSourceToggleSwitch.IsChecked);
 
+            // Set Max Lines Of TextBoxes
             SubscriptionSourceTextBox.SetMaxLines(5, this);
             AnonDNSCryptRelayTextBox.SetMaxLines(2, this);
             AnonDNSCryptTargetTextBox.SetMaxLines(2, this);
             FragmentDoHSourceTextBox.SetMaxLines(5, this);
             CustomSourceTextBox.SetMaxLines(5, this);
 
+            // Load Groups: DGG
             await LoadGroupsAsync(0);
+
+            // Bind Data Source: DGS
             BindDataSource_Subscription();
             BindDataSource_AnonDNSCrypt();
             BindDataSource_FragmentDoH();

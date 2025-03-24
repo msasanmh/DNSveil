@@ -1,8 +1,8 @@
 dnslookup-X64 1.11.1
 dnslookup-X86 1.11.1
-sdclookup-X64 1.1.1
-sdclookup-X86 1.1.1
-sdcagnosticserver-X64 3.1.6
-sdcagnosticserver-X86 3.1.6
+sdclookup-X64 1.1.2
+sdclookup-X86 1.1.2
+sdcagnosticserver-X64 3.1.7
+sdcagnosticserver-X86 3.1.7
 goodbyedpi-X64 0.2.2
 goodbyedpi-X86 0.2.2

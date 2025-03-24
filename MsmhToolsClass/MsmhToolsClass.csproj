@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <Version>$(VersionPrefix)1.6.7</Version>
+    <Version>$(VersionPrefix)1.6.8</Version>
     <Copyright>MSasanMH</Copyright>
   </PropertyGroup>
 
