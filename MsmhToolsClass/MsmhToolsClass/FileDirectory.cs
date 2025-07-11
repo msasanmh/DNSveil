@@ -77,6 +77,21 @@ public class FileDirectory
         }, ct);
     }
     //-----------------------------------------------------------------------------------
+    public static bool IsFileNewer(string newFilePath, string currentFilePath)
+    {
+        try
+        {
+            FileInfo infoNewFile = new(Path.GetFullPath(newFilePath));
+            FileInfo infoCurrentFile = new(Path.GetFullPath(currentFilePath));
+            return infoNewFile.LastWriteTime > infoCurrentFile.LastWriteTime;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("FileDirectory IsFileNewer: " + ex.Message);
+            return false;
+        }
+    }
+    //-----------------------------------------------------------------------------------
     public static bool IsPathTooLong(string path)
     {
         try
@@ -338,7 +353,7 @@ public class FileDirectory
                 }
                 catch (IOException e) when ((e.HResult & 0x0000FFFF) == 32)
                 {
-                    Console.WriteLine("File is in use by another process.");
+                    Console.WriteLine("File Is In Use By Another Process.");
                     return true;
                 }
                 finally
@@ -350,7 +365,7 @@ public class FileDirectory
             }
             else
             {
-                Console.WriteLine("File not exist: " + filePath);
+                Console.WriteLine("File Not Exist: " + filePath);
                 return false;
             }
         }

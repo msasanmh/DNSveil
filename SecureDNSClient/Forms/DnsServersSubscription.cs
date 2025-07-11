@@ -29,7 +29,7 @@ public partial class FormMain
                     {
                         string temp = line;
                         int index = temp.LastIndexOf(':');
-                        if (index != -1) temp = temp.Remove(index);
+                        if (index != -1) temp = temp[..index];
                         if (NetworkTool.IsIP(temp, out _)) isIP = true;
                     }
                 }
@@ -52,7 +52,7 @@ public partial class FormMain
                                 string tempWithPort = line.Replace(url1, string.Empty).Trim();
                                 string temp = tempWithPort;
                                 int index = temp.LastIndexOf(':');
-                                if (index != -1) temp = temp.Remove(index);
+                                if (index != -1) temp = temp[..index];
                                 if (NetworkTool.IsIP(temp, out _))
                                 {
                                     isWithRelay = true;
@@ -95,8 +95,8 @@ public partial class FormMain
                     if (dns.Contains("github.com", StringComparison.OrdinalIgnoreCase)) continue;
                     if (dns.Contains("support.google.com", StringComparison.OrdinalIgnoreCase)) continue;
                     if (dns.Contains("learn.microsoft.com", StringComparison.OrdinalIgnoreCase)) continue;
-                    NetworkTool.GetUrlDetails(dns, 443, out _, out _, out _, out _, out _, out string path, out _);
-                    if (path.Length < 2) continue;
+                    NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dns, 443);
+                    if (urid.Path.Length < 2) continue;
                 }
                 if (IsDnsProtocolSupported(dns)) dnss.Add(dns);
             }
@@ -128,7 +128,8 @@ public partial class FormMain
             if (hrr.IsSuccess)
             {
                 content = Encoding.UTF8.GetString(hrr.Data);
-                content = await TextTool.RemoveHtmlTagsAsync(content, true);
+                List<string> contentToLines = await TextTool.RemoveHtmlAndMarkDownTagsAsync(content, true);
+                content = contentToLines.ToString(Environment.NewLine);
             }
             else
             {
@@ -141,7 +142,8 @@ public partial class FormMain
                     if (hrr.IsSuccess)
                     {
                         content = Encoding.UTF8.GetString(hrr.Data);
-                        content = await TextTool.RemoveHtmlTagsAsync(content, true);
+                        List<string> contentToLines = await TextTool.RemoveHtmlAndMarkDownTagsAsync(content, true);
+                        content = contentToLines.ToString(Environment.NewLine);
                     }
                 }
             }

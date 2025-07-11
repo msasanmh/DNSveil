@@ -94,6 +94,8 @@ public partial class WpfButton : Button
     {
         try
         {
+            base.OnApplyTemplate();
+
             PART_Grid = GetTemplateChild(nameof(PART_Grid)) as Grid;
             if (PART_Grid != null)
             {
@@ -120,8 +122,6 @@ public partial class WpfButton : Button
         {
             Debug.WriteLine("WpfButton OnApplyTemplate: " + ex.Message);
         }
-
-        base.OnApplyTemplate();
     }
 
     public WpfButton()
@@ -131,6 +131,16 @@ public partial class WpfButton : Button
         DataContext = this;
         Loaded -= WpfButton_Loaded;
         Loaded += WpfButton_Loaded;
+    }
+
+    private void WpfButton_Loaded(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!RoundButton) BackupCornerRadius = CornerRadius;
+            SetRoundButton();
+        }
+        catch (Exception) { }
     }
 
     private void SetRoundButton()
@@ -175,16 +185,6 @@ public partial class WpfButton : Button
         {
             Debug.WriteLine("WpfButton SetRoundButton: " + ex.Message);
         }
-    }
-
-    private void WpfButton_Loaded(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            if (!RoundButton) BackupCornerRadius = CornerRadius;
-            SetRoundButton();
-        }
-        catch (Exception) { }
     }
 
     private async void PART_Grid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

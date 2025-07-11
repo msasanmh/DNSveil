@@ -1,5 +1,4 @@
 ﻿using CustomControls;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
 using MsmhToolsClass;
@@ -127,9 +126,8 @@ public partial class FormMain
                 while (true)
                 {
                     await Task.Delay(1000);
-                    IPAddress bootstrapIP = GetBootstrapSetting(out _);
                     await UpdateBoolInternetStateAsync();
-                    IsAppReady = NetState == NetworkTool.InternetState.Online;
+                    IsAppReady = NetState == NetworkTool.InternetState.Online || NetState == NetworkTool.InternetState.PingOnly || NetState == NetworkTool.InternetState.DnsOnly;
                     if (IsAppReady) break;
                 }
                 string msgReady = $"Network Detected (Up Time: {ConvertTool.TimeSpanToHumanRead(AppUpTime.Elapsed, true)}){NL}";
@@ -645,8 +643,8 @@ public partial class FormMain
             {
                 if (dns.Contains(':'))
                 {
-                    NetworkTool.GetUrlDetails(dns, 53, out _, out string ipStr, out _, out _, out int port, out _, out _);
-                    if (NetworkTool.IsIP(ipStr, out _)) return port >= 1 && port <= 65535;
+                    NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dns, 53);
+                    if (NetworkTool.IsIP(urid.Host, out _)) return urid.Port >= 1 && urid.Port <= 65535;
                 }
                 return false;
             }
@@ -1038,7 +1036,7 @@ public partial class FormMain
         }
     }
 
-    public async Task OldProxyRulesToNewAsync()
+    public static async Task OldProxyRulesToNewAsync()
     {
         try
         {
@@ -1284,6 +1282,32 @@ public partial class FormMain
         catch (Exception ex)
         {
             Debug.WriteLine("Methods MergeOldDnsAndProxyRulesAsync: " + ex.Message);
+        }
+    }
+
+    public static async Task AddDefaultMaliciousServers_Async()
+    {
+        try
+        {
+            bool add = true;
+            if (File.Exists(SecureDNS.BuiltInServersMaliciousPath))
+            {
+                string content = await File.ReadAllTextAsync(SecureDNS.BuiltInServersMaliciousPath);
+                if (!string.IsNullOrWhiteSpace(content)) add = false;
+            }
+
+            if (add)
+            {
+                string malicious = await ResourceTool.GetResourceTextFileAsync("SecureDNSClient.MaliciousServers.txt", Assembly.GetExecutingAssembly());
+                if (!string.IsNullOrEmpty(malicious))
+                {
+                    await File.WriteAllTextAsync(SecureDNS.BuiltInServersMaliciousPath, malicious);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Methods AddDefaultMaliciousServers_Async: " + ex.Message);
         }
     }
 

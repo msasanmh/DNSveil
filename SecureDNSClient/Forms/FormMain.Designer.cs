@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle17 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle18 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle19 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle20 = new DataGridViewCellStyle();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
             SplitContainerShareMain = new SplitContainer();
             SplitContainerShareTop = new SplitContainer();
@@ -239,6 +239,8 @@
             CustomCheckBoxSettingQcOnStartup = new CustomControls.CustomCheckBox();
             CustomButtonSettingQcStartup = new CustomControls.CustomButton();
             TabPageSettingsConnect = new TabPage();
+            CustomButtonSettingMalicious = new CustomControls.CustomButton();
+            CustomLabelSettingMalicious = new CustomControls.CustomLabel();
             CustomCheckBoxSettingConnectRetry = new CustomControls.CustomCheckBox();
             CustomCheckBoxDnsEventShowRequest = new CustomControls.CustomCheckBox();
             CustomNumericUpDownSettingMaxServers = new CustomControls.CustomNumericUpDown();
@@ -623,6 +625,8 @@
             CustomCheckBoxProxyEventShowRequest.BackColor = Color.DimGray;
             CustomCheckBoxProxyEventShowRequest.BorderColor = Color.Blue;
             CustomCheckBoxProxyEventShowRequest.CheckColor = Color.Blue;
+            CustomCheckBoxProxyEventShowRequest.Checked = true;
+            CustomCheckBoxProxyEventShowRequest.CheckState = CheckState.Checked;
             CustomCheckBoxProxyEventShowRequest.ForeColor = Color.White;
             CustomCheckBoxProxyEventShowRequest.Location = new Point(13, 37);
             CustomCheckBoxProxyEventShowRequest.Name = "CustomCheckBoxProxyEventShowRequest";
@@ -1287,7 +1291,7 @@
             CustomLabelCustomServersInfo.Location = new Point(23, 60);
             CustomLabelCustomServersInfo.Name = "CustomLabelCustomServersInfo";
             CustomLabelCustomServersInfo.RoundedCorners = 0;
-            CustomLabelCustomServersInfo.Size = new Size(304, 122);
+            CustomLabelCustomServersInfo.Size = new Size(306, 122);
             CustomLabelCustomServersInfo.TabIndex = 6;
             CustomLabelCustomServersInfo.Text = "Supported:\r\nAnonymized DNSCrypt, DNSCrypt, DoH, DoT, UDP, TCP.\r\ne.g:\r\n  https://cloudflare-dns.com/dns-query\r\n  tls://dns.google\r\n  sdns://\r\n  udp://8.8.8.8\r\n  tcp://1.1.1.1:53";
             // 
@@ -2023,7 +2027,7 @@
             CustomLabelSelectNIC.Margin = new Padding(3);
             CustomLabelSelectNIC.Name = "CustomLabelSelectNIC";
             CustomLabelSelectNIC.RoundedCorners = 0;
-            CustomLabelSelectNIC.Size = new Size(146, 17);
+            CustomLabelSelectNIC.Size = new Size(144, 15);
             CustomLabelSelectNIC.TabIndex = 0;
             CustomLabelSelectNIC.Text = "Select a Network Interface";
             // 
@@ -2035,7 +2039,7 @@
             CustomComboBoxNICs.ForeColor = Color.White;
             CustomComboBoxNICs.FormattingEnabled = true;
             CustomComboBoxNICs.ItemHeight = 17;
-            CustomComboBoxNICs.Location = new Point(15, 38);
+            CustomComboBoxNICs.Location = new Point(15, 36);
             CustomComboBoxNICs.Margin = new Padding(10);
             CustomComboBoxNICs.Name = "CustomComboBoxNICs";
             CustomComboBoxNICs.RoundedCorners = 5;
@@ -2052,7 +2056,7 @@
             CustomLabelSetDnsSpacer1.BorderColor = Color.Blue;
             CustomLabelSetDnsSpacer1.FlatStyle = FlatStyle.Flat;
             CustomLabelSetDnsSpacer1.ForeColor = Color.White;
-            CustomLabelSetDnsSpacer1.Location = new Point(8, 74);
+            CustomLabelSetDnsSpacer1.Location = new Point(8, 72);
             CustomLabelSetDnsSpacer1.Margin = new Padding(3);
             CustomLabelSetDnsSpacer1.Name = "CustomLabelSetDnsSpacer1";
             CustomLabelSetDnsSpacer1.RoundedCorners = 0;
@@ -2064,7 +2068,7 @@
             // 
             CustomButtonUpdateNICs.BorderColor = Color.Blue;
             CustomButtonUpdateNICs.FlatStyle = FlatStyle.Flat;
-            CustomButtonUpdateNICs.Location = new Point(8, 100);
+            CustomButtonUpdateNICs.Location = new Point(8, 98);
             CustomButtonUpdateNICs.Name = "CustomButtonUpdateNICs";
             CustomButtonUpdateNICs.RoundedCorners = 5;
             CustomButtonUpdateNICs.SelectionColor = Color.LightBlue;
@@ -2078,7 +2082,7 @@
             // 
             CustomButtonFindActiveNic.BorderColor = Color.Blue;
             CustomButtonFindActiveNic.FlatStyle = FlatStyle.Flat;
-            CustomButtonFindActiveNic.Location = new Point(8, 133);
+            CustomButtonFindActiveNic.Location = new Point(8, 131);
             CustomButtonFindActiveNic.Name = "CustomButtonFindActiveNic";
             CustomButtonFindActiveNic.RoundedCorners = 5;
             CustomButtonFindActiveNic.SelectionColor = Color.LightBlue;
@@ -2092,7 +2096,7 @@
             // 
             CustomButtonEnableDisableNicIPv6.BorderColor = Color.Blue;
             CustomButtonEnableDisableNicIPv6.FlatStyle = FlatStyle.Flat;
-            CustomButtonEnableDisableNicIPv6.Location = new Point(8, 166);
+            CustomButtonEnableDisableNicIPv6.Location = new Point(8, 164);
             CustomButtonEnableDisableNicIPv6.Name = "CustomButtonEnableDisableNicIPv6";
             CustomButtonEnableDisableNicIPv6.RoundedCorners = 5;
             CustomButtonEnableDisableNicIPv6.SelectionColor = Color.LightBlue;
@@ -2106,7 +2110,7 @@
             // 
             CustomButtonEnableDisableNic.BorderColor = Color.Blue;
             CustomButtonEnableDisableNic.FlatStyle = FlatStyle.Flat;
-            CustomButtonEnableDisableNic.Location = new Point(8, 199);
+            CustomButtonEnableDisableNic.Location = new Point(8, 197);
             CustomButtonEnableDisableNic.Name = "CustomButtonEnableDisableNic";
             CustomButtonEnableDisableNic.RoundedCorners = 5;
             CustomButtonEnableDisableNic.SelectionColor = Color.LightBlue;
@@ -2123,7 +2127,7 @@
             CustomLabelSetDnsSpacer2.BorderColor = Color.Blue;
             CustomLabelSetDnsSpacer2.FlatStyle = FlatStyle.Flat;
             CustomLabelSetDnsSpacer2.ForeColor = Color.White;
-            CustomLabelSetDnsSpacer2.Location = new Point(8, 232);
+            CustomLabelSetDnsSpacer2.Location = new Point(8, 230);
             CustomLabelSetDnsSpacer2.Margin = new Padding(3);
             CustomLabelSetDnsSpacer2.Name = "CustomLabelSetDnsSpacer2";
             CustomLabelSetDnsSpacer2.RoundedCorners = 0;
@@ -2153,25 +2157,25 @@
             CustomDataGridViewNicStatus.BorderColor = Color.Blue;
             CustomDataGridViewNicStatus.CheckColor = Color.Blue;
             CustomDataGridViewNicStatus.ColumnHeadersBorder = true;
-            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle5.BackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle5.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle5.ForeColor = Color.White;
-            dataGridViewCellStyle5.SelectionBackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle5.SelectionForeColor = Color.White;
-            dataGridViewCellStyle5.WrapMode = DataGridViewTriState.True;
-            CustomDataGridViewNicStatus.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle17.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle17.BackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle17.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle17.ForeColor = Color.White;
+            dataGridViewCellStyle17.SelectionBackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle17.SelectionForeColor = Color.White;
+            dataGridViewCellStyle17.WrapMode = DataGridViewTriState.True;
+            CustomDataGridViewNicStatus.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle17;
             CustomDataGridViewNicStatus.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             CustomDataGridViewNicStatus.ColumnHeadersVisible = false;
             CustomDataGridViewNicStatus.Columns.AddRange(new DataGridViewColumn[] { ColumnNicStatusName, ColumnNicStatusText });
-            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle6.BackColor = Color.DimGray;
-            dataGridViewCellStyle6.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle6.ForeColor = Color.White;
-            dataGridViewCellStyle6.SelectionBackColor = Color.FromArgb(97, 177, 255);
-            dataGridViewCellStyle6.SelectionForeColor = Color.White;
-            dataGridViewCellStyle6.WrapMode = DataGridViewTriState.False;
-            CustomDataGridViewNicStatus.DefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle18.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle18.BackColor = Color.DimGray;
+            dataGridViewCellStyle18.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle18.ForeColor = Color.White;
+            dataGridViewCellStyle18.SelectionBackColor = Color.FromArgb(97, 177, 255);
+            dataGridViewCellStyle18.SelectionForeColor = Color.White;
+            dataGridViewCellStyle18.WrapMode = DataGridViewTriState.False;
+            CustomDataGridViewNicStatus.DefaultCellStyle = dataGridViewCellStyle18;
             CustomDataGridViewNicStatus.Dock = DockStyle.Fill;
             CustomDataGridViewNicStatus.GridColor = Color.LightBlue;
             CustomDataGridViewNicStatus.Location = new Point(3, 19);
@@ -2471,7 +2475,7 @@
             CustomButtonDPIBasicDeactivate.TabIndex = 12;
             CustomButtonDPIBasicDeactivate.Text = "Deactivate";
             CustomButtonDPIBasicDeactivate.UseVisualStyleBackColor = true;
-            CustomButtonDPIBasicDeactivate.Click += this.CustomButtonDPIBasicDeactivate_Click;
+            CustomButtonDPIBasicDeactivate.Click += CustomButtonDPIBasicDeactivate_Click;
             // 
             // TabPageDPIAdvanced
             // 
@@ -3304,7 +3308,7 @@
             CustomLabelSettingWorkingModeSetDohPort.Location = new Point(65, 180);
             CustomLabelSettingWorkingModeSetDohPort.Name = "CustomLabelSettingWorkingModeSetDohPort";
             CustomLabelSettingWorkingModeSetDohPort.RoundedCorners = 0;
-            CustomLabelSettingWorkingModeSetDohPort.Size = new Size(106, 15);
+            CustomLabelSettingWorkingModeSetDohPort.Size = new Size(108, 17);
             CustomLabelSettingWorkingModeSetDohPort.TabIndex = 5;
             CustomLabelSettingWorkingModeSetDohPort.Text = "Set local DoH port:";
             // 
@@ -3364,7 +3368,7 @@
             CustomLabelSettingInfoWorkingMode1.Location = new Point(50, 35);
             CustomLabelSettingInfoWorkingMode1.Name = "CustomLabelSettingInfoWorkingMode1";
             CustomLabelSettingInfoWorkingMode1.RoundedCorners = 0;
-            CustomLabelSettingInfoWorkingMode1.Size = new Size(394, 30);
+            CustomLabelSettingInfoWorkingMode1.Size = new Size(398, 32);
             CustomLabelSettingInfoWorkingMode1.TabIndex = 0;
             CustomLabelSettingInfoWorkingMode1.Text = "Legacy DNS Server: You can set and unset DNS easily.\r\nDNS Over HTTPS Server: You need to install certificate and set it manually.";
             // 
@@ -3538,8 +3542,6 @@
             CustomCheckBoxSettingSdnsNoFilter.BackColor = Color.DimGray;
             CustomCheckBoxSettingSdnsNoFilter.BorderColor = Color.Blue;
             CustomCheckBoxSettingSdnsNoFilter.CheckColor = Color.Blue;
-            CustomCheckBoxSettingSdnsNoFilter.Checked = true;
-            CustomCheckBoxSettingSdnsNoFilter.CheckState = CheckState.Checked;
             CustomCheckBoxSettingSdnsNoFilter.ForeColor = Color.White;
             CustomCheckBoxSettingSdnsNoFilter.Location = new Point(420, 28);
             CustomCheckBoxSettingSdnsNoFilter.Name = "CustomCheckBoxSettingSdnsNoFilter";
@@ -3617,7 +3619,7 @@
             CustomLabelSettingCheckDPIInfo.Location = new Point(15, 99);
             CustomLabelSettingCheckDPIInfo.Name = "CustomLabelSettingCheckDPIInfo";
             CustomLabelSettingCheckDPIInfo.RoundedCorners = 0;
-            CustomLabelSettingCheckDPIInfo.Size = new Size(257, 15);
+            CustomLabelSettingCheckDPIInfo.Size = new Size(259, 17);
             CustomLabelSettingCheckDPIInfo.TabIndex = 10;
             CustomLabelSettingCheckDPIInfo.Text = "A DNS based blocked website to check. https://";
             // 
@@ -3632,7 +3634,7 @@
             CustomLabelSettingCheckTimeout.Location = new Point(15, 25);
             CustomLabelSettingCheckTimeout.Name = "CustomLabelSettingCheckTimeout";
             CustomLabelSettingCheckTimeout.RoundedCorners = 0;
-            CustomLabelSettingCheckTimeout.Size = new Size(142, 15);
+            CustomLabelSettingCheckTimeout.Size = new Size(144, 17);
             CustomLabelSettingCheckTimeout.TabIndex = 2;
             CustomLabelSettingCheckTimeout.Text = "Check timeout (seconds):";
             // 
@@ -3711,7 +3713,7 @@
             CustomLabelSettingQcInfo.Location = new Point(12, 10);
             CustomLabelSettingQcInfo.Name = "CustomLabelSettingQcInfo";
             CustomLabelSettingQcInfo.RoundedCorners = 0;
-            CustomLabelSettingQcInfo.Size = new Size(170, 15);
+            CustomLabelSettingQcInfo.Size = new Size(172, 17);
             CustomLabelSettingQcInfo.TabIndex = 0;
             CustomLabelSettingQcInfo.Text = "Choose Quick Connect actions";
             // 
@@ -3726,7 +3728,7 @@
             CustomLabelSettingQcConnectMode.Location = new Point(12, 53);
             CustomLabelSettingQcConnectMode.Name = "CustomLabelSettingQcConnectMode";
             CustomLabelSettingQcConnectMode.RoundedCorners = 0;
-            CustomLabelSettingQcConnectMode.Size = new Size(69, 15);
+            CustomLabelSettingQcConnectMode.Size = new Size(71, 17);
             CustomLabelSettingQcConnectMode.TabIndex = 17;
             CustomLabelSettingQcConnectMode.Text = "Connect to:";
             // 
@@ -3860,6 +3862,8 @@
             CustomCheckBoxSettingQcStartProxyServer.BackColor = Color.DimGray;
             CustomCheckBoxSettingQcStartProxyServer.BorderColor = Color.Blue;
             CustomCheckBoxSettingQcStartProxyServer.CheckColor = Color.Blue;
+            CustomCheckBoxSettingQcStartProxyServer.Checked = true;
+            CustomCheckBoxSettingQcStartProxyServer.CheckState = CheckState.Checked;
             CustomCheckBoxSettingQcStartProxyServer.ForeColor = Color.White;
             CustomCheckBoxSettingQcStartProxyServer.Location = new Point(12, 179);
             CustomCheckBoxSettingQcStartProxyServer.Name = "CustomCheckBoxSettingQcStartProxyServer";
@@ -3891,6 +3895,8 @@
             CustomCheckBoxSettingQcSetProxy.BackColor = Color.DimGray;
             CustomCheckBoxSettingQcSetProxy.BorderColor = Color.Blue;
             CustomCheckBoxSettingQcSetProxy.CheckColor = Color.Blue;
+            CustomCheckBoxSettingQcSetProxy.Checked = true;
+            CustomCheckBoxSettingQcSetProxy.CheckState = CheckState.Checked;
             CustomCheckBoxSettingQcSetProxy.ForeColor = Color.White;
             CustomCheckBoxSettingQcSetProxy.Location = new Point(148, 179);
             CustomCheckBoxSettingQcSetProxy.Name = "CustomCheckBoxSettingQcSetProxy";
@@ -3948,6 +3954,8 @@
             // 
             TabPageSettingsConnect.AutoScroll = true;
             TabPageSettingsConnect.BackColor = Color.Transparent;
+            TabPageSettingsConnect.Controls.Add(CustomButtonSettingMalicious);
+            TabPageSettingsConnect.Controls.Add(CustomLabelSettingMalicious);
             TabPageSettingsConnect.Controls.Add(CustomCheckBoxSettingConnectRetry);
             TabPageSettingsConnect.Controls.Add(CustomCheckBoxDnsEventShowRequest);
             TabPageSettingsConnect.Controls.Add(CustomNumericUpDownSettingMaxServers);
@@ -3961,13 +3969,42 @@
             TabPageSettingsConnect.Text = "Connect";
             TabPageSettingsConnect.Visible = false;
             // 
+            // CustomButtonSettingMalicious
+            // 
+            CustomButtonSettingMalicious.BorderColor = Color.Blue;
+            CustomButtonSettingMalicious.FlatStyle = FlatStyle.Flat;
+            CustomButtonSettingMalicious.Location = new Point(23, 237);
+            CustomButtonSettingMalicious.Name = "CustomButtonSettingMalicious";
+            CustomButtonSettingMalicious.RoundedCorners = 5;
+            CustomButtonSettingMalicious.SelectionColor = Color.LightBlue;
+            CustomButtonSettingMalicious.Size = new Size(146, 27);
+            CustomButtonSettingMalicious.TabIndex = 137;
+            CustomButtonSettingMalicious.Text = "Edit Malicious Domains";
+            CustomButtonSettingMalicious.UseVisualStyleBackColor = true;
+            CustomButtonSettingMalicious.Click += CustomButtonSettingMalicious_Click;
+            // 
+            // CustomLabelSettingMalicious
+            // 
+            CustomLabelSettingMalicious.AutoSize = true;
+            CustomLabelSettingMalicious.BackColor = Color.DimGray;
+            CustomLabelSettingMalicious.Border = false;
+            CustomLabelSettingMalicious.BorderColor = Color.Blue;
+            CustomLabelSettingMalicious.FlatStyle = FlatStyle.Flat;
+            CustomLabelSettingMalicious.ForeColor = Color.White;
+            CustomLabelSettingMalicious.Location = new Point(23, 173);
+            CustomLabelSettingMalicious.Name = "CustomLabelSettingMalicious";
+            CustomLabelSettingMalicious.RoundedCorners = 0;
+            CustomLabelSettingMalicious.Size = new Size(455, 47);
+            CustomLabelSettingMalicious.TabIndex = 136;
+            CustomLabelSettingMalicious.Text = "Enter Malicious Domain Or IP Addresses.\r\nThe App Will Ignore Servers That Contains Bellow Adresses When Built-In Is Selected.\r\nEach Line One Address.";
+            // 
             // CustomCheckBoxSettingConnectRetry
             // 
             CustomCheckBoxSettingConnectRetry.BackColor = Color.DimGray;
             CustomCheckBoxSettingConnectRetry.BorderColor = Color.Blue;
             CustomCheckBoxSettingConnectRetry.CheckColor = Color.Blue;
             CustomCheckBoxSettingConnectRetry.ForeColor = Color.White;
-            CustomCheckBoxSettingConnectRetry.Location = new Point(50, 79);
+            CustomCheckBoxSettingConnectRetry.Location = new Point(23, 66);
             CustomCheckBoxSettingConnectRetry.Name = "CustomCheckBoxSettingConnectRetry";
             CustomCheckBoxSettingConnectRetry.SelectionColor = Color.LightBlue;
             CustomCheckBoxSettingConnectRetry.Size = new Size(132, 17);
@@ -3983,7 +4020,7 @@
             CustomCheckBoxDnsEventShowRequest.Checked = true;
             CustomCheckBoxDnsEventShowRequest.CheckState = CheckState.Checked;
             CustomCheckBoxDnsEventShowRequest.ForeColor = Color.White;
-            CustomCheckBoxDnsEventShowRequest.Location = new Point(50, 127);
+            CustomCheckBoxDnsEventShowRequest.Location = new Point(23, 109);
             CustomCheckBoxDnsEventShowRequest.Name = "CustomCheckBoxDnsEventShowRequest";
             CustomCheckBoxDnsEventShowRequest.SelectionColor = Color.LightBlue;
             CustomCheckBoxDnsEventShowRequest.Size = new Size(158, 17);
@@ -3996,7 +4033,7 @@
             CustomNumericUpDownSettingMaxServers.BackColor = Color.DimGray;
             CustomNumericUpDownSettingMaxServers.BorderColor = Color.Blue;
             CustomNumericUpDownSettingMaxServers.BorderStyle = BorderStyle.FixedSingle;
-            CustomNumericUpDownSettingMaxServers.Location = new Point(275, 38);
+            CustomNumericUpDownSettingMaxServers.Location = new Point(248, 30);
             CustomNumericUpDownSettingMaxServers.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
             CustomNumericUpDownSettingMaxServers.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             CustomNumericUpDownSettingMaxServers.Name = "CustomNumericUpDownSettingMaxServers";
@@ -4013,10 +4050,10 @@
             CustomLabelSettingMaxServers.BorderColor = Color.Blue;
             CustomLabelSettingMaxServers.FlatStyle = FlatStyle.Flat;
             CustomLabelSettingMaxServers.ForeColor = Color.White;
-            CustomLabelSettingMaxServers.Location = new Point(50, 40);
+            CustomLabelSettingMaxServers.Location = new Point(23, 32);
             CustomLabelSettingMaxServers.Name = "CustomLabelSettingMaxServers";
             CustomLabelSettingMaxServers.RoundedCorners = 0;
-            CustomLabelSettingMaxServers.Size = new Size(223, 15);
+            CustomLabelSettingMaxServers.Size = new Size(224, 17);
             CustomLabelSettingMaxServers.TabIndex = 6;
             CustomLabelSettingMaxServers.Text = "Maximum number of servers to connect:";
             // 
@@ -4110,7 +4147,7 @@
             CustomLabelSettingUnsetDnsIPv6_2.Location = new Point(110, 223);
             CustomLabelSettingUnsetDnsIPv6_2.Name = "CustomLabelSettingUnsetDnsIPv6_2";
             CustomLabelSettingUnsetDnsIPv6_2.RoundedCorners = 0;
-            CustomLabelSettingUnsetDnsIPv6_2.Size = new Size(90, 15);
+            CustomLabelSettingUnsetDnsIPv6_2.Size = new Size(92, 17);
             CustomLabelSettingUnsetDnsIPv6_2.TabIndex = 5;
             CustomLabelSettingUnsetDnsIPv6_2.Text = "Secondary IPv6:";
             // 
@@ -4125,7 +4162,7 @@
             CustomLabelSettingUnsetDnsIPv6_1.Location = new Point(110, 181);
             CustomLabelSettingUnsetDnsIPv6_1.Name = "CustomLabelSettingUnsetDnsIPv6_1";
             CustomLabelSettingUnsetDnsIPv6_1.RoundedCorners = 0;
-            CustomLabelSettingUnsetDnsIPv6_1.Size = new Size(76, 15);
+            CustomLabelSettingUnsetDnsIPv6_1.Size = new Size(78, 17);
             CustomLabelSettingUnsetDnsIPv6_1.TabIndex = 4;
             CustomLabelSettingUnsetDnsIPv6_1.Text = "Primary IPv6:";
             // 
@@ -4196,7 +4233,7 @@
             CustomLabelSettingUnsetDns2.Location = new Point(110, 140);
             CustomLabelSettingUnsetDns2.Name = "CustomLabelSettingUnsetDns2";
             CustomLabelSettingUnsetDns2.RoundedCorners = 0;
-            CustomLabelSettingUnsetDns2.Size = new Size(90, 15);
+            CustomLabelSettingUnsetDns2.Size = new Size(92, 17);
             CustomLabelSettingUnsetDns2.TabIndex = 3;
             CustomLabelSettingUnsetDns2.Text = "Secondary IPv4:";
             // 
@@ -4211,7 +4248,7 @@
             CustomLabelSettingUnsetDns1.Location = new Point(110, 105);
             CustomLabelSettingUnsetDns1.Name = "CustomLabelSettingUnsetDns1";
             CustomLabelSettingUnsetDns1.RoundedCorners = 0;
-            CustomLabelSettingUnsetDns1.Size = new Size(76, 15);
+            CustomLabelSettingUnsetDns1.Size = new Size(78, 17);
             CustomLabelSettingUnsetDns1.TabIndex = 2;
             CustomLabelSettingUnsetDns1.Text = "Primary IPv4:";
             // 
@@ -4325,7 +4362,7 @@
             CustomLabelSettingProxyKillRequestTimeout.Location = new Point(6, 65);
             CustomLabelSettingProxyKillRequestTimeout.Name = "CustomLabelSettingProxyKillRequestTimeout";
             CustomLabelSettingProxyKillRequestTimeout.RoundedCorners = 0;
-            CustomLabelSettingProxyKillRequestTimeout.Size = new Size(158, 15);
+            CustomLabelSettingProxyKillRequestTimeout.Size = new Size(160, 17);
             CustomLabelSettingProxyKillRequestTimeout.TabIndex = 55;
             CustomLabelSettingProxyKillRequestTimeout.Text = "Kill request on timeout (sec):";
             // 
@@ -4398,7 +4435,7 @@
             CustomLabelSettingProxyUpstreamPort.Location = new Point(330, 168);
             CustomLabelSettingProxyUpstreamPort.Name = "CustomLabelSettingProxyUpstreamPort";
             CustomLabelSettingProxyUpstreamPort.RoundedCorners = 0;
-            CustomLabelSettingProxyUpstreamPort.Size = new Size(32, 15);
+            CustomLabelSettingProxyUpstreamPort.Size = new Size(34, 17);
             CustomLabelSettingProxyUpstreamPort.TabIndex = 49;
             CustomLabelSettingProxyUpstreamPort.Text = "Port:";
             // 
@@ -4413,7 +4450,7 @@
             CustomLabelSettingProxyUpstreamHost.Location = new Point(113, 168);
             CustomLabelSettingProxyUpstreamHost.Name = "CustomLabelSettingProxyUpstreamHost";
             CustomLabelSettingProxyUpstreamHost.RoundedCorners = 0;
-            CustomLabelSettingProxyUpstreamHost.Size = new Size(35, 15);
+            CustomLabelSettingProxyUpstreamHost.Size = new Size(37, 17);
             CustomLabelSettingProxyUpstreamHost.TabIndex = 48;
             CustomLabelSettingProxyUpstreamHost.Text = "Host:";
             // 
@@ -4458,7 +4495,7 @@
             CustomLabelSettingProxyPort.Location = new Point(6, 25);
             CustomLabelSettingProxyPort.Name = "CustomLabelSettingProxyPort";
             CustomLabelSettingProxyPort.RoundedCorners = 0;
-            CustomLabelSettingProxyPort.Size = new Size(68, 15);
+            CustomLabelSettingProxyPort.Size = new Size(69, 17);
             CustomLabelSettingProxyPort.TabIndex = 42;
             CustomLabelSettingProxyPort.Text = "Proxy. Port:";
             // 
@@ -4487,7 +4524,7 @@
             CustomLabelSettingProxyHandleRequests.Location = new Point(161, 25);
             CustomLabelSettingProxyHandleRequests.Name = "CustomLabelSettingProxyHandleRequests";
             CustomLabelSettingProxyHandleRequests.RoundedCorners = 0;
-            CustomLabelSettingProxyHandleRequests.Size = new Size(135, 15);
+            CustomLabelSettingProxyHandleRequests.Size = new Size(137, 17);
             CustomLabelSettingProxyHandleRequests.TabIndex = 43;
             CustomLabelSettingProxyHandleRequests.Text = "Handle requests per sec:";
             // 
@@ -4511,13 +4548,13 @@
             CustomNumericUpDownSettingProxyHandleRequests.BorderColor = Color.Blue;
             CustomNumericUpDownSettingProxyHandleRequests.BorderStyle = BorderStyle.FixedSingle;
             CustomNumericUpDownSettingProxyHandleRequests.Location = new Point(310, 23);
-            CustomNumericUpDownSettingProxyHandleRequests.Maximum = new decimal(new int[] { 9000, 0, 0, 0 });
+            CustomNumericUpDownSettingProxyHandleRequests.Maximum = new decimal(new int[] { 90000, 0, 0, 0 });
             CustomNumericUpDownSettingProxyHandleRequests.Minimum = new decimal(new int[] { 5000, 0, 0, 0 });
             CustomNumericUpDownSettingProxyHandleRequests.Name = "CustomNumericUpDownSettingProxyHandleRequests";
             CustomNumericUpDownSettingProxyHandleRequests.RoundedCorners = 5;
             CustomNumericUpDownSettingProxyHandleRequests.Size = new Size(55, 23);
             CustomNumericUpDownSettingProxyHandleRequests.TabIndex = 44;
-            CustomNumericUpDownSettingProxyHandleRequests.Value = new decimal(new int[] { 5000, 0, 0, 0 });
+            CustomNumericUpDownSettingProxyHandleRequests.Value = new decimal(new int[] { 9000, 0, 0, 0 });
             // 
             // TabPageSettingsFakeProxy
             // 
@@ -4604,7 +4641,7 @@
             CustomLabelSettingFakeProxyDohCleanIP.Location = new Point(20, 150);
             CustomLabelSettingFakeProxyDohCleanIP.Name = "CustomLabelSettingFakeProxyDohCleanIP";
             CustomLabelSettingFakeProxyDohCleanIP.RoundedCorners = 0;
-            CustomLabelSettingFakeProxyDohCleanIP.Size = new Size(100, 15);
+            CustomLabelSettingFakeProxyDohCleanIP.Size = new Size(101, 15);
             CustomLabelSettingFakeProxyDohCleanIP.TabIndex = 50;
             CustomLabelSettingFakeProxyDohCleanIP.Text = "The DoH clean IP:";
             // 
@@ -5020,7 +5057,7 @@
             CustomLabelSettingCpuKillProxyRequests.Location = new Point(50, 260);
             CustomLabelSettingCpuKillProxyRequests.Name = "CustomLabelSettingCpuKillProxyRequests";
             CustomLabelSettingCpuKillProxyRequests.RoundedCorners = 0;
-            CustomLabelSettingCpuKillProxyRequests.Size = new Size(231, 15);
+            CustomLabelSettingCpuKillProxyRequests.Size = new Size(230, 15);
             CustomLabelSettingCpuKillProxyRequests.TabIndex = 6;
             CustomLabelSettingCpuKillProxyRequests.Text = "Kill Proxy requests when CPU is above (%):";
             // 
@@ -5449,7 +5486,7 @@
             CustomLabelAboutVersion.Location = new Point(600, 51);
             CustomLabelAboutVersion.Name = "CustomLabelAboutVersion";
             CustomLabelAboutVersion.RoundedCorners = 0;
-            CustomLabelAboutVersion.Size = new Size(47, 17);
+            CustomLabelAboutVersion.Size = new Size(45, 15);
             CustomLabelAboutVersion.TabIndex = 7;
             CustomLabelAboutVersion.Text = "Version";
             // 
@@ -5474,7 +5511,7 @@
             CustomLabelAboutCopyright.Location = new Point(55, 185);
             CustomLabelAboutCopyright.Name = "CustomLabelAboutCopyright";
             CustomLabelAboutCopyright.RoundedCorners = 0;
-            CustomLabelAboutCopyright.Size = new Size(146, 32);
+            CustomLabelAboutCopyright.Size = new Size(144, 30);
             CustomLabelAboutCopyright.TabIndex = 11;
             CustomLabelAboutCopyright.Text = "© 2023 - 2025 MSasanMH\r\nLicense: GPLv3";
             // 
@@ -5484,7 +5521,7 @@
             LinkLabelStAlidxdydz.LinkBehavior = LinkBehavior.NeverUnderline;
             LinkLabelStAlidxdydz.Location = new Point(461, 172);
             LinkLabelStAlidxdydz.Name = "LinkLabelStAlidxdydz";
-            LinkLabelStAlidxdydz.Size = new Size(59, 15);
+            LinkLabelStAlidxdydz.Size = new Size(58, 15);
             LinkLabelStAlidxdydz.TabIndex = 10;
             LinkLabelStAlidxdydz.TabStop = true;
             LinkLabelStAlidxdydz.Text = "Alidxdydz";
@@ -5501,7 +5538,7 @@
             CustomLabelAboutSpecialThanks.Location = new Point(446, 135);
             CustomLabelAboutSpecialThanks.Name = "CustomLabelAboutSpecialThanks";
             CustomLabelAboutSpecialThanks.RoundedCorners = 0;
-            CustomLabelAboutSpecialThanks.Size = new Size(83, 122);
+            CustomLabelAboutSpecialThanks.Size = new Size(81, 120);
             CustomLabelAboutSpecialThanks.TabIndex = 9;
             CustomLabelAboutSpecialThanks.Text = "special thanks\r\n{\r\n\r\n\r\n\r\n\r\n\r\n}";
             // 
@@ -5540,7 +5577,7 @@
             CustomLabelAboutUsing.Location = new Point(270, 135);
             CustomLabelAboutUsing.Name = "CustomLabelAboutUsing";
             CustomLabelAboutUsing.RoundedCorners = 0;
-            CustomLabelAboutUsing.Size = new Size(38, 92);
+            CustomLabelAboutUsing.Size = new Size(36, 90);
             CustomLabelAboutUsing.TabIndex = 8;
             CustomLabelAboutUsing.Text = "using\r\n{\r\n\r\n\r\n\r\n}";
             // 
@@ -5555,7 +5592,7 @@
             CustomLabelAboutThis2.Location = new Point(235, 75);
             CustomLabelAboutThis2.Name = "CustomLabelAboutThis2";
             CustomLabelAboutThis2.RoundedCorners = 0;
-            CustomLabelAboutThis2.Size = new Size(460, 17);
+            CustomLabelAboutThis2.Size = new Size(460, 15);
             CustomLabelAboutThis2.TabIndex = 2;
             CustomLabelAboutThis2.Text = "A DNS Client, Supporting Anonymized DNSCrypt, DNSCrypt, DoH, DoT, UDP and TCP.";
             // 
@@ -5572,7 +5609,7 @@
             CustomLabelAboutThis.Location = new Point(235, 33);
             CustomLabelAboutThis.Name = "CustomLabelAboutThis";
             CustomLabelAboutThis.RoundedCorners = 0;
-            CustomLabelAboutThis.Size = new Size(369, 34);
+            CustomLabelAboutThis.Size = new Size(367, 32);
             CustomLabelAboutThis.TabIndex = 1;
             CustomLabelAboutThis.Text = "SDC - Secure DNS Client";
             CustomLabelAboutThis.Click += CustomLabelAboutThis_Click;
@@ -5596,25 +5633,25 @@
             CustomDataGridViewStatus.BorderColor = Color.Blue;
             CustomDataGridViewStatus.CheckColor = Color.Blue;
             CustomDataGridViewStatus.ColumnHeadersBorder = true;
-            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle7.BackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle7.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle7.ForeColor = Color.White;
-            dataGridViewCellStyle7.SelectionBackColor = Color.FromArgb(73, 73, 73);
-            dataGridViewCellStyle7.SelectionForeColor = Color.White;
-            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.True;
-            CustomDataGridViewStatus.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle19.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle19.BackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle19.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle19.ForeColor = Color.White;
+            dataGridViewCellStyle19.SelectionBackColor = Color.FromArgb(73, 73, 73);
+            dataGridViewCellStyle19.SelectionForeColor = Color.White;
+            dataGridViewCellStyle19.WrapMode = DataGridViewTriState.True;
+            CustomDataGridViewStatus.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle19;
             CustomDataGridViewStatus.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             CustomDataGridViewStatus.ColumnHeadersVisible = false;
             CustomDataGridViewStatus.Columns.AddRange(new DataGridViewColumn[] { ColumnStatusName, ColumnStatusText });
-            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle8.BackColor = Color.DimGray;
-            dataGridViewCellStyle8.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle8.ForeColor = Color.White;
-            dataGridViewCellStyle8.SelectionBackColor = Color.FromArgb(97, 177, 255);
-            dataGridViewCellStyle8.SelectionForeColor = Color.White;
-            dataGridViewCellStyle8.WrapMode = DataGridViewTriState.False;
-            CustomDataGridViewStatus.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle20.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle20.BackColor = Color.DimGray;
+            dataGridViewCellStyle20.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle20.ForeColor = Color.White;
+            dataGridViewCellStyle20.SelectionBackColor = Color.FromArgb(97, 177, 255);
+            dataGridViewCellStyle20.SelectionForeColor = Color.White;
+            dataGridViewCellStyle20.WrapMode = DataGridViewTriState.False;
+            CustomDataGridViewStatus.DefaultCellStyle = dataGridViewCellStyle20;
             CustomDataGridViewStatus.Dock = DockStyle.Fill;
             CustomDataGridViewStatus.GridColor = Color.LightBlue;
             CustomDataGridViewStatus.Location = new Point(0, 0);
@@ -6286,5 +6323,7 @@
         private CustomControls.CustomLabel CustomLabelSettingUnsetDnsIPv6_1;
         private CustomControls.CustomTextBox CustomTextBoxSettingUnsetDnsIPv6_2;
         private LinkLabel LinkLabelSettingRulesHelp;
+        private CustomControls.CustomLabel CustomLabelSettingMalicious;
+        private CustomControls.CustomButton CustomButtonSettingMalicious;
     }
 }

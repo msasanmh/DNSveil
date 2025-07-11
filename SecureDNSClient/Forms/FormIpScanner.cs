@@ -47,7 +47,7 @@ public partial class FormIpScanner : Form
         CustomTextBoxCheckWebsite.SetToolTip(FormMain.MainToolTip, "Info", msgCheckWebsite);
 
         // Initialize and load AgnosticSettings
-        if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
+        if (File.Exists(SettingsXmlPath) && XmlTool.IsValidFile(SettingsXmlPath))
             AppSettings = new(this, SettingsXmlPath);
         else
             AppSettings = new(this);

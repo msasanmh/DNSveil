@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Color = System.Windows.Media.Color;
+using System.Runtime.ConstrainedExecution;
 
 namespace MsmhToolsWpfClass.Themes;
 
@@ -168,21 +169,62 @@ public static class AppTheme
                     applicationMergedDictionaries.Add(resourceDictionary);
                 }
 
+                Color dodgerBlue = Colors.Transparent;
+                string valueStr = ResourceTool.GetValueByKey(resourceDictionary, DodgerBlueBrush);
+                bool isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out Color color);
+                if (isSuccess) dodgerBlue = color;
+
+                Color mediumSeaGreen = Colors.Transparent;
+                valueStr = ResourceTool.GetValueByKey(resourceDictionary, MediumSeaGreenBrush);
+                isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out color);
+                if (isSuccess) mediumSeaGreen = color;
+
+                return;
+
                 SolidColorBrush transparentBrush = new(Colors.Transparent);
                 List<Control> controls = Controllers.GetAllControls(mainWindow);
-                Debug.WriteLine("controls " + controls.Count);
+                //Debug.WriteLine("controls " + controls.Count);
                 for (int n = 0; n < controls.Count; n++)
                 {
                     Control control = controls[n];
-
-                    if (control is WpfButton wpfButton)
+                    
+                    if (control is WpfSlidePanelHB wpfSlidePanelHB)
                     {
-                        string valueStr = ResourceTool.GetValueByKey(resourceDictionary, BackgroundDarkerBrush);
-                        bool isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out Color color);
-                        if (isSuccess)
+                        Color clr = theme == Theme.Light ? mediumSeaGreen : dodgerBlue;
+                        if (clr != Colors.Transparent)
                         {
-                            wpfButton.MouseOverBrush = new SolidColorBrush(color);
-                            Debug.WriteLine(control.Name + " MouseOver BG=> " + color);
+                            wpfSlidePanelHB.SplitterBrush = new SolidColorBrush(clr);
+                        }
+                    }
+
+                    if (control is WpfSlidePanelHT wpfSlidePanelHT)
+                    {
+                        Color clr = theme == Theme.Light ? mediumSeaGreen : dodgerBlue;
+                        if (clr != Colors.Transparent)
+                        {
+                            wpfSlidePanelHT.SplitterBrush = new SolidColorBrush(clr);
+                            //Debug.WriteLine(control.Name + " MouseOver BG=> " + color);
+                        }
+                    }
+
+                    if (control is WpfSlidePanelVL wpfSlidePanelVL)
+                    {
+                        
+                        Color clr = theme == Theme.Light ? mediumSeaGreen : dodgerBlue;
+                        if (clr != Colors.Transparent)
+                        {
+                            wpfSlidePanelVL.SplitterBrush = new SolidColorBrush(clr);
+                            //Debug.WriteLine(control.Name + " MouseOver BG=> " + color);
+                        }
+                    }
+
+                    if (control is WpfSlidePanelVR wpfSlidePanelVR)
+                    {
+                        Color clr = theme == Theme.Light ? mediumSeaGreen : dodgerBlue;
+                        if (clr != Colors.Transparent)
+                        {
+                            wpfSlidePanelVR.SplitterBrush = new SolidColorBrush(clr);
+                            //Debug.WriteLine(control.Name + " MouseOver BG=> " + color);
                         }
                     }
 
@@ -190,34 +232,34 @@ public static class AppTheme
 
                     if (control.Background != null && !control.Background.Equals(transparentBrush))
                     {
-                        string valueStr = ResourceTool.GetValueByKey(resourceDictionary, BackgroundBrush);
-                        bool isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out Color color);
+                        valueStr = ResourceTool.GetValueByKey(resourceDictionary, BackgroundBrush);
+                        isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out color);
                         if (isSuccess)
                         {
                             control.Background = new SolidColorBrush(color);
-                            Debug.WriteLine(control.Name + " BG=> " + color);
+                            //Debug.WriteLine(control.Name + " BG=> " + color);
                         }
                     }
                     
                     if (control.Foreground != null && !control.Foreground.Equals(transparentBrush))
                     {
-                        string valueStr = ResourceTool.GetValueByKey(resourceDictionary, ForegroundBrush);
-                        bool isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out Color color);
+                        valueStr = ResourceTool.GetValueByKey(resourceDictionary, ForegroundBrush);
+                        isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out color);
                         if (isSuccess)
                         {
                             control.Foreground = new SolidColorBrush(color);
-                            Debug.WriteLine(control.Name + " FG=> " + color);
+                            //Debug.WriteLine(control.Name + " FG=> " + color);
                         }
                     }
                     
                     if (control.BorderBrush != null && !control.BorderBrush.Equals(transparentBrush))
                     {
-                        string valueStr = ResourceTool.GetValueByKey(resourceDictionary, BorderBrush);
-                        bool isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out Color color);
+                        valueStr = ResourceTool.GetValueByKey(resourceDictionary, BorderBrush);
+                        isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out color);
                         if (isSuccess)
                         {
                             control.BorderBrush = new SolidColorBrush(color);
-                            Debug.WriteLine(control.Name + " Border=> " + color);
+                            //Debug.WriteLine(control.Name + " Border=> " + color);
                         }
                     }
                 }
@@ -227,8 +269,8 @@ public static class AppTheme
                 for (int n = 0; n < grids.Count; n++)
                 {
                     Grid grid = grids[n];
-                    string valueStr = ResourceTool.GetValueByKey(resourceDictionary, BackgroundBrush);
-                    bool isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out Color color);
+                    valueStr = ResourceTool.GetValueByKey(resourceDictionary, BackgroundBrush);
+                    isSuccess = ConvertToolWpf.TryConvertColorFromString(valueStr, out color);
                     if (isSuccess)
                     {
                         grid.Background = new SolidColorBrush(color);

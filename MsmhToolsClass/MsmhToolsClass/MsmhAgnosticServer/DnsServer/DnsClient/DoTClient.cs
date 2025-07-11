@@ -44,9 +44,7 @@ public class DoTClient
 
             try
             {
-                string dnsServerIP = await Bootstrap.GetDnsIpAsync(Reader.Host, BootstrapIP, BootstrapPort, 3, false, ProxyScheme, ProxyUser, ProxyPass);
-                if (dnsServerIP.Equals(Reader.Host))
-                    dnsServerIP = await Bootstrap.GetDnsIpAsync(Reader.Host, BootstrapIP, BootstrapPort, 3, true, ProxyScheme, ProxyUser, ProxyPass);
+                string dnsServerIP = await Bootstrap.GetDnsIpAsync(Reader.Host, BootstrapIP, BootstrapPort, 3, ProxyScheme, ProxyUser, ProxyPass);
                 
                 if (NetworkTool.IsIP(dnsServerIP, out IPAddress? ip) && ip != null)
                 {
@@ -67,9 +65,12 @@ public class DoTClient
                 if (!upstream.isSuccess)
                     await tcpClient.Client.ConnectAsync(dnsServerIP, Reader.Port, CT).ConfigureAwait(false);
 
-                SslClientAuthenticationOptions optionsClient = new();
-                optionsClient.TargetHost = Reader.Host;
-                optionsClient.EnabledSslProtocols = MsmhAgnosticServer.SSL_Protocols;
+                SslClientAuthenticationOptions optionsClient = new()
+                {
+                    TargetHost = Reader.Host,
+                    EnabledSslProtocols = MsmhAgnosticServer.SSL_Protocols
+                };
+
                 if (AllowInsecure)
                 {
                     optionsClient.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;

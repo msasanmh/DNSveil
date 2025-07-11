@@ -143,6 +143,21 @@ public class CornerRadiusToThicknessConverter : IValueConverter
     }
 }
 
+// SelectedIndex To Visibility Converter // Used For ComboBox To Show Text Property.
+public class SelectedIndexToVisibilityConverter : IValueConverter
+{
+    public static readonly IValueConverter Instance = new SelectedIndexToVisibilityConverter();
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        int selectedIndex = value as int? ?? -1;
+        return selectedIndex == -1 ? Visibility.Visible : Visibility.Collapsed;
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return Visibility.Collapsed;
+    }
+}
+
 // Reverse Bool Converter //
 public class ReverseBoolConverter : IValueConverter
 {
@@ -336,6 +351,43 @@ public class DivideConverter : IValueConverter
         catch (Exception ex)
         {
             Debug.WriteLine("WPF Class Converter DivideConverter ConvertBack: " + ex.Message);
+            return double.NaN;
+        }
+    }
+}
+
+public class PercentageConverter : IValueConverter
+{
+    public static readonly IValueConverter Instance = new PercentageConverter();
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        try
+        {
+            double doubleValue = System.Convert.ToDouble(value, CultureInfo.InvariantCulture); // We Want x% Of This Value
+            double percentValue = System.Convert.ToDouble(parameter, CultureInfo.InvariantCulture);
+            double result = percentValue * doubleValue / 100;
+            if (result < 0) result = 0;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("WPF Class Converter PercentageConverter: " + ex.Message);
+            return double.NaN;
+        }
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        try
+        {
+            double doubleValue = System.Convert.ToDouble(value, CultureInfo.InvariantCulture);
+            double percentValue = System.Convert.ToDouble(parameter, CultureInfo.InvariantCulture);
+            double result = 100 * doubleValue / percentValue;
+            if (result < 0) result = 0;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("WPF Class Converter PercentageConverter ConvertBack: " + ex.Message);
             return double.NaN;
         }
     }

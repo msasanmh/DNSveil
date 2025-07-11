@@ -2,18 +2,7 @@
 
 public class Stats
 {
-
-    private DateTime ReceivedLastRead_ = DateTime.Now;
-    private DateTime SentLastRead_ = DateTime.Now;
-
     public Stats() { }
-
-    public double BandwidthReceived { get; private set; }
-
-    public string BandwidthReceivedHumanRead
-    {
-        get => ConvertTool.ConvertByteToHumanRead(BandwidthReceived);
-    }
 
     public double BandwidthSent { get; private set; }
 
@@ -22,43 +11,60 @@ public class Stats
         get => ConvertTool.ConvertByteToHumanRead(BandwidthSent);
     }
 
-    public double DownloadSpeedPerSecond { get; set; }
+    public double BandwidthReceived { get; private set; }
 
-    public string DownloadSpeedPerSecondHumanRead
+    public string BandwidthReceivedHumanRead
     {
-        get
+        get => ConvertTool.ConvertByteToHumanRead(BandwidthReceived);
+    }
+
+    public async Task<string> UploadSpeedAsync()
+    {
+        try
         {
-            double len = DownloadSpeedPerSecond / (DateTime.Now - ReceivedLastRead_).TotalSeconds;
-            DownloadSpeedPerSecond = 0;
-            ReceivedLastRead_ = DateTime.Now;
+            double b1 = BandwidthSent;
+            await Task.Delay(1000);
+            double b2 = BandwidthSent;
+            double len = b2 - b1;
             return $"{ConvertTool.ConvertByteToHumanRead(len)}/s";
+        }
+        catch (Exception)
+        {
+            return "-1 Byte/s";
         }
     }
 
-    public double UploadSpeedPerSecond { get; set; }
-    
-    public string UploadSpeedPerSecondHumanRead
+    public async Task<string> DownloadSpeedAsync()
     {
-        get
+        try
         {
-            double len = UploadSpeedPerSecond / (DateTime.Now - SentLastRead_).TotalSeconds;
-            UploadSpeedPerSecond = 0;
-            SentLastRead_ = DateTime.Now;
+            double b1 = BandwidthReceived;
+            await Task.Delay(1000);
+            double b2 = BandwidthReceived;
+            double len = b2 - b1;
             return $"{ConvertTool.ConvertByteToHumanRead(len)}/s";
+        }
+        catch (Exception)
+        {
+            return "-1 Byte/s";
         }
     }
 
     public void AddBytes(int bytes, ByteType byteType)
     {
-        if (byteType != ByteType.Sent)
+        bool isDouble = double.TryParse(bytes.ToString(), out double value);
+        if (isDouble)
         {
-            DownloadSpeedPerSecond += Convert.ToDouble(bytes);
-            BandwidthReceived += Convert.ToDouble(bytes);
-            return;
-        }
+            if (byteType == ByteType.Sent)
+            {
+                BandwidthSent += value;
+            }
 
-        UploadSpeedPerSecond += Convert.ToDouble(bytes);
-        BandwidthSent += Convert.ToDouble(bytes);
+            if (byteType == ByteType.Received)
+            {
+                BandwidthReceived += value;
+            }
+        }
     }
 
 }

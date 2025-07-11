@@ -253,17 +253,12 @@ public partial class FormMain
             {
                 // Get Built-In Servers
                 CheckRequest checkRequest = new() { CheckMode = CheckMode.BuiltIn };
-                rdrList = await ReadBuiltInServersAsync(checkRequest, false, true);
-                if (insecure)
-                {
-                    List<ReadDnsResult> rdrListInsecure = await ReadBuiltInServersAsync(checkRequest, true, true);
-                    if (rdrListInsecure.Any()) rdrList.AddRange(rdrListInsecure);
-                }
+                rdrList = await ReadBuiltInServersAsync(checkRequest, insecure, true);
             }
             else
             {
                 // Get Custom Servers
-                if (XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath))
+                if (XmlTool.IsValidFile(SecureDNS.CustomServersXmlPath))
                 {
                     rdrList = await ReadCustomServersXml(SecureDNS.CustomServersXmlPath, new CheckRequest { CheckMode = CheckMode.CustomServers });
                 }
@@ -273,12 +268,7 @@ public partial class FormMain
                 {
                     // Get Built-In Servers
                     CheckRequest checkRequest = new() { CheckMode = CheckMode.BuiltIn };
-                    rdrList = await ReadBuiltInServersAsync(checkRequest, false, true);
-                    if (insecure)
-                    {
-                        List<ReadDnsResult> rdrListInsecure = await ReadBuiltInServersAsync(checkRequest, true, true);
-                        if (rdrListInsecure.Any()) rdrList.AddRange(rdrListInsecure);
-                    }
+                    rdrList = await ReadBuiltInServersAsync(checkRequest, insecure, true);
                 }
             }
 

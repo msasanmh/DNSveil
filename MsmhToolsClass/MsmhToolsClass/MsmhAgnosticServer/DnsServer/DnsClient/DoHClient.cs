@@ -38,9 +38,7 @@ public class DoHClient
         {
             try
             {
-                string dnsServerIP = await Bootstrap.GetDnsIpAsync(Reader.Host, BootstrapIP, BootstrapPort, 3, false, ProxyScheme, ProxyUser, ProxyPass);
-                if (dnsServerIP.Equals(Reader.Host))
-                    dnsServerIP = await Bootstrap.GetDnsIpAsync(Reader.Host, BootstrapIP, BootstrapPort, 3, true, ProxyScheme, ProxyUser, ProxyPass);
+                string dnsServerIP = await Bootstrap.GetDnsIpAsync(Reader.Host, BootstrapIP, BootstrapPort, 3, ProxyScheme, ProxyUser, ProxyPass);
 
                 string scheme = Reader.Scheme;
                 if (Reader.Scheme.Equals("h3://")) scheme = "https://";

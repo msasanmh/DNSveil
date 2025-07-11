@@ -160,18 +160,19 @@ public partial class FormMain
             msg = $"Downloading And Reading Built-In Servers...{NL}";
             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
 
-            rdrList = await ReadBuiltInServersAsync(checkRequest, false);
-            if (insecure)
-            {
-                List<ReadDnsResult> rdrListInsecure = await ReadBuiltInServersAsync(checkRequest, true);
-                if (rdrListInsecure.Any()) rdrList.AddRange(rdrListInsecure);
-            }
+            rdrList = await ReadBuiltInServersAndSubsAsync(checkRequest, insecure);
+            //rdrList = await ReadBuiltInServersAsync(checkRequest, false);
+            //if (insecure)
+            //{
+            //    List<ReadDnsResult> rdrListInsecure = await ReadBuiltInServersAsync(checkRequest, true);
+            //    if (rdrListInsecure.Any()) rdrList.AddRange(rdrListInsecure);
+            //}
         }
 
         if (checkRequest.CheckMode == CheckMode.CustomServers)
         {
             // Check If Custom Servers XML Is NOT Valid
-            if (!XmlTool.IsValidXMLFile(SecureDNS.CustomServersXmlPath))
+            if (!XmlTool.IsValidFile(SecureDNS.CustomServersXmlPath))
             {
                 msg = $"Custom Servers XML File Is Not Valid.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.IndianRed));
@@ -360,7 +361,7 @@ public partial class FormMain
                         this.InvokeIt(() => CustomProgressBarCheck.Value += 1);
                         await checkOne(rdr, -1);
                     });
-                    
+
                     // Percentage (100%)
                     if (n == lists.Count - 1)
                     {
@@ -375,6 +376,7 @@ public partial class FormMain
         async Task checkOne(ReadDnsResult rdr, int lineNumber)
         {
             bool isPrivate = rdr.CheckMode == CheckMode.BuiltIn || rdr.CheckMode == CheckMode.SavedServers;
+            isPrivate = false;
             
             if (!string.IsNullOrEmpty(rdr.DNS))
             {
@@ -458,7 +460,7 @@ public partial class FormMain
                     void writeStatusToLogParallel()
                     {
                         if (limitLog) return;
-
+                        
                         // Write Short Status To Log
                         string status = dnsOK ? "OK" : "Failed";
                         Color color = dnsOK ? Color.MediumSeaGreen : Color.IndianRed;
@@ -496,8 +498,8 @@ public partial class FormMain
                         string resultCompany = string.IsNullOrEmpty(dnsReader.CompanyName) ? string.Empty : $" [{dnsReader.CompanyName}]";
 
                         // Write All
-                        msg = $"[{status}] [{latency}]{host}{protocol}{resultCompany}{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, color));
+                        string msgParallel = $"[{status}] [{latency}]{host}{protocol}{resultCompany}{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgParallel, color));
                     }
 
                     void writeStatusToLogSeries()
@@ -608,9 +610,10 @@ public partial class FormMain
                 this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText($" ms{NL}"));
             }
 
-            string reducted = "Reducted";
-            string dns = dnsInfo.CheckMode == CheckMode.BuiltIn || dnsInfo.CheckMode == CheckMode.SavedServers ? reducted : dnsInfo.DNS;
-            string msgDnsAddress = dns.Equals(reducted) ? "DNS Address: " : $"DNS Address:{NL}";
+            string redacted = "Redacted";
+            //string dns = dnsInfo.CheckMode == CheckMode.BuiltIn || dnsInfo.CheckMode == CheckMode.SavedServers ? redacted : dnsInfo.DNS;
+            string dns = dnsInfo.DNS;
+            string msgDnsAddress = dns.Equals(redacted) ? "DNS Address: " : $"DNS Address:{NL}";
             this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText(msgDnsAddress));
             this.InvokeIt(() => CustomRichTextBoxCheckStatus.AppendText($"{dns}{NL}{NL}", Color.DarkGray));
 

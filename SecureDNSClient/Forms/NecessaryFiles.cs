@@ -122,7 +122,7 @@ public partial class FormMain : Form
                         await File.WriteAllBytesAsync(SecureDNS.WinDivert64, NecessaryFiles.Resource1.WinDivert64);
 
                 // Update Old Version Numbers
-                await File.WriteAllTextAsync(SecureDNS.BinariesVersionPath, NecessaryFiles.Resource1.versions);
+                await File.WriteAllBytesAsync(SecureDNS.BinariesVersionPath, NecessaryFiles.Resource1.versions);
 
                 string msgWB = $"{Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductName} Is Ready.{NL}";
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgWB, Color.LightGray));

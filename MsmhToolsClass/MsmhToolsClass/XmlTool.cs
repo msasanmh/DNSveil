@@ -7,7 +7,7 @@ namespace MsmhToolsClass;
 
 public static class XmlTool
 {
-    public static bool IsValidXML(string content)
+    public static bool IsValid(string content)
     {
         bool result = false;
 
@@ -23,13 +23,13 @@ public static class XmlTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("XmlTools IsValidXML: " + ex.Message);
+            Debug.WriteLine("XmlTools IsValid: " + ex.Message);
         }
 
         return result;
     }
 
-    public static bool IsValidXMLFile(string xmlFilePath)
+    public static bool IsValidFile(string xmlFilePath)
     {
         bool result = false;
 
@@ -46,13 +46,13 @@ public static class XmlTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("XmlTools IsValidXMLFile: " + ex.Message);
+            Debug.WriteLine("XmlTools IsValidFile: " + ex.Message);
         }
 
         return result;
     }
 
-    public static async Task<bool> IsValidXMLFileAsync(string xmlFilePath)
+    public static async Task<bool> IsValidFileAsync(string xmlFilePath)
     {
         bool result = false;
 
@@ -69,7 +69,7 @@ public static class XmlTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("XmlTools IsValidXMLFileAsync: " + ex.Message);
+            Debug.WriteLine("XmlTools IsValidFileAsync: " + ex.Message);
         }
 
         return result;
@@ -174,10 +174,27 @@ public static class XmlTool
             ChildConditions = childConditions;
         }
 
+        public XmlPath(string elementName, int count, bool treatChildConditionsAsPath, List<XmlChildCondition> childConditions)
+        {
+            ElementName = elementName;
+            Count = count;
+            TreatChildConditionsAsPath = treatChildConditionsAsPath;
+            ChildConditions = childConditions;
+        }
+
         public XmlPath(string elementName, int count, List<XmlAttributeCondition> attributeConditions, List<XmlChildCondition> childConditions)
         {
             ElementName = elementName;
             Count = count;
+            AttributeConditions = attributeConditions;
+            ChildConditions = childConditions;
+        }
+
+        public XmlPath(string elementName, int count, bool treatChildConditionsAsPath, List<XmlAttributeCondition> attributeConditions, List<XmlChildCondition> childConditions)
+        {
+            ElementName = elementName;
+            Count = count;
+            TreatChildConditionsAsPath = treatChildConditionsAsPath;
             AttributeConditions = attributeConditions;
             ChildConditions = childConditions;
         }
@@ -630,7 +647,7 @@ public static class XmlTool
     {
         if (File.Exists(xmlFile))
         {
-            bool isXmlValid = IsValidXML(File.ReadAllText(xmlFile));
+            bool isXmlValid = IsValid(File.ReadAllText(xmlFile));
             if (isXmlValid == true)
             {
                 XmlDocument doc = new();

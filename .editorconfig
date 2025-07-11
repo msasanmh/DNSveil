@@ -2,3 +2,6 @@
 
 # IDE0042: Deconstruct variable declaration
 csharp_style_deconstructed_variable_declaration = false
+
+# IDE0130: Namespace does not match folder structure
+dotnet_style_namespace_match_folder = false

@@ -95,14 +95,40 @@ public partial class WpfToggleSwitch : CheckBox
 
     public override void OnApplyTemplate()
     {
+        base.OnApplyTemplate();
+
         PART_MainBorder = GetTemplateChild(nameof(PART_MainBorder)) as Border;
         PART_Bar = GetTemplateChild(nameof(PART_Bar)) as Border;
         PART_Canvas = GetTemplateChild(nameof(PART_Canvas)) as Canvas;
         PART_Ellipse = GetTemplateChild(nameof(PART_Ellipse)) as Ellipse;
         PART_ContentLeft = GetTemplateChild(nameof(PART_ContentLeft)) as ContentPresenter;
         PART_Content = GetTemplateChild(nameof(PART_Content)) as ContentPresenter;
+    }
 
-        base.OnApplyTemplate();
+    public WpfToggleSwitch()
+    {
+        InitializeComponent();
+        //DefaultStyleKeyProperty.OverrideMetadata(typeof(WpfToggleSwitch), new FrameworkPropertyMetadata(typeof(WpfToggleSwitch)));
+        DataContext = this;
+
+        Thickness padding = new(0);
+        if (Padding != padding) Padding = padding;
+
+        if (DesignerProperties.GetIsInDesignMode(this))
+        {
+            SwitchBarBrush = Brushes.MediumSeaGreen;
+            SwitchBrush = Brushes.DarkGreen;
+            SwitchStrokeBrush = Brushes.MediumSeaGreen;
+        }
+
+        Loaded -= WpfToggleSwitch_Loaded;
+        Loaded += WpfToggleSwitch_Loaded;
+        Click -= WpfToggleSwitch_Click;
+        Click += WpfToggleSwitch_Click;
+        Checked -= WpfToggleSwitch_Click;
+        Checked += WpfToggleSwitch_Click;
+        Unchecked -= WpfToggleSwitch_Click;
+        Unchecked += WpfToggleSwitch_Click;
     }
 
     private bool IsWorking = false;
@@ -174,32 +200,6 @@ public partial class WpfToggleSwitch : CheckBox
         catch (Exception) { }
 
         IsWorking = false;
-    }
-
-    public WpfToggleSwitch()
-    {
-        InitializeComponent();
-        //DefaultStyleKeyProperty.OverrideMetadata(typeof(WpfToggleSwitch), new FrameworkPropertyMetadata(typeof(WpfToggleSwitch)));
-        DataContext = this;
-
-        Thickness padding = new(0);
-        if (Padding != padding) Padding = padding;
-
-        if (DesignerProperties.GetIsInDesignMode(this))
-        {
-            SwitchBarBrush = Brushes.MediumSeaGreen;
-            SwitchBrush = Brushes.DarkGreen;
-            SwitchStrokeBrush = Brushes.MediumSeaGreen;
-        }
-        
-        Loaded -= WpfToggleSwitch_Loaded;
-        Loaded += WpfToggleSwitch_Loaded;
-        Click -= WpfToggleSwitch_Click;
-        Click += WpfToggleSwitch_Click;
-        Checked -= WpfToggleSwitch_Click;
-        Checked += WpfToggleSwitch_Click;
-        Unchecked -= WpfToggleSwitch_Click;
-        Unchecked += WpfToggleSwitch_Click;
     }
 
     private async void WpfToggleSwitch_Loaded(object sender, RoutedEventArgs e)

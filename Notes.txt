@@ -1,4 +1,5 @@
 Microsoft.Diagnostics.Tracing.TraceEvent v3.1.9 Is Incompatible With WinForms Designer.
+System.Drawing.Common v8.0.16 (Latest Version That Supports .NET 6)
 
 Colors
 Foreground			#EEEEEE

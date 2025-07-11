@@ -235,7 +235,7 @@ public partial class FormCustomServers : Form
                 XDoc = CreateXmlCS();
                 XDoc.Save(path, SaveOptions.None);
             }
-            else if (!XmlTool.IsValidXML(File.ReadAllText(path)))
+            else if (!XmlTool.IsValid(File.ReadAllText(path)))
             {
                 CustomMessageBox.Show(this, "XML file is not valid. Returned to default.", "Not Valid", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 XDoc = CreateXmlCS();
@@ -1338,7 +1338,7 @@ public partial class FormCustomServers : Form
         {
             string filePath = ofd.FileName;
 
-            if (!XmlTool.IsValidXML(File.ReadAllText(filePath)))
+            if (!XmlTool.IsValid(File.ReadAllText(filePath)))
             {
                 CustomMessageBox.Show(this, "XML file is not valid.", "Not Valid", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -2690,7 +2690,7 @@ public partial class FormCustomServers : Form
 
             string filePath = ofd.FileName;
 
-            if (!XmlTool.IsValidXML(File.ReadAllText(filePath)))
+            if (!XmlTool.IsValid(File.ReadAllText(filePath)))
             {
                 CustomMessageBox.Show(this, "XML file is not valid.", "Not Valid", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;

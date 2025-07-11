@@ -26,7 +26,7 @@ public partial class FormMain : Form
     public static ProcessMonitor MonitorProcess { get; set; } = new();
     public static NetworkTool.InternetState NetPreState { get; set; } = NetworkTool.InternetState.Unknown;
     public static NetworkTool.InternetState NetState { get; set; } = NetworkTool.InternetState.Unknown;
-    public static bool IsInternetOnline => NetState == NetworkTool.InternetState.Online || NetState == NetworkTool.InternetState.Unstable;
+    public static bool IsInternetOnline => NetState != NetworkTool.InternetState.Unknown && NetState != NetworkTool.InternetState.Offline;
     private bool Once { get; set; } = true;
     private bool Once2 { get; set; } = true;
     public static bool IsInActionState { get; set; } = false;

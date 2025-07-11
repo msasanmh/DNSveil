@@ -53,12 +53,9 @@ public static class CommonTools
         // But NOT for google.com or IP address
 
         if (NetworkTool.IsIP(hostname, out _)) return hostname;
-
-        NetworkTool.GetHostDetails(hostname, 443, out _, out _, out string baseHost, out _, out _, out _);
-
-        if (baseHost.Equals(hostname)) return hostname;
-
-        return $"*.{baseHost}";
+        NetworkTool.URL hostDetails = NetworkTool.GetUrlOrDomainDetails(hostname, 443);
+        if (hostDetails.BaseHost.Equals(hostname)) return hostname;
+        return $"*.{hostDetails.BaseHost}";
     }
 
     public static bool IsCfIP(string ipStr)

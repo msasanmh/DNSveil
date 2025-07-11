@@ -242,7 +242,7 @@ public partial class FormMain
                 string newVersion = split[0].Trim();
                 string currentVersion = Info.GetAppInfo(Assembly.GetExecutingAssembly()).ProductVersion ?? "99.99.99";
                 downloadUrl = split[1].Trim();
-                if (string.IsNullOrEmpty(downloadUrl)) downloadUrl = "https://github.com/msasanmh/SecureDNSClient/releases/latest";
+                if (string.IsNullOrEmpty(downloadUrl)) downloadUrl = "https://github.com/msasanmh/DNSveil/releases/latest";
 
                 int versionResult = Info.VersionCompare(newVersion, currentVersion);
                 if (versionResult == 1)
@@ -403,17 +403,17 @@ public partial class FormMain
     {
         try
         {
-            int timeoutMS = 5000;
+            int timeoutMS = 6000;
             IPAddress bootstrapIP = GetBootstrapSetting(out _);
-            NetState = await NetworkTool.GetInternetStateAsync(bootstrapIP, timeoutMS);
+            NetState = await NetworkTool.GetInternetStateAsync(bootstrapIP, null, timeoutMS);
 
             if (!IsAppReady) return;
             if (IsExiting) return;
 
             if (NetPreState != NetState)
             {
-                if (NetPreState != NetworkTool.InternetState.Unknown && NetPreState != NetworkTool.InternetState.Unstable &&
-                    NetState != NetworkTool.InternetState.Unknown && NetState != NetworkTool.InternetState.Unstable)
+                if ((NetPreState == NetworkTool.InternetState.Online || NetPreState == NetworkTool.InternetState.Offline) &&
+                    (NetState == NetworkTool.InternetState.Online || NetState == NetworkTool.InternetState.Offline))
                 {
                     if (NetState == NetworkTool.InternetState.Offline)
                     {
@@ -983,7 +983,7 @@ public partial class FormMain
             if (CustomDataGridViewStatus.RowCount == 15 && Visible)
             {
                 // Update Net State
-                Color netColor = NetState == NetworkTool.InternetState.Online ? Color.MediumSeaGreen : NetState == NetworkTool.InternetState.Unstable ? Color.Orange : Color.IndianRed;
+                Color netColor = NetState == NetworkTool.InternetState.Online ? Color.MediumSeaGreen : NetState == NetworkTool.InternetState.PingOnly || NetState == NetworkTool.InternetState.DnsOnly || NetState == NetworkTool.InternetState.Unstable ? Color.Orange : Color.IndianRed;
                 this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Style.ForeColor = netColor);
                 this.InvokeIt(() => CustomDataGridViewStatus.Rows[0].Cells[1].Value = NetState);
                 await Task.Delay(delay);

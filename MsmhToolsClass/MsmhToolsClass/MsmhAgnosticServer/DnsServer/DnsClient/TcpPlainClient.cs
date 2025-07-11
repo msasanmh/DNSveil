@@ -33,42 +33,53 @@ public class TcpPlainClient
         {
             try
             {
-                IPEndPoint ep = new(IPAddress.Parse(Reader.Host), Reader.Port);
-
-                TcpClient tcpClient = new(ep.AddressFamily);
-                tcpClient.SendTimeout = TimeoutMS;
-                tcpClient.ReceiveTimeout = TimeoutMS;
-                tcpClient.Client.NoDelay = true;
-
-                // Support Upstream Proxy
-                ProxifiedTcpClient proxifiedTcpClient = new(ProxyScheme, ProxyUser, ProxyPass);
-                var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(ep);
-                if (upstream.isSuccess && upstream.proxifiedTcpClient != null) tcpClient = upstream.proxifiedTcpClient;
-
-                try
+                bool isIP = IPAddress.TryParse(Reader.Host, out IPAddress? readerIP);
+                if (isIP && readerIP != null)
                 {
-                    if (!upstream.isSuccess)
-                        await tcpClient.Client.ConnectAsync(ep, CT).ConfigureAwait(false);
+                    IPEndPoint ep = new(readerIP, Reader.Port);
 
-                    await tcpClient.Client.SendAsync(QueryBuffer, SocketFlags.None, CT).ConfigureAwait(false);
-
-                    byte[] buffer = new byte[MsmhAgnosticServer.MaxDataSize];
-                    int receivedLength = await tcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, CT).ConfigureAwait(false);
-
-                    ByteArrayTool.TryConvertBytesToUInt16(buffer[0..2], out ushort answerLength);
-
-                    while (receivedLength < answerLength)
+                    TcpClient tcpClient = new(ep.AddressFamily)
                     {
-                        receivedLength += await tcpClient.Client.ReceiveAsync(buffer.AsMemory()[receivedLength..], SocketFlags.None, CT).ConfigureAwait(false);
+                        SendTimeout = TimeoutMS,
+                        ReceiveTimeout = TimeoutMS
+                    };
+                    tcpClient.Client.NoDelay = true;
+
+                    // Support Upstream Proxy
+                    ProxifiedTcpClient proxifiedTcpClient = new(ProxyScheme, ProxyUser, ProxyPass);
+                    var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(ep);
+                    if (upstream.isSuccess && upstream.proxifiedTcpClient != null) tcpClient = upstream.proxifiedTcpClient;
+
+                    try
+                    {
+                        if (!upstream.isSuccess)
+                            await tcpClient.Client.ConnectAsync(ep, CT).ConfigureAwait(false);
+
+                        await tcpClient.Client.SendAsync(QueryBuffer, SocketFlags.None, CT).ConfigureAwait(false);
+
+                        byte[] buffer = new byte[MsmhAgnosticServer.MaxTcpDnsDataSize];
+                        int receivedLength = 0;
+                        for (int n = 0; n < 5; n++)
+                        {
+                            receivedLength = await tcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, CT).ConfigureAwait(false);
+                            if (receivedLength > 0) break;
+                            await Task.Delay(1);
+                        }
+                        
+                        ByteArrayTool.TryConvertBytesToUInt16(buffer[0..2], out ushort answerLength);
+                        while (receivedLength < answerLength)
+                        {
+                            receivedLength += await tcpClient.Client.ReceiveAsync(buffer.AsMemory()[receivedLength..], SocketFlags.None, CT).ConfigureAwait(false);
+                        }
+
+                        if (receivedLength > 0) result = buffer[..receivedLength];
                     }
+                    catch (Exception) { }
 
-                    if (receivedLength > 0) result = buffer[..receivedLength];
+                    tcpClient.Client.Shutdown(SocketShutdown.Both);
+                    tcpClient.Client.Close();
+                    tcpClient.Dispose();
                 }
-                catch (Exception) { }
-
-                tcpClient.Client.Shutdown(SocketShutdown.Both);
-                tcpClient.Client.Close();
-                tcpClient.Dispose();
             }
             catch (Exception) { }
         });

@@ -9,9 +9,10 @@ using System.IO;
 using MsmhToolsClass;
 using MsmhToolsWpfClass;
 using MsmhToolsClass.MsmhAgnosticServer;
-using static DNSveil.DnsServers.EnumsAndStructs;
-using GroupItem = DNSveil.DnsServers.EnumsAndStructs.GroupItem;
 using System.Net;
+using DNSveil.Logic.DnsServers;
+using static DNSveil.Logic.DnsServers.EnumsAndStructs;
+using GroupItem = DNSveil.Logic.DnsServers.EnumsAndStructs.GroupItem;
 
 namespace DNSveil.ManageServers;
 
@@ -21,7 +22,7 @@ public partial class ManageServersWindow : WpfWindow
     {
         this.DispatchIt(() =>
         {
-            Custom_Settings_WpfFlyoutOverlay.IsHitTestVisible = enable;
+            Custom_Settings_WpfFlyoutPopup.IsHitTestVisible = enable;
             if (enable || (!enable && IsScanning))
                 CustomSourceStackPanel.IsEnabled = enable;
             CustomSourceToggleSwitchBrowseButton.IsEnabled = enable;
@@ -36,6 +37,7 @@ public partial class ManageServersWindow : WpfWindow
             DGS_Custom.IsHitTestVisible = enable;
 
             NewGroupButton.IsEnabled = enable;
+            ResetBuiltInButton.IsEnabled = enable;
             Import_FlyoutOverlay.IsHitTestVisible = enable;
             Export_FlyoutOverlay.IsHitTestVisible = enable;
             ImportButton.IsEnabled = enable;
@@ -44,19 +46,19 @@ public partial class ManageServersWindow : WpfWindow
         });
     }
 
-    private async void Flyout_Custom_Source_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
+    private void Flyout_Custom_Source_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
     {
         if (e.IsFlyoutOpen)
         {
-            await Flyout_Custom_Options.CloseFlyAsync();
+            Flyout_Custom_Options.IsOpen = false;
         }
     }
 
-    private async void Flyout_Custom_Options_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
+    private void Flyout_Custom_Options_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
     {
         if (e.IsFlyoutOpen)
         {
-            await Flyout_Custom_Source.CloseFlyAsync();
+            Flyout_Custom_Source.IsOpen = false;
         }
     }
 
@@ -309,20 +311,21 @@ public partial class ManageServersWindow : WpfWindow
             if (IsScanning)
             {
                 WpfToastDialog.Show(this, "Can't Save While Scanning.", MessageBoxImage.Stop, 2);
-                await Custom_Settings_WpfFlyoutOverlay.CloseFlyAsync();
+                await Custom_Settings_WpfFlyoutPopup.CloseFlyAsync();
                 return;
             }
 
             if (DGG.SelectedItem is not GroupItem groupItem) return;
 
             // Get Group Settings
+            bool enabled = Custom_EnableGroup_ToggleSwitch.IsChecked.HasValue && Custom_EnableGroup_ToggleSwitch.IsChecked.Value;
             string lookupDomain = Custom_Settings_LookupDomain_TextBox.Text.Trim();
             double timeoutSec = Custom_Settings_TimeoutSec_NumericUpDown.Value;
             int parallelSize = Custom_Settings_ParallelSize_NumericUpDown.Value.ToInt();
             string bootstrapIpStr = Custom_Settings_BootstrapIP_TextBox.Text.Trim();
             int bootstrapPort = Custom_Settings_BootstrapPort_NumericUpDown.Value.ToInt();
             int maxServersToConnect = Custom_Settings_MaxServersToConnect_NumericUpDown.Value.ToInt();
-            bool allowInsecure = Custom_Settings_AllowInsecure_CheckBox.IsChecked.HasValue && Custom_Settings_AllowInsecure_CheckBox.IsChecked.Value;
+            bool allowInsecure = Custom_Settings_AllowInsecure_ToggleSwitch.IsChecked.HasValue && Custom_Settings_AllowInsecure_ToggleSwitch.IsChecked.Value;
 
             if (lookupDomain.StartsWith("http://")) lookupDomain = lookupDomain.TrimStart("http://");
             if (lookupDomain.StartsWith("https://")) lookupDomain = lookupDomain.TrimStart("https://");
@@ -331,7 +334,7 @@ public partial class ManageServersWindow : WpfWindow
             {
                 string msg = $"Domain Is Invalid.{NL}{LS}e.g. example.com";
                 WpfMessageBox.Show(this, msg, "Invalid Domain", MessageBoxButton.OK, MessageBoxImage.Stop);
-                await Custom_Settings_WpfFlyoutOverlay.OpenFlyAsync();
+                await Custom_Settings_WpfFlyoutPopup.OpenFlyAsync();
                 return;
             }
 
@@ -340,15 +343,15 @@ public partial class ManageServersWindow : WpfWindow
             {
                 string msg = $"Bootstrap IP Is Invalid.{NL}{LS}e.g.  8.8.8.8  Or  2001:4860:4860::8888";
                 WpfMessageBox.Show(this, msg, "Invalid IP", MessageBoxButton.OK, MessageBoxImage.Stop);
-                await Custom_Settings_WpfFlyoutOverlay.OpenFlyAsync();
+                await Custom_Settings_WpfFlyoutPopup.OpenFlyAsync();
                 return;
             }
 
             // Update Group Settings
-            GroupSettings groupSettings = new(lookupDomain, timeoutSec, parallelSize, bootstrapIP, bootstrapPort, maxServersToConnect, allowInsecure);
+            GroupSettings groupSettings = new(enabled, lookupDomain, timeoutSec, parallelSize, bootstrapIP, bootstrapPort, maxServersToConnect, allowInsecure);
             await MainWindow.ServersManager.Update_GroupSettings_Async(groupItem.Name, groupSettings, true);
             await LoadSelectedGroupAsync(false); // Refresh
-            await Custom_Settings_WpfFlyoutOverlay.CloseFlyAsync();
+            await Custom_Settings_WpfFlyoutPopup.CloseFlyAsync();
             WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
         }
         catch (Exception ex)
@@ -504,14 +507,14 @@ public partial class ManageServersWindow : WpfWindow
             for (int n = 0; n < urlsOrFiles.Count; n++)
             {
                 string urlOrFile = urlsOrFiles[n];
-                List<string> dnss = await LibIn.GetServersFromLinkAsync(urlOrFile, 20000);
+                List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
                 allDNSs.AddRange(dnss);
             }
 
-            // DeDup
-            allDNSs = allDNSs.Distinct().ToList();
+            // Convert To DnsItem
+            List<DnsItem> dnsItems = Tools.Convert_DNSs_To_DnsItem(allDNSs);
 
-            if (allDNSs.Count == 0)
+            if (dnsItems.Count == 0)
             {
                 string msg = "Couldn't Find Any Server!";
                 WpfMessageBox.Show(this, msg);
@@ -520,12 +523,12 @@ public partial class ManageServersWindow : WpfWindow
             }
 
             // Add To Group => DnsItems Element
-            await MainWindow.ServersManager.Append_DnsItems_Async(groupItem.Name, allDNSs, false);
+            await MainWindow.ServersManager.Append_DnsItems_Async(groupItem.Name, dnsItems, false);
             // Update Last AutoUpdate
             await MainWindow.ServersManager.Update_LastAutoUpdate_Async(groupItem.Name, new LastAutoUpdate(DateTime.Now, DateTime.MinValue), true);
             await LoadSelectedGroupAsync(true); // Refresh
 
-            WpfToastDialog.Show(this, $"Fetched {allDNSs.Count} Servers.", MessageBoxImage.None, 5);
+            WpfToastDialog.Show(this, $"Fetched {dnsItems.Count} Servers.", MessageBoxImage.None, 5);
         }
         catch (Exception ex)
         {
@@ -668,6 +671,16 @@ public partial class ManageServersWindow : WpfWindow
         {
             if (DGG.SelectedItem is not GroupItem groupItem) return;
             CustomScanButton.IsEnabled = false;
+
+            // Check For Fetch: Get DnsItems Info
+            DnsItemsInfo info = MainWindow.ServersManager.Get_DnsItems_Info(groupItem.Name);
+            if (info.TotalServers == 0)
+            {
+                string msg = "Fetch Or Add Servers To Scan.";
+                WpfMessageBox.Show(this, msg, "No Server To Scan!", MessageBoxButton.OK, MessageBoxImage.Information);
+                CustomScanButton.IsEnabled = true;
+                return;
+            }
 
             List<DnsItem> selectedDnsItems = new();
             if (DGS_Custom.SelectedItems.Count > 1)

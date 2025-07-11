@@ -14,6 +14,7 @@ public class WebAPI
             Uri uri = new(url, UriKind.Absolute);
             HttpRequest hr = new()
             {
+                AllowAutoRedirect = true,
                 Method = HttpMethod.Get,
                 AllowInsecure = true,
                 TimeoutMS = timeoutMs,

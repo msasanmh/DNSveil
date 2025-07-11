@@ -65,7 +65,7 @@ namespace SecureDNSClient.NecessaryFiles {
         /// </summary>
         internal static byte[] dnslookup_X64 {
             get {
-                object obj = ResourceManager.GetObject("dnslookup_X64", resourceCulture);
+                object obj = ResourceManager.GetObject("dnslookup-X64", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -75,7 +75,7 @@ namespace SecureDNSClient.NecessaryFiles {
         /// </summary>
         internal static byte[] dnslookup_X86 {
             get {
-                object obj = ResourceManager.GetObject("dnslookup_X86", resourceCulture);
+                object obj = ResourceManager.GetObject("dnslookup-X86", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -95,7 +95,7 @@ namespace SecureDNSClient.NecessaryFiles {
         /// </summary>
         internal static byte[] SDCAgnosticServer_X64 {
             get {
-                object obj = ResourceManager.GetObject("SDCAgnosticServer_X64", resourceCulture);
+                object obj = ResourceManager.GetObject("SDCAgnosticServer-X64", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -105,7 +105,7 @@ namespace SecureDNSClient.NecessaryFiles {
         /// </summary>
         internal static byte[] SDCAgnosticServer_X86 {
             get {
-                object obj = ResourceManager.GetObject("SDCAgnosticServer_X86", resourceCulture);
+                object obj = ResourceManager.GetObject("SDCAgnosticServer-X86", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -115,7 +115,7 @@ namespace SecureDNSClient.NecessaryFiles {
         /// </summary>
         internal static byte[] SDCLookup_X64 {
             get {
-                object obj = ResourceManager.GetObject("SDCLookup_X64", resourceCulture);
+                object obj = ResourceManager.GetObject("SDCLookup-X64", resourceCulture);
                 return ((byte[])(obj));
             }
         }
@@ -125,24 +125,18 @@ namespace SecureDNSClient.NecessaryFiles {
         /// </summary>
         internal static byte[] SDCLookup_X86 {
             get {
-                object obj = ResourceManager.GetObject("SDCLookup_X86", resourceCulture);
+                object obj = ResourceManager.GetObject("SDCLookup-X86", resourceCulture);
                 return ((byte[])(obj));
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to dnslookup-X64 1.11.1
-        ///dnslookup-X86 1.11.1
-        ///sdclookup-X64 1.1.2
-        ///sdclookup-X86 1.1.2
-        ///sdcagnosticserver-X64 3.1.7
-        ///sdcagnosticserver-X86 3.1.7
-        ///goodbyedpi-X64 0.2.2
-        ///goodbyedpi-X86 0.2.2.
+        ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static string versions {
+        internal static byte[] versions {
             get {
-                return ResourceManager.GetString("versions", resourceCulture);
+                object obj = ResourceManager.GetObject("versions", resourceCulture);
+                return ((byte[])(obj));
             }
         }
         

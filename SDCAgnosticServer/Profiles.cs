@@ -34,7 +34,7 @@ public static partial class Program
                     if (serverProfile.SettingsSSL != null)
                     {
                         existServerProfile.SettingsSSL = serverProfile.SettingsSSL;
-                        await existServerProfile.AgnosticServer.EnableSSL(existServerProfile.SettingsSSL);
+                        await existServerProfile.AgnosticServer.EnableSSLAsync(existServerProfile.SettingsSSL);
                     }
                     if (serverProfile.Fragment != null)
                     {

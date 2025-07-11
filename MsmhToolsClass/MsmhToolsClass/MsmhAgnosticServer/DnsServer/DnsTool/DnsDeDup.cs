@@ -62,7 +62,12 @@ public class DnsDeDup
         {
             IPAddress ip1 = IPAddress.None;
             DnsReader dr1 = new(dns1, null);
-            NetworkTool.GetUrlDetails(dns1, dr1.Port, out string scheme1, out string host1, out _, out _, out int port1, out string path1, out _);
+            NetworkTool.URL urid1 = NetworkTool.GetUrlOrDomainDetails(dns1, dr1.Port);
+            string scheme1 = urid1.Scheme;
+            string host1 = urid1.Host;
+            int port1 = urid1.Port;
+            string path1 = urid1.Path;
+
             if (dr1.IsDnsCryptStamp)
             {
                 host1 = dr1.Host;
@@ -73,7 +78,12 @@ public class DnsDeDup
 
             IPAddress ip2 = IPAddress.None;
             DnsReader dr2 = new(dns2, null);
-            NetworkTool.GetUrlDetails(dns2, dr2.Port, out string scheme2, out string host2, out _, out _, out int port2, out string path2, out _);
+            NetworkTool.URL urid2 = NetworkTool.GetUrlOrDomainDetails(dns2, dr2.Port);
+            string scheme2 = urid2.Scheme;
+            string host2 = urid2.Host;
+            int port2 = urid2.Port;
+            string path2 = urid2.Path;
+
             if (dr2.IsDnsCryptStamp)
             {
                 if (!dr1.IsDnsCryptStamp)

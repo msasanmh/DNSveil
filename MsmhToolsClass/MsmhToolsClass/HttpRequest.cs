@@ -251,7 +251,11 @@ public class HttpRequest
                         // Get URI (For HTTP & HTTPS Proxies)
                         // For HTTP: Scheme: Yes, Port: No
                         // For HTTPS: Scheme: No, Port: Yes
-                        NetworkTool.GetUrlDetails(rawUrl, -1, out scheme, out host, out _, out _, out port, out path, out _);
+                        NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(rawUrl, -1);
+                        scheme = urid.Scheme;
+                        host = urid.Host;
+                        port = urid.Port;
+                        path = urid.Path;
                         if (scheme.ToLower().Equals("http://") && port == -1) port = 80;
                         if (string.IsNullOrEmpty(scheme) && port != -1) scheme = "https://";
                         if (string.IsNullOrEmpty(scheme) && port == -1) path = rawUrl; // e.g. DoH Request
@@ -292,7 +296,9 @@ public class HttpRequest
                             host = val;
                             if (host.Contains(':'))
                             {
-                                NetworkTool.GetUrlDetails(host, -1, out _, out string host2, out _, out _, out int port2, out _, out _);
+                                NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(host, -1);
+                                string host2 = urid.Host;
+                                int port2 = urid.Port;
 
                                 // If Host Is IPv6
                                 if (host2.StartsWith('[')) host2 = host2.TrimStart('[');
@@ -463,8 +469,10 @@ public class HttpRequest
                 httpClient.DefaultRequestHeaders.ExpectContinue = false;
                 httpClient.DefaultRequestHeaders.ConnectionClose = true;
 
-                HttpRequestMessage message = new(hr.Method, hr.URI);
-                message.Content = content;
+                HttpRequestMessage message = new(hr.Method, hr.URI)
+                {
+                    Content = content
+                };
                 if (!string.IsNullOrEmpty(hr.ContentType))
                     message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(hr.ContentType));
                 message.Headers.TryAddWithoutValidation("User-Agent", hr.UserAgent);

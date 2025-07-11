@@ -42,7 +42,7 @@ public partial class FormDnsLookup : Form
         CustomLabelEDNSOPT.SetToolTip(FormMain.MainToolTip, "Info", ednsopt);
 
         // Initialize and load Settings
-        if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
+        if (File.Exists(SettingsXmlPath) && XmlTool.IsValidFile(SettingsXmlPath))
             AppSettings = new(this, SettingsXmlPath);
         else
             AppSettings = new(this);

@@ -61,15 +61,6 @@ public class WpfFlyoutGroupBox : GroupBox
     }
 
     [Category("Common")]
-    public bool CloseFly
-    {
-        get { return (bool)GetValue(CloseFlyProperty); }
-        set { SetValue(CloseFlyProperty, value); }
-    }
-    public static readonly DependencyProperty CloseFlyProperty =
-        DependencyProperty.Register(nameof(CloseFly), typeof(bool), typeof(WpfFlyoutGroupBox), new PropertyMetadata(false));
-
-    [Category("Common")]
     public bool DisableFly
     {
         get { return (bool)GetValue(DisableFlyProperty); }
@@ -87,9 +78,25 @@ public class WpfFlyoutGroupBox : GroupBox
     public static readonly DependencyProperty HideHeaderProperty =
         DependencyProperty.Register(nameof(HideHeader), typeof(bool), typeof(WpfFlyoutGroupBox), new PropertyMetadata(false));
 
-    public int AnimDurationMS { get; set; } = 200;
+    [Category("Common")]
+    public bool IsOpen
+    {
+        get => (bool)GetValue(IsOpenProperty);
+        set => SetValue(IsOpenProperty, value);
+    }
+    public static readonly DependencyProperty IsOpenProperty =
+        DependencyProperty.Register(nameof(IsOpen), typeof(bool), typeof(WpfFlyoutGroupBox),
+            new PropertyMetadata(false, OnIsOpenChanged));
 
-    public bool IsOpen { get; private set; }
+    private static async void OnIsOpenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is WpfFlyoutGroupBox box)
+        {
+            await box.UpdatePositionAsync();
+        }
+    }
+
+    public int AnimDurationMS { get; set; } = 300;
 
     private Grid? PART_MainGrid;
     private StackPanel? PART_HeaderStackPanel;
@@ -101,6 +108,8 @@ public class WpfFlyoutGroupBox : GroupBox
 
     public override void OnApplyTemplate()
     {
+        base.OnApplyTemplate();
+
         PART_MainGrid = GetTemplateChild(nameof(PART_MainGrid)) as Grid;
         // I Write Grid.Clip In Code Behind To Avoid Buggysoft Runtime Errors!!
         PART_MainGrid?.ClipTo(GetMaxCornerRadius, GetMaxCornerRadius, this);
@@ -127,176 +136,23 @@ public class WpfFlyoutGroupBox : GroupBox
         }
 
         PART_ContentGrid = GetTemplateChild(nameof(PART_ContentGrid)) as Grid;
-
-        base.OnApplyTemplate();
     }
 
     public WpfFlyoutGroupBox()
     {
         DataContext = this;
-        SizeChanged -= WpfFlyoutGroupBox_SizeChanged;
-        SizeChanged += WpfFlyoutGroupBox_SizeChanged;
-        Loaded -= WpfFlyoutGroupBox_Loaded;
         Loaded += WpfFlyoutGroupBox_Loaded;
-    }
-
-    private double FlyElementActualH = double.NaN;
-
-    private double GetFlyElementActualHeight()
-    {
-        if (PART_HeaderStackPanel == null) return 0;
-        if (PART_ContentGrid == null) return 0;
-        return ActualHeight - Margin.Top - Margin.Bottom - PART_HeaderStackPanel.ActualHeight - PART_HeaderStackPanel.Margin.Top - PART_HeaderStackPanel.Margin.Bottom - PART_ContentGrid.Margin.Top - PART_ContentGrid.Margin.Bottom;
-    }
-
-    private bool IsHandling = false;
-    private int LastDegree = 0;
-
-    private async Task HandleFlyArrowAsync(bool anyway)
-    {
-        try
-        {
-            if (PART_ContentGrid == null) return;
-            if (PART_ArrowPath == null) return;
-
-            if (IsHandling) return;
-            IsHandling = true;
-
-            bool isOpen = PART_ContentGrid.ActualHeight > 0;
-
-            if (isOpen != IsOpen || anyway)
-            {
-                if (isOpen)
-                {
-                    FlyElementActualH = GetFlyElementActualHeight();
-                    PART_ContentGrid.IsEnabled = true;
-                    await PART_ArrowPath.RotateAsync(LastDegree, 0, AnimDurationMS); // -90, 0
-                    LastDegree = 0;
-                    if (!anyway && !CloseFly) FlyoutChanged?.Invoke(this, new FlyoutChangedEventArgs(true));
-                }
-                else
-                {
-                    await PART_ArrowPath.RotateAsync(LastDegree, -90, AnimDurationMS); // 0, -90
-                    LastDegree = -90;
-                    PART_ContentGrid.IsEnabled = false;
-                    if (!anyway) FlyoutChanged?.Invoke(this, new FlyoutChangedEventArgs(false));
-                }
-                IsOpen = isOpen;
-            }
-
-            IsHandling = false;
-
-            // After Anim
-            isOpen = PART_ContentGrid.ActualHeight > 0;
-            if (isOpen != IsOpen) await HandleFlyArrowAsync(false);
-        }
-        catch (Exception) { }
-    }
-
-    private bool IsOpenning = false;
-
-    public async Task OpenFlyAsync()
-    {
-        try
-        {
-            if (DisableFly) return;
-            if (PART_HeaderStackPanel == null) return;
-            if (PART_ArrowPath == null) return;
-            if (PART_ContentGrid == null) return;
-
-            if (IsOpenning) return;
-            IsOpenning = true;
-
-            bool isOpen = PART_ContentGrid.ActualHeight > 0;
-            if (!isOpen)
-            {
-                if (CloseFly) CloseFly = false;
-
-                PART_ContentGrid.Margin = new Thickness(2);
-
-                if (double.IsNaN(FlyElementActualH) || ActualHeight > PART_HeaderStackPanel.ActualHeight * 2)
-                    FlyElementActualH = GetFlyElementActualHeight();
-                DoubleAnimation anim = new(0, FlyElementActualH, new Duration(TimeSpan.FromMilliseconds(AnimDurationMS)));
-                PART_ContentGrid.BeginAnimation(MaxHeightProperty, anim);
-
-                await Task.Delay(AnimDurationMS);
-
-                if (double.IsNaN(FlyElementActualH) || ActualHeight > PART_HeaderStackPanel.ActualHeight * 2)
-                    FlyElementActualH = GetFlyElementActualHeight();
-                anim = new(FlyElementActualH, double.MaxValue, new Duration(TimeSpan.FromMilliseconds(10)));
-                PART_ContentGrid.BeginAnimation(MaxHeightProperty, anim);
-                PART_ContentGrid.MaxHeight = double.MaxValue;
-
-                await Task.Delay(10);
-
-                await HandleFlyArrowAsync(false); // For Middle Position
-            }
-
-            IsOpenning = false;
-        }
-        catch (Exception) { }
-    }
-
-    private bool IsClosing = false;
-
-    public async Task CloseFlyAsync()
-    {
-        try
-        {
-            if (DisableFly) return;
-            if (PART_HeaderStackPanel == null) return;
-            if (PART_ArrowPath == null) return;
-            if (PART_ContentGrid == null) return;
-
-            if (IsClosing) return;
-            IsClosing = true;
-
-            bool isOpen = PART_ContentGrid.ActualHeight > 0;
-            if (isOpen)
-            {
-                FlyElementActualH = GetFlyElementActualHeight();
-                DoubleAnimation anim = new(FlyElementActualH, 0, new Duration(TimeSpan.FromMilliseconds(AnimDurationMS)));
-                PART_ContentGrid.BeginAnimation(MaxHeightProperty, anim);
-
-                await Task.Delay(AnimDurationMS);
-
-                PART_ContentGrid.Margin = new Thickness(0);
-                await Task.Delay(10);
-                await HandleFlyArrowAsync(false); // For Middle Position
-            }
-
-            IsClosing = false;
-        }
-        catch (Exception) { }
-    }
-
-    public async void ToggleFly()
-    {
-        try
-        {
-            if (DisableFly) return;
-            if (PART_ContentGrid == null) return;
-            if (IsOpenning || IsClosing) return;
-            bool isOpen = PART_ContentGrid.ActualHeight > 0;
-            if (isOpen) await CloseFlyAsync();
-            else await OpenFlyAsync();
-        }
-        catch (Exception) { }
-    }
-
-    private async void WpfFlyoutGroupBox_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        await HandleFlyArrowAsync(false);
+        Loaded += WpfFlyoutGroupBox_Loaded;
     }
 
     private async void WpfFlyoutGroupBox_Loaded(object sender, RoutedEventArgs e)
     {
         try
         {
+            if (PART_MainGrid == null) return;
             if (PART_HeaderStackPanel == null) return;
             if (PART_ArrowPath == null) return;
-
-            if (CloseFly) await CloseFlyAsync();
+            if (PART_ContentGrid == null) return;
 
             if (DisableFly)
             {
@@ -311,14 +167,132 @@ public class WpfFlyoutGroupBox : GroupBox
 
             if (HideHeader) PART_HeaderStackPanel.Visibility = Visibility.Collapsed;
 
-            await HandleFlyArrowAsync(true);
+            // Wait For Auto Size
+            PART_MainGrid.Visibility = Visibility.Hidden;
+            Task wait = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    double ah1 = 0;
+                    PART_ContentGrid.DispatchIt(() => ah1 = PART_ContentGrid.ActualHeight);
+                    await Task.Delay(50);
+                    double ah2 = 0;
+                    PART_ContentGrid.DispatchIt(() => ah2 = PART_ContentGrid.ActualHeight);
+                    if (ah1 == ah2) break;
+                    await Task.Delay(5);
+                }
+            });
+            try { await wait.WaitAsync(TimeSpan.FromMilliseconds(2000)); } catch (Exception) { }
+            PART_MainGrid.Visibility = Visibility.Visible;
+
+            await UpdatePositionAsync();
+        }
+        catch (Exception) { }
+    }
+
+    private double FlyElementActualH = double.NaN;
+
+    private double GetFlyElementActualHeight()
+    {
+        if (PART_HeaderStackPanel == null) return 0;
+        if (PART_ContentGrid == null) return 0;
+        return ActualHeight - Margin.Top - Margin.Bottom - PART_HeaderStackPanel.ActualHeight - PART_HeaderStackPanel.Margin.Top - PART_HeaderStackPanel.Margin.Bottom - PART_ContentGrid.Margin.Top - PART_ContentGrid.Margin.Bottom;
+    }
+
+    private bool IsOpenning = false;
+
+    private async Task OpenFlyAsync()
+    {
+        try
+        {
+            if (DisableFly) return;
+            if (PART_HeaderStackPanel == null) return;
+            if (PART_ArrowPath == null) return;
+            if (PART_ContentGrid == null) return;
+
+            if (IsOpenning || IsClosing) return;
+            IsOpenning = true;
+
+            bool isOpen = PART_ContentGrid.ActualHeight > 1;
+            if (!isOpen)
+            {
+                FlyoutChanged?.Invoke(this, new FlyoutChangedEventArgs(true));
+
+                if (double.IsNaN(FlyElementActualH) || ActualHeight > PART_HeaderStackPanel.ActualHeight * 2)
+                    FlyElementActualH = GetFlyElementActualHeight();
+                DoubleAnimation anim = new(0, FlyElementActualH, new Duration(TimeSpan.FromMilliseconds(AnimDurationMS)));
+                PART_ContentGrid.BeginAnimation(MaxHeightProperty, anim);
+
+                // Handle Fly Arrow
+                await PART_ArrowPath.AnimRotateAsync(0, AnimDurationMS); // -90, 0
+                PART_ContentGrid.IsEnabled = true;
+
+                if (double.IsNaN(FlyElementActualH) || ActualHeight > PART_HeaderStackPanel.ActualHeight * 2)
+                    FlyElementActualH = GetFlyElementActualHeight();
+                anim = new(FlyElementActualH, double.MaxValue, new Duration(TimeSpan.FromMilliseconds(10)));
+                PART_ContentGrid.BeginAnimation(MaxHeightProperty, anim);
+                PART_ContentGrid.MaxHeight = double.MaxValue;
+
+                await Task.Delay(10);
+            }
+
+            IsOpenning = false;
+        }
+        catch (Exception) { }
+    }
+
+    private bool IsClosing = false;
+
+    private async Task CloseFlyAsync()
+    {
+        try
+        {
+            if (DisableFly) return;
+            if (PART_HeaderStackPanel == null) return;
+            if (PART_ArrowPath == null) return;
+            if (PART_ContentGrid == null) return;
+
+            if (IsOpenning || IsClosing) return;
+            IsClosing = true;
+
+            bool isOpen = PART_ContentGrid.ActualHeight > 1;
+            if (isOpen)
+            {
+                FlyoutChanged?.Invoke(this, new FlyoutChangedEventArgs(false));
+
+                FlyElementActualH = GetFlyElementActualHeight();
+                DoubleAnimation anim = new(FlyElementActualH, 0, new Duration(TimeSpan.FromMilliseconds(AnimDurationMS)));
+                PART_ContentGrid.BeginAnimation(MaxHeightProperty, anim);
+
+                // Handle Fly Arrow
+                await PART_ArrowPath.AnimRotateAsync(-90, AnimDurationMS); // 0, -90
+                PART_ContentGrid.IsEnabled = false;
+
+                
+                await Task.Delay(10);
+            }
+
+            IsClosing = false;
+        }
+        catch (Exception) { }
+    }
+
+    private async Task UpdatePositionAsync()
+    {
+        try
+        {
+            if (DisableFly) return;
+            if (PART_ContentGrid == null) return;
+            if (IsOpenning || IsClosing) return;
+            if (IsOpen) await OpenFlyAsync();
+            else await CloseFlyAsync();
         }
         catch (Exception) { }
     }
 
     private void PART_HeaderStackPanel_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        ToggleFly();
+        IsOpen = !IsOpen;
     }
 
     private void PART_ArrowPath_GotFocus(object sender, RoutedEventArgs e)
@@ -343,7 +317,7 @@ public class WpfFlyoutGroupBox : GroupBox
 
     private void PART_ArrowPath_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter || e.Key == Key.Space) ToggleFly();
+        if (e.Key == Key.Enter || e.Key == Key.Space) IsOpen = !IsOpen;
     }
 
 }

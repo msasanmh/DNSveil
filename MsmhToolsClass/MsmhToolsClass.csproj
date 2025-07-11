@@ -195,7 +195,7 @@
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.18" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
     <PackageReference Include="System.DirectoryServices.AccountManagement" Version="8.0.0" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.16" />
     <PackageReference Include="System.Management" Version="8.0.0" />
     <PackageReference Include="System.Management.Automation" Version="7.2.18" />
     <PackageReference Include="TaskScheduler" Version="2.12.1" />

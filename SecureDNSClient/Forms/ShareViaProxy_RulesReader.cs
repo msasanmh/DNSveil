@@ -35,7 +35,9 @@ public partial class FormMain
 
             url = url.ToLower().Trim();
 
-            NetworkTool.GetUrlDetails(url, 443, out _, out string host, out _, out _, out int port, out _, out _);
+            NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(url, 443);
+            string host = urid.Host;
+            int port = urid.Port;
 
             string rulesPath = string.IsNullOrEmpty(LastRulesPath) ? SecureDNS.RulesPath : LastRulesPath;
             if (!File.Exists(rulesPath))

@@ -1,4 +1,6 @@
 ﻿using Microsoft.Win32;
+using MsmhToolsClass.MsmhAgnosticServer;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -16,27 +18,23 @@ public static class NetworkTool
     public static string IpToUrl(string scheme, IPAddress ip, int port, string path)
     {
         string url = string.Empty;
-        scheme = scheme.Trim();
-        string defaultScheme = "https";
-        path = path.Trim();
-
+        
         try
         {
-            bool schemeIsNullOrWhiteSpace = string.IsNullOrWhiteSpace(scheme);
-            if (!schemeIsNullOrWhiteSpace && scheme.EndsWith("://")) scheme = scheme.TrimEnd("://");
+            scheme = scheme.Trim();
+            if (!string.IsNullOrEmpty(scheme) && !scheme.EndsWith("://")) scheme = $"{scheme}://";
+            if (scheme.Equals("://")) scheme = string.Empty;
 
-            UriBuilder ub = new()
-            {
-                Scheme = schemeIsNullOrWhiteSpace ? defaultScheme : scheme,
-                Host = ip.ToString(),
-                Port = port > 0 ? port : 443,
-                Path = path
-            };
+            bool isIPv6 = IsIPv6(ip);
+            string ipStr = isIPv6 ? $"[{ip.ToStringNoScopeId()}]" : ip.ToString();
 
-            url = ub.Uri.ToString();
-            if (schemeIsNullOrWhiteSpace && url.StartsWith($"{defaultScheme}://"))
-                url = url.TrimStart($"{defaultScheme}://");
-            if (url.EndsWith('/')) url = url.TrimEnd('/');
+            port = port > 0 && port <= 65535 ? port : 443;
+
+            path = path.Trim().TrimEnd('/');
+            if (!string.IsNullOrEmpty(path) && !path.StartsWith('/')) path = $"/{path}";
+            if (path.Equals('/')) path = string.Empty;
+
+            url = $"{scheme}{ipStr}:{port}{path}";
         }
         catch (Exception ex)
         {
@@ -163,7 +161,8 @@ public static class NetworkTool
                     result = line.Replace("name:", string.Empty).Trim();
                     if (result.Contains('.'))
                     {
-                        GetHostDetails(result, 0, out _, out _, out baseHost, out _, out _, out _);
+                        URL urid = GetUrlOrDomainDetails(result, 0);
+                        baseHost = urid.BaseHost;
                     }
                     break;
                 }
@@ -194,54 +193,263 @@ public static class NetworkTool
         catch (Exception) { }
     }
 
-    public static Uri? UrlToUri(string url)
+    public class URL
     {
-        try
+        public Uri? Uri { get; set; } = null;
+        public string Scheme { get; set; } = string.Empty;
+        public string SchemeName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string Host { get; set; } = string.Empty;
+        public string SubHost { get; set; } = string.Empty;
+        public string BaseHost { get; set; } = string.Empty;
+        public string DnsSafeHost { get; set; } = string.Empty;
+        public string IdnHost { get; set; } = string.Empty;
+        public bool IsHostLoopback { get; set; } = false;
+        public int Port { get; set; } = -1;
+        public string Path { get; set; } = string.Empty;
+        public string Query { get; set; } = string.Empty;
+        public string Fragment { get; set; } = string.Empty;
+        public UriHostNameType HostNameType { get; set; } = UriHostNameType.Unknown;
+
+        public override string ToString()
         {
-            string[] split = url.Split("//");
-            string prefix = "https://";
-            for (int n = 0; n < split.Length; n++)
+            string result = string.Empty;
+
+            if (!string.IsNullOrEmpty(Scheme)) result += Scheme;
+            if (!string.IsNullOrEmpty(Username))
             {
-                if (n > 0)
+                result += Username;
+                if (!string.IsNullOrEmpty(Password)) result += $":{Password}";
+                result += "@";
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(Password))
                 {
-                    prefix += split[n];
-                    if (n < split.Length - 1) prefix += "//";
+                    result += $":{Password}";
+                    result += "@";
                 }
             }
+            if (!string.IsNullOrEmpty(Host))
+            {
+                result += Host;
+                if (Port != -1 && Port != 0) result += $":{Port}";
+            }
+            if (!string.IsNullOrEmpty(Path)) result += Path;
+            if (!string.IsNullOrEmpty(Query)) result += Query;
+            if (!string.IsNullOrEmpty(Fragment)) result += Fragment;
 
-            Uri uri = new(prefix);
-            return uri;
+            return WebUtility.UrlDecode(result);
+        }
+
+        public string ToStringDebug()
+        {
+            string nl = Environment.NewLine;
+            string result = string.Empty;
+            result += $"{nameof(Scheme)}: {Scheme}{nl}";
+            result += $"{nameof(SchemeName)}: {SchemeName}{nl}";
+            result += $"{nameof(Username)}: {Username}{nl}";
+            result += $"{nameof(Password)}: {Password}{nl}";
+            result += $"{nameof(Host)}: {Host}{nl}";
+            result += $"{nameof(SubHost)}: {SubHost}{nl}";
+            result += $"{nameof(BaseHost)}: {BaseHost}{nl}";
+            result += $"{nameof(DnsSafeHost)}: {DnsSafeHost}{nl}";
+            result += $"{nameof(IdnHost)}: {IdnHost}{nl}";
+            result += $"{nameof(IsHostLoopback)}: {IsHostLoopback}{nl}";
+            result += $"{nameof(Port)}: {Port}{nl}";
+            result += $"{nameof(Path)}: {Path}{nl}";
+            result += $"{nameof(Query)}: {Query}{nl}";
+            result += $"{nameof(Fragment)}: {Fragment}{nl}";
+            result += $"{nameof(HostNameType)}: {HostNameType}{nl}";
+            return WebUtility.UrlDecode(result);
+        }
+    }
+
+    public static URL GetUrlOrDomainDetails(string urlOrDomain, int defaultPort)
+    {
+        URL url = new();
+
+        try
+        {
+            urlOrDomain = urlOrDomain.Trim();
+            urlOrDomain = WebUtility.UrlDecode(urlOrDomain);
+            url.Host = urlOrDomain;
+            url.Port = defaultPort;
+
+            string scheme = string.Empty;
+
+            // Strip xxxx://
+            string separator_Scheme = "://";
+            int indexOfScheme = urlOrDomain.IndexOf(separator_Scheme);
+            if (indexOfScheme != -1)
+            {
+                indexOfScheme += separator_Scheme.Length;
+                scheme = urlOrDomain[..indexOfScheme];
+                urlOrDomain = urlOrDomain[indexOfScheme..];
+
+                url.Scheme = scheme;
+                url.SchemeName = scheme[..(indexOfScheme - separator_Scheme.Length)];
+            }
+
+            // Get Port
+            string tempGetPort = urlOrDomain.Trim();
+            int pathIndex = tempGetPort.IndexOf('/');
+            if (pathIndex != -1)
+            {
+                // Strip Path
+                tempGetPort = tempGetPort[..pathIndex];
+            }
+            int portIndex = tempGetPort.LastIndexOf(':'); // LastIndexOf (Domain May Be IPv6)
+            if (portIndex != -1)
+            {
+                string portStr = tempGetPort[(portIndex + 1)..];
+                bool isPortInt = int.TryParse(portStr, out int portOut);
+                if (isPortInt)
+                {
+                    defaultPort = portOut;
+                    url.Port = defaultPort;
+                }
+            }
+            
+            urlOrDomain = urlOrDomain.Trim();
+            if (string.IsNullOrEmpty(urlOrDomain)) return url;
+
+            Uri? uri = null;
+            try { uri = new($"https://{urlOrDomain}", UriKind.Absolute); }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("NetworkTool GetUrlOrDomainDetails Domain ==> " + urlOrDomain);
+                Debug.WriteLine(ex.Message);
+            }
+            url.Uri = uri;
+            
+            if (uri != null)
+            {
+                // Get Username And Password
+                string userInfo = uri.UserInfo;
+                url.Username = userInfo;
+                char separator_Username = ':';
+                int indexOfUsername = userInfo.IndexOf(separator_Username);
+                if (indexOfUsername != -1)
+                {
+                    url.Username = userInfo[..indexOfUsername];
+                    url.Password = userInfo[(indexOfUsername + 1)..];
+                }
+
+                // Get Host
+                string host = uri.Host;
+                int indexOfHost = urlOrDomain.IndexOf(host, StringComparison.OrdinalIgnoreCase);
+                if (indexOfHost != -1)
+                {
+                    host = urlOrDomain[indexOfHost..(indexOfHost + host.Length)]; // To Get Mixed Case Host
+                }
+                url.Host = host;
+
+                bool isIP = IsIP(host, out _);
+
+                // Get SubHost And BaseHost
+                if (!isIP)
+                {
+                    url.SubHost = host;
+                    url.BaseHost = host;
+
+                    if (host.Contains('.'))
+                    {
+                        // Get Base Host
+                        string baseHost = host;
+                        string[] dotSplit = host.Split('.');
+                        int realLength = dotSplit.Length;
+                        if (realLength >= 3)
+                        {
+                            // e.g. *.co.uk, *.org.us
+                            if (dotSplit[^2].Length <= 3 && dotSplit[^1].Length <= 2) realLength--;
+
+                            if (realLength >= 3)
+                            {
+                                if (realLength == 3 && dotSplit[0].Equals("www", StringComparison.OrdinalIgnoreCase))
+                                    baseHost = baseHost[4..];
+                                else
+                                {
+                                    int domainLength = realLength < dotSplit.Length ? 3 : 2;
+
+                                    baseHost = string.Empty;
+                                    for (int i = 0; i < dotSplit.Length; i++)
+                                    {
+                                        if (i >= dotSplit.Length - domainLength)
+                                            baseHost += $"{dotSplit[i]}.";
+                                    }
+                                    if (baseHost.EndsWith('.')) baseHost = baseHost[..^1];
+                                }
+                            }
+                        }
+                        url.BaseHost = baseHost;
+
+                        // Get Sub Host (Subdomain)
+                        if (!baseHost.Equals(host))
+                        {
+                            string baseHostWithDot = $".{baseHost}";
+                            if (host.Contains(baseHostWithDot))
+                                url.SubHost = host.Replace(baseHostWithDot, string.Empty);
+                        }
+                    }
+                }
+
+                url.DnsSafeHost = uri.DnsSafeHost; // Get DnsSafeHost
+                url.IdnHost = uri.IdnHost; // Get IdnHost
+                url.IsHostLoopback = uri.IsLoopback || host.Equals("localhost", StringComparison.OrdinalIgnoreCase); // Get IsHostLoopback
+                url.Port = uri.Port == 443 ? defaultPort : uri.Port; // Get Port
+                url.Path = uri.AbsolutePath; // Get Path
+                url.Query = uri.Query; // Get Query
+                url.Fragment = uri.Fragment; // Get Fragment
+
+                // Get HostType
+                if (isIP)
+                {
+                    if (uri.HostNameType == UriHostNameType.IPv4 || uri.HostNameType == UriHostNameType.IPv6)
+                        url.HostNameType = uri.HostNameType;
+                }
+                else
+                {
+                    if (uri.HostNameType != UriHostNameType.IPv4 && uri.HostNameType != UriHostNameType.IPv6)
+                        url.HostNameType = uri.HostNameType;
+                }
+            }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("NetworkTool GetUrlOrDomainDetails: " + ex.Message);
         }
-        return null;
+        
+        return url;
     }
 
-    public static void GetUrlDetails(string url, int defaultPort, out string scheme, out string host, out string subHost, out string baseHost, out int port, out string path, out bool isIPv6)
+    public static void GetUrlDetails_OLD(string url, int defaultPort, out string scheme, out string host, out string subHost, out string baseHost, out int port, out string path, out string query, out string fragment, out bool isIPv6)
     {
         url = url.Trim();
         scheme = string.Empty;
-
-        // Strip xxxx://
-        if (url.Contains("://"))
+        
+        try
         {
-            string[] split = url.Split("://");
+            url = WebUtility.UrlDecode(url);
 
-            if (split.Length > 0)
-                if (!string.IsNullOrEmpty(split[0]))
-                    scheme = $"{split[0]}://";
-
-            if (split.Length > 1)
-                if (!string.IsNullOrEmpty(split[1]))
-                    url = split[1];
+            // Strip xxxx://
+            string separator_Scheme = "://";
+            int indexOfScheme = url.IndexOf(separator_Scheme);
+            if (indexOfScheme != -1)
+            {
+                indexOfScheme += separator_Scheme.Length;
+                scheme = url[..indexOfScheme];
+                url = url[indexOfScheme..];
+            }
         }
+        catch (Exception) { }
 
-        GetHostDetails(url, defaultPort, out host, out subHost, out baseHost, out port, out path, out isIPv6);
+        GetHostDetails_OLD(url, defaultPort, out host, out subHost, out baseHost, out port, out path, out query, out fragment, out isIPv6);
+
     }
 
-    public static void GetHostDetails(string hostIpPort, int defaultPort, out string host, out string subHost, out string baseHost, out int port, out string path, out bool isIPv6)
+    private static void GetHostDetails_OLD(string hostIpPort, int defaultPort, out string host, out string subHost, out string baseHost, out int port, out string path, out string query, out string fragment, out bool isIPv6)
     {
         hostIpPort = hostIpPort.Trim();
         host = hostIpPort;
@@ -249,26 +457,49 @@ public static class NetworkTool
         baseHost = host;
         port = defaultPort;
         path = string.Empty;
+        query = string.Empty;
+        fragment = string.Empty;
         isIPv6 = false;
 
         try
         {
-            // Strip /xxxx (Path)
-            if (!hostIpPort.Contains("//") && hostIpPort.Contains('/'))
+            // Strip /xxxx (Path) Or ?xx= (Query)
+            if (!hostIpPort.Contains("//") && (hostIpPort.Contains('/') || hostIpPort.Contains('?') || hostIpPort.Contains('#')))
             {
-                string[] split = hostIpPort.Split('/');
-                if (!string.IsNullOrEmpty(split[0]))
-                    hostIpPort = split[0];
-
-                // Get Path
-                string slash = "/";
-                string outPath = slash;
-                for (int n = 0; n < split.Length; n++)
+                // Set Fragment Portion (#...)
+                int indexOfFragment = hostIpPort.LastIndexOf('#');
+                if (indexOfFragment != -1)
                 {
-                    if (n != 0) outPath += split[n] + "/";
+                    fragment = hostIpPort[indexOfFragment..];
+                    hostIpPort = hostIpPort[..indexOfFragment]; // Remove Fragment From hostIpPort
                 }
-                if (outPath.Length > 1 && outPath.EndsWith("/")) outPath = outPath.TrimEnd(slash);
-                if (!outPath.Equals("/")) path = outPath;
+
+                // Set Query
+                int indexOfQuestion = hostIpPort.IndexOf('?');
+                if (indexOfQuestion != -1) query = hostIpPort[indexOfQuestion..];
+
+                // Set Path
+                int indexOfSlash = hostIpPort.IndexOf('/');
+                if (indexOfSlash != -1)
+                {
+                    if (indexOfQuestion != -1)
+                    {
+                        if (indexOfQuestion > indexOfSlash)
+                        {
+                            path = hostIpPort[indexOfSlash..indexOfQuestion];
+                        }
+                    }
+                    else
+                    {
+                        path = hostIpPort[indexOfSlash..];
+                    }
+                }
+
+                // Strip Path And Query
+                int index = indexOfSlash;
+                if (index == -1) index = indexOfQuestion;
+                else if (indexOfQuestion != -1) index = Math.Min(indexOfSlash, indexOfQuestion);
+                if (index != -1) hostIpPort = hostIpPort[..index];
             }
 
             // Split Host and Port
@@ -356,7 +587,105 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("GetHostDetails: " + ex.Message);
+            Debug.WriteLine("NetworkTool GetHostDetails: " + ex.Message);
+        }
+    }
+
+    public static NameValueCollection ParseUriQuery(string query, bool keysToLower = true)
+    {
+        NameValueCollection nvc = new(StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            if (string.IsNullOrEmpty(query)) return nvc;
+            if (query.StartsWith('?')) query = query[1..];
+            string[] split = query.Split('&', StringSplitOptions.RemoveEmptyEntries);
+            for (int n = 0; n < split.Length; n++)
+            {
+                string part = split[n];
+                int index = part.IndexOf('=');
+                if (index == -1) continue;
+                string keyStr = part[..index];
+                string valStr = part[(index + 1)..];
+
+                if (string.IsNullOrEmpty(keyStr)) continue;
+                if (string.IsNullOrEmpty(valStr)) continue;
+
+                string key = Uri.UnescapeDataString(keyStr);
+                if (keysToLower) key = key.ToLower();
+                string val = Uri.UnescapeDataString(valStr);
+
+                // Add If Not Already Exist
+                if (nvc[key] is null) nvc.Add(key, val);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool ParseUriQuery: " + ex.Message);
+        }
+
+        return nvc;
+    }
+
+    public static Uri? UrlToUri(string url)
+    {
+        try
+        {
+            return new Uri(url.Trim(), UriKind.Absolute);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool UrlToUri: " + ex.Message);
+        }
+        return null;
+    }
+
+    public static bool IsUrlValid(string url)
+    {
+        return UrlToUri(url) != null;
+    }
+
+    /// <summary>
+    /// Domain, IPv4, IPv6
+    /// </summary>
+    public static bool IsDomainNameValid(string domain)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(domain)) return false;
+            if (IsIP(domain, out _)) return true; // Return True If It's An IP
+            if (domain.StartsWith("http:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (domain.StartsWith("https:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (domain.Contains('/', StringComparison.OrdinalIgnoreCase)) return false;
+            if (!domain.Contains('.', StringComparison.OrdinalIgnoreCase)) return false;
+            return Uri.CheckHostName(domain) != UriHostNameType.Unknown;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool IsDomainNameValid: " + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Only Domain. e.g. example.com
+    /// </summary>
+    public static bool IsDomain(string domain)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(domain)) return false;
+            if (IsIP(domain, out _)) return false;
+            if (domain.StartsWith("http:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (domain.StartsWith("https:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (domain.Contains('/', StringComparison.OrdinalIgnoreCase)) return false;
+            if (!domain.Contains('.', StringComparison.OrdinalIgnoreCase)) return false;
+            return Uri.CheckHostName(domain) != UriHostNameType.Unknown;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool IsDomain: " + ex.Message);
+            return false;
         }
     }
 
@@ -432,6 +761,7 @@ public static class NetworkTool
     public static async Task<string?> IpToCompanyAsync(string iPStr, string? proxyScheme = null)
     {
         string? company = null;
+
         try
         {
             using SocketsHttpHandler socketsHttpHandler = new();
@@ -442,8 +772,9 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("NetworkTool IpToCompanyAsync: " + ex.Message);
         }
+
         return company;
     }
 
@@ -460,7 +791,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("NetworkTool GetLocalIPv4: " + ex.Message);
             return null;
         }
     }
@@ -478,7 +809,21 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("NetworkTool GetLocalIPv6: " + ex.Message);
+            return null;
+        }
+    }
+
+    public static IPAddress? GetLocalIP(IPAddress dnsIP, int dnsPort)
+    {
+        try
+        {
+            bool isIPv6 = IsIPv6(dnsIP);
+            return isIPv6 ? GetLocalIPv6(dnsIP.ToStringNoScopeId(), dnsPort) : GetLocalIPv4(dnsIP.ToString(), dnsPort);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool GetLocalIP: " + ex.Message);
             return null;
         }
     }
@@ -486,6 +831,7 @@ public static class NetworkTool
     public static IPAddress? GetDefaultGateway(bool ipv6 = false)
     {
         IPAddress? gateway = null;
+
         try
         {
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
@@ -504,7 +850,7 @@ public static class NetworkTool
                             if (address.AddressFamily == AddressFamily.InterNetwork)
                             {
                                 gateway = address;
-                                Debug.WriteLine("GetDefaultGateway: " + gateway);
+                                Debug.WriteLine("NetworkTool GetDefaultGateway: " + gateway);
                                 return gateway;
                             }
                         }
@@ -513,7 +859,7 @@ public static class NetworkTool
                             if (address.AddressFamily == AddressFamily.InterNetworkV6)
                             {
                                 gateway = address;
-                                Debug.WriteLine("GetDefaultGateway: " + gateway);
+                                Debug.WriteLine("NetworkTool GetDefaultGateway: " + gateway);
                                 return gateway;
                             }
                         }
@@ -522,6 +868,7 @@ public static class NetworkTool
             }
         }
         catch (Exception) { }
+
         return gateway;
     }
 
@@ -570,39 +917,157 @@ public static class NetworkTool
         return null;
     }
 
-    public static bool IsDomainNameValid(string domain)
+    public static bool IsEndPoint(string endPointStr, out IPEndPoint? endPoint)
     {
-        return Uri.CheckHostName(domain) != UriHostNameType.Unknown;
+        endPoint = null;
+
+        try
+        {
+            if (!string.IsNullOrEmpty(endPointStr))
+            {
+                endPointStr = endPointStr.Trim();
+                // IPEndPoint.TryParse() Is Not Reliable
+                if (endPointStr.Count(c => c == '.') == 3) // IPv4
+                {
+                    string ipv4Str = endPointStr;
+                    int port = 0;
+
+                    if (ipv4Str.Contains(':'))
+                    {
+                        string[] split = ipv4Str.Split(':');
+                        if (split.Length == 2)
+                        {
+                            ipv4Str = split[0];
+                            string portStr = split[1];
+                            bool isPortInt = int.TryParse(portStr, out int p);
+                            if (isPortInt) port = p;
+                        }
+                    }
+
+                    if (IsIPv4Valid(ipv4Str, out IPAddress? ip) && ip != null)
+                    {
+                        endPoint = new(ip, port);
+                        return true;
+                    }
+                }
+                else
+                {
+                    int numberOfColons = endPointStr.Count(c => c == ':');
+                    if (numberOfColons >= 2 && numberOfColons <= 7)
+                    {
+                        if (endPointStr.StartsWith('[') && endPointStr.Contains(']'))
+                        {
+                            int lastIndex1 = endPointStr.LastIndexOf(']');
+                            int lastIndex2 = endPointStr.LastIndexOf(':');
+                            if (lastIndex2 == lastIndex1 + 1) // [IPv6]:Port
+                            {
+                                string ipv6Str = endPointStr;
+                                int port = 0;
+
+                                if (ipv6Str.Contains("]:"))
+                                {
+                                    string[] split = ipv6Str.Split("]:");
+                                    if (split.Length == 2)
+                                    {
+                                        ipv6Str = split[0];
+                                        ipv6Str = ipv6Str.TrimStart('[');
+                                        string portStr = split[1];
+                                        bool isPortInt = int.TryParse(portStr, out int p);
+                                        if (isPortInt) port = p;
+                                    }
+                                }
+
+                                if (IsIPv6Valid(ipv6Str, out IPAddress? ip) && ip != null)
+                                {
+                                    endPoint = new(ip, port);
+                                    return true;
+                                }
+                            }
+                            else
+                            {
+                                if (endPointStr.EndsWith(']')) // [IPv6]
+                                {
+                                    string ipv6Str = endPointStr;
+                                    int port = 0;
+
+                                    if (IsIPv6Valid(ipv6Str, out IPAddress? ip) && ip != null)
+                                    {
+                                        endPoint = new(ip, port);
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        else // IPv6
+                        {
+                            string ipv6Str = endPointStr;
+                            int port = 0;
+
+                            if (IsIPv6Valid(ipv6Str, out IPAddress? ip) && ip != null)
+                            {
+                                endPoint = new(ip, port);
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception) { }
+
+        return false;
     }
 
     public static bool IsIP(string ipStr, out IPAddress? ip)
     {
         ip = null;
+
         try
         {
-            if (!string.IsNullOrEmpty(ipStr)) return IPAddress.TryParse(ipStr, out ip);
+            if (!string.IsNullOrEmpty(ipStr))
+            {
+                bool isIP = IPAddress.TryParse(ipStr, out IPAddress? ipOut);
+                if (isIP && ipOut != null)
+                {
+                    int byteLength = ipOut.GetAddressBytes().Length;
+                    bool isIPv4 = ipOut.AddressFamily == AddressFamily.InterNetwork && byteLength == 4;
+                    bool isIPv6 = ipOut.AddressFamily == AddressFamily.InterNetworkV6 && byteLength == 16;
+                    if (isIPv4 || isIPv6)
+                    {
+                        ip = ipOut;
+                        return true;
+                    }
+                }
+            }
         }
         catch (Exception) { }
+
         return false;
     }
 
     public static bool IsIPv4(IPAddress iPAddress)
     {
-        return iPAddress.AddressFamily == AddressFamily.InterNetwork;
+        try
+        {
+            int byteLength = iPAddress.GetAddressBytes().Length;
+            return iPAddress.AddressFamily == AddressFamily.InterNetwork && byteLength == 4;
+        }
+        catch (Exception) { }
+        return false;
     }
 
-    public static bool IsIPv4Valid(string ipString, out IPAddress? iPAddress)
+    public static bool IsIPv4Valid(string ipv4Str, out IPAddress? ipv4)
     {
-        iPAddress = null;
+        ipv4 = null;
 
         try
         {
-            if (string.IsNullOrWhiteSpace(ipString)) return false;
-            if (!ipString.Contains('.')) return false;
-            if (ipString.Count(c => c == '.') != 3) return false;
-            if (ipString.StartsWith('.')) return false;
-            if (ipString.EndsWith('.')) return false;
-            string[] splitValues = ipString.Split('.');
+            if (string.IsNullOrWhiteSpace(ipv4Str)) return false;
+            if (!ipv4Str.Contains('.')) return false;
+            if (ipv4Str.Count(c => c == '.') != 3) return false;
+            if (ipv4Str.StartsWith('.')) return false;
+            if (ipv4Str.EndsWith('.')) return false;
+            string[] splitValues = ipv4Str.Split('.');
             if (splitValues.Length != 4) return false;
 
             foreach (string splitValue in splitValues)
@@ -619,9 +1084,9 @@ public static class NetworkTool
                 if (testInt < 0 || testInt > 255) return false;
             }
 
-            bool isIP = IPAddress.TryParse(ipString, out IPAddress? outIP);
+            bool isIP = IPAddress.TryParse(ipv4Str, out IPAddress? outIP);
             if (!isIP) return false;
-            iPAddress = outIP;
+            ipv4 = outIP;
             return true;
         }
         catch (Exception ex)
@@ -633,7 +1098,41 @@ public static class NetworkTool
 
     public static bool IsIPv6(IPAddress iPAddress)
     {
-        return iPAddress.AddressFamily == AddressFamily.InterNetworkV6;
+        try
+        {
+            int byteLength = iPAddress.GetAddressBytes().Length;
+            return iPAddress.AddressFamily == AddressFamily.InterNetworkV6 && byteLength == 16;
+        }
+        catch (Exception) { }
+        return false;
+    }
+
+    public static bool IsIPv6Valid(string ipv6Str, out IPAddress? ipv6)
+    {
+        ipv6 = null;
+
+        try
+        {
+            int numberOfColons = ipv6Str.Count(c => c == ':');
+            if (numberOfColons >= 2 && numberOfColons <= 7)
+            {
+                if (Uri.CheckHostName(ipv6Str) == UriHostNameType.IPv6)
+                {
+                    bool isIP = IPAddress.TryParse(ipv6Str, out IPAddress? outIP);
+                    if (isIP && outIP != null)
+                    {
+                        int byteLength = outIP.GetAddressBytes().Length;
+                        if (outIP.AddressFamily == AddressFamily.InterNetworkV6 && byteLength == 16)
+                        {
+                            ipv6 = outIP;
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception) { }
+        return false;
     }
 
     /// <summary>
@@ -944,7 +1443,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"GetAllNetworkInterfaces: {ex.Message}");
+            Debug.WriteLine("NetworkTool GetAllNetworkInterfaces: " + ex.Message);
         }
 
         // API 2
@@ -1063,7 +1562,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("EnableNicIPv6: " + ex.Message);
+            Debug.WriteLine("NetworkTool EnableNicIPv6: " + ex.Message);
         }
         return success;
     }
@@ -1090,7 +1589,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("DisableNicIPv6: " + ex.Message);
+            Debug.WriteLine("NetworkTool DisableNicIPv6: " + ex.Message);
         }
         return success;
     }
@@ -1160,7 +1659,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("SetDnsIPv4: " + ex.Message);
+            Debug.WriteLine("NetworkTool SetDnsIPv4: " + ex.Message);
         }
     }
 
@@ -1214,7 +1713,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("SetDnsIPv6: " + ex.Message);
+            Debug.WriteLine("NetworkTool SetDnsIPv6: " + ex.Message);
         }
     }
 
@@ -1254,7 +1753,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("NetworkTool UnsetDnsIPv4Async: " + ex.Message);
         }
     }
 
@@ -1318,7 +1817,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("UnsetDnsIPv6Async: " + ex.Message);
+            Debug.WriteLine("NetworkTool UnsetDnsIPv6Async: " + ex.Message);
         }
     }
 
@@ -1399,7 +1898,7 @@ public static class NetworkTool
     /// <summary>
     /// Check Internet Access Based On NIC Send And Receive
     /// </summary>
-    public static async Task<bool> IsInternetAliveByNicAsync(IPAddress? ip = null, int timeoutMS = 2000)
+    public static async Task<bool> IsInternetAliveByNicAsync(IPAddress? ip = null, int timeoutMS = 3000)
     {
         try
         {
@@ -1435,6 +1934,9 @@ public static class NetworkTool
                         statistics = nic.GetIPStatistics();
                         long bytesSent2 = statistics.BytesSent;
                         long bytesReceived2 = statistics.BytesReceived;
+
+                        Debug.WriteLine("Sent:" + (bytesSent2 - bytesSent1));
+                        Debug.WriteLine("Received: " + (bytesReceived2 - bytesReceived1));
 
                         if (bytesSent2 > bytesSent1 && bytesReceived2 > bytesReceived1) return true;
                     }
@@ -1478,12 +1980,14 @@ public static class NetworkTool
     public enum InternetState
     {
         Online,
+        PingOnly,
+        DnsOnly,
         Unstable,
         Offline,
         Unknown
     }
 
-    public static async Task<InternetState> GetInternetStateAsync(IPAddress? ip, int timeoutMS = 3000)
+    public static async Task<InternetState> GetInternetStateAsync(IPAddress? ip, string? nonBlockedForeignDomain = "google.com", int timeoutMS = 6000)
     {
         try
         {
@@ -1495,16 +1999,37 @@ public static class NetworkTool
                 _ => IPAddress.Parse("1.1.1.1") // Others
             };
 
-            bool isAliveByPing = await IsInternetAliveByPingAsync(ip, timeoutMS);
-            if (isAliveByPing)
+            if (string.IsNullOrWhiteSpace(nonBlockedForeignDomain)) nonBlockedForeignDomain = "google.com";
+
+            bool byPing = false, byDnsIPv4 = false, byDnsIPv6 = false, byDnsIP = false;
+
+            async Task byPingAsync()
             {
-                return InternetState.Online;
+                byPing = await IsInternetAliveByPingAsync(ip, timeoutMS);
             }
-            else
+
+            async Task byDnsIPv4Async()
             {
-                bool isAliveByNic = await IsInternetAliveByNicAsync(ip, timeoutMS);
-                return isAliveByNic ? InternetState.Unstable : InternetState.Offline;
+                IPAddress domainIPv4 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{ip}", false, timeoutMS, false, IPAddress.None, 0);
+                byDnsIPv4 = domainIPv4 != IPAddress.None && domainIPv4 != IPAddress.IPv6None;
             }
+
+            async Task byDnsIPv6Async()
+            {
+                IPAddress domainIPv6 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{ip}", false, timeoutMS, true, IPAddress.None, 0);
+                byDnsIPv6 = domainIPv6 != IPAddress.None && domainIPv6 != IPAddress.IPv6None;
+            }
+
+            await Task.WhenAll(byPingAsync(), byDnsIPv4Async(), byDnsIPv6Async());
+
+            byDnsIP = byDnsIPv4 || byDnsIPv6;
+            
+            if (byPing && byDnsIP) return InternetState.Online;
+            if (byPing && !byDnsIP) return InternetState.PingOnly;
+            if (!byPing && byDnsIP) return InternetState.DnsOnly;
+
+            bool isAliveByNic = await IsInternetAliveByNicAsync(ip, timeoutMS);
+            return isAliveByNic ? InternetState.Unstable : InternetState.Offline;
         }
         catch (Exception)
         {
@@ -1519,19 +2044,9 @@ public static class NetworkTool
 
         try
         {
-            GetUrlDetails(urlOrDomain.Trim(), 443, out string scheme, out string host, out _, out _, out int port, out string path, out _);
-            if (string.IsNullOrEmpty(scheme)) scheme = "https://";
+            URL urid = GetUrlOrDomainDetails(urlOrDomain.Trim(), 443);
+            if (urid.Uri ==  null) return result;
 
-            UriBuilder uriBuilder = new()
-            {
-                Scheme = scheme,
-                Host = host,
-                Port = port,
-                Path = path
-            };
-
-            Uri uri = uriBuilder.Uri;
-            
             if (useSystemProxy)
             {
                 string systemProxyScheme = GetSystemProxy(); // Reading from Registry
@@ -1546,7 +2061,7 @@ public static class NetworkTool
             HttpRequest hr = new()
             {
                 CT = ct,
-                URI = uri,
+                URI = urid.Uri,
                 Method = HttpMethod.Get,
                 TimeoutMS = timeoutMs,
                 AllowInsecure = true, // Ignore Cert Check To Make It Faster
@@ -1555,7 +2070,7 @@ public static class NetworkTool
                 ProxyUser = proxyUser,
                 ProxyPass = proxyPass,
             };
-            hr.Headers.Add("host", host); // In Case Of Using IP
+            hr.Headers.Add("host", urid.Host); // In Case Of Using IP
             if (!string.IsNullOrEmpty(ipStr) && IsIP(ipStr, out IPAddress? ip) && ip != null) hr.AddressIP = ip;
             if (isAgnosticProxyTest) hr.UserAgent = "DNSveil - A Secure DNS Client"; // Proxy Test Protocol Depends On This
 
@@ -1575,69 +2090,61 @@ public static class NetworkTool
 
         try
         {
-            GetUrlDetails(urlOrDomain.Trim(), 443, out string scheme, out string host, out _, out _, out int port, out string path, out _);
-            if (string.IsNullOrEmpty(scheme)) scheme = "https://";
+            URL urid = GetUrlOrDomainDetails(urlOrDomain.Trim(), 443);
             bool firstTrySuccess = false;
 
             try
             {
-                UriBuilder uriBuilder = new()
+                if (urid.Uri != null)
                 {
-                    Scheme = scheme,
-                    Host = host,
-                    Port = port,
-                    Path = path
-                };
-
-                Uri uri = uriBuilder.Uri;
-
-                if (useSystemProxy)
-                {
-                    string systemProxyScheme = GetSystemProxy(); // Reading from Registry
-                    if (!string.IsNullOrEmpty(systemProxyScheme))
+                    if (useSystemProxy)
                     {
-                        proxyScheme = systemProxyScheme;
-                        proxyUser = string.Empty;
-                        proxyPass = string.Empty;
+                        string systemProxyScheme = GetSystemProxy(); // Reading from Registry
+                        if (!string.IsNullOrEmpty(systemProxyScheme))
+                        {
+                            proxyScheme = systemProxyScheme;
+                            proxyUser = string.Empty;
+                            proxyPass = string.Empty;
+                        }
                     }
-                }
 
-                HttpRequest hr = new()
-                {
-                    URI = uri,
-                    Method = HttpMethod.Get,
-                    UserAgent = "Other",
-                    TimeoutMS = timeoutMs,
-                    AllowInsecure = true, // Ignore Cert Check To Make It Faster
-                    AllowAutoRedirect = true,
-                    ProxyScheme = proxyScheme,
-                    ProxyUser = proxyUser,
-                    ProxyPass = proxyPass,
-                };
-                hr.Headers.Add("host", host); // In Case Of Using IP
-                if (!string.IsNullOrEmpty(ipStr) && IsIP(ipStr, out IPAddress? ip) && ip != null) hr.AddressIP = ip;
-                HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
+                    HttpRequest hr = new()
+                    {
+                        URI = urid.Uri,
+                        Method = HttpMethod.Get,
+                        UserAgent = "Other",
+                        TimeoutMS = timeoutMs,
+                        AllowInsecure = true, // Ignore Cert Check To Make It Faster
+                        AllowAutoRedirect = true,
+                        ProxyScheme = proxyScheme,
+                        ProxyUser = proxyUser,
+                        ProxyPass = proxyPass,
+                    };
+                    hr.Headers.Add("host", urid.Host); // In Case Of Using IP
+                    if (!string.IsNullOrEmpty(ipStr) && IsIP(ipStr, out IPAddress? ip) && ip != null) hr.AddressIP = ip;
+                    HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
 
-                List<string> resultList = new()
+                    List<string> resultList = new()
                 {
                     hrr.StatusCode.ToString()
                 };
 
-                for (int n = 0; n < hrr.Headers.Count; n++)
-                {
-                    string? key = hrr.Headers.GetKey(n);
-                    string? val = hrr.Headers.Get(n);
+                    for (int n = 0; n < hrr.Headers.Count; n++)
+                    {
+                        string? key = hrr.Headers.GetKey(n);
+                        string? val = hrr.Headers.Get(n);
 
-                    if (string.IsNullOrEmpty(key)) continue;
-                    if (string.IsNullOrEmpty(val)) continue;
+                        if (string.IsNullOrEmpty(key)) continue;
+                        if (string.IsNullOrEmpty(val)) continue;
 
-                    string kv = $"{key}: {val}";
-                    resultList.Add(kv);
-                    firstTrySuccess = true;
+                        string kv = $"{key}: {val}";
+                        resultList.Add(kv);
+                        firstTrySuccess = true;
+                    }
+
+                    if (resultList.Count > 0)
+                        result = resultList.ToString(Environment.NewLine);
                 }
-
-                if (resultList.Count > 0)
-                    result = resultList.ToString(Environment.NewLine);
             }
             catch (Exception) { }
 
@@ -1645,7 +2152,7 @@ public static class NetworkTool
             {
                 if (!firstTrySuccess && !urlOrDomain.Contains("://www."))
                 {
-                    urlOrDomain = $"{scheme}www.{host}:{port}{path}";
+                    urlOrDomain = $"{urid.Scheme}www.{urid.Host}:{urid.Port}{urid.Path}{urid.Query}{urid.Fragment}";
                     result = await GetHeadersAsync(urlOrDomain, ipStr, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
                 }
             }
@@ -1790,7 +2297,7 @@ public static class NetworkTool
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Set Http Proxy: {ex.Message}");
+                Debug.WriteLine("NetworkTool SetProxy SetHttpProxy: " + ex.Message);
             }
 
             RegistryTool.ApplyRegistryChanges();
@@ -1818,7 +2325,7 @@ public static class NetworkTool
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Unset Proxy: {ex.Message}");
+                Debug.WriteLine("NetworkTool UnsetProxy: " + ex.Message);
             }
 
             if (applyRegistryChanges) RegistryTool.ApplyRegistryChanges();
@@ -1838,8 +2345,8 @@ public static class NetworkTool
     {
         host = host.Trim();
         if (string.IsNullOrEmpty(host)) return false;
-        if (host.Equals("0.0.0.0")) return false;
-        if (host.Equals("::0")) return false;
+        if (host.Equals(IPAddress.Any.ToString())) return false;
+        if (host.Equals(IPAddress.IPv6Any.ToStringNoScopeId())) return false;
         Task<bool> task = Task.Run(async () =>
         {
             try

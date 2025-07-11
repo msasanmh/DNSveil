@@ -54,7 +54,7 @@ public partial class FormDnsScanner : Form
         Theme.LoadTheme(this, Theme.Themes.Dark);
 
         // Initialize and load Settings
-        if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
+        if (File.Exists(SettingsXmlPath) && XmlTool.IsValidFile(SettingsXmlPath))
             AppSettings = new(this, SettingsXmlPath);
         else
             AppSettings = new(this);
@@ -495,7 +495,7 @@ public partial class FormDnsScanner : Form
                 this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg0, Color.DodgerBlue));
 
                 FormMain.CheckRequest crB = new() { CheckMode = FormMain.CheckMode.BuiltIn };
-                List<FormMain.ReadDnsResult> rdrList = await FormMain.ReadBuiltInServersAsync(crB, false);
+                List<FormMain.ReadDnsResult> rdrList = await FormMain.ReadBuiltInServersAsync(crB, false, false);
 
                 int maxServers = 5;
                 int countServers = 0;
@@ -845,7 +845,9 @@ public partial class FormDnsScanner : Form
                 insecureAddress = dns;
                 if (ip != null && !ip.Equals(IPAddress.None))
                 {
-                    NetworkTool.GetUrlDetails(dns, dnsReader.Port, out string scheme, out _, out _, out _, out _, out _, out _);
+                    NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dns, dnsReader.Port);
+                    string scheme = urid.Scheme;
+
                     if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.DoT)
                     {
                         scheme = "tls://";

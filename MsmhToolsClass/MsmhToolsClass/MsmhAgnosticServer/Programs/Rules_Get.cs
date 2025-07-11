@@ -138,24 +138,16 @@ public partial class AgnosticProgram
                                     }
                                 }
 
-                                IPAddress ipv4Addr = IPAddress.None;
-                                if (settings.IsIPv4SupportedByISP)
+                                IPAddress ipAddr = IPAddress.None;
+                                ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, false, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
+                                if (ipAddr.Equals(IPAddress.None) || ipAddr.Equals(IPAddress.IPv6None))
                                 {
-                                    ipv4Addr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, false, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
+                                    ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, true, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
                                 }
 
-                                if (ipv4Addr.Equals(IPAddress.None))
+                                if (!ipAddr.Equals(IPAddress.None) && !ipAddr.Equals(IPAddress.IPv6None))
                                 {
-                                    if (settings.IsIPv6SupportedByISP)
-                                    {
-                                        IPAddress ipv6Addr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, true, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
-                                        if (!ipv6Addr.Equals(IPAddress.IPv6None))
-                                            rr.Dns = ipv6Addr.ToString();
-                                    }
-                                }
-                                else
-                                {
-                                    rr.Dns = ipv4Addr.ToString();
+                                    rr.Dns = ipAddr.ToString();
                                 }
                             }
                         }

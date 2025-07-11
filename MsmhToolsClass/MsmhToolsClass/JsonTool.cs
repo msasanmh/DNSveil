@@ -1,12 +1,13 @@
 ﻿using MsmhToolsClass;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MsmhToolsClass;
 
 public class JsonTool
 {
-    public static bool IsValidJson(string content)
+    public static bool IsValid(string content)
     {
         bool result = false;
 
@@ -14,19 +15,19 @@ public class JsonTool
         {
             if (!string.IsNullOrEmpty(content))
             {
-                JsonDocument.Parse(content);
+                _ = JsonDocument.Parse(content);
                 result = true;
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("JsonTool IsValidJson: " + ex.Message);
+            Debug.WriteLine("JsonTool IsValid: " + ex.Message);
         }
 
         return result;
     }
 
-    public static bool IsValidJsonFile(string jsonFilePath)
+    public static bool IsValidFile(string jsonFilePath)
     {
         bool result = false;
 
@@ -35,16 +36,80 @@ public class JsonTool
             if (!string.IsNullOrEmpty(jsonFilePath))
             {
                 string content = File.ReadAllText(jsonFilePath);
-                JsonDocument.Parse(content);
+                _ = JsonDocument.Parse(content);
                 result = true;
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("JsonTool IsValidJsonFile: " + ex.Message);
+            Debug.WriteLine("JsonTool IsValidFile: " + ex.Message);
         }
 
         return result;
+    }
+
+    public static async Task<bool> IsValidFileAsync(string jsonFilePath)
+    {
+        bool result = false;
+
+        try
+        {
+            if (!string.IsNullOrEmpty(jsonFilePath))
+            {
+                string content = await File.ReadAllTextAsync(jsonFilePath);
+                _ = JsonDocument.Parse(content);
+                result = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("JsonTool IsValidFileAsync: " + ex.Message);
+        }
+
+        return result;
+    }
+
+    public static string Serialize(object obj)
+    {
+        try
+        {
+            if (obj == null) return string.Empty;
+            obj.SetEmptyValuesToNull();
+
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            return JsonSerializer.Serialize(obj, jsonSerializerOptions);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("JsonTool Serialize: " + ex.Message);
+            return string.Empty;
+        }
+    }
+
+    public static T? Deserialize<T>(string json)
+    {
+        try
+        {
+            JsonDocument jsonDocument = JsonDocument.Parse(json);
+
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            return JsonSerializer.Deserialize<T>(jsonDocument, jsonSerializerOptions);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("JsonTool Deserialize: " + ex.Message);
+            return default;
+        }
     }
 
     public struct JsonPath

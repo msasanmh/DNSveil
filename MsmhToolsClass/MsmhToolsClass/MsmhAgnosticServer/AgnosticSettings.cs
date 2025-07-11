@@ -46,9 +46,9 @@ public class AgnosticSettings
     }
 
     /// <summary>
-    /// Cancel Dns Request if didn't receive data for n seconds. Default: 5 Sec
+    /// Cancel Dns Request if didn't receive data for n seconds. Default: 6 Sec
     /// </summary>
-    public int DnsTimeoutSec { get; set; } = 5;
+    public int DnsTimeoutSec { get; set; } = 6;
 
     /// <summary>
     /// Kill Proxy Request if didn't receive data for n seconds. Default: 40 Sec ( 0 = Disabled)
@@ -85,6 +85,13 @@ public class AgnosticSettings
         }
     }
 
+    private IPAddress PLocalIpAddress { get; set; } = IPAddress.None;
+    public IPAddress LocalIpAddress
+    {
+        get => PLocalIpAddress;
+        set => PLocalIpAddress = value;
+    }
+
     /// <summary>
     /// Only HTTP And Socks5 Are Supported
     /// </summary>
@@ -101,14 +108,14 @@ public class AgnosticSettings
             "tcp://8.8.8.8:53",
             "tcp://1.1.1.1:53",
             "udp://9.9.9.9:9953",
-            //"system"
+            "udp://8.8.8.8:53",
+            "udp://1.1.1.1:53",
+            "system"
         };
     }
 
     public bool IsIPv4SupportedByOS { get; private set; }
     public bool IsIPv6SupportedByOS { get; private set; }
-    public bool IsIPv4SupportedByISP { get; private set; }
-    public bool IsIPv6SupportedByISP { get; private set; }
     public IPAddress? ListenerIP { get; private set; }
     public IPEndPoint ServerEndPoint { get; internal set; } = new(IPAddress.None, 0);
     public string ServerUdpDnsAddress { get; internal set; } = string.Empty;
@@ -119,9 +126,6 @@ public class AgnosticSettings
 
     public AgnosticSettings()
     {
-        IsIPv4SupportedByISP = true;
-        IsIPv6SupportedByISP = true;
-        
         IsIPv4SupportedByOS = NetworkTool.IsIPv4SupportedByOS();
         IsIPv6SupportedByOS = NetworkTool.IsIPv6SupportedByOS();
 
@@ -133,10 +137,11 @@ public class AgnosticSettings
         try
         {
             if (OperatingSystem.IsWindows()) ProcessManager.ExecuteOnly("ipconfig", null, "/flushdns", true, true);
-            IsIPv4SupportedByISP = await NetworkTool.IsIpProtocolSupportedByISPAsync("8.8.8.8", 6000);
-            IsIPv6SupportedByISP = await NetworkTool.IsIpProtocolSupportedByISPAsync("2001:4860:4860::8888", 6000);
 
             if (ListenerIP != null) ServerEndPoint = new(ListenerIP, ListenerPort);
+
+            IPAddress? localIP = NetworkTool.GetLocalIP(BootstrapIpAddress, BootstrapPort);
+            if (localIP != null) LocalIpAddress = localIP;
 
             ServerUdpDnsAddress = NetworkTool.IpToUrl("udp", IPAddress.Loopback, ListenerPort, string.Empty);
             ServerTcpDnsAddress = NetworkTool.IpToUrl("tcp", IPAddress.Loopback, ListenerPort, string.Empty);
@@ -152,6 +157,8 @@ public class AgnosticSettings
                 ServerHttpProxyAddress = NetworkTool.IpToUrl("http", IPAddress.IPv6Loopback, ListenerPort, string.Empty);
                 ServerSocks5ProxyAddress = NetworkTool.IpToUrl("socks5", IPAddress.IPv6Loopback, ListenerPort, string.Empty);
             }
+
+            await Task.Delay(10);
         }
         catch (Exception ex)
         {

@@ -8,8 +8,8 @@ using System.Windows.Input;
 using MsmhToolsClass;
 using MsmhToolsWpfClass;
 using MsmhToolsClass.MsmhAgnosticServer;
-using static DNSveil.DnsServers.EnumsAndStructs;
-using GroupItem = DNSveil.DnsServers.EnumsAndStructs.GroupItem;
+using static DNSveil.Logic.DnsServers.EnumsAndStructs;
+using GroupItem = DNSveil.Logic.DnsServers.EnumsAndStructs.GroupItem;
 using System.Net;
 
 namespace DNSveil.ManageServers;
@@ -20,7 +20,7 @@ public partial class ManageServersWindow : WpfWindow
     {
         this.DispatchIt(() =>
         {
-            AnonDNSCrypt_Settings_WpfFlyoutOverlay.IsHitTestVisible = enable;
+            AnonDNSCrypt_Settings_WpfFlyoutPopup.IsHitTestVisible = enable;
             AnonDNSCryptRelayBrowseButton.IsEnabled = enable;
             AnonDNSCryptTargetBrowseButton.IsEnabled = enable;
             AnonDNSCryptSaveSourceButton.IsEnabled = enable;
@@ -33,6 +33,7 @@ public partial class ManageServersWindow : WpfWindow
             DGS_AnonDNSCrypt.IsHitTestVisible = enable;
 
             NewGroupButton.IsEnabled = enable;
+            ResetBuiltInButton.IsEnabled = enable;
             Import_FlyoutOverlay.IsHitTestVisible = enable;
             Export_FlyoutOverlay.IsHitTestVisible = enable;
             ImportButton.IsEnabled = enable;
@@ -41,19 +42,19 @@ public partial class ManageServersWindow : WpfWindow
         });
     }
 
-    private async void Flyout_AnonDNSCrypt_Source_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
+    private void Flyout_AnonDNSCrypt_Source_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
     {
         if (e.IsFlyoutOpen)
         {
-            await Flyout_AnonDNSCrypt_Options.CloseFlyAsync();
+            Flyout_AnonDNSCrypt_Options.IsOpen = false;
         }
     }
 
-    private async void Flyout_AnonDNSCrypt_Options_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
+    private void Flyout_AnonDNSCrypt_Options_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
     {
         if (e.IsFlyoutOpen)
         {
-            await Flyout_AnonDNSCrypt_Source.CloseFlyAsync();
+            Flyout_AnonDNSCrypt_Source.IsOpen = false;
         }
     }
 
@@ -209,20 +210,21 @@ public partial class ManageServersWindow : WpfWindow
             if (IsScanning)
             {
                 WpfToastDialog.Show(this, "Can't Save While Scanning.", MessageBoxImage.Stop, 2);
-                await AnonDNSCrypt_Settings_WpfFlyoutOverlay.CloseFlyAsync();
+                await AnonDNSCrypt_Settings_WpfFlyoutPopup.CloseFlyAsync();
                 return;
             }
 
             if (DGG.SelectedItem is not GroupItem groupItem) return;
 
             // Get Group Settings
+            bool enabled = AnonDNSCrypt_EnableGroup_ToggleSwitch.IsChecked.HasValue && AnonDNSCrypt_EnableGroup_ToggleSwitch.IsChecked.Value;
             string lookupDomain = AnonDNSCrypt_Settings_LookupDomain_TextBox.Text.Trim();
             double timeoutSec = AnonDNSCrypt_Settings_TimeoutSec_NumericUpDown.Value;
             int parallelSize = AnonDNSCrypt_Settings_ParallelSize_NumericUpDown.Value.ToInt();
             string bootstrapIpStr = AnonDNSCrypt_Settings_BootstrapIP_TextBox.Text.Trim();
             int bootstrapPort = AnonDNSCrypt_Settings_BootstrapPort_NumericUpDown.Value.ToInt();
             int maxServersToConnect = AnonDNSCrypt_Settings_MaxServersToConnect_NumericUpDown.Value.ToInt();
-            bool allowInsecure = AnonDNSCrypt_Settings_AllowInsecure_CheckBox.IsChecked.HasValue && AnonDNSCrypt_Settings_AllowInsecure_CheckBox.IsChecked.Value;
+            bool allowInsecure = AnonDNSCrypt_Settings_AllowInsecure_ToggleSwitch.IsChecked.HasValue && AnonDNSCrypt_Settings_AllowInsecure_ToggleSwitch.IsChecked.Value;
 
             if (lookupDomain.StartsWith("http://")) lookupDomain = lookupDomain.TrimStart("http://");
             if (lookupDomain.StartsWith("https://")) lookupDomain = lookupDomain.TrimStart("https://");
@@ -231,7 +233,7 @@ public partial class ManageServersWindow : WpfWindow
             {
                 string msg = $"Domain Is Invalid.{NL}{LS}e.g. example.com";
                 WpfMessageBox.Show(this, msg, "Invalid Domain", MessageBoxButton.OK, MessageBoxImage.Stop);
-                await AnonDNSCrypt_Settings_WpfFlyoutOverlay.OpenFlyAsync();
+                await AnonDNSCrypt_Settings_WpfFlyoutPopup.OpenFlyAsync();
                 return;
             }
 
@@ -240,15 +242,15 @@ public partial class ManageServersWindow : WpfWindow
             {
                 string msg = $"Bootstrap IP Is Invalid.{NL}{LS}e.g.  8.8.8.8  Or  2001:4860:4860::8888";
                 WpfMessageBox.Show(this, msg, "Invalid IP", MessageBoxButton.OK, MessageBoxImage.Stop);
-                await AnonDNSCrypt_Settings_WpfFlyoutOverlay.OpenFlyAsync();
+                await AnonDNSCrypt_Settings_WpfFlyoutPopup.OpenFlyAsync();
                 return;
             }
 
             // Update Group Settings
-            GroupSettings groupSettings = new(lookupDomain, timeoutSec, parallelSize, bootstrapIP, bootstrapPort, maxServersToConnect, allowInsecure);
+            GroupSettings groupSettings = new(enabled, lookupDomain, timeoutSec, parallelSize, bootstrapIP, bootstrapPort, maxServersToConnect, allowInsecure);
             await MainWindow.ServersManager.Update_GroupSettings_Async(groupItem.Name, groupSettings, true);
             await LoadSelectedGroupAsync(false); // Refresh
-            await AnonDNSCrypt_Settings_WpfFlyoutOverlay.CloseFlyAsync();
+            await AnonDNSCrypt_Settings_WpfFlyoutPopup.CloseFlyAsync();
             WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
         }
         catch (Exception ex)
@@ -341,7 +343,7 @@ public partial class ManageServersWindow : WpfWindow
             for (int n = 0; n < relayUrlsOrFiles.Count; n++)
             {
                 string relayUrlOrFile = relayUrlsOrFiles[n];
-                List<string> relays = await LibIn.GetServersFromLinkAsync(relayUrlOrFile, 20000);
+                List<string> relays = await DnsTools.GetServersFromLinkAsync(relayUrlOrFile, 20000);
                 for (int i = 0; i < relays.Count; i++)
                 {
                     string relay = relays[i];
@@ -370,7 +372,7 @@ public partial class ManageServersWindow : WpfWindow
             for (int n = 0; n < targetUrlsOrFiles.Count; n++)
             {
                 string targetUrlOrFile = targetUrlsOrFiles[n];
-                List<string> targets = await LibIn.GetServersFromLinkAsync(targetUrlOrFile, 20000);
+                List<string> targets = await DnsTools.GetServersFromLinkAsync(targetUrlOrFile, 20000);
                 for (int i = 0; i < targets.Count; i++)
                 {
                     string target = targets[i];
@@ -535,6 +537,17 @@ public partial class ManageServersWindow : WpfWindow
         {
             if (DGG.SelectedItem is not GroupItem groupItem) return;
             AnonDNSCryptScanButton.IsEnabled = false;
+
+            // Check For Fetch: Get Relays And Targets Info
+            List<string> relays = MainWindow.ServersManager.Get_AnonDNSCrypt_Relays(groupItem.Name);
+            List<string> targets = MainWindow.ServersManager.Get_AnonDNSCrypt_Targets(groupItem.Name);
+            if (relays.Count == 0 || targets.Count == 0)
+            {
+                string msg = "Fetch Relays And Targets To Scan.";
+                WpfMessageBox.Show(this, msg, "No Server To Scan!", MessageBoxButton.OK, MessageBoxImage.Information);
+                AnonDNSCryptScanButton.IsEnabled = true;
+                return;
+            }
 
             List<DnsItem> selectedDnsItems = new();
             if (DGS_AnonDNSCrypt.SelectedItems.Count > 1)

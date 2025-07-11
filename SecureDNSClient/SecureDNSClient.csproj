@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Copyright>MSasanMH</Copyright>
     <Product>SDC - Secure DNS Client</Product>
-    <Version>$(VersionPrefix)3.2.7</Version>
+    <Version>$(VersionPrefix)3.2.9</Version>
     <PackageIcon>SecureDNSClient.png</PackageIcon>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
     <Platforms>AnyCPU;x64;x86</Platforms>
@@ -35,6 +35,7 @@
     <None Remove="DoH-Servers.txt" />
     <None Remove="Forms\pzbnwnag.5pr~" />
     <None Remove="HostToCompany.txt" />
+    <None Remove="MaliciousServers.txt" />
     <None Remove="MPriv.bin" />
     <None Remove="MPub.bin" />
     <None Remove="NecessaryFiles\dnscrypt-proxy.exe" />
@@ -56,6 +57,7 @@
     <EmbeddedResource Include="DNS-Servers-Insecure.txt" />
     <EmbeddedResource Include="DNS-Servers.txt" />
     <EmbeddedResource Include="HostToCompany.txt" />
+    <EmbeddedResource Include="MaliciousServers.txt" />
     <EmbeddedResource Include="MPriv.bin" />
     <EmbeddedResource Include="MPub.bin" />
     <EmbeddedResource Include="NecessaryFiles\goodbyedpi.exe" />

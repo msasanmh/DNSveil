@@ -32,6 +32,15 @@ public class WpfHelpFly : GroupBox
             new PropertyMetadata(new CornerRadius(5)));
 
     [Category("Common")]
+    public bool StaysOpen
+    {
+        get { return (bool)GetValue(StaysOpenProperty); }
+        set { SetValue(StaysOpenProperty, value); }
+    }
+    public static readonly DependencyProperty StaysOpenProperty =
+        DependencyProperty.Register(nameof(StaysOpen), typeof(bool), typeof(WpfHelpFly), new PropertyMetadata(false));
+
+    [Category("Common")]
     public PlacementMode Placement
     {
         get { return (PlacementMode)GetValue(PlacementProperty); }
@@ -56,6 +65,8 @@ public class WpfHelpFly : GroupBox
 
     public override void OnApplyTemplate()
     {
+        base.OnApplyTemplate();
+
         ParentWindow = this.GetParentWindow();
         if (ParentWindow != null)
         {
@@ -88,8 +99,6 @@ public class WpfHelpFly : GroupBox
             PART_CloseButton.Click -= PART_CloseButton_Click;
             PART_CloseButton.Click += PART_CloseButton_Click;
         }
-
-        base.OnApplyTemplate();
     }
 
     private static CustomPopupPlacement[] PopupPlacementCallback(Size popupSize, Size targetSize, Point offset)
@@ -159,11 +168,14 @@ public class WpfHelpFly : GroupBox
                 PART_Popup.IsOpen = true;
 
                 // Add Handler: Capture Mouse Click Outside Of The Element
-                Mouse.Capture(this, CaptureMode.SubTree);
-                AddHandler(Mouse.PreviewMouseDownOutsideCapturedElementEvent, new MouseButtonEventHandler(HandleClickOutsideOfControl), true);
-
+                if (!StaysOpen)
+                {
+                    Mouse.Capture(this, CaptureMode.SubTree);
+                    AddHandler(Mouse.PreviewMouseDownOutsideCapturedElementEvent, new MouseButtonEventHandler(HandleClickOutsideOfControl), true);
+                }
+                
                 await Task.Delay(10);
-                PART_Popup.StaysOpen = false;
+                PART_Popup.StaysOpen = StaysOpen;
             }
 
             IsOpenning = false;
@@ -188,9 +200,12 @@ public class WpfHelpFly : GroupBox
                 PART_Popup.IsOpen = false;
 
                 // Remove Handler And Release Mouse Capture
-                RemoveHandler(Mouse.PreviewMouseDownOutsideCapturedElementEvent, new MouseButtonEventHandler(HandleClickOutsideOfControl));
-                ReleaseMouseCapture();
-
+                if (!StaysOpen)
+                {
+                    RemoveHandler(Mouse.PreviewMouseDownOutsideCapturedElementEvent, new MouseButtonEventHandler(HandleClickOutsideOfControl));
+                    ReleaseMouseCapture();
+                }
+                
                 await Task.Delay(10);
                 PART_Popup.StaysOpen = true; // Set To Default
             }

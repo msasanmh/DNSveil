@@ -504,7 +504,7 @@ public static class DNSCryptStampGenerator
     private static string GetSdnsUrl(byte[] wholeBytes)
     {
         string sdnsScheme = "sdns://";
-        string mainBase64 = EncodingTool.UrlEncode(wholeBytes);
+        string mainBase64 = EncodingTool.Base64UrlEncode(wholeBytes);
         return sdnsScheme + mainBase64;
     }
 

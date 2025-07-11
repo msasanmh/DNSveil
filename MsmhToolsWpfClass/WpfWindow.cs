@@ -89,6 +89,77 @@ public partial class WpfWindow : Window
     public WpfButton? PART_Button3 { get; set; }
     public Separator? PART_Separator { get; set; }
 
+    public override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+
+        PART_RootBorder = GetTemplateChild(nameof(PART_RootBorder)) as Border;
+        PART_RootBorder?.ClipTo(GetMaxCornerRadius, GetMaxCornerRadius, PART_RootBorder);
+
+        PART_RootGrid = GetTemplateChild(nameof(PART_RootGrid)) as Grid;
+        PART_RootGrid?.ClipTo(GetMaxCornerRadius, GetMaxCornerRadius, PART_RootGrid);
+
+        PART_TitleGrid = GetTemplateChild(nameof(PART_TitleGrid)) as Grid;
+        if (PART_TitleGrid != null)
+        {
+            PART_TitleGrid.MouseDown -= PART_TitleGrid_MouseDown;
+            PART_TitleGrid.MouseDown += PART_TitleGrid_MouseDown;
+            PART_TitleGrid.MouseUp -= PART_TitleGrid_MouseUp;
+            PART_TitleGrid.MouseUp += PART_TitleGrid_MouseUp;
+            PART_TitleGrid.MouseMove -= PART_TitleGrid_MouseMove;
+            PART_TitleGrid.MouseMove += PART_TitleGrid_MouseMove;
+        }
+
+        PART_TitleImage = GetTemplateChild(nameof(PART_TitleImage)) as Image;
+        if (PART_TitleImage != null)
+        {
+            PART_TitleImage.PreviewMouseDown -= PART_TitleImage_PreviewMouseDown;
+            PART_TitleImage.PreviewMouseDown += PART_TitleImage_PreviewMouseDown;
+            PART_TitleImage.MouseDown -= PART_TitleImage_MouseDown;
+            PART_TitleImage.MouseDown += PART_TitleImage_MouseDown;
+        }
+
+        PART_MinimizeButton = GetTemplateChild(nameof(PART_MinimizeButton)) as WpfButton;
+        if (PART_MinimizeButton != null)
+        {
+            PART_MinimizeButton.Click -= PART_MinimizeButton_Click;
+            PART_MinimizeButton.Click += PART_MinimizeButton_Click;
+        }
+
+        PART_MaximizeRestoreButton = GetTemplateChild(nameof(PART_MaximizeRestoreButton)) as WpfButton;
+        if (PART_MaximizeRestoreButton != null)
+        {
+            PART_MaximizeRestoreButton.Click -= PART_MaximizeRestoreButton_Click;
+            PART_MaximizeRestoreButton.Click += PART_MaximizeRestoreButton_Click;
+        }
+
+        PART_CloseButton = GetTemplateChild(nameof(PART_CloseButton)) as WpfButton;
+        if (PART_CloseButton != null)
+        {
+            PART_CloseButton.Click -= PART_CloseButton_Click;
+            PART_CloseButton.Click += PART_CloseButton_Click;
+        }
+
+        // Custom Buttons
+        PART_Button1 = GetTemplateChild(nameof(PART_Button1)) as WpfButton;
+        PART_Button2 = GetTemplateChild(nameof(PART_Button2)) as WpfButton;
+        PART_Button3 = GetTemplateChild(nameof(PART_Button3)) as WpfButton;
+        PART_Separator = GetTemplateChild(nameof(PART_Separator)) as Separator;
+        if (PART_Button1 != null && PART_Button2 != null && PART_Button3 != null)
+        {
+            PART_Button1.IsVisibleChanged -= PART_Button_IsVisibleChanged;
+            PART_Button1.IsVisibleChanged += PART_Button_IsVisibleChanged;
+            PART_Button2.IsVisibleChanged -= PART_Button_IsVisibleChanged;
+            PART_Button2.IsVisibleChanged += PART_Button_IsVisibleChanged;
+            PART_Button3.IsVisibleChanged -= PART_Button_IsVisibleChanged;
+            PART_Button3.IsVisibleChanged += PART_Button_IsVisibleChanged;
+
+            PART_Button1.Visibility = Visibility.Collapsed;
+            PART_Button2.Visibility = Visibility.Collapsed;
+            PART_Button3.Visibility = Visibility.Collapsed;
+        }
+    }
+
     public WpfWindow()
     {
         try
@@ -133,57 +204,6 @@ public partial class WpfWindow : Window
         base.OnContentRendered(e);
         if (SizeToContent == SizeToContent.WidthAndHeight)
             InvalidateMeasure();
-    }
-
-    public override void OnApplyTemplate()
-    {
-        PART_RootBorder = GetTemplateChild(nameof(PART_RootBorder)) as Border;
-        PART_RootBorder?.ClipTo(GetMaxCornerRadius, GetMaxCornerRadius, PART_RootBorder);
-
-        PART_RootGrid = GetTemplateChild(nameof(PART_RootGrid)) as Grid;
-        PART_RootGrid?.ClipTo(GetMaxCornerRadius, GetMaxCornerRadius, PART_RootGrid);
-
-        PART_TitleGrid = GetTemplateChild(nameof(PART_TitleGrid)) as Grid;
-        if (PART_TitleGrid != null)
-        {
-            PART_TitleGrid.MouseDown += PART_TitleGrid_MouseDown;
-            PART_TitleGrid.MouseUp += PART_TitleGrid_MouseUp;
-            PART_TitleGrid.MouseMove += PART_TitleGrid_MouseMove;
-        }
-
-        PART_TitleImage = GetTemplateChild(nameof(PART_TitleImage)) as Image;
-        if (PART_TitleImage != null)
-        {
-            PART_TitleImage.PreviewMouseDown += PART_TitleImage_PreviewMouseDown;
-            PART_TitleImage.MouseDown += PART_TitleImage_MouseDown;
-        }
-
-        PART_MinimizeButton = GetTemplateChild(nameof(PART_MinimizeButton)) as WpfButton;
-        if (PART_MinimizeButton != null) PART_MinimizeButton.Click += PART_MinimizeButton_Click;
-
-        PART_MaximizeRestoreButton = GetTemplateChild(nameof(PART_MaximizeRestoreButton)) as WpfButton;
-        if (PART_MaximizeRestoreButton != null) PART_MaximizeRestoreButton.Click += PART_MaximizeRestoreButton_Click;
-
-        PART_CloseButton = GetTemplateChild(nameof(PART_CloseButton)) as WpfButton;
-        if (PART_CloseButton != null) PART_CloseButton.Click += PART_CloseButton_Click;
-
-        // Custom Buttons
-        PART_Button1 = GetTemplateChild(nameof(PART_Button1)) as WpfButton;
-        PART_Button2 = GetTemplateChild(nameof(PART_Button2)) as WpfButton;
-        PART_Button3 = GetTemplateChild(nameof(PART_Button3)) as WpfButton;
-        PART_Separator = GetTemplateChild(nameof(PART_Separator)) as Separator;
-        if (PART_Button1 != null && PART_Button2 != null && PART_Button3 != null)
-        {
-            PART_Button1.IsVisibleChanged += PART_Button_IsVisibleChanged;
-            PART_Button2.IsVisibleChanged += PART_Button_IsVisibleChanged;
-            PART_Button3.IsVisibleChanged += PART_Button_IsVisibleChanged;
-
-            PART_Button1.Visibility = Visibility.Collapsed;
-            PART_Button2.Visibility = Visibility.Collapsed;
-            PART_Button3.Visibility = Visibility.Collapsed;
-        }
-
-        base.OnApplyTemplate();
     }
 
     private void PART_Button_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)

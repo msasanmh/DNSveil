@@ -12,6 +12,9 @@ using System.Xml.Linq;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Globalization;
+using System.Net;
+using System.Text.Json;
+using System.Collections;
 
 namespace MsmhToolsClass;
 
@@ -55,6 +58,126 @@ public static class Extensions
                         result += Environment.NewLine + ex.InnerException.InnerException.InnerException.InnerException.Message;
                 }
             }
+        }
+        return result;
+    }
+
+    public static T? Clone<T>(this T t)
+    {
+        try
+        {
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            };
+            string json = JsonSerializer.Serialize(t, jsonSerializerOptions);
+            return JsonSerializer.Deserialize<T>(json);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions Clone: " + ex.Message);
+            return default;
+        }
+    }
+
+    public static int SetEmptyValuesToNull(this object obj)
+    {
+        try
+        {
+            if (obj == null) return -1;
+            Type type = obj.GetType();
+            if (type.IsPrimitive) return -1;
+            if (type.IsEnum) return -1;
+
+            // If It's A List
+            if (obj is IList list0)
+            {
+                foreach (var item in list0) SetEmptyValuesToNull(item);
+                return -1;
+            }
+
+            // If It's A Dictionary
+            else if (obj is IDictionary dict0)
+            {
+                foreach (var itemValue in dict0.Values) SetEmptyValuesToNull(itemValue);
+                return -1;
+            }
+
+            // Recursively Check Properties
+            PropertyInfo[] propInfos = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            foreach (PropertyInfo prop in propInfos)
+            {
+                if (!prop.CanRead || !prop.CanWrite) continue;
+                if (prop.PropertyType.IsPrimitive) continue;
+                if (prop.PropertyType.IsEnum) continue;
+                if (prop.GetIndexParameters().Length > 0) continue; // Skip Indexers
+                object? value = prop.GetValue(obj);
+                if (value == null) continue;
+
+                // If It's An Empty String
+                if (value is string str && string.IsNullOrEmpty(str))
+                {
+                    prop.SetValue(obj, null);
+                }
+
+                // If It's A List
+                else if (value is IList list)
+                {
+                    if (list.Count == 0)
+                    {
+                        prop.SetValue(obj, null);
+                    }
+                    else
+                    {
+                        foreach (var item in list) SetEmptyValuesToNull(item);
+                    }
+                }
+
+                // If It's A Dictionary
+                else if (value is IDictionary dict)
+                {
+                    if (dict.Count == 0)
+                    {
+                        prop.SetValue(obj, null);
+                    }
+                    else
+                    {
+                        foreach (var itemValue in dict.Values) SetEmptyValuesToNull(itemValue);
+                    }
+                }
+
+                // Recursive Into Nested Objects
+                else
+                {
+                    int propsCount = SetEmptyValuesToNull(value);
+                    if (propsCount == 0)
+                    {
+                        // Set The Value Of Classes With No Public Instance Properties To NULL (Where propInfos.Length Is 0)
+                        prop.SetValue(obj, null);
+                    }
+                }
+            }
+            return propInfos.Length;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToInt: " + ex.Message);
+            return -1;
+        }
+    }
+
+    public static int ToInt(this string? Str, int defaultValue)
+    {
+        int result = defaultValue;
+        try
+        {
+            bool isInt = int.TryParse(Str, out int valueOut);
+            if (isInt) result = valueOut;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToInt: " + ex.Message);
         }
         return result;
     }
@@ -192,7 +315,7 @@ public static class Extensions
         {
             if (result.EndsWith(value))
             {
-                result = result.Remove(source.LastIndexOf(value, StringComparison.Ordinal));
+                result = result[..source.LastIndexOf(value, StringComparison.Ordinal)];
             }
         }
         catch (Exception) { }
@@ -210,6 +333,34 @@ public static class Extensions
         {
             Debug.WriteLine("Extensions RemoveWhiteSpaces: " + ex.Message);
             return text;
+        }
+    }
+
+    public static string ToStringNoScopeId(this IPAddress ip)
+    {
+        try
+        {
+            string ipStr = ip.ToString();
+            int percentIndex = ipStr.IndexOf('%');
+            return percentIndex >= 0 ? ipStr[..percentIndex] : ipStr;
+        }
+        catch (Exception)
+        {
+            return ip.ToString();
+        }
+    }
+
+    public static string ToString(this IPEndPoint ipEP, bool removePortZero)
+    {
+        try
+        {
+            string epStr = ipEP.ToString();
+            if (removePortZero && epStr.EndsWith(":0")) epStr = epStr.TrimEnd(":0");
+            return epStr;
+        }
+        catch (Exception)
+        {
+            return ipEP.ToString();
         }
     }
 

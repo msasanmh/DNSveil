@@ -9,9 +9,10 @@ using System.Windows.Input;
 using MsmhToolsClass;
 using MsmhToolsWpfClass;
 using MsmhToolsClass.MsmhAgnosticServer;
-using static DNSveil.DnsServers.EnumsAndStructs;
+using DNSveil.Logic.DnsServers;
+using static DNSveil.Logic.DnsServers.EnumsAndStructs;
 using static MsmhToolsClass.MsmhAgnosticServer.AgnosticProgram;
-using GroupItem = DNSveil.DnsServers.EnumsAndStructs.GroupItem;
+using GroupItem = DNSveil.Logic.DnsServers.EnumsAndStructs.GroupItem;
 
 namespace DNSveil.ManageServers;
 
@@ -21,7 +22,7 @@ public partial class ManageServersWindow : WpfWindow
     {
         this.DispatchIt(() =>
         {
-            FragmentDoH_Settings_WpfFlyoutOverlay.IsHitTestVisible = enable;
+            FragmentDoH_Settings_WpfFlyoutPopup.IsHitTestVisible = enable;
             if (enable || (!enable && IsScanning))
                 FragmentDoHSourceStackPanel.IsEnabled = enable;
             FragmentDoHByManualAddButton.IsEnabled = enable;
@@ -36,6 +37,7 @@ public partial class ManageServersWindow : WpfWindow
             DGS_FragmentDoH.IsHitTestVisible = enable;
 
             NewGroupButton.IsEnabled = enable;
+            ResetBuiltInButton.IsEnabled = enable;
             Import_FlyoutOverlay.IsHitTestVisible = enable;
             Export_FlyoutOverlay.IsHitTestVisible = enable;
             ImportButton.IsEnabled = enable;
@@ -44,19 +46,19 @@ public partial class ManageServersWindow : WpfWindow
         });
     }
 
-    private async void Flyout_FragmentDoH_Source_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
+    private void Flyout_FragmentDoH_Source_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
     {
         if (e.IsFlyoutOpen)
         {
-            await Flyout_FragmentDoH_Options.CloseFlyAsync();
+            Flyout_FragmentDoH_Options.IsOpen = false;
         }
     }
 
-    private async void Flyout_FragmentDoH_Options_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
+    private void Flyout_FragmentDoH_Options_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
     {
         if (e.IsFlyoutOpen)
         {
-            await Flyout_FragmentDoH_Source.CloseFlyAsync();
+            Flyout_FragmentDoH_Source.IsOpen = false;
         }
     }
 
@@ -270,20 +272,21 @@ public partial class ManageServersWindow : WpfWindow
             if (IsScanning)
             {
                 WpfToastDialog.Show(this, "Can't Save While Scanning.", MessageBoxImage.Stop, 2);
-                await FragmentDoH_Settings_WpfFlyoutOverlay.CloseFlyAsync();
+                await FragmentDoH_Settings_WpfFlyoutPopup.CloseFlyAsync();
                 return;
             }
 
             if (DGG.SelectedItem is not GroupItem groupItem) return;
 
             // Get Group Settings
+            bool enabled = FragmentDoH_EnableGroup_ToggleSwitch.IsChecked.HasValue && FragmentDoH_EnableGroup_ToggleSwitch.IsChecked.Value;
             string lookupDomain = FragmentDoH_Settings_LookupDomain_TextBox.Text.Trim();
             double timeoutSec = FragmentDoH_Settings_TimeoutSec_NumericUpDown.Value;
             int parallelSize = FragmentDoH_Settings_ParallelSize_NumericUpDown.Value.ToInt();
             string bootstrapIpStr = FragmentDoH_Settings_BootstrapIP_TextBox.Text.Trim();
             int bootstrapPort = FragmentDoH_Settings_BootstrapPort_NumericUpDown.Value.ToInt();
             int maxServersToConnect = FragmentDoH_Settings_MaxServersToConnect_NumericUpDown.Value.ToInt();
-            bool allowInsecure = FragmentDoH_Settings_AllowInsecure_CheckBox.IsChecked.HasValue && FragmentDoH_Settings_AllowInsecure_CheckBox.IsChecked.Value;
+            bool allowInsecure = FragmentDoH_Settings_AllowInsecure_ToggleSwitch.IsChecked.HasValue && FragmentDoH_Settings_AllowInsecure_ToggleSwitch.IsChecked.Value;
 
             if (lookupDomain.StartsWith("http://")) lookupDomain = lookupDomain.TrimStart("http://");
             if (lookupDomain.StartsWith("https://")) lookupDomain = lookupDomain.TrimStart("https://");
@@ -292,7 +295,7 @@ public partial class ManageServersWindow : WpfWindow
             {
                 string msg = $"Domain Is Invalid.{NL}{LS}e.g. example.com";
                 WpfMessageBox.Show(this, msg, "Invalid Domain", MessageBoxButton.OK, MessageBoxImage.Stop);
-                await FragmentDoH_Settings_WpfFlyoutOverlay.OpenFlyAsync();
+                await FragmentDoH_Settings_WpfFlyoutPopup.OpenFlyAsync();
                 return;
             }
 
@@ -301,15 +304,15 @@ public partial class ManageServersWindow : WpfWindow
             {
                 string msg = $"Bootstrap IP Is Invalid.{NL}{LS}e.g.  8.8.8.8  Or  2001:4860:4860::8888";
                 WpfMessageBox.Show(this, msg, "Invalid IP", MessageBoxButton.OK, MessageBoxImage.Stop);
-                await FragmentDoH_Settings_WpfFlyoutOverlay.OpenFlyAsync();
+                await FragmentDoH_Settings_WpfFlyoutPopup.OpenFlyAsync();
                 return;
             }
 
             // Update Group Settings
-            GroupSettings groupSettings = new(lookupDomain, timeoutSec, parallelSize, bootstrapIP, bootstrapPort, maxServersToConnect, allowInsecure);
+            GroupSettings groupSettings = new(enabled, lookupDomain, timeoutSec, parallelSize, bootstrapIP, bootstrapPort, maxServersToConnect, allowInsecure);
             await MainWindow.ServersManager.Update_GroupSettings_Async(groupItem.Name, groupSettings, true);
             await LoadSelectedGroupAsync(false); // Refresh
-            await FragmentDoH_Settings_WpfFlyoutOverlay.CloseFlyAsync();
+            await FragmentDoH_Settings_WpfFlyoutPopup.CloseFlyAsync();
             WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
         }
         catch (Exception ex)
@@ -355,8 +358,8 @@ public partial class ManageServersWindow : WpfWindow
                 doH_IpStr = FragmentDoHByManualIpTextBox.Text.Trim();
             });
 
-            NetworkTool.GetUrlDetails(doH_URL, 443, out _, out string host, out _, out _, out _, out _, out _);
-            bool isHostIP = NetworkTool.IsIP(host, out _);
+            NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(doH_URL, 443);
+            bool isHostIP = NetworkTool.IsIP(urid.Host, out _);
             if (isHostIP)
             {
                 WpfMessageBox.Show(this, "Host Must Be A Domain.", "Not A Domain", MessageBoxButton.OK, MessageBoxImage.Stop);
@@ -493,31 +496,16 @@ public partial class ManageServersWindow : WpfWindow
                 return;
             }
 
-            List<DnsItem> allDoHStamps = new();
+            List<string> allDNSs = new();
             for (int n = 0; n < urlsOrFiles.Count; n++)
             {
                 string urlOrFile = urlsOrFiles[n];
-                List<string> dnss = await LibIn.GetServersFromLinkAsync(urlOrFile, 20000);
-                for (int i = 0; i < dnss.Count; i++)
-                {
-                    string dns = dnss[i];
-                    DnsReader dnsReader = new(dns);
-                    if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.DoH)
-                    {
-                        if (!dnsReader.IsHostIP && !NetworkTool.IsLocalIP(dnsReader.StampReader.IP.ToString()))
-                        {
-                            string dns_URL = $"{dnsReader.Scheme}{dnsReader.Host}{dnsReader.Path}";
-                            if (dnsReader.Port != 443) dns_URL = $"{dnsReader.Scheme}{dnsReader.Host}:{dnsReader.Port}{dnsReader.Path}";
-                            IPAddress dns_IP = dnsReader.StampReader.IP;
-                            DnsItem di = new() { DNS_URL = dns_URL, DNS_IP = dns_IP, Protocol = dnsReader.ProtocolName };
-                            allDoHStamps.Add(di);
-                        }
-                    }
-                }
+                List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
+                allDNSs.AddRange(dnss);
             }
 
-            // DeDup Stamps
-            allDoHStamps = allDoHStamps.DistinctBy(x => x.DNS_URL).ToList();
+            // Convert To DnsItem
+            List<DnsItem> allDoHStamps = Tools.Convert_DNSs_To_DnsItem_ForFragmentDoH(allDNSs);
 
             if (allDoHStamps.Count == 0)
             {
@@ -635,8 +623,8 @@ public partial class ManageServersWindow : WpfWindow
                                       dnsItem.IsBingSafeSearchEnabled == DnsFilter.No &&
                                       dnsItem.IsYoutubeRestricted == DnsFilter.No &&
                                       dnsItem.IsAdultBlocked == DnsFilter.No;
-                    NetworkTool.GetUrlDetails(dnsItem.DNS_URL, 443, out _, out string host, out _, out _, out int port, out string path, out _);
-                    string stamp = DNSCryptStampGenerator.GenerateDoH(dnsItem.DNS_IP.ToString(), null, $"{host}:{port}", path, null, false, false, isNoFilter);
+                    NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dnsItem.DNS_URL, 443);
+                    string stamp = DNSCryptStampGenerator.GenerateDoH(dnsItem.DNS_IP.ToString(), null, $"{urid.Host}:{urid.Port}", urid.Path, null, false, false, isNoFilter);
 
                     exportList.Add(stamp);
                 }
@@ -691,6 +679,16 @@ public partial class ManageServersWindow : WpfWindow
         {
             if (DGG.SelectedItem is not GroupItem groupItem) return;
             FragmentDoHScanButton.IsEnabled = false;
+
+            // Check For Fetch: Get DnsItems Info
+            DnsItemsInfo info = MainWindow.ServersManager.Get_DnsItems_Info(groupItem.Name);
+            if (info.TotalServers == 0)
+            {
+                string msg = "Fetch Or Add Servers To Scan.";
+                WpfMessageBox.Show(this, msg, "No Server To Scan!", MessageBoxButton.OK, MessageBoxImage.Information);
+                FragmentDoHScanButton.IsEnabled = true;
+                return;
+            }
 
             List<DnsItem> selectedDnsItems = new();
             if (DGS_FragmentDoH.SelectedItems.Count > 1)

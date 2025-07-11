@@ -368,7 +368,8 @@ public class ResourceRecord : IResourceRecord
                 // Detect Infinite Pointer To Pointer
                 if (stackOverflow > stackOverflowMax || innerOverflow > stackOverflowMax)
                 {
-                    Debug.WriteLine("======== StackOverflowException =======");
+                    Debug.WriteLine("DnsServer ResourceRecord: Prevented StackOverflow Exception. (Bad Response).");
+                    // Usually It's A Web Page Rather Than A DNS Server Or A Bad Response.
                     break;
                 }
 

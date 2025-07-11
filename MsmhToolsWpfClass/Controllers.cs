@@ -115,7 +115,7 @@ public class Controllers
             for (int n = 0; n < VisualTreeHelper.GetChildrenCount(depObj); n++)
             {
                 DependencyObject child = VisualTreeHelper.GetChild(depObj, n);
-                if (child is not null and T) yield return (T)child;
+                if (child is not null and T tChild) yield return tChild;
                 foreach (T childOfChild in FindVisualChildren<T>(child)) yield return childOfChild;
             }
         }

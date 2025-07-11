@@ -17,7 +17,7 @@ public class ProxyRequest
             {
                 // Set Security Protocols
                 //ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-
+                
                 HttpRequestResult hrResult = HttpRequest.Read(firstBuffer);
                 if (!hrResult.IsSuccess) return null;
                 if (hrResult.URI == null) return null;
@@ -39,9 +39,11 @@ public class ProxyRequest
                 string user = string.Empty, pass = string.Empty;
 
                 // Create Request
-                ProxyRequest proxyRequest = new(proxyName, Socks.Version.Zero, Socks.Commands.Unknown, Socks.AddressType.Domain, httpRequest.URI.Host, httpRequest.URI.Port, user, pass);
-                proxyRequest.HttpMethod = httpRequest.Method;
-                proxyRequest.HttpRequest = httpRequest;
+                ProxyRequest proxyRequest = new(proxyName, Socks.Version.Zero, Socks.Commands.Unknown, Socks.AddressType.Domain, httpRequest.URI.Host, httpRequest.URI.Port, user, pass)
+                {
+                    HttpMethod = httpRequest.Method,
+                    HttpRequest = httpRequest
+                };
                 return proxyRequest;
             }
             catch (Exception ex)

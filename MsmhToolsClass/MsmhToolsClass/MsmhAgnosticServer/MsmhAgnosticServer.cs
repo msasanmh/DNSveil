@@ -34,6 +34,10 @@ public partial class MsmhAgnosticServer
 
     // ====================================== Const
     internal static readonly int MaxDataSize = 65536;
+    internal static readonly int MaxUdpDnsDataSize = 1024; // 512 Without IP Or UDP Header
+    internal static readonly int MaxTcpDnsDataSize = 64000;
+    internal static readonly int MaxByteArraySize_SingleDimension = 2147483591;
+    internal static readonly int MaxByteArraySize_OtherTypes = 2146435071;
     internal static readonly string DnsMessageContentType = "application/dns-message";
     internal static readonly string ODnsMessageContentType = "application/oblivious-dns-message";
     internal static readonly int DNS_HEADER_LENGTH = 12;
@@ -45,39 +49,37 @@ public partial class MsmhAgnosticServer
     internal AgnosticSettings Settings_ = new();
     public AgnosticSettingsSSL SettingsSSL_ { get; internal set; } = new(false);
 
+    private Thread? MainThread;
     private Socket? UdpSocket_;
+    private TcpListener? TcpListener_;
+
+    private readonly ConcurrentQueue<DateTime> MaxRequestsQueue = new();
+    internal static readonly int MaxRequestsDelay = 50;
+    internal static readonly int MaxRequestsDivide = 20; // 20 * 50 = 1000 ms
+    private readonly CaptivePortal CaptivePortals = new();
     private readonly DnsCache DnsCaches = new();
     private readonly ProxyRequestsCache ProxyRequestsCaches = new();
-    private readonly CaptivePortal CaptivePortals = new();
-    private TcpListener? TcpListener_;
+    private readonly ConcurrentDictionary<string, (DateTime dt, bool applyFakeSNI, bool applyFragment)> TestRequests = new();
     internal TunnelManager TunnelManager_ = new();
+    public Stats Stats { get; private set; } = new();
 
-    private CancellationTokenSource? CancelTokenSource_;
-    private CancellationToken CancelToken_;
-    private CancellationTokenSource CTS_PR = new();
-
-    private System.Timers.Timer KillOnOverloadTimer { get; set; } = new(10000);
     private float CpuUsage { get; set; } = -1;
-    private static NetworkTool.InternetState InternetState = NetworkTool.InternetState.Online; // Default
-
-    private bool Cancel { get; set; } = false;
-
-    private Thread? MainThread;
+    private static NetworkTool.InternetState InternetState = NetworkTool.InternetState.Unknown; // Default
 
     public event EventHandler<EventArgs>? OnRequestReceived;
     public event EventHandler<EventArgs>? OnDebugInfoReceived;
     
-    public Stats Stats { get; private set; } = new();
     public bool IsRunning { get; private set; } = false;
+    private bool IsReady { get; set; } = false;
 
-    private readonly ConcurrentQueue<DateTime> MaxRequestsQueue = new();
-    private readonly ConcurrentDictionary<string, (DateTime dt, bool applyFakeSNI, bool applyFragment)> TestRequests = new();
-    internal static readonly int MaxRequestsDelay = 50;
-    internal static readonly int MaxRequestsDivide = 20; // 20 * 50 = 1000 ms
+    private CancellationTokenSource? CTS;
+    private CancellationToken CT;
+    private bool Cancel { get; set; } = false;
+    private CancellationTokenSource? CTS_PR;
 
     public MsmhAgnosticServer() { }
 
-    public async Task EnableSSL(AgnosticSettingsSSL settingsSSL)
+    public async Task EnableSSLAsync(AgnosticSettingsSSL settingsSSL)
     {
         SettingsSSL_ = settingsSSL;
         await SettingsSSL_.Build().ConfigureAwait(false);
@@ -90,28 +92,24 @@ public partial class MsmhAgnosticServer
             if (IsRunning) return;
             IsRunning = true;
 
+            Stopwatch stopwatch = Stopwatch.StartNew();
             Settings_ = settings;
             await Settings_.InitializeAsync();
 
             // Set Default DNSs
             if (Settings_.DNSs.Count == 0) Settings_.DNSs = AgnosticSettings.DefaultDNSs();
 
-            Stats = new Stats();
+            Welcome(true, TimeSpan.Zero);
 
-            Welcome();
-
-            TunnelManager_ = new();
-
-            CancelTokenSource_ = new();
-            CancelToken_ = CancelTokenSource_.Token;
-
+            CTS = new();
+            CT = CTS.Token;
             Cancel = false;
 
-            MaxRequestsTimer();
+            TunnelManager_ = new();
+            Stats = new();
 
-            KillOnOverloadTimer.Elapsed -= KillOnOverloadTimer_Elapsed;
-            KillOnOverloadTimer.Elapsed += KillOnOverloadTimer_Elapsed;
-            KillOnOverloadTimer.Start();
+            MaxRequestsTimer();
+            KillOnOverloadTimer();
 
             ThreadStart threadStart = new(AcceptConnections);
             MainThread = new(threadStart);
@@ -123,11 +121,14 @@ public partial class MsmhAgnosticServer
             {
                 while (true)
                 {
-                    if (IsRunning) break;
-                    await Task.Delay(100);
+                    if (IsRunning && IsReady) break;
+                    await Task.Delay(20);
                 }
             });
-            try { await wait.WaitAsync(TimeSpan.FromSeconds(5)); } catch (Exception) { }
+            try { await wait.WaitAsync(TimeSpan.FromSeconds(20)); } catch (Exception) { }
+
+            stopwatch.Stop();
+            Welcome(false, stopwatch.Elapsed);
         }
         catch (Exception ex)
         {
@@ -135,12 +136,18 @@ public partial class MsmhAgnosticServer
         }
     }
 
-    private void Welcome()
+    private void Welcome(bool isStarting, TimeSpan timeSpan)
     {
-        // Event
-        string msgEvent = $"Server Starting On Port: {Settings_.ListenerPort}";
-        OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
-        OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+        try
+        {
+            // Event
+            string state = isStarting ? "Starting" : "Started";
+            string msgEvent = $"Server {state} On Port: {Settings_.ListenerPort}";
+            if (timeSpan != TimeSpan.Zero) msgEvent += $", Took: {ConvertTool.TimeSpanToHumanRead(timeSpan, true)}";
+            OnRequestReceived?.Invoke(msgEvent, EventArgs.Empty);
+            OnDebugInfoReceived?.Invoke(msgEvent, EventArgs.Empty);
+        }
+        catch (Exception) { }
     }
 
     private async void MaxRequestsTimer()
@@ -151,7 +158,7 @@ public partial class MsmhAgnosticServer
             {
                 if (Cancel) break;
                 await Task.Delay(MaxRequestsDelay);
-
+                
                 try
                 {
                     bool peek = MaxRequestsQueue.TryPeek(out DateTime dt);
@@ -167,58 +174,55 @@ public partial class MsmhAgnosticServer
         });
     }
 
-    private async void KillOnOverloadTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    private async void KillOnOverloadTimer()
     {
-        try
+        await Task.Run(async () =>
         {
-            if (OperatingSystem.IsWindows() && typeof(PerformanceCounter) != null)
-                CpuUsage = await ProcessManager.GetCpuUsageAsync(Environment.ProcessId, 1000);
-
-            if (CpuUsage >= Settings_.KillOnCpuUsage && Settings_.KillOnCpuUsage > 0)
+            while (true)
             {
-                KillAll();
-            }
+                if (Cancel) break;
+                await Task.Delay(5000);
 
-            if (CpuUsage >= 75f)
-            {
-                try { Environment.Exit(0); } catch (Exception) { }
-                await ProcessManager.KillProcessByPidAsync(Environment.ProcessId);
-            }
+                try
+                {
+                    if (OperatingSystem.IsWindows() && typeof(PerformanceCounter) != null)
+                        CpuUsage = await ProcessManager.GetCpuUsageAsync(Environment.ProcessId, 1000);
 
-            // Get Internet State
-            IPAddress ipToCheck = Settings_.BootstrapIpAddress;
-            if (ipToCheck == IPAddress.None || ipToCheck == IPAddress.Any || ipToCheck == IPAddress.IPv6None || ipToCheck == IPAddress.IPv6Any)
-            {
-                bool isIP = IPAddress.TryParse("8.8.8.8", out IPAddress? ip);
-                if (isIP && ip != null) ipToCheck = ip;
+                    if (CpuUsage >= Settings_.KillOnCpuUsage && Settings_.KillOnCpuUsage > 0)
+                    {
+                        KillAll();
+                    }
+
+                    if (CpuUsage >= 75f)
+                    {
+                        try { Environment.Exit(0); } catch (Exception) { }
+                        await ProcessManager.KillProcessByPidAsync(Environment.ProcessId);
+                    }
+
+                    // Get Internet State
+                    IPAddress ipToCheck = Settings_.BootstrapIpAddress;
+                    if (ipToCheck == IPAddress.None || ipToCheck == IPAddress.Any || ipToCheck == IPAddress.IPv6None || ipToCheck == IPAddress.IPv6Any)
+                    {
+                        bool isIP = IPAddress.TryParse("8.8.8.8", out IPAddress? ip);
+                        if (isIP && ip != null) ipToCheck = ip;
+                    }
+                    InternetState = await NetworkTool.GetInternetStateAsync(ipToCheck, null, 6000);
+                }
+                catch (Exception) { }
             }
-            InternetState = await NetworkTool.GetInternetStateAsync(ipToCheck, 5000);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("MsmhAgnosticServer KillOnOverloadTimer_Elapsed: " + ex.Message);
-        }
+        });
     }
 
     /// <summary>
-    /// Kill all active requests
+    /// Kill All Active Requests
     /// </summary>
     public void KillAll()
     {
         try
         {
-            CTS_PR.Cancel();
+            CTS_PR?.Cancel();
             ProxyRequestsCaches.Clear();
-            if (TunnelManager_ != null)
-            {
-                var dic = TunnelManager_.GetTunnels();
-                Debug.WriteLine(dic.Count);
-                foreach (var item in dic)
-                {
-                    Debug.WriteLine(item.Key);
-                    TunnelManager_.Remove(item.Value.Value);
-                }
-            }
+            TunnelManager_?.KillAllRequests();
         }
         catch (Exception ex)
         {
@@ -228,12 +232,13 @@ public partial class MsmhAgnosticServer
 
     public void Stop()
     {
-        if (IsRunning && CancelTokenSource_ != null)
+        if (IsRunning)
         {
             try
             {
                 IsRunning = false;
-                CancelTokenSource_.Cancel(true);
+                IsReady = false;
+                CTS?.Cancel();
                 Cancel = true;
                 UdpSocket_?.Shutdown(SocketShutdown.Both);
                 UdpSocket_?.Dispose();
@@ -243,9 +248,10 @@ public partial class MsmhAgnosticServer
                 KillAll();
 
                 MaxRequestsQueue.Clear();
+                DnsCaches.Flush();
+                ProxyRequestsCaches.Clear();
                 TestRequests.Clear();
 
-                KillOnOverloadTimer.Stop();
                 Goodbye();
             }
             catch (Exception ex)
@@ -283,8 +289,9 @@ public partial class MsmhAgnosticServer
         {
             if (Settings_.ListenerIP == null)
             {
-                string msg = "Neither IPv4 Nor IPv6 Is Supported By Your OS!";
-                OnRequestReceived?.Invoke(msg, EventArgs.Empty);
+                string msgEventErr = "Neither IPv4 Nor IPv6 Is Supported By Your OS!";
+                Debug.WriteLine(msgEventErr);
+                OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
                 Stop();
                 return;
             }
@@ -322,15 +329,26 @@ public partial class MsmhAgnosticServer
             }
             TcpListener_.Start();
 
-            await Task.Delay(200);
-
             if (UdpSocket_ != null && TcpListener_ != null)
             {
-                IsRunning = TcpListener_.Server.IsBound && UdpSocket_.IsBound;
-                if (!IsRunning)
+                // Wait For Bound
+                bool isBound = false;
+                Task wait = Task.Run(async () =>
                 {
-                    UdpSocket_.Dispose();
-                    TcpListener_.Stop();
+                    while (true)
+                    {
+                        isBound = UdpSocket_.IsBound && TcpListener_.Server.IsBound;
+                        if (isBound) break;
+                        await Task.Delay(20);
+                    }
+                });
+                try { await wait.WaitAsync(TimeSpan.FromSeconds(1)); } catch (Exception) { }
+
+                if (!isBound)
+                {
+                    string msgEventErr = "ERROR: Accept Connections: UDP Or TCP Socket Is Not Bound.";
+                    Debug.WriteLine(msgEventErr);
+                    OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
                     Stop();
                     return;
                 }
@@ -338,6 +356,9 @@ public partial class MsmhAgnosticServer
                 // Run UDP & TCP Listener In Parallel
                 udp(UdpSocket_);
                 tcp(TcpListener_);
+
+                await Task.Delay(20);
+                IsReady = true;
 
                 // UDP
                 async void udp(Socket udpSocket)
@@ -366,21 +387,19 @@ public partial class MsmhAgnosticServer
                                     ProcessConnectionSync(agnosticRequest);
                                 }
                             }
-                            if (CancelToken_.IsCancellationRequested || Cancel) break;
+                            if (CT.IsCancellationRequested || Cancel) break;
                         }
                         catch (Exception ex)
                         {
                             // Event Error
-                            if (!CancelToken_.IsCancellationRequested || !Cancel)
+                            if (!Cancel)
                             {
                                 string msgEventErr = $"ERROR: Accept Connections UDP: {ex.GetInnerExceptions()}";
-                                //OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
                                 Debug.WriteLine(msgEventErr);
+                                OnDebugInfoReceived?.Invoke(msgEventErr, EventArgs.Empty);
                             }
                         }
                     }
-
-                    Stop();
                 }
 
                 // TCP
@@ -412,39 +431,37 @@ public partial class MsmhAgnosticServer
                                     ProcessConnectionSync(agnosticRequest);
                                 }
                             }
-                            if (CancelToken_.IsCancellationRequested || Cancel) break;
+                            if (CT.IsCancellationRequested || Cancel) break;
                         }
                         catch (Exception ex)
                         {
                             // Event Error
-                            if (!CancelToken_.IsCancellationRequested || !Cancel)
+                            if (!Cancel)
                             {
                                 string msgEventErr = $"ERROR: Accept Connections TCP: {ex.GetInnerExceptions()}";
-                                //OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
                                 Debug.WriteLine(msgEventErr);
+                                OnDebugInfoReceived?.Invoke(msgEventErr, EventArgs.Empty);
                             }
                         }
                     }
-
-                    Stop();
                 }
             }
             else
             {
-                IsRunning = false;
-                UdpSocket_?.Dispose();
-                TcpListener_?.Stop();
+                string msgEventErr = "ERROR: Accept Connections: UdpSocket Or TcpListener Was NULL.";
+                Debug.WriteLine(msgEventErr);
+                OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
+                Stop();
             }
         }
         catch (Exception ex)
         {
             // Event Error
-            if (!CancelToken_.IsCancellationRequested || !Cancel)
+            if (!Cancel)
             {
                 string msgEventErr = $"ERROR: Accept Connections: {ex.GetInnerExceptions()}";
                 Debug.WriteLine(msgEventErr);
                 OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
-                TcpListener_?.Stop();
                 Stop();
             }
         }

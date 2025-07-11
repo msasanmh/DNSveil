@@ -45,7 +45,7 @@ public class Settings
     {
         if (xmlFilePath != null)
         {
-            if (XmlTool.IsValidXMLFile(xmlFilePath))
+            if (XmlTool.IsValidFile(xmlFilePath))
                 LoadFromXMLFile(form, xmlFilePath);
             else
                 CustomMessageBox.Show(form, "XML file is not valid.");
@@ -59,7 +59,7 @@ public class Settings
 
     public void LoadFromXML(string xmlString)
     {
-        if (XmlTool.IsValidXML(xmlString))
+        if (XmlTool.IsValid(xmlString))
             XDoc = XDocument.Parse(xmlString);
     }
 
@@ -67,7 +67,7 @@ public class Settings
     {
         try
         {
-            if (xmlFilePath != null && XmlTool.IsValidXMLFile(xmlFilePath))
+            if (xmlFilePath != null && XmlTool.IsValidFile(xmlFilePath))
             {
                 // Clear List
                 SettingList.Clear();

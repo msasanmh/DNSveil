@@ -668,6 +668,19 @@ public partial class FormMain
         }
     }
 
+    // Settings -> Connect -> Edit Malicious Domains
+    private void CustomButtonSettingMalicious_Click(object sender, EventArgs e)
+    {
+        if (IsExiting) return;
+        FileDirectory.CreateEmptyFile(SecureDNS.BuiltInServersMaliciousPath);
+        int notepad = ProcessManager.ExecuteOnly("notepad", null, SecureDNS.BuiltInServersMaliciousPath, false, false, SecureDNS.CurrentPath);
+        if (notepad == -1)
+        {
+            string msg = "Notepad is not installed on your system.";
+            CustomRichTextBoxLog.AppendText(msg + NL, Color.IndianRed);
+        }
+    }
+
     // Settings -> Rules
     private void CustomButtonSettingRules_Click(object sender, EventArgs e)
     {
@@ -757,7 +770,7 @@ public partial class FormMain
                 try
                 {
                     // Load Settings
-                    if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidXMLFile(SecureDNS.SettingsXmlPath))
+                    if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidFile(SecureDNS.SettingsXmlPath))
                         AppSettings = new(this, SecureDNS.SettingsXmlPath);
                     else
                         AppSettings = new(this);

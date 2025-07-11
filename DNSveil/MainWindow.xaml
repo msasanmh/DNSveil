@@ -5,12 +5,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DNSveil"
-        xmlns:resources="clr-namespace:MsmhToolsWpfClass.Themes;assembly=MsmhToolsWpfClass"
+        xmlns:themes="clr-namespace:MsmhToolsWpfClass.Themes;assembly=MsmhToolsWpfClass"
         xmlns:MsmhToolsWpfClass="clr-namespace:MsmhToolsWpfClass;assembly=MsmhToolsWpfClass"
         mc:Ignorable="d"
-        Title="DNSveil" MinWidth="1000" MinHeight="600" Icon="/DNSveil.png"
-        Background="{DynamicResource {x:Static resources:AppTheme.BackgroundBrush}}"
-        Foreground="{DynamicResource {x:Static resources:AppTheme.ForegroundBrush}}"
+        DataContext="{Binding RelativeSource={RelativeSource Mode=Self}}"
+        Title="DNSveil" MinWidth="100" MinHeight="600" Icon="/DNSveil.png"
+        Background="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"
+        Foreground="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"
         Loaded="RootWindow_Loaded" ContentRendered="RootWindow_ContentRendered">
 
     <Grid x:Name="GridMain">
@@ -18,37 +19,301 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <MsmhToolsWpfClass:WpfSplitPanelH x:Name="MainSplitPanel" Panel1Percent="75">
-            <MsmhToolsWpfClass:WpfSplitPanelH.Panel1>
+        <MsmhToolsWpfClass:WpfSplitGridH x:Name="MainSplitPanel" Panel1Percent="75">
+            <MsmhToolsWpfClass:WpfSplitGridH.Panel1>
                 <DockPanel LastChildFill="True">
                     <Frame x:Name="FrameStatus" DockPanel.Dock="Right" Margin="1,2,2,2" Content="Frame Status" Source="/PageTest.xaml" Width="200" Background="MediumSeaGreen"/>
-                    <TabControl x:Name="MainTabControl" DockPanel.Dock="Left" Margin="2,2,1,2" HorizontalAlignment="Stretch" TabStripPlacement="Top">
+                    <MsmhToolsWpfClass:WpfTabControl x:Name="MainTabControl" DockPanel.Dock="Left" Margin="2,2,1,2" Padding="0" HorizontalAlignment="Stretch" TabStripPlacement="Top">
                         <TabItem Header="Home">
-                            <StackPanel>
-                                <MsmhToolsWpfClass:WpfButton x:Name="ManageServers" Content="Manage Servers" Click="ManageServers_Click"/>
-                                <MsmhToolsWpfClass:WpfNumericUpDown Value="10" Minimum="0" Maximum="12" Step="2" ValueChanged="IntegerUpDown_ValueChanged" Margin="0,0,0,150" HorizontalAlignment="Center" Height="50" Width="89"/>
-                                <MsmhToolsWpfClass:WpfButton Content="X" BorderBrush="#FFD23F3F" VerticalAlignment="Center" HorizontalAlignment="Center" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" RoundButton="True"/>
-                            </StackPanel>
+                            <MsmhToolsWpfClass:WpfSlidePanelVL x:Name="FirstSlidePanelVL" IsOpen="True" Header="Quick Options" BorderThickness="0">
+                                <MsmhToolsWpfClass:WpfSlidePanelVL.Panel1>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+                                            <StackPanel Orientation="Vertical" Margin="10,10,0,10">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                                    <TextBlock Text="1. Select DNS Group" Margin="0,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                    <ComboBox x:Name="QC_DnsGroup_ComboBox" Margin="0,0,10,0" MinWidth="120" IsReadOnly="True" Text="Select A DNS Group"/>
+                                                    <MsmhToolsWpfClass:WpfButton x:Name="QC_ManageServers_Button" Content="Manage" HorizontalAlignment="Left" VerticalAlignment="Center" Click="QC_ManageServers_Button_Click"/>
+                                                </StackPanel>
+                                                <Separator Margin="0,10,0,10" Visibility="Hidden"/>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                                    <TextBlock Text="2. Select NIC" Margin="0,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                    <ComboBox x:Name="QC_NIC_ComboBox" Margin="0,0,10,0" MinWidth="120" IsReadOnly="True" Text="Select Network Adapter"/>
+                                                    <MsmhToolsWpfClass:WpfButton x:Name="QC_UpdateNIC_Button" Margin="0,0,10,0" Content="Update" HorizontalAlignment="Left" VerticalAlignment="Center" Click="QC_UpdateNIC_Button_Click"/>
+                                                    <MsmhToolsWpfClass:WpfButton x:Name="QC_FindActiveNIC_Button" Margin="0,0,10,0" Content="Find Active NIC" HorizontalAlignment="Left" VerticalAlignment="Center" Click="QC_FindActiveNIC_Button_Click"/>
+                                                </StackPanel>
+                                                <Separator Margin="0,10,0,10" Visibility="Hidden"/>
+                                                <StackPanel Orientation="Vertical" VerticalAlignment="Top">
+                                                    <TextBlock Text="3. Anti-DPI" Margin="0,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                    <Grid Margin="20,0,0,0">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="*"/>
+                                                            <RowDefinition Height="*"/>
+                                                            <RowDefinition Height="*"/>
+                                                            <RowDefinition Height="*"/>
+                                                            <RowDefinition Height="*"/>
+                                                        </Grid.RowDefinitions>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="&#x2022; Fragment" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                        <MsmhToolsWpfClass:WpfToggleSwitch x:Name="QC_Fragment_ToggleSwitch" Grid.Row="0" Grid.Column="1" IsChecked="True"/>
+                                                        <MsmhToolsWpfClass:WpfFlyoutPopup Grid.Row="0" Grid.Column="2" Header="Settings" Header2="Fragment Settings" Placement="Right" StaysOpen="False" HorizontalAlignment="Left">
+                                                            <Grid MsmhToolsWpfClass:MarginSetter.Margin="5">
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="*"/>
+                                                                    <RowDefinition Height="*"/>
+                                                                    <RowDefinition Height="*"/>
+                                                                    <RowDefinition Height="*"/>
+                                                                    <RowDefinition Height="*"/>
+                                                                </Grid.RowDefinitions>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Chunks Before SNI:"/>
+                                                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                                                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="QC_Fragment_ChunksBeforeSNI_NumericUpDown" MinWidth="50" Minimum="2" Value="50" Maximum="200" HorizontalAlignment="Left"/>
+                                                                    <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Fragment_ChunksBeforeSNI" Placement="Top" StaysOpen="True" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Row="1" Grid.Column="0" Text="SNI Chunk Mode:"/>
+                                                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                                                                    <ComboBox x:Name="QC_Fragment_SniChunkMode_ComboBox" MinWidth="120" IsReadOnly="True">
+                                                                        <ComboBoxItem Content="SNI" IsSelected="True"/>
+                                                                        <ComboBoxItem Content="SNI Extension"/>
+                                                                        <ComboBoxItem Content="All Extensions"/>
+                                                                    </ComboBox>
+                                                                    <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Fragment_SniChunkMode" Placement="Top" StaysOpen="True" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Chunks SNI:"/>
+                                                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="QC_Fragment_ChunksSNI_NumericUpDown" MinWidth="50" Minimum="2" Value="5" Maximum="50" HorizontalAlignment="Left"/>
+                                                                    <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Fragment_ChunksSNI" Placement="Top" StaysOpen="True" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Anti Pattern Offset:"/>
+                                                                <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal">
+                                                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="QC_Fragment_AntiPatternOffset_NumericUpDown" MinWidth="50" Minimum="0" Value="2" Maximum="10" HorizontalAlignment="Left"/>
+                                                                    <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Fragment_AntiPatternOffset" Placement="Top" StaysOpen="True" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Fragment Delay (ms):"/>
+                                                                <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
+                                                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="QC_Fragment_FragmentDelayMS_NumericUpDown" MinWidth="50" Minimum="0" Value="1" Maximum="50" HorizontalAlignment="Left"/>
+                                                                    <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Fragment_FragmentDelayMS" Placement="Top" StaysOpen="True" VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </MsmhToolsWpfClass:WpfFlyoutPopup>
+                                                        <Separator Grid.Row="1" Grid.Column="0" Margin="0,1,0,1" Visibility="Hidden"/>
+
+                                                        <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal">
+                                                            <TextBlock Text="&#x2022; SSL Decryption" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_SslDecryption" Placement="Top"/>
+                                                        </StackPanel>
+                                                        <MsmhToolsWpfClass:WpfToggleSwitch x:Name="QC_SslDecryption_ToggleSwitch" Grid.Row="2" Grid.Column="1" IsChecked="False"/>
+                                                        <MsmhToolsWpfClass:WpfFlyoutPopup Grid.Row="2" Grid.Column="2" Header="Settings" Header2="SSL Decryption Settings" Placement="Right" HorizontalAlignment="Left">
+                                                            <StackPanel Orientation="Vertical" MsmhToolsWpfClass:MarginSetter.Margin="5">
+                                                                <TextBlock Text="&#x221A; Spoof SNI" FontSize="14"/>
+                                                                <TextBlock Text="&#x2022; Write A Domain Name Which Is NOT Blocked." FontWeight="UltraLight"/>
+                                                                <TextBlock Text="&#x2022; Do NOT Use &quot;http://&quot; Or &quot;https://&quot;." FontWeight="UltraLight"/>
+                                                                <TextBlock Text="&#x2022; Example: speedtest.net" FontWeight="UltraLight"/>
+                                                                <TextBox x:Name="QC_SslSpoofSNI_TextBox" Text="speedtest.net" MaxLength="100" MinWidth="200"/>
+                                                            </StackPanel>
+                                                        </MsmhToolsWpfClass:WpfFlyoutPopup>
+                                                        <Separator Grid.Row="3" Grid.Column="0" Margin="0,1,0,1" Visibility="Hidden"/>
+
+                                                        <TextBlock Visibility="Collapsed" Grid.Row="4" Grid.Column="0" Text="&#x2022; Method 3" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                        <MsmhToolsWpfClass:WpfToggleSwitch Visibility="Collapsed" Grid.Row="4" Grid.Column="1" IsChecked="False"/>
+                                                        <MsmhToolsWpfClass:WpfFlyoutPopup Visibility="Collapsed" Grid.Row="4" Grid.Column="2" Header="Settings" Placement="Right"/>
+                                                    </Grid>
+                                                </StackPanel>
+                                                <Separator Margin="0,10,0,10" Visibility="Hidden"/>
+                                                <StackPanel Orientation="Vertical" VerticalAlignment="Top">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                                        <TextBlock Text="4. Select Upstream Group" Margin="0,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                        <ComboBox x:Name="QC_Upstream_ComboBox" Margin="0,0,10,0" MinWidth="120" IsReadOnly="True" Text="Select An Upstream"/>
+                                                        <MsmhToolsWpfClass:WpfButton x:Name="QC_ManageUpstreams_Button" Content="Manage" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <Separator Margin="0,1,0,1" Visibility="Hidden"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Top">
+                                                        <TextBlock Text="&#x2022; Apply Upstream Only To Blocked IPs" Margin="0,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                        <MsmhToolsWpfClass:WpfToggleSwitch x:Name="QC_ApplyUpstreamToBlockedIPs_ToggleSwitch" Margin="0,0,10,0" IsChecked="True"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <Separator Margin="0,10,0,10" Visibility="Hidden"/>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                                    <TextBlock Text="5. Interface" Margin="0,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                    <ComboBox x:Name="QC_Interface_ComboBox" Margin="0,0,10,0" MinWidth="120" IsReadOnly="True" Text="Select An Interface"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                        <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Background="{DynamicResource {x:Static themes:AppTheme.BackgroundDarkerBrush}}">
+                                            <StackPanel Orientation="Horizontal" Margin="10,4,10,4">
+                                                <MsmhToolsWpfClass:WpfButton x:Name="QC_Rules_Button" Margin="0,0,10,0" Content="Rules" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </MsmhToolsWpfClass:WpfSlidePanelVL.Panel1>
+                                <MsmhToolsWpfClass:WpfSlidePanelVL.Panel2>
+                                    <MsmhToolsWpfClass:WpfSlidePanelHB IsOpen="False" Header="Benchmark" BorderThickness="0">
+                                        <MsmhToolsWpfClass:WpfSlidePanelHB.Panel1>
+                                            <MsmhToolsWpfClass:WpfSplitPanelVR IsOpen="True" Header="Net Info">
+                                                <MsmhToolsWpfClass:WpfSplitPanelVR.Panel1>
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                                            <StackPanel Margin="20,12,0,20" Orientation="Vertical">
+                                                                <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Info_DnsAddresses" Header="Using DNS Addresses" IsOpen="True" FlyoutChanged="Flyout_Info_DnsAddresses_FlyoutChanged">
+                                                                    <StackPanel Margin="20,0,0,0" MinHeight="150">
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                    </StackPanel>
+                                                                </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                                                                <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Info_SetDnsTo" Header="DNS Set To" IsOpen="False" FlyoutChanged="Flyout_Info_SetDnsTo_FlyoutChanged">
+                                                                    <StackPanel Margin="20,0,0,0" MinHeight="150">
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                    </StackPanel>
+                                                                </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                                                                <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Info_AntiDpiMethods" Header="Using Anti-DPI Methods" IsOpen="False" FlyoutChanged="Flyout_Info_AntiDpiMethods_FlyoutChanged">
+                                                                    <StackPanel Margin="20,0,0,0" MinHeight="150">
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                        <TextBlock Text="AAAAAAAAAAAAAAAA"/>
+                                                                    </StackPanel>
+                                                                </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                                                                <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Info_Upstreams" Header="Using Upstreams" IsOpen="False" FlyoutChanged="Flyout_Info_Upstreams_FlyoutChanged">
+                                                                    <StackPanel Orientation="Vertical" MinHeight="150">
+                                                                        <MsmhToolsWpfClass:WpfButton Margin="0,0,0,2" Content="Auto Select" HorizontalAlignment="Right"/>
+                                                                        <ListView Margin="0">
+                                                                            <ListView.View>
+                                                                                <GridView>
+                                                                                    <GridViewColumn Header="First" DisplayMemberBinding="{Binding FirstProperty}"/>
+                                                                                    <GridViewColumn Header="Second" DisplayMemberBinding="{Binding SecondProperty}"/>
+                                                                                    <GridViewColumn Header="Button">
+                                                                                        <GridViewColumn.CellTemplate>
+                                                                                            <DataTemplate>
+                                                                                                <MsmhToolsWpfClass:WpfButton>Button Text</MsmhToolsWpfClass:WpfButton>
+                                                                                            </DataTemplate>
+                                                                                        </GridViewColumn.CellTemplate>
+                                                                                    </GridViewColumn>
+                                                                                </GridView>
+                                                                            </ListView.View>
+                                                                        </ListView>
+                                                                    </StackPanel>
+                                                                </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                                                            </StackPanel>
+                                                        </ScrollViewer>
+                                                        <MsmhToolsWpfClass:WpfButton Grid.Column="1" Margin="50,20,50,20" Content="Connect" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="30" MinWidth="180" RoundButton="True"/>
+                                                        
+                                                    </Grid>
+                                                </MsmhToolsWpfClass:WpfSplitPanelVR.Panel1>
+                                                <MsmhToolsWpfClass:WpfSplitPanelVR.Panel2>
+                                                    <ListView Margin="4">
+                                                        <ListView.View>
+                                                            <GridView>
+                                                                <GridViewColumn Header="First" DisplayMemberBinding="{Binding FirstProperty}"/>
+                                                                <GridViewColumn Header="Second" DisplayMemberBinding="{Binding SecondProperty}"/>
+                                                                <GridViewColumn Header="Button">
+                                                                    <GridViewColumn.CellTemplate>
+                                                                        <DataTemplate>
+                                                                            <MsmhToolsWpfClass:WpfButton>Button Text</MsmhToolsWpfClass:WpfButton>
+                                                                        </DataTemplate>
+                                                                    </GridViewColumn.CellTemplate>
+                                                                </GridViewColumn>
+                                                            </GridView>
+                                                        </ListView.View>
+                                                    </ListView>
+                                                </MsmhToolsWpfClass:WpfSplitPanelVR.Panel2>
+                                            </MsmhToolsWpfClass:WpfSplitPanelVR>
+                                            
+                                        </MsmhToolsWpfClass:WpfSlidePanelHB.Panel1>
+                                        <MsmhToolsWpfClass:WpfSlidePanelHB.Panel2>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="DNS Latency Without DNSveil (Unsecure)"/>
+                                                    <TextBlock Text="UDP: -1 ms"/>
+                                                    <TextBlock Text="TCP: -1 ms"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="UDP Boost: Calculating..."/>
+                                                    <TextBlock Text="TCP Boost: Calculating..."/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="DNS Latency With DNSveil (Secure)"/>
+                                                    <TextBlock Text="UDP: -1 ms"/>
+                                                    <TextBlock Text="TCP: -1 ms"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </MsmhToolsWpfClass:WpfSlidePanelHB.Panel2>
+                                    </MsmhToolsWpfClass:WpfSlidePanelHB>
+                                </MsmhToolsWpfClass:WpfSlidePanelVL.Panel2>
+                            </MsmhToolsWpfClass:WpfSlidePanelVL>
                         </TabItem>
-                        <TabItem Header="TabItem">
-                            <Grid/>
+                        <TabItem Header="Tools">
+                            <MsmhToolsWpfClass:WpfButton Content="Tools"/>
                         </TabItem>
-                        <TabItem Header="TabItem">
+                        <TabItem Header="Settings">
+                            <MsmhToolsWpfClass:WpfTabControl x:Name="SettingsTabControl" TabStripPlacement="Left" HorizontalContentAlignment="Stretch">
+                                <TabItem Header="Working Mode">
+
+                                </TabItem>
+                                <TabItem Header="Connect">
+
+                                </TabItem>
+                                <TabItem Header="DNS">
+
+                                </TabItem>
+                                <TabItem Header="Proxy">
+
+                                </TabItem>
+                                <TabItem Header="Rules">
+
+                                </TabItem>
+                                <TabItem Header="Geo Assets">
+
+                                </TabItem>
+                                <TabItem Header="CPU">
+
+                                </TabItem>
+                                <TabItem Header="Others">
+
+                                </TabItem>
+                            </MsmhToolsWpfClass:WpfTabControl>
+                        </TabItem>
+                        <TabItem Header="About">
                             <Grid/>
                         </TabItem>
 
-                    </TabControl>
+                    </MsmhToolsWpfClass:WpfTabControl>
                 </DockPanel>
-            </MsmhToolsWpfClass:WpfSplitPanelH.Panel1>
-            <MsmhToolsWpfClass:WpfSplitPanelH.Panel2>
+            </MsmhToolsWpfClass:WpfSplitGridH.Panel1>
+            <MsmhToolsWpfClass:WpfSplitGridH.Panel2>
                 <GroupBox Header="Log" MinHeight="0">
 
                 </GroupBox>
-            </MsmhToolsWpfClass:WpfSplitPanelH.Panel2>
-        </MsmhToolsWpfClass:WpfSplitPanelH>
+            </MsmhToolsWpfClass:WpfSplitGridH.Panel2>
+        </MsmhToolsWpfClass:WpfSplitGridH>
         <DockPanel Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Disabled" Margin="0">
-            <MsmhToolsWpfClass:WpfButton x:Name="ButtonView" Content="View" Margin="4,4,10,4" Click="ButtonView_Click" HorizontalAlignment="Left"/>
-            <MsmhToolsWpfClass:WpfButton x:Name="ButtonExit" Content="Exit" DockPanel.Dock="Right" Margin="10,4,4,4" Click="ButtonExit_Click" HorizontalAlignment="Right"/>
+            <MsmhToolsWpfClass:WpfButton x:Name="View_Button" Content="View" Margin="4,4,10,4" HorizontalAlignment="Left" Click="View_Button_Click"/>
+            <MsmhToolsWpfClass:WpfButton x:Name="Exit_Button" Content="Exit" DockPanel.Dock="Right" Margin="10,4,4,4" HorizontalAlignment="Right" Click="Exit_Button_Click"/>
         </DockPanel>
     </Grid>
+
 </Window>

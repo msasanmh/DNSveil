@@ -1,5 +1,7 @@
 ﻿using MsmhToolsClass;
+using MsmhToolsClass.MsmhAgnosticServer;
 using System.Diagnostics;
+using System.Net;
 using System.Reflection;
 using System.Text;
 
@@ -64,6 +66,7 @@ public partial class FormMain
             {
                 string[] encryptedDnss = content.ReplaceLineEndings().Split(NL, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                 List<string> dnss = await BuiltInDecryptAsync(encryptedDnss.ToList());
+                dnss = dnss.Distinct().ToList();
                 for (int n = 0; n < dnss.Count; n++)
                 {
                     string dns = dnss[n];
@@ -86,7 +89,7 @@ public partial class FormMain
         return await rbs.WaitAsync(CancellationToken.None);
     }
 
-    public static async Task<List<ReadDnsResult>> ReadBuiltInServersAsync(CheckRequest checkRequest, bool readInsecure, bool skipDownload = false)
+    private static async Task<List<ReadDnsResult>> ReadBuiltInServers_Internal_Async(CheckRequest checkRequest, bool readInsecure, bool skipDownload = false)
     {
         Task<List<ReadDnsResult>> rbs = Task.Run(async () =>
         {
@@ -104,58 +107,20 @@ public partial class FormMain
                 if (!skipDownload)
                 {
                     // Try URL
-                    Uri uri = new(url, UriKind.Absolute);
-
-                    HttpRequest hr = new()
-                    {
-                        AllowAutoRedirect = true,
-                        AllowInsecure = true,
-                        TimeoutMS = 20000,
-                        URI = uri
-                    };
-
-                    HttpRequestResponse hrr = await HttpRequest.SendAsync(hr);
-                    if (hrr.IsSuccess)
+                    byte[] bytes = await WebAPI.DownloadFileAsync(url, 20000).ConfigureAwait(false);
+                    if (bytes.Length > 0)
                     {
                         try
                         {
-                            content = Encoding.UTF8.GetString(hrr.Data);
+                            content = Encoding.UTF8.GetString(bytes);
                         }
                         catch (Exception) { }
                     }
-                    else
-                    {
-                        // Try With System Proxy
-                        string systemProxyScheme = NetworkTool.GetSystemProxy();
-                        if (!string.IsNullOrWhiteSpace(systemProxyScheme))
-                        {
-                            hr.ProxyScheme = systemProxyScheme;
-                            hrr = await HttpRequest.SendAsync(hr);
-                            if (hrr.IsSuccess)
-                            {
-                                try
-                                {
-                                    content = Encoding.UTF8.GetString(hrr.Data);
-                                }
-                                catch (Exception) { }
-                            }
-                        }
-                    }
                 }
-                
-                if (!string.IsNullOrWhiteSpace(content))
+
+                // Try Read From File
+                if (string.IsNullOrWhiteSpace(content))
                 {
-                    // Save Download Servers To File
-                    try
-                    {
-                        await File.WriteAllTextAsync(file, content, new UTF8Encoding(false));
-                        Debug.WriteLine("====================> Built-In Servers Downloaded And Saved To " + file);
-                    }
-                    catch (Exception) { }
-                }
-                else
-                {
-                    // Try Read From File
                     try
                     {
                         content = await File.ReadAllTextAsync(file, new UTF8Encoding(false));
@@ -167,15 +132,6 @@ public partial class FormMain
                 if (string.IsNullOrWhiteSpace(content))
                 {
                     content = await ResourceTool.GetResourceTextFileAsync(resource, Assembly.GetExecutingAssembly());
-                    if (!string.IsNullOrWhiteSpace(content))
-                    {
-                        // Save Resource Servers To File
-                        try
-                        {
-                            await File.WriteAllTextAsync(file, content, new UTF8Encoding(false));
-                        }
-                        catch (Exception) { }
-                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(content))
@@ -188,4 +144,255 @@ public partial class FormMain
 
         return await rbs.WaitAsync(CancellationToken.None);
     }
+
+    public static async Task<List<ReadDnsResult>> ReadBuiltInServersAsync(CheckRequest checkRequest, bool readInsecure, bool skipDownload = false)
+    {
+        List<ReadDnsResult> output = await ReadBuiltInServers_Internal_Async(checkRequest, false, skipDownload);
+        if (readInsecure)
+        {
+            output.AddRange(await ReadBuiltInServers_Internal_Async(checkRequest, true, skipDownload));
+        }
+
+        try
+        {
+            List<string> allDNSs = new();
+            List<string> urlsOrFiles = new()
+            {
+                "https://github.com/DNSCrypt/dnscrypt-resolvers/blob/master/v3/public-resolvers.md",
+                "https://github.com/curl/curl/wiki/DNS-over-HTTPS"
+            };
+            for (int n = 0; n < urlsOrFiles.Count; n++)
+            {
+                string urlOrFile = urlsOrFiles[n];
+                List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
+                allDNSs.AddRange(dnss);
+            }
+            allDNSs = allDNSs.Distinct().ToList();
+            allDNSs = await DnsTools.DecodeStampAsync(allDNSs);
+            allDNSs = allDNSs.Distinct().ToList();
+            for (int n = 0; n < allDNSs.Count; n++)
+            {
+                string dns = allDNSs[n];
+                ReadDnsResult rdr = new()
+                {
+                    DNS = dns,
+                    CheckMode = checkRequest.CheckMode,
+                    GroupName = checkRequest.GroupName,
+                    Description = "Built-In"
+                };
+                output.Add(rdr);
+            }
+
+            output = output.DistinctBy(x => x.DNS).ToList();
+        }
+        catch (Exception) { }
+
+        return output;
+    }
+
+    public async Task<List<ReadDnsResult>> ReadBuiltInServersAndSubsAsync(CheckRequest checkRequest, bool readInsecure)
+    {
+        Task<List<ReadDnsResult>> rbs = Task.Run(async () =>
+        {
+            List<ReadDnsResult> output = new();
+
+            try
+            {
+                // Get
+                List<string> allDNSs = new();
+
+                string url_Secure = SecureDNS.BuiltInServersSecureUpdateUrl;
+                string file_Secure = SecureDNS.BuiltInServersSecurePath;
+                string resource_Secure = "SecureDNSClient.DNS-Servers.txt";
+
+                string url_Insecure = SecureDNS.BuiltInServersInsecureUpdateUrl;
+                string file_Insecure = SecureDNS.BuiltInServersInsecurePath;
+                string resource_Insecure = "SecureDNSClient.DNS-Servers-Insecure.txt";
+
+                // Try URL Built-In Secure
+                string encryptedContent = string.Empty;
+                string msg = $"Downloading {url_Secure}{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                byte[] bytes = await WebAPI.DownloadFileAsync(url_Secure, 20000).ConfigureAwait(false);
+                if (bytes.Length > 0)
+                {
+                    try
+                    {
+                        encryptedContent = Encoding.UTF8.GetString(bytes);
+                        // Save Downloaded Servers To File
+                        if (!string.IsNullOrWhiteSpace(encryptedContent))
+                        {
+                            await File.WriteAllTextAsync(file_Secure, encryptedContent, new UTF8Encoding(false));
+                        }
+                    }
+                    catch (Exception) { }
+                }
+                else
+                {
+                    msg = $"Download Failed. Reading Backup...{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                    if (File.Exists(file_Secure))
+                    {
+                        try
+                        {
+                            // Try Read From File
+                            encryptedContent = await File.ReadAllTextAsync(file_Secure, new UTF8Encoding(false));
+                        }
+                        catch (Exception) { }
+                    }
+                    if (string.IsNullOrEmpty(encryptedContent))
+                    {
+                        // Try Read From Resource
+                        encryptedContent = await ResourceTool.GetResourceTextFileAsync(resource_Secure, Assembly.GetExecutingAssembly());
+                    }
+                }
+
+                string[] encryptedDnss = encryptedContent.ReplaceLineEndings().Split(NL, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                List<string> dnss = await BuiltInDecryptAsync(encryptedDnss.ToList());
+                allDNSs.AddRange(dnss);
+                msg = $"Fetched {dnss.Count} Servers.{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+
+                if (readInsecure)
+                {
+                    // Try URL Built-In Insecure
+                    msg = $"Downloading {url_Insecure}{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                    bytes = await WebAPI.DownloadFileAsync(url_Insecure, 20000).ConfigureAwait(false);
+                    if (bytes.Length > 0)
+                    {
+                        try
+                        {
+                            encryptedContent = Encoding.UTF8.GetString(bytes);
+                            // Save Downloaded Servers To File
+                            if (!string.IsNullOrWhiteSpace(encryptedContent))
+                            {
+                                await File.WriteAllTextAsync(file_Insecure, encryptedContent, new UTF8Encoding(false));
+                            }
+                        }
+                        catch (Exception) { }
+                    }
+                    else
+                    {
+                        msg = $"Download Failed. Reading Backup...{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                        if (File.Exists(file_Insecure))
+                        {
+                            try
+                            {
+                                // Try Read From File
+                                encryptedContent = await File.ReadAllTextAsync(file_Insecure, new UTF8Encoding(false));
+                            }
+                            catch (Exception) { }
+                        }
+                        if (string.IsNullOrEmpty(encryptedContent))
+                        {
+                            // Try Read From Resource
+                            encryptedContent = await ResourceTool.GetResourceTextFileAsync(resource_Insecure, Assembly.GetExecutingAssembly());
+                        }
+                    }
+
+                    encryptedDnss = encryptedContent.ReplaceLineEndings().Split(NL, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                    dnss = await BuiltInDecryptAsync(encryptedDnss.ToList());
+                    allDNSs.AddRange(dnss);
+                    msg = $"Fetched {dnss.Count} Servers.{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                }
+
+                // Built-In Subs
+                List<string> allSubs = new();
+                List<string> urlsOrFiles = new()
+                {
+                    "https://github.com/DNSCrypt/dnscrypt-resolvers/blob/master/v3/public-resolvers.md",
+                    "https://github.com/curl/curl/wiki/DNS-over-HTTPS",
+                    "https://adguard-dns.io/kb/general/dns-providers",
+                    "https://github.com/NiREvil/vless/blob/main/DNS%20over%20HTTPS/any%20DNS-over-HTTPS%20server%20you%20want.md",
+                    "https://gist.githubusercontent.com/mutin-sa/5dcbd35ee436eb629db7872581093bc5/raw/e69d04151312208dc023c124ebdda22832db4325/Top_Public_Recursive_Name_Servers.md",
+                };
+
+                if (urlsOrFiles.Count > 0)
+                {
+                    for (int n = 0; n < urlsOrFiles.Count; n++)
+                    {
+                        string urlOrFile = urlsOrFiles[n];
+                        msg = $"Downloading {WebUtility.UrlDecode(urlOrFile)}{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                        dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
+                        allSubs.AddRange(dnss);
+                        msg = $"Fetched {dnss.Count} Servers.{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                    }
+
+                    allSubs = allSubs.Distinct().ToList();
+                    if (allSubs.Count > 0)
+                    {
+                        // Save Downloaded Servers To File
+                        await allSubs.SaveToFileAsync(SecureDNS.BuiltInServersSubscriptionPath);
+                    }
+                    else
+                    {
+                        msg = $"Download Failed. Reading Backup...{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                        await allSubs.LoadFromFileAsync(SecureDNS.BuiltInServersSubscriptionPath, true, true);
+                        if (allSubs.Count > 0)
+                        {
+                            msg = $"Fetched {dnss.Count} Servers.{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                        }
+                        else
+                        {
+                            msg = $"There Is No Backup.{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                        }
+                    }
+                }
+                
+                msg = $"Decoding Stamp Servers...{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+
+                allDNSs.AddRange(allSubs);
+                allDNSs = allDNSs.Distinct().ToList();
+                allDNSs = await DnsTools.DecodeStampAsync(allDNSs);
+                allDNSs = allDNSs.Distinct().ToList();
+
+                msg = $"Checking For Malicious Servers Based On Your Settings...{NL}";
+                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+
+                string maliciousContent = string.Empty;
+                try
+                {
+                    maliciousContent = await File.ReadAllTextAsync(SecureDNS.BuiltInServersMaliciousPath);
+                }
+                catch (Exception) { }
+                List<string> maliciousTemp = maliciousContent.ReplaceLineEndings().Split(NL, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                List<string> malicious = new();
+                for (int n = 0; n < maliciousTemp.Count; n++)
+                {
+                    string temp = maliciousTemp[n];
+                    if (temp.StartsWith("//")) continue;
+                    malicious.Add(temp);
+                }
+
+                for (int n = 0; n < allDNSs.Count; n++)
+                {
+                    string dns = allDNSs[n];
+                    if (malicious.IsContain(dns)) continue;
+                    ReadDnsResult rdr = new()
+                    {
+                        DNS = dns,
+                        CheckMode = checkRequest.CheckMode,
+                        GroupName = checkRequest.GroupName,
+                        Description = "Built-In"
+                    };
+                    output.Add(rdr);
+                }
+            }
+            catch (Exception) { }
+
+            return output;
+        });
+
+        return await rbs.WaitAsync(CancellationToken.None);
+    }
+
 }

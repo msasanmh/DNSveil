@@ -35,7 +35,7 @@ public partial class FormDnsScannerExport : Form
         Text = "Export Dns Scanner Data (Only Online Servers)";
 
         // Initialize and load AgnosticSettings
-        if (File.Exists(SettingsXmlPath) && XmlTool.IsValidXMLFile(SettingsXmlPath))
+        if (File.Exists(SettingsXmlPath) && XmlTool.IsValidFile(SettingsXmlPath))
             AppSettings = new(this, SettingsXmlPath);
         else
             AppSettings = new(this);

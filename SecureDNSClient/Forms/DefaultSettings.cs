@@ -33,7 +33,7 @@ public partial class FormMain : Form
             this.InvokeIt(() =>
             {
                 // Share
-                CustomCheckBoxProxyEventShowRequest.Checked = false;
+                CustomCheckBoxProxyEventShowRequest.Checked = true;
                 CustomCheckBoxProxyEventShowChunkDetails.Checked = false;
                 CustomCheckBoxPDpiEnableFragment.Checked = true;
                 CustomNumericUpDownPDpiBeforeSniChunks.Value = (decimal)50;
@@ -107,7 +107,7 @@ public partial class FormMain : Form
                 CustomCheckBoxSettingProtocolPlainDNS.Checked = false;
                 CustomCheckBoxSettingSdnsDNSSec.Checked = false;
                 CustomCheckBoxSettingSdnsNoLog.Checked = false;
-                CustomCheckBoxSettingSdnsNoFilter.Checked = true;
+                CustomCheckBoxSettingSdnsNoFilter.Checked = false;
 
                 // Settings Quick Connect
                 CustomComboBoxSettingQcConnectMode.SelectedIndex = CustomComboBoxSettingQcConnectMode.Items.Count > 0 ? 0 : -1; // Working Servers Mode
@@ -121,8 +121,8 @@ public partial class FormMain : Form
 
             this.InvokeIt(() =>
             {
-                CustomCheckBoxSettingQcStartProxyServer.Checked = false;
-                CustomCheckBoxSettingQcSetProxy.Checked = false;
+                CustomCheckBoxSettingQcStartProxyServer.Checked = true;
+                CustomCheckBoxSettingQcSetProxy.Checked = true;
                 CustomCheckBoxSettingQcStartGoodbyeDpi.Checked = false;
                 CustomRadioButtonSettingQcGdBasic.Checked = true;
                 CustomComboBoxSettingQcGdBasic.SelectedIndex = CustomComboBoxSettingQcGdBasic.Items.Count > 0 ? 0 : -1; // Light Mode
@@ -144,7 +144,7 @@ public partial class FormMain : Form
 
                 // Settings Share Basic
                 CustomNumericUpDownSettingProxyPort.Value = (decimal)8080;
-                CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)5000;
+                CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)9000;
                 CustomCheckBoxSettingProxyBlockPort80.Checked = false;
                 CustomNumericUpDownSettingProxyKillRequestTimeout.Value = (decimal)60;
                 CustomCheckBoxSettingProxyUpstream.Checked = false;

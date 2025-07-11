@@ -59,7 +59,14 @@
         <GroupBox DockPanel.Dock="Left" Header="Groups" MinWidth="200" MaxWidth="400" Width="Auto">
             <DockPanel LastChildFill="True">
                 <DockPanel DockPanel.Dock="Bottom" LastChildFill="True">
-                    <MsmhToolsWpfClass:WpfButton x:Name="NewGroupButton" DockPanel.Dock="Top" Content="New Group" Margin="0,4,0,4" PreviewMouseUp="NewGroupButton_PreviewMouseUp"/>
+                    <Grid DockPanel.Dock="Top" Margin="0,4,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20*"/>
+                            <ColumnDefinition Width="20*"/>
+                        </Grid.ColumnDefinitions>
+                        <MsmhToolsWpfClass:WpfButton x:Name="NewGroupButton" Grid.Column="0" Margin="0,0,2,0" Content="New Group" PreviewMouseUp="NewGroupButton_PreviewMouseUp"/>
+                        <MsmhToolsWpfClass:WpfButton x:Name="ResetBuiltInButton" Grid.Column="1" Margin="2,0,0,0" Content="Reset Built-In" Click="ResetBuiltInButton_Click"/>
+                    </Grid>
                     <Grid DockPanel.Dock="Bottom">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20*"/>
@@ -67,7 +74,7 @@
                         </Grid.ColumnDefinitions>
                         <Grid Grid.Column="0" Margin="0,0,2,0">
                             <Border x:Name="Import_Border" Style="{DynamicResource BorderStyle}">
-                                <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="Import_FlyoutOverlay" Margin="4" StaysOpen="True" Placement="Top" Header="Import" VerticalAlignment="Center" FlyoutChanged="Import_FlyoutOverlay_FlyoutChanged">
+                                <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="Import_FlyoutOverlay" Margin="4" StaysOpen="True" Placement="Top" Header="Import" VerticalAlignment="Center" FlyoutChanged="Import_FlyoutOverlay_FlyoutChanged">
                                     <Grid Margin="2">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*"/>
@@ -79,20 +86,20 @@
                                             <ListBox x:Name="Import_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                                 <ListBox.ItemTemplate>
                                                     <DataTemplate>
-                                                        <CheckBox x:Name="Import_CheckBox" IsChecked="{Binding Enabled}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Import_CheckBox_CheckedUnchecked" Unchecked="Import_CheckBox_CheckedUnchecked"/>
+                                                        <CheckBox x:Name="Import_CheckBox" IsChecked="{Binding Selected}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Import_CheckBox_CheckedUnchecked" Unchecked="Import_CheckBox_CheckedUnchecked"/>
                                                     </DataTemplate>
                                                 </ListBox.ItemTemplate>
                                             </ListBox>
                                         </StackPanel>
                                         <MsmhToolsWpfClass:WpfButton x:Name="ImportButton" Grid.Row="1" Content="Import" Click="ImportButton_Click"/>
                                     </Grid>
-                                </MsmhToolsWpfClass:WpfFlyoutOverlay>
+                                </MsmhToolsWpfClass:WpfFlyoutPopup>
                             </Border>
                             <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Groups_Import" Placement="Top"/>
                         </Grid>
                         <Grid Grid.Column="1" Margin="2,0,0,0">
                             <Border x:Name="Export_Border" Style="{DynamicResource BorderStyle}">
-                                <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="Export_FlyoutOverlay" Margin="4" Placement="Top" Header="Export" VerticalAlignment="Center" FlyoutChanged="Export_FlyoutOverlay_FlyoutChanged">
+                                <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="Export_FlyoutOverlay" Margin="4" StaysOpen="True" Placement="Top" Header="Export" VerticalAlignment="Center" FlyoutChanged="Export_FlyoutOverlay_FlyoutChanged">
                                     <Grid Margin="2">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*"/>
@@ -103,14 +110,14 @@
                                             <ListBox x:Name="Export_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                                 <ListBox.ItemTemplate>
                                                     <DataTemplate>
-                                                        <CheckBox x:Name="Export_CheckBox" IsChecked="{Binding Enabled}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Export_CheckBox_CheckedUnchecked" Unchecked="Export_CheckBox_CheckedUnchecked"/>
+                                                        <CheckBox x:Name="Export_CheckBox" IsChecked="{Binding Selected}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Export_CheckBox_CheckedUnchecked" Unchecked="Export_CheckBox_CheckedUnchecked"/>
                                                     </DataTemplate>
                                                 </ListBox.ItemTemplate>
                                             </ListBox>
                                         </StackPanel>
                                         <MsmhToolsWpfClass:WpfButton x:Name="ExportButton" Grid.Row="1" Content="Export" Click="ExportButton_Click"/>
                                     </Grid>
-                                </MsmhToolsWpfClass:WpfFlyoutOverlay>
+                                </MsmhToolsWpfClass:WpfFlyoutPopup>
                             </Border>
                             <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Groups_Export" Placement="Top"/>
                         </Grid>
@@ -134,9 +141,10 @@
                 <TabItem Header="Subscription">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Margin="5,0,5,0" Orientation="Horizontal">
-                            <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="Subscription_Settings_WpfFlyoutOverlay" Margin="0,0,10,0" Header="Group Settings">
-                                <Grid Margin="10,2,10,2">
+                            <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="Subscription_Settings_WpfFlyoutPopup" Margin="0,0,10,0" Header="Group Settings">
+                                <Grid MsmhToolsWpfClass:MarginSetter.Margin="5">
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
@@ -150,23 +158,25 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,10,10" Text="A Domain To Lookup:"/>
-                                    <TextBox x:Name="Subscription_Settings_LookupDomain_TextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" MaxLength="100" MinWidth="200" Text="google.com" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,10,10" Text="Scan Timeout (Sec):"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_TimeoutSec_NumericUpDown" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="0.5" Value="4" Maximum="10" Step="0.1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,10,10" Text="Scan Parallel Size:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_ParallelSize_NumericUpDown" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="5" Maximum="20" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,10,10" Text="Bootstrap IP Address:"/>
-                                    <TextBox x:Name="Subscription_Settings_BootstrapIP_TextBox"  Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" MaxLength="100" MinWidth="200" Text="8.8.8.8" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,10,10" Text="Bootstrap Port:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_BootstrapPort_NumericUpDown" Grid.Row="4" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,10,10" Text="Max Number Of Servers To Connect:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_MaxServersToConnect_NumericUpDown" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="5" Maximum="10" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,10,10" Text="Allow Insecure:"/>
-                                    <CheckBox x:Name="Subscription_Settings_AllowInsecure_CheckBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10" IsChecked="False" HorizontalAlignment="Left"/>
-                                    <MsmhToolsWpfClass:WpfButton x:Name="Subscription_Settings_Save_Button" Grid.Row="7" Grid.Column="1" Margin="0" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="Subscription_Settings_Save_Button_Click"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Enable Group:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Subscription_EnableGroup_ToggleSwitch" Grid.Row="0" Grid.Column="1"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="A Domain To Lookup:"/>
+                                    <TextBox x:Name="Subscription_Settings_LookupDomain_TextBox" Grid.Row="1" Grid.Column="1" MaxLength="100" MinWidth="200" Text="google.com" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Scan Timeout (Sec):"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_TimeoutSec_NumericUpDown" Grid.Row="2" Grid.Column="1" MinWidth="60" Minimum="0.5" Value="4" Maximum="10" Step="0.1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Scan Parallel Size:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_ParallelSize_NumericUpDown" Grid.Row="3" Grid.Column="1" MinWidth="60" Minimum="1" Value="5" Maximum="20" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Bootstrap IP Address:"/>
+                                    <TextBox x:Name="Subscription_Settings_BootstrapIP_TextBox"  Grid.Row="4" Grid.Column="1" MaxLength="100" MinWidth="200" Text="8.8.8.8" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Bootstrap Port:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_BootstrapPort_NumericUpDown" Grid.Row="5" Grid.Column="1" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Max Number Of Servers To Connect:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_MaxServersToConnect_NumericUpDown" Grid.Row="6" Grid.Column="1" MinWidth="60" Minimum="1" Value="5" Maximum="10" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Allow Insecure:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Subscription_Settings_AllowInsecure_ToggleSwitch" Grid.Row="7" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="Subscription_Settings_Save_Button" Grid.Row="8" Grid.Column="1" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="Subscription_Settings_Save_Button_Click"/>
                                 </Grid>
-                            </MsmhToolsWpfClass:WpfFlyoutOverlay>
+                            </MsmhToolsWpfClass:WpfFlyoutPopup>
                         </StackPanel>
                         <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Subscription_Source" DockPanel.Dock="Top" Header="Subscription Source" FlyoutChanged="Flyout_Subscription_Source_FlyoutChanged">
                             <StackPanel x:Name="SubscriptionSourceStackPanel" Orientation="Vertical">
@@ -246,10 +256,10 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <MsmhToolsWpfClass:WpfFlyoutGroupBox Grid.Row="0" Header="DNS Servers" DisableFly="True">
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Subscription_DnsServers" Grid.Row="0" Header="DNS Servers" DisableFly="True">
                                 <DataGrid x:Name="DGS_Subscription" Grid.Row="0" AutoGenerateColumns="False" CanUserResizeColumns="True" SelectionMode="Extended" PreviewMouseRightButtonDown="DGS_Subscription_PreviewMouseRightButtonDown" SizeChanged="DGS_Subscription_SizeChanged" PreviewKeyDown="DGS_Subscription_PreviewKeyDown" SelectionChanged="DGS_Subscription_SelectionChanged"/>
                             </MsmhToolsWpfClass:WpfFlyoutGroupBox>
-                            <MsmhToolsWpfClass:WpfFlyoutGroupBox Grid.Row="1" Header="Scan Servers">
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Subscription_Scan" Grid.Row="1" Header="Scan Servers">
                                 <StackPanel Orientation="Vertical" Margin="5,0,5,5">
                                     <TextBlock x:Name="SubscriptionScanInfoTextBlock" Text="Click Scan To Start." Margin="0,0,0,2"/>
                                     <TextBlock x:Name="SubscriptionScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
@@ -269,9 +279,10 @@
                 <TabItem Header="AnonymizedDNSCrypt">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Margin="5,0,5,0" Orientation="Horizontal">
-                            <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="AnonDNSCrypt_Settings_WpfFlyoutOverlay" Margin="0,0,10,0" Header="Group Settings">
-                                <Grid Margin="10,2,10,2">
+                            <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="AnonDNSCrypt_Settings_WpfFlyoutPopup" Margin="0,0,10,0" Header="Group Settings">
+                                <Grid MsmhToolsWpfClass:MarginSetter.Margin="5">
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
@@ -285,23 +296,25 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,10,10" Text="A Domain To Lookup:"/>
-                                    <TextBox x:Name="AnonDNSCrypt_Settings_LookupDomain_TextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" MaxLength="100" MinWidth="200" Text="google.com" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,10,10" Text="Scan Timeout (Sec):"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="AnonDNSCrypt_Settings_TimeoutSec_NumericUpDown" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="0.5" Value="4" Maximum="10" Step="0.1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,10,10" Text="Scan Parallel Size:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="AnonDNSCrypt_Settings_ParallelSize_NumericUpDown" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="5" Maximum="20" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,10,10" Text="Bootstrap IP Address:"/>
-                                    <TextBox x:Name="AnonDNSCrypt_Settings_BootstrapIP_TextBox"  Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" MaxLength="100" MinWidth="200" Text="8.8.8.8" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,10,10" Text="Bootstrap Port:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="AnonDNSCrypt_Settings_BootstrapPort_NumericUpDown" Grid.Row="4" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,10,10" Text="Max Number Of Servers To Connect:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="AnonDNSCrypt_Settings_MaxServersToConnect_NumericUpDown" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="5" Maximum="10" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,10,10" Text="Allow Insecure:"/>
-                                    <CheckBox x:Name="AnonDNSCrypt_Settings_AllowInsecure_CheckBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10" IsChecked="False" HorizontalAlignment="Left"/>
-                                    <MsmhToolsWpfClass:WpfButton x:Name="AnonDNSCrypt_Settings_Save_Button" Grid.Row="7" Grid.Column="1" Margin="0" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="AnonDNSCrypt_Settings_Save_Button_Click"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Enable Group:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="AnonDNSCrypt_EnableGroup_ToggleSwitch" Grid.Row="0" Grid.Column="1"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="A Domain To Lookup:"/>
+                                    <TextBox x:Name="AnonDNSCrypt_Settings_LookupDomain_TextBox" Grid.Row="1" Grid.Column="1" MaxLength="100" MinWidth="200" Text="google.com" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Scan Timeout (Sec):"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="AnonDNSCrypt_Settings_TimeoutSec_NumericUpDown" Grid.Row="2" Grid.Column="1" MinWidth="60" Minimum="0.5" Value="4" Maximum="10" Step="0.1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Scan Parallel Size:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="AnonDNSCrypt_Settings_ParallelSize_NumericUpDown" Grid.Row="3" Grid.Column="1" MinWidth="60" Minimum="1" Value="5" Maximum="20" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Bootstrap IP Address:"/>
+                                    <TextBox x:Name="AnonDNSCrypt_Settings_BootstrapIP_TextBox"  Grid.Row="4" Grid.Column="1" MaxLength="100" MinWidth="200" Text="8.8.8.8" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Bootstrap Port:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="AnonDNSCrypt_Settings_BootstrapPort_NumericUpDown" Grid.Row="5" Grid.Column="1" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Max Number Of Servers To Connect:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="AnonDNSCrypt_Settings_MaxServersToConnect_NumericUpDown" Grid.Row="6" Grid.Column="1" MinWidth="60" Minimum="1" Value="5" Maximum="10" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Allow Insecure:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="AnonDNSCrypt_Settings_AllowInsecure_ToggleSwitch" Grid.Row="7" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="AnonDNSCrypt_Settings_Save_Button" Grid.Row="8" Grid.Column="1" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="AnonDNSCrypt_Settings_Save_Button_Click"/>
                                 </Grid>
-                            </MsmhToolsWpfClass:WpfFlyoutOverlay>
+                            </MsmhToolsWpfClass:WpfFlyoutPopup>
                         </StackPanel>
                         <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_AnonDNSCrypt_Source" DockPanel.Dock="Top" Header="Anonymized DNSCrypt Source" FlyoutChanged="Flyout_AnonDNSCrypt_Source_FlyoutChanged">
                             <Grid>
@@ -380,10 +393,10 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <MsmhToolsWpfClass:WpfFlyoutGroupBox Grid.Row="0" Header="DNS Servers" DisableFly="True">
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_AnonDNSCrypt_DnsServers" Grid.Row="0" Header="DNS Servers" DisableFly="True">
                                 <DataGrid x:Name="DGS_AnonDNSCrypt" Grid.Row="0" AutoGenerateColumns="False" CanUserResizeColumns="True" SelectionMode="Extended" PreviewMouseRightButtonDown="DGS_AnonDNSCrypt_PreviewMouseRightButtonDown" SizeChanged="DGS_AnonDNSCrypt_SizeChanged" PreviewKeyDown="DGS_AnonDNSCrypt_PreviewKeyDown" SelectionChanged="DGS_AnonDNSCrypt_SelectionChanged"/>
                             </MsmhToolsWpfClass:WpfFlyoutGroupBox>
-                            <MsmhToolsWpfClass:WpfFlyoutGroupBox Grid.Row="1" Header="Scan Servers">
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_AnonDNSCrypt_Scan" Grid.Row="1" Header="Scan Servers">
                                 <StackPanel Orientation="Vertical" Margin="5,0,5,5">
                                     <TextBlock x:Name="AnonDNSCryptScanInfoTextBlock" Text="Click Scan To Start." Margin="0,0,0,2"/>
                                     <TextBlock x:Name="AnonDNSCryptScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
@@ -403,9 +416,10 @@
                 <TabItem Header="FragmentDoH">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Margin="5,0,5,0" Orientation="Horizontal">
-                            <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="FragmentDoH_Settings_WpfFlyoutOverlay" Margin="0,0,10,0" Header="Group Settings">
-                                <Grid Margin="10,2,10,2">
+                            <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="FragmentDoH_Settings_WpfFlyoutPopup" Margin="0,0,10,0" Header="Group Settings">
+                                <Grid MsmhToolsWpfClass:MarginSetter.Margin="5">
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
@@ -419,23 +433,25 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,10,10" Text="A Domain To Lookup:"/>
-                                    <TextBox x:Name="FragmentDoH_Settings_LookupDomain_TextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" MaxLength="100" MinWidth="200" Text="google.com" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,10,10" Text="Scan Timeout (Sec):"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="FragmentDoH_Settings_TimeoutSec_NumericUpDown" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="0.5" Value="4" Maximum="10" Step="0.1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,10,10" Text="Scan Parallel Size:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="FragmentDoH_Settings_ParallelSize_NumericUpDown" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="5" Maximum="20" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="0" IsEnabled="False" Margin="0,0,10,10" Text="Bootstrap IP Address:"/>
-                                    <TextBox x:Name="FragmentDoH_Settings_BootstrapIP_TextBox"  Grid.Row="3" Grid.Column="1" IsEnabled="False" Margin="0,0,0,10" MaxLength="100" MinWidth="200" Text="8.8.8.8" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="0" IsEnabled="False" Margin="0,0,10,10" Text="Bootstrap Port:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="FragmentDoH_Settings_BootstrapPort_NumericUpDown" Grid.Row="4" Grid.Column="1" IsEnabled="False" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,10,10" Text="Max Number Of Servers To Connect:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="FragmentDoH_Settings_MaxServersToConnect_NumericUpDown" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="5" Maximum="10" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,10,10" Text="Allow Insecure:"/>
-                                    <CheckBox x:Name="FragmentDoH_Settings_AllowInsecure_CheckBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10" IsChecked="False" HorizontalAlignment="Left"/>
-                                    <MsmhToolsWpfClass:WpfButton x:Name="FragmentDoH_Settings_Save_Button" Grid.Row="7" Grid.Column="1" Margin="0" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="FragmentDoH_Settings_Save_Button_Click"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Enable Group:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="FragmentDoH_EnableGroup_ToggleSwitch" Grid.Row="0" Grid.Column="1"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="A Domain To Lookup:"/>
+                                    <TextBox x:Name="FragmentDoH_Settings_LookupDomain_TextBox" Grid.Row="1" Grid.Column="1" MaxLength="100" MinWidth="200" Text="google.com" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Scan Timeout (Sec):"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="FragmentDoH_Settings_TimeoutSec_NumericUpDown" Grid.Row="2" Grid.Column="1" MinWidth="60" Minimum="0.5" Value="4" Maximum="10" Step="0.1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Scan Parallel Size:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="FragmentDoH_Settings_ParallelSize_NumericUpDown" Grid.Row="3" Grid.Column="1" MinWidth="60" Minimum="1" Value="5" Maximum="20" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" IsEnabled="False" Text="Bootstrap IP Address:"/>
+                                    <TextBox x:Name="FragmentDoH_Settings_BootstrapIP_TextBox"  Grid.Row="4" Grid.Column="1" IsEnabled="False" MaxLength="100" MinWidth="200" Text="8.8.8.8" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" IsEnabled="False" Text="Bootstrap Port:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="FragmentDoH_Settings_BootstrapPort_NumericUpDown" Grid.Row="5" Grid.Column="1" IsEnabled="False" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Max Number Of Servers To Connect:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="FragmentDoH_Settings_MaxServersToConnect_NumericUpDown" Grid.Row="6" Grid.Column="1" MinWidth="60" Minimum="1" Value="5" Maximum="10" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Allow Insecure:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="FragmentDoH_Settings_AllowInsecure_ToggleSwitch" Grid.Row="7" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="FragmentDoH_Settings_Save_Button" Grid.Row="8" Grid.Column="1" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="FragmentDoH_Settings_Save_Button_Click"/>
                                 </Grid>
-                            </MsmhToolsWpfClass:WpfFlyoutOverlay>
+                            </MsmhToolsWpfClass:WpfFlyoutPopup>
                         </StackPanel>
                         <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_FragmentDoH_Source" DockPanel.Dock="Top" Header="Fragment DoH Source" FlyoutChanged="Flyout_FragmentDoH_Source_FlyoutChanged">
                             <StackPanel x:Name="FragmentDoHSourceStackPanel" Orientation="Vertical">
@@ -557,10 +573,10 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <MsmhToolsWpfClass:WpfFlyoutGroupBox Grid.Row="0" Header="DoH Servers" DisableFly="True">
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_FragmentDoH_DnsServers" Grid.Row="0" Header="DoH Servers" DisableFly="True">
                                 <DataGrid x:Name="DGS_FragmentDoH" Grid.Row="0" AutoGenerateColumns="False" CanUserResizeColumns="True" SelectionMode="Extended" PreviewMouseRightButtonDown="DGS_FragmentDoH_PreviewMouseRightButtonDown" SizeChanged="DGS_FragmentDoH_SizeChanged" PreviewKeyDown="DGS_FragmentDoH_PreviewKeyDown" SelectionChanged="DGS_FragmentDoH_SelectionChanged"/>
                             </MsmhToolsWpfClass:WpfFlyoutGroupBox>
-                            <MsmhToolsWpfClass:WpfFlyoutGroupBox Grid.Row="1" Header="Scan Servers">
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_FragmentDoH_Scan" Grid.Row="1" Header="Scan Servers">
                                 <StackPanel Orientation="Vertical" Margin="5,0,5,5">
                                     <TextBlock x:Name="FragmentDoHScanInfoTextBlock" Text="Click Scan To Start." Margin="0,0,0,2"/>
                                     <TextBlock x:Name="FragmentDoHScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
@@ -580,9 +596,10 @@
                 <TabItem Header="Custom">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Margin="5,0,5,0" Orientation="Horizontal">
-                            <MsmhToolsWpfClass:WpfFlyoutOverlay x:Name="Custom_Settings_WpfFlyoutOverlay" Margin="0,0,10,0" Header="Group Settings">
-                                <Grid Margin="10,2,10,2">
+                            <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="Custom_Settings_WpfFlyoutPopup" Margin="0,0,10,0" Header="Group Settings">
+                                <Grid MsmhToolsWpfClass:MarginSetter.Margin="5">
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
                                         <RowDefinition Height="*"/>
@@ -596,23 +613,25 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,10,10" Text="A Domain To Lookup:"/>
-                                    <TextBox x:Name="Custom_Settings_LookupDomain_TextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" MaxLength="100" MinWidth="200" Text="google.com" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,10,10" Text="Scan Timeout (Sec):"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_TimeoutSec_NumericUpDown" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="0.5" Value="4" Maximum="10" Step="0.1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,10,10" Text="Scan Parallel Size:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_ParallelSize_NumericUpDown" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="5" Maximum="20" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,10,10" Text="Bootstrap IP Address:"/>
-                                    <TextBox x:Name="Custom_Settings_BootstrapIP_TextBox"  Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" MaxLength="100" MinWidth="200" Text="8.8.8.8" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,10,10" Text="Bootstrap Port:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_BootstrapPort_NumericUpDown" Grid.Row="4" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,10,10" Text="Max Number Of Servers To Connect:"/>
-                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_MaxServersToConnect_NumericUpDown" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10" MinWidth="60" Minimum="1" Value="5" Maximum="10" Step="1" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,10,10" Text="Allow Insecure:"/>
-                                    <CheckBox x:Name="Custom_Settings_AllowInsecure_CheckBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10" IsChecked="False" HorizontalAlignment="Left"/>
-                                    <MsmhToolsWpfClass:WpfButton x:Name="Custom_Settings_Save_Button" Grid.Row="7" Grid.Column="1" Margin="0" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="Custom_Settings_Save_Button_Click"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Enable Group:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Custom_EnableGroup_ToggleSwitch" Grid.Row="0" Grid.Column="1"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="A Domain To Lookup:"/>
+                                    <TextBox x:Name="Custom_Settings_LookupDomain_TextBox" Grid.Row="1" Grid.Column="1" MaxLength="100" MinWidth="200" Text="google.com" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Scan Timeout (Sec):"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_TimeoutSec_NumericUpDown" Grid.Row="2" Grid.Column="1" MinWidth="60" Minimum="0.5" Value="4" Maximum="10" Step="0.1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Scan Parallel Size:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_ParallelSize_NumericUpDown" Grid.Row="3" Grid.Column="1" MinWidth="60" Minimum="1" Value="5" Maximum="20" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Bootstrap IP Address:"/>
+                                    <TextBox x:Name="Custom_Settings_BootstrapIP_TextBox"  Grid.Row="4" Grid.Column="1" MaxLength="100" MinWidth="200" Text="8.8.8.8" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Bootstrap Port:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_BootstrapPort_NumericUpDown" Grid.Row="5" Grid.Column="1" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Max Number Of Servers To Connect:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_MaxServersToConnect_NumericUpDown" Grid.Row="6" Grid.Column="1" MinWidth="60" Minimum="1" Value="5" Maximum="10" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Allow Insecure:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Custom_Settings_AllowInsecure_ToggleSwitch" Grid.Row="7" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="Custom_Settings_Save_Button" Grid.Row="8" Grid.Column="1" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="Custom_Settings_Save_Button_Click"/>
                                 </Grid>
-                            </MsmhToolsWpfClass:WpfFlyoutOverlay>
+                            </MsmhToolsWpfClass:WpfFlyoutPopup>
                         </StackPanel>
                         <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Custom_Source" DockPanel.Dock="Top" Header="Custom Source" FlyoutChanged="Flyout_Custom_Source_FlyoutChanged">
                             <StackPanel x:Name="CustomSourceStackPanel" Orientation="Vertical">
@@ -712,10 +731,10 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <MsmhToolsWpfClass:WpfFlyoutGroupBox Grid.Row="0" Header="DNS Servers" DisableFly="True">
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Custom_DnsServers" Grid.Row="0" Header="DNS Servers" DisableFly="True">
                                 <DataGrid x:Name="DGS_Custom" Grid.Row="0" AutoGenerateColumns="False" CanUserResizeColumns="True" SelectionMode="Extended" PreviewMouseRightButtonDown="DGS_Custom_PreviewMouseRightButtonDown" SizeChanged="DGS_Custom_SizeChanged" PreviewKeyDown="DGS_Custom_PreviewKeyDown" SelectionChanged="DGS_Custom_SelectionChanged"/>
                             </MsmhToolsWpfClass:WpfFlyoutGroupBox>
-                            <MsmhToolsWpfClass:WpfFlyoutGroupBox Grid.Row="1" Header="Scan Servers">
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Custom_Scan" Grid.Row="1" Header="Scan Servers">
                                 <StackPanel Orientation="Vertical" Margin="5,0,5,5">
                                     <TextBlock x:Name="CustomScanInfoTextBlock" Text="Click Scan To Start." Margin="0,0,0,2"/>
                                     <TextBlock x:Name="CustomScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>

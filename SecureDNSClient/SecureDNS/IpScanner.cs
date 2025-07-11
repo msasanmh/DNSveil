@@ -1,5 +1,4 @@
 ﻿using MsmhToolsClass;
-using MsmhToolsClass.MsmhAgnosticServer;
 using System.Diagnostics;
 using System.Net;
 
@@ -145,8 +144,8 @@ public class IpScanner
                                 string[] split = CheckWebsite.Split("://");
                                 urlScheme = $"{split[0].Trim().ToLower()}://";
                             }
-                            NetworkTool.GetUrlDetails(CheckWebsite, CheckPort, out _, out string host, out _, out _, out int _, out string _, out bool _);
-                            string url = $"{urlScheme}{host}:{CheckPort}";
+                            NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(CheckWebsite, CheckPort);
+                            string url = $"{urlScheme}{urid.Host}:{CheckPort}";
 
                             Stopwatch realDelay = new();
                             realDelay.Start();

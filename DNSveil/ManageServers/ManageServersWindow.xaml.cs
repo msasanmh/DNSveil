@@ -12,9 +12,9 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml.Linq;
-using static DNSveil.DnsServers.DnsServersManager;
-using static DNSveil.DnsServers.EnumsAndStructs;
-using GroupItem = DNSveil.DnsServers.EnumsAndStructs.GroupItem;
+using static DNSveil.Logic.DnsServers.DnsServersManager;
+using static DNSveil.Logic.DnsServers.EnumsAndStructs;
+using GroupItem = DNSveil.Logic.DnsServers.EnumsAndStructs.GroupItem;
 
 namespace DNSveil.ManageServers;
 
@@ -79,15 +79,13 @@ public partial class ManageServersWindow : WpfWindow
     {
         InitializeComponent();
 
-        Flyout_Subscription_Options.CloseFly = true;
-        Flyout_AnonDNSCrypt_Options.CloseFly = true;
-        Flyout_FragmentDoH_Options.CloseFly = true;
-        Flyout_Custom_Options.CloseFly = true;
-
         // Invariant Culture
         Info.SetCulture(CultureInfo.InvariantCulture);
 
-        
+        Flyout_Subscription_Options.IsOpen = false;
+        Flyout_AnonDNSCrypt_Options.IsOpen = false;
+        Flyout_FragmentDoH_Options.IsOpen = false;
+        Flyout_Custom_Options.IsOpen = false;
     }
 
     private static int GetPreviousOrNextIndex(DataGrid dg)
@@ -173,17 +171,10 @@ public partial class ManageServersWindow : WpfWindow
     {
         try
         {
-            //MessageBox.Show(this, "Loaded");
-
             // Hide ServersTabControl Header
             ServersTabControl.HideHeader();
 
             // Load Theme
-
-            //// Load XML
-            //bool isInitialized = await ServersManager.InitializeAsync(DNSveilServersXmlPath, this);
-            //Debug.WriteLine("XDocument Initialized: " + isInitialized);
-            //if (!isInitialized) return;
 
             await Task.Run(async () =>
             {
@@ -682,15 +673,51 @@ public partial class ManageServersWindow : WpfWindow
         ContextMenu_NewGroup.IsOpen = true;
     }
 
-    private void Import_FlyoutOverlay_FlyoutChanged(object sender, WpfFlyoutOverlay.FlyoutChangedEventArgs e)
+    private async void ResetBuiltInButton_Click(object sender, RoutedEventArgs e)
     {
         try
         {
+            if (IsScanning)
+            {
+                WpfToastDialog.Show(this, "Can't Do This While Scanning.", MessageBoxImage.Stop, 2);
+                return;
+            }
+
+            IsHitTestVisible = false;
+            bool imported = await MainWindow.ServersManager.Reset_BuiltIn_Groups_Async(true);
+            IsHitTestVisible = true;
+
+            if (imported)
+            {
+                await LoadGroupsAsync(0); // Refresh
+
+                string msg = "Built-In Groups Imported Successfully.";
+                WpfMessageBox.Show(this, msg, "Imported", MessageBoxButton.OK);
+            }
+            else
+            {
+                string msg = "Couldn't Import Built-In Groups!";
+                WpfMessageBox.Show(this, msg, "Something Went Wrong!", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ManageServersWindow ResetBuiltInButton_Click: " + ex.Message);
+            IsEnabled = true;
+        }
+    }
+
+    private async void Import_FlyoutOverlay_FlyoutChanged(object sender, WpfFlyoutPopup.FlyoutChangedEventArgs e)
+    {
+        try
+        {
+            if (Export_FlyoutOverlay.IsOpen) await Export_FlyoutOverlay.CloseFlyAsync();
+
             // Clear Import List
             if (e.IsFlyoutOpen)
             {
-                Import_ListBox.ItemsSource = null;
-                Import_ListBox.Tag = null;
+                Import_ListBox.ItemsSource = new List<GroupItem>();
+                Import_ListBox.Tag = new List<XElement>();
             }
         }
         catch (Exception ex)
@@ -719,7 +746,7 @@ public partial class ManageServersWindow : WpfWindow
             {
                 string filePath = ofd.FileName;
                 string xmlContent = await File.ReadAllTextAsync(filePath);
-                if (!XmlTool.IsValidXML(xmlContent))
+                if (!XmlTool.IsValid(xmlContent))
                 {
                     string msg = $"{Path.GetExtension(filePath).ToUpperInvariant()} File Is Not Valid!";
                     WpfMessageBox.Show(this, msg, "Not Valid", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -744,15 +771,15 @@ public partial class ManageServersWindow : WpfWindow
                 }
 
                 // Remove Groups Without Name Element Or Empty Name
-                List<XElement> groupList = new();
+                List<XElement> groupElementList = new();
                 foreach (XElement groupElement in groupElements)
                 {
                     GroupItem groupItem = Get_GroupItem(groupElement); // Get Name
-                    if (!string.IsNullOrWhiteSpace(groupItem.Name)) groupList.Add(groupElement);
+                    if (!string.IsNullOrWhiteSpace(groupItem.Name)) groupElementList.Add(groupElement);
                 }
 
                 importedXML = null;
-                if (groupList.Count == 0)
+                if (groupElementList.Count == 0)
                 {
                     string msg = $"There Is No Valid Groups!";
                     WpfMessageBox.Show(this, msg, "No Groups", MessageBoxButton.OK, MessageBoxImage.Stop);
@@ -762,14 +789,14 @@ public partial class ManageServersWindow : WpfWindow
 
                 // Get GroupItems To List
                 List<GroupItem> groupItems = new();
-                for (int n = 0; n < groupList.Count; n++)
+                for (int n = 0; n < groupElementList.Count; n++)
                 {
-                    XElement groupElement = groupList[n];
+                    XElement groupElement = groupElementList[n];
                     GroupItem groupItem = new();
                     XElement? nameElement = groupElement.Element(nameof(groupItem.Name));
                     if (nameElement != null)
                     {
-                        groupItem.Enabled = true;
+                        groupItem.Selected = true;
                         groupItem.Name = nameElement.Value;
                         groupItems.Add(groupItem);
                     }
@@ -779,7 +806,7 @@ public partial class ManageServersWindow : WpfWindow
                 await Import_FlyoutOverlay.OpenFlyAsync();
 
                 Import_ListBox.ItemsSource = groupItems;
-                Import_ListBox.Tag = groupList;
+                Import_ListBox.Tag = groupElementList;
                 ImportBrowseButton.IsEnabled = true;
             }
         }
@@ -803,7 +830,7 @@ public partial class ManageServersWindow : WpfWindow
                 GroupItem groupItem = groupItems[n];
                 if (groupItem.Name.Equals(cb.Content.ToString()))
                 {
-                    groupItem.Enabled = cb.IsChecked.Value;
+                    groupItem.Selected = cb.IsChecked.Value;
                     groupItems[n] = groupItem;
                     break;
                 }
@@ -822,32 +849,39 @@ public partial class ManageServersWindow : WpfWindow
         try
         {
             if (Import_ListBox.ItemsSource is not List<GroupItem> groupItems) return;
-            if (Import_ListBox.Tag is not List<XElement> groupList) return;
+            if (Import_ListBox.Tag is not List<XElement> groupElementList) return;
 
             ImportButton.IsEnabled = false;
+            
+            if (groupItems.Count == 0)
+            {
+                WpfToastDialog.Show(this, "Browse Your Backup File.", MessageBoxImage.Stop, 3);
+                ImportButton.IsEnabled = true;
+                return;
+            }
+
             List<string> groupNamesToImport = new();
             for (int n = 0; n < groupItems.Count; n++)
             {
                 GroupItem groupItem = groupItems[n];
-                if (groupItem.Enabled) groupNamesToImport.Add(groupItem.Name);
+                if (groupItem.Selected) groupNamesToImport.Add(groupItem.Name);
             }
 
             if (groupNamesToImport.Count == 0)
             {
                 WpfToastDialog.Show(this, "Select At Least One Group To Import.", MessageBoxImage.Stop, 3);
                 ImportButton.IsEnabled = true;
-                await Import_FlyoutOverlay.CloseFlyAsync();
                 return;
             }
-
+            
             string lastImportedGroupName = string.Empty;
-            for (int n = 0; n < groupList.Count; n++)
+            for (int n = 0; n < groupElementList.Count; n++)
             {
-                XElement groupElement = groupList[n];
+                XElement groupElement = groupElementList[n];
                 GroupItem groupItem = Get_GroupItem(groupElement); // Get Name
                 if (groupNamesToImport.IsContain(groupItem.Name))
                 {
-                    lastImportedGroupName = await MainWindow.ServersManager.Add_Group_Async(groupElement, false);
+                    lastImportedGroupName = await MainWindow.ServersManager.Add_Group_Async(groupElement, false, false);
                 }
             }
 
@@ -877,14 +911,24 @@ public partial class ManageServersWindow : WpfWindow
         }
     }
 
-    private void Export_FlyoutOverlay_FlyoutChanged(object sender, WpfFlyoutOverlay.FlyoutChangedEventArgs e)
+    private async void Export_FlyoutOverlay_FlyoutChanged(object sender, WpfFlyoutPopup.FlyoutChangedEventArgs e)
     {
         try
         {
-            List<GroupItem> groupItems = MainWindow.ServersManager.Get_GroupItems(false);
-            Export_ListBox.ItemsSource = groupItems;
-            Export_ListBox.Tag = groupItems;
-            Export_ListBox.SelectedIndex = -1;
+            if (Import_FlyoutOverlay.IsOpen) await Import_FlyoutOverlay.CloseFlyAsync();
+
+            if (e.IsFlyoutOpen)
+            {
+                List<GroupItem> groupItems = MainWindow.ServersManager.Get_GroupItems(false);
+                Export_ListBox.ItemsSource = groupItems;
+                Export_ListBox.Tag = groupItems;
+                Export_ListBox.SelectedIndex = -1;
+            }
+            else
+            {
+                Export_ListBox.ItemsSource = null;
+                Export_ListBox.Tag = null;
+            }
         }
         catch (Exception ex)
         {
@@ -906,7 +950,7 @@ public partial class ManageServersWindow : WpfWindow
                 GroupItem groupItem = groupItems[n];
                 if (groupItem.Name.Equals(cb.Content.ToString()))
                 {
-                    groupItem.Enabled = cb.IsChecked.Value;
+                    groupItem.Selected = cb.IsChecked.Value;
                     groupItems[n] = groupItem;
                     break;
                 }
@@ -930,7 +974,7 @@ public partial class ManageServersWindow : WpfWindow
             for (int n = 0; n < groupItems.Count; n++)
             {
                 GroupItem groupItem = groupItems[n];
-                if (groupItem.Enabled) groupNamesToExport.Add(groupItem.Name);
+                if (groupItem.Selected) groupNamesToExport.Add(groupItem.Name);
             }
 
             if (groupNamesToExport.Count == 0)
@@ -940,19 +984,12 @@ public partial class ManageServersWindow : WpfWindow
                 return;
             }
 
-            XDocument? xDoc_Export = CreateXDoc();
-            if (xDoc_Export.Root == null)
+            XDocument? xDoc_Export = MainWindow.ServersManager.Export_Groups(groupNamesToExport);
+            if (xDoc_Export == null || xDoc_Export.Root == null)
             {
                 WpfToastDialog.Show(this, "ERROR: Creating XDocument, Root Is NULL.", MessageBoxImage.Error, 3);
                 ExportButton.IsEnabled = true;
                 return;
-            }
-
-            for (int n = 0; n < groupNamesToExport.Count; n++)
-            {
-                string groupNameToexport = groupNamesToExport[n];
-                XElement? groupElement = MainWindow.ServersManager.Get_Group_Element(groupNameToexport);
-                if (groupElement != null) xDoc_Export.Root.Add(groupElement);
             }
 
             SaveFileDialog sfd = new()
@@ -970,6 +1007,8 @@ public partial class ManageServersWindow : WpfWindow
                 try
                 {
                     await xDoc_Export.SaveAsync(sfd.FileName);
+                    await Export_FlyoutOverlay.CloseFlyAsync();
+
                     string msg = "Selected Groups Exported Successfully.";
                     WpfMessageBox.Show(this, msg, "Exported", MessageBoxButton.OK);
                 }
@@ -1248,13 +1287,63 @@ public partial class ManageServersWindow : WpfWindow
         }
     }
 
-    private void DGG_PreviewKeyDown(object sender, KeyEventArgs e)
+    private async void DGG_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         try
         {
             if (sender is not DataGrid dg) return;
             e.Handled = true;
-            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control) // Is Ctrl Key Pressed
+            if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
+            {
+                // Delete All DNS Items
+                if (e.Key == Key.Delete) // + Del
+                {
+                    if (DGG.SelectedItem is GroupItem groupItem)
+                    {
+                        string msg = $"Deleting All DNS Items/Targets/Relays...{NL}Continue?";
+                        MessageBoxResult mbr = WpfMessageBox.Show(this, msg, "Delete All", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        if (mbr == MessageBoxResult.Yes)
+                        {
+                            if (groupItem.Mode == GroupMode.AnonymizedDNSCrypt)
+                            {
+                                await MainWindow.ServersManager.Clear_AnonDNSCrypt_RelayItems_Async(groupItem.Name, false);
+                                await MainWindow.ServersManager.Clear_AnonDNSCrypt_TargetItems_Async(groupItem.Name, false);
+                            }
+                            await MainWindow.ServersManager.Clear_DnsItems_Async(groupItem.Name, true);
+                            await LoadSelectedGroupAsync(true); // Refresh
+                        }
+                    }
+                }
+                // Set Group As Built-In
+                else if (e.Key == Key.B)
+                {
+                    if (DGG.SelectedItem is GroupItem groupItem)
+                    {
+                        string msg = $"Setting Group \"{groupItem.Name}\" As Built-In...{NL}Continue?";
+                        MessageBoxResult mbr = WpfMessageBox.Show(this, msg, "Set As Built-In", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        if (mbr == MessageBoxResult.Yes)
+                        {
+                            await MainWindow.ServersManager.Update_GroupItem_BuiltIn_Async(groupItem.Name, true, true);
+                            await LoadSelectedGroupAsync(true); // Refresh
+                        }
+                    }
+                }
+                // Set Group As User
+                else if (e.Key == Key.U)
+                {
+                    if (DGG.SelectedItem is GroupItem groupItem)
+                    {
+                        string msg = $"Setting Group \"{groupItem.Name}\" As User...{NL}Continue?";
+                        MessageBoxResult mbr = WpfMessageBox.Show(this, msg, "Set As User", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        if (mbr == MessageBoxResult.Yes)
+                        {
+                            await MainWindow.ServersManager.Update_GroupItem_BuiltIn_Async(groupItem.Name, false, true);
+                            await LoadSelectedGroupAsync(true); // Refresh
+                        }
+                    }
+                }
+            }
+            else if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control) // Is Ctrl Key Pressed
             {
                 if (Keyboard.IsKeyDown(Key.Up)) MenuItem_Group_MoveUp_Click(null, null);
                 else if (Keyboard.IsKeyDown(Key.Down)) MenuItem_Group_MoveDown_Click(null, null);
@@ -1365,12 +1454,18 @@ public partial class ManageServersWindow : WpfWindow
                 GroupSettings groupSettings = MainWindow.ServersManager.Get_GroupSettings(groupItem.Name);
                 this.DispatchIt(() =>
                 {
+                    Subscription_EnableGroup_ToggleSwitch.IsChecked = groupSettings.Enabled;
                     Subscription_Settings_LookupDomain_TextBox.Text = groupSettings.LookupDomain;
                     Subscription_Settings_TimeoutSec_NumericUpDown.Value = groupSettings.TimeoutSec;
                     Subscription_Settings_ParallelSize_NumericUpDown.Value = groupSettings.ParallelSize;
                     Subscription_Settings_BootstrapIP_TextBox.Text = groupSettings.BootstrapIP.ToString();
                     Subscription_Settings_BootstrapPort_NumericUpDown.Value = groupSettings.BootstrapPort;
-                    Subscription_Settings_AllowInsecure_CheckBox.IsChecked = groupSettings.AllowInsecure;
+                    Subscription_Settings_AllowInsecure_ToggleSwitch.IsChecked = groupSettings.AllowInsecure;
+
+                    Flyout_Subscription_Source.IsEnabled = groupSettings.Enabled;
+                    Flyout_Subscription_Options.IsEnabled = groupSettings.Enabled;
+                    Flyout_Subscription_DnsServers.IsEnabled = groupSettings.Enabled;
+                    Flyout_Subscription_Scan.IsEnabled = groupSettings.Enabled;
                 });
 
                 // Get URLs
@@ -1426,12 +1521,18 @@ public partial class ManageServersWindow : WpfWindow
                 GroupSettings groupSettings = MainWindow.ServersManager.Get_GroupSettings(groupItem.Name);
                 this.DispatchIt(() =>
                 {
+                    AnonDNSCrypt_EnableGroup_ToggleSwitch.IsChecked = groupSettings.Enabled;
                     AnonDNSCrypt_Settings_LookupDomain_TextBox.Text = groupSettings.LookupDomain;
                     AnonDNSCrypt_Settings_TimeoutSec_NumericUpDown.Value = groupSettings.TimeoutSec;
                     AnonDNSCrypt_Settings_ParallelSize_NumericUpDown.Value = groupSettings.ParallelSize;
                     AnonDNSCrypt_Settings_BootstrapIP_TextBox.Text = groupSettings.BootstrapIP.ToString();
                     AnonDNSCrypt_Settings_BootstrapPort_NumericUpDown.Value = groupSettings.BootstrapPort;
-                    AnonDNSCrypt_Settings_AllowInsecure_CheckBox.IsChecked = groupSettings.AllowInsecure;
+                    AnonDNSCrypt_Settings_AllowInsecure_ToggleSwitch.IsChecked = groupSettings.AllowInsecure;
+
+                    Flyout_AnonDNSCrypt_Source.IsEnabled = groupSettings.Enabled;
+                    Flyout_AnonDNSCrypt_Options.IsEnabled = groupSettings.Enabled;
+                    Flyout_AnonDNSCrypt_DnsServers.IsEnabled = groupSettings.Enabled;
+                    Flyout_AnonDNSCrypt_Scan.IsEnabled = groupSettings.Enabled;
                 });
 
                 // Get Relays Source
@@ -1487,12 +1588,18 @@ public partial class ManageServersWindow : WpfWindow
                 GroupSettings groupSettings = MainWindow.ServersManager.Get_GroupSettings(groupItem.Name);
                 this.DispatchIt(() =>
                 {
+                    FragmentDoH_EnableGroup_ToggleSwitch.IsChecked = groupSettings.Enabled;
                     FragmentDoH_Settings_LookupDomain_TextBox.Text = groupSettings.LookupDomain;
                     FragmentDoH_Settings_TimeoutSec_NumericUpDown.Value = groupSettings.TimeoutSec;
                     FragmentDoH_Settings_ParallelSize_NumericUpDown.Value = groupSettings.ParallelSize;
                     FragmentDoH_Settings_BootstrapIP_TextBox.Text = groupSettings.BootstrapIP.ToString();
                     FragmentDoH_Settings_BootstrapPort_NumericUpDown.Value = groupSettings.BootstrapPort;
-                    FragmentDoH_Settings_AllowInsecure_CheckBox.IsChecked = groupSettings.AllowInsecure;
+                    FragmentDoH_Settings_AllowInsecure_ToggleSwitch.IsChecked = groupSettings.AllowInsecure;
+
+                    Flyout_FragmentDoH_Source.IsEnabled = groupSettings.Enabled;
+                    Flyout_FragmentDoH_Options.IsEnabled = groupSettings.Enabled;
+                    Flyout_FragmentDoH_DnsServers.IsEnabled = groupSettings.Enabled;
+                    Flyout_FragmentDoH_Scan.IsEnabled = groupSettings.Enabled;
                 });
 
                 // Get Source Enable
@@ -1556,12 +1663,18 @@ public partial class ManageServersWindow : WpfWindow
                 GroupSettings groupSettings = MainWindow.ServersManager.Get_GroupSettings(groupItem.Name);
                 this.DispatchIt(() =>
                 {
+                    Custom_EnableGroup_ToggleSwitch.IsChecked = groupSettings.Enabled;
                     Custom_Settings_LookupDomain_TextBox.Text = groupSettings.LookupDomain;
                     Custom_Settings_TimeoutSec_NumericUpDown.Value = groupSettings.TimeoutSec;
                     Custom_Settings_ParallelSize_NumericUpDown.Value = groupSettings.ParallelSize;
                     Custom_Settings_BootstrapIP_TextBox.Text = groupSettings.BootstrapIP.ToString();
                     Custom_Settings_BootstrapPort_NumericUpDown.Value = groupSettings.BootstrapPort;
-                    Custom_Settings_AllowInsecure_CheckBox.IsChecked = groupSettings.AllowInsecure;
+                    Custom_Settings_AllowInsecure_ToggleSwitch.IsChecked = groupSettings.AllowInsecure;
+
+                    Flyout_Custom_Source.IsEnabled = groupSettings.Enabled;
+                    Flyout_Custom_Options.IsEnabled = groupSettings.Enabled;
+                    Flyout_Custom_DnsServers.IsEnabled = groupSettings.Enabled;
+                    Flyout_Custom_Scan.IsEnabled = groupSettings.Enabled;
                 });
 
                 // Get URLs
@@ -1671,7 +1784,7 @@ public partial class ManageServersWindow : WpfWindow
             Binding = new Binding(nameof(di.DNS_URL)),
             IsReadOnly = true,
             CanUserResize = true,
-            FontWeight = FontWeights.Normal
+            FontWeight = FontWeights.UltraLight
         };
         dg.Columns.Add(c_DNS);
 
@@ -1782,7 +1895,7 @@ public partial class ManageServersWindow : WpfWindow
             Binding = new Binding(nameof(fi.DNS_URL)),
             IsReadOnly = true,
             CanUserResize = true,
-            FontWeight = FontWeights.Normal
+            FontWeight = FontWeights.UltraLight
         };
         dg.Columns.Add(c_DoH_URL);
 
@@ -1792,7 +1905,7 @@ public partial class ManageServersWindow : WpfWindow
             Binding = new Binding(nameof(fi.DNS_IP)),
             IsReadOnly = true,
             CanUserResize = true,
-            FontWeight = FontWeights.Normal
+            FontWeight = FontWeights.UltraLight
         };
         dg.Columns.Add(c_DoH_IP);
 
@@ -2158,7 +2271,7 @@ public partial class ManageServersWindow : WpfWindow
                 e.Cancel = true;
                 IsClosing = true;
 
-                // Start Custom Dispose
+                // === Start Custom Dispose/Actions
                 if (MainWindow.ServersManager.IsScanning)
                 {
                     MainWindow.ServersManager.ScanServers(new GroupItem(), null);
@@ -2174,7 +2287,9 @@ public partial class ManageServersWindow : WpfWindow
                         }
                     });
                 }
-                // End Custom Dispose
+                // Save
+                await MainWindow.ServersManager.SaveAsync();
+                // === End Custom Dispose/Actions
 
                 GC.Collect();
                 await Task.Delay(10);
@@ -2192,4 +2307,5 @@ public partial class ManageServersWindow : WpfWindow
         }
         catch (Exception) { }
     }
+
 }

@@ -70,7 +70,7 @@ public class DnsReader
                     Scheme = "stamp://";
                     Host = stampReader.Host;
                     if (!string.IsNullOrEmpty(Host))
-                        IsHostIP = IPAddress.TryParse(Host, out _);
+                        IsHostIP = NetworkTool.IsIP(Host, out _);
                     IP = stampReader.IP;
                     Port = stampReader.Port;
                     Path = stampReader.Path;
@@ -161,12 +161,12 @@ public class DnsReader
                 }
                 else
                 {
-                    NetworkTool.GetUrlDetails(Dns, 53, out _, out string ipStr, out _, out _, out int port, out _, out _);
+                    NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(Dns, 53);
 
-                    if (NetworkTool.IsIP(ipStr, out _))
+                    if (NetworkTool.IsIP(urid.Host, out _))
                     {
                         // Plain DNS UDP
-                        Dns = $"udp://{ipStr}:{port}";
+                        Dns = $"udp://{urid.Host}:{urid.Port}";
                         DnsWithRelay = Dns;
                         SetIpPortHostPath(Dns, 53);
 
@@ -191,18 +191,19 @@ public class DnsReader
     {
         try
         {
-            NetworkTool.GetUrlDetails(dns, defaultPort, out string scheme, out string host, out _, out _, out int port, out string path, out bool isIPv6);
-            Scheme = scheme.ToLower();
-            Host = host;
-            IsHostIP = IPAddress.TryParse(Host, out _);
-            Port = port;
-            Path = path;
+            NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dns, defaultPort);
+            Scheme = urid.Scheme.ToLower();
+            Host = urid.Host;
+            IsHostIP = NetworkTool.IsIP(Host, out _);
+            Port = urid.Port;
+            Path = urid.Path;
+            if (!string.IsNullOrEmpty(Path) && !Path.StartsWith('/')) Path = $"/{Path}";
 
             if (!string.IsNullOrEmpty(CompanyNameDataFileContent))
             {
                 string? ipOrHost = Host;
                 if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = IP.ToString();
-                if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = host;
+                if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = urid.Host;
                 CompanyName = GetCompanyName.HostToCompanyOffline(ipOrHost, CompanyNameDataFileContent);
             }
         }
@@ -250,17 +251,17 @@ public class DnsReader
         }
         else
         {
-            NetworkTool.GetUrlDetails(relay, 0, out _, out string ipStr, out _, out _, out int port, out _, out _);
-            if (port != 0)
+            NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(relay, 0);
+            if (urid.Port != 0)
             {
-                bool isIp = IPAddress.TryParse(ipStr, out IPAddress? ip);
+                bool isIp = NetworkTool.IsIP(urid.Host, out IPAddress? ip);
                 if (isIp && ip != null)
                 {
                     Protocol = DnsEnums.DnsProtocol.AnonymizedDNSCrypt;
                     ProtocolName = DnsEnums.DnsProtocolName.AnonymizedDNSCrypt;
 
                     DNSCryptRelayIP = ip;
-                    DNSCryptRelayPort = port;
+                    DNSCryptRelayPort = urid.Port;
                 }
             }
         }

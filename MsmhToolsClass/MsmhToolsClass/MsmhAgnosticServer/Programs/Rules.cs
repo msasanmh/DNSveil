@@ -376,6 +376,9 @@ public partial class AgnosticProgram
 
             try
             {
+                if (address.StartsWith('/')) address = address.TrimStart('/');
+                if (address.EndsWith('/')) address = address.TrimEnd('/');
+
                 if (address.Contains('/'))
                 {
                     addressType = AddressType.CIDR;

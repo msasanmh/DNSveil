@@ -138,7 +138,10 @@ internal class ProxyTunnel
             if (!KillOnTimeout.IsRunning) KillOnTimeout.Start();
 
             if (Req.ProxyName == Proxy.Name.HTTP)
+            {
                 await HttpHandler().ConfigureAwait(false);
+                return;
+            }
             
             if (Req.ProxyName == Proxy.Name.Socks5 && Req.Status != Socks.Status.Granted)
             {
@@ -170,15 +173,15 @@ internal class ProxyTunnel
                     {
                         upStreamProxyApplied = true;
                         RemoteClient.Socket_ = ProxifiedTcpClient_.Client;
-                        ConnectHandler();
                     }
                 }
 
                 if (!upStreamProxyApplied)
                 {
                     await RemoteClient.Socket_.ConnectAsync(Req.Address, Req.Port).ConfigureAwait(false);
-                    ConnectHandler();
                 }
+
+                ConnectHandler();
             }
 
             // Bind

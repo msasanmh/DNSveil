@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace MsmhToolsClass;
 
@@ -26,13 +27,15 @@ public static class ByteArrayTool
         byte[] bytes = new byte[length];
         try
         {
-            Random random = new(length);
-            random.NextBytes(bytes);
+            RandomNumberGenerator.Fill(bytes);
+            // OR
+            //Random random = new(length);
+            //random.NextBytes(bytes);
             // OR: LibSodium.randombytes_buf(bytes, length);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("GenerateRandom2: " + ex.Message);
+            Debug.WriteLine("GenerateRandom: " + ex.Message);
         }
         return bytes;
     }

@@ -368,9 +368,10 @@ public partial class FormMain
                         this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($" ms{NL}"));
                     }
                     
-                    string reducted = "Reducted";
-                    string dns = dnsInfo.CheckMode == CheckMode.BuiltIn || dnsInfo.CheckMode == CheckMode.SavedServers ? reducted : dnsInfo.DNS;
-                    string msgDnsAddress = dns.Equals(reducted) ? "DNS Address: " : $"DNS Address:{NL}";
+                    string redacted = "Redacted";
+                    //string dns = dnsInfo.CheckMode == CheckMode.BuiltIn || dnsInfo.CheckMode == CheckMode.SavedServers ? redacted : dnsInfo.DNS;
+                    string dns = dnsInfo.DNS;
+                    string msgDnsAddress = dns.Equals(redacted) ? "DNS Address: " : $"DNS Address:{NL}";
                     this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText(msgDnsAddress));
                     this.InvokeIt(() => CustomRichTextBoxConnectStatus.AppendText($"{dns}{NL}{NL}", Color.DarkGray));
                 }

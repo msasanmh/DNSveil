@@ -1469,7 +1469,7 @@ public static partial class Program
                                 sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
                                 sf.AgnosticServer.OnRequestReceived += ProxyServer_OnRequestReceived;
 
-                                if (sf.SettingsSSL != null) await sf.AgnosticServer.EnableSSL(sf.SettingsSSL);
+                                if (sf.SettingsSSL != null) await sf.AgnosticServer.EnableSSLAsync(sf.SettingsSSL);
                                 if (sf.Fragment != null) sf.AgnosticServer.EnableFragment(sf.Fragment);
                                 if (sf.Rules != null) sf.AgnosticServer.EnableRules(sf.Rules);
                                 if (sf.DnsLimit != null) sf.AgnosticServer.EnableDnsLimit(sf.DnsLimit);

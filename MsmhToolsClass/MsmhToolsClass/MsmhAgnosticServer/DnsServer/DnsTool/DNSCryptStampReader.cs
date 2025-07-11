@@ -75,7 +75,7 @@ public class DNSCryptStampReader
                 stamp = stamp[7..];
 
                 // Get Stamp Binary
-                byte[] stampBinary = EncodingTool.UrlDecode(stamp);
+                byte[] stampBinary = EncodingTool.Base64UrlDecode(stamp);
 
                 // Get ListenerProtocol
                 if (stampBinary.Length > 0)
@@ -112,6 +112,7 @@ public class DNSCryptStampReader
 
                 Port = port;
                 Host = host;
+                if (!string.IsNullOrEmpty(path) && !path.StartsWith('/')) path = $"/{path}";
                 Path = path;
                 PublicKey = publicKey;
                 ProviderName = providerName;
@@ -388,7 +389,9 @@ public class DNSCryptStampReader
                 Buffer.BlockCopy(stampBinary, position, bHostPort, 0, hostPortLength);
 
             string hostPort = Encoding.UTF8.GetString(bHostPort);
-            NetworkTool.GetHostDetails(hostPort, defaultPort, out host, out _, out _, out port, out _, out bool _);
+            NetworkTool.URL hostDetails = NetworkTool.GetUrlOrDomainDetails(hostPort, defaultPort);
+            host = hostDetails.Host;
+            port = hostDetails.Port;
             position += hostPortLength; // Skip Host:Port
 
             return position;

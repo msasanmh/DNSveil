@@ -78,6 +78,29 @@ public static class Extensions_Collections
     }
 
     /// <summary>
+    /// To Dictionary
+    /// </summary>
+    public static Dictionary<string, string> ToDictionary(this NameValueCollection nvc)
+    {
+        Dictionary<string, string> result = new();
+
+        try
+        {
+            for (int n = 0; n < nvc.Count; n++)
+            {
+                string? key = nvc.GetKey(n);
+                string? val = nvc.Get(n);
+                if (string.IsNullOrEmpty(key)) continue;
+                if (string.IsNullOrEmpty(val)) continue;
+                result.TryAdd(key, val);
+            }
+        }
+        catch (Exception) { }
+
+        return result;
+    }
+
+    /// <summary>
     /// If Key Exist Adds The Value (Comma-Separated)
     /// </summary>
     public static void AddAndUpdate(this NameValueCollection nvc, string? key, string? value)
@@ -120,6 +143,63 @@ public static class Extensions_Collections
         catch (Exception) { }
 
         return result;
+    }
+
+    public static int CountDuplicates<T>(this List<T> list)
+    {
+        try
+        {
+            HashSet<T> hashset = new();
+            int count = 0;
+            for (int n = 0; n < list.Count; n++)
+            {
+                T item = list[n];
+                if (!hashset.Add(item)) count++;
+            }
+            return count;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections CountDuplicates<T>: " + ex.Message);
+            return 0;
+        }
+    }
+
+    public static int CountDuplicates<T>(this List<T> list, out Dictionary<T, int> report) where T : notnull
+    {
+        report = new();
+
+        try
+        {
+            int totalCount = 0;
+            Dictionary<T, int> duplicates = new();
+            for (int n = 0; n < list.Count; n++)
+            {
+                T item = list[n];
+                if (duplicates.ContainsKey(item))
+                {
+                    duplicates[item]++;
+                    totalCount++;
+                }
+                else
+                {
+                    duplicates.TryAdd(item, 1);
+                }
+            }
+
+            // Remove Items Where Count Is 1
+            foreach (KeyValuePair<T, int> kvp in duplicates)
+            {
+                if (kvp.Value > 1) report.TryAdd(kvp.Key, kvp.Value);
+            }
+            
+            return totalCount;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections CountDuplicates<T>(out _): " + ex.Message);
+            return 0;
+        }
     }
 
     public static string ToString<T>(this List<T> list, char separator)
@@ -211,20 +291,16 @@ public static class Extensions_Collections
 
     public static List<string> SplitToLines(this string s)
     {
-        List<string> lines = new();
-
         try
         {
-            s = s.ReplaceLineEndings();
-            string[] split = s.Split(Environment.NewLine);
-            if (split.Length > 0) lines = split.ToList();
+            return s.ReplaceLineEndings().Split(Environment.NewLine).ToList();
         }
         catch (Exception ex)
         {
             Debug.WriteLine("Extensions_Collections SplitToLines: " + ex.Message);
         }
 
-        return lines;
+        return new List<string>();
     }
 
     public static int GetIndex<T>(this List<T> list, T value)

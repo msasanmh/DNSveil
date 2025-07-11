@@ -123,7 +123,7 @@ public partial class FormMain : Form
         await MoveToNewLocationAsync();
 
         // Initialize and Load Settings
-        if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidXMLFile(SecureDNS.SettingsXmlPath))
+        if (File.Exists(SecureDNS.SettingsXmlPath) && XmlTool.IsValidFile(SecureDNS.SettingsXmlPath))
         {
             await DefaultSettingsAsync();
             AppSettings = new(this, SecureDNS.SettingsXmlPath);
@@ -143,6 +143,9 @@ public partial class FormMain : Form
         // Convert Old Proxy ProxyRules To New
         await OldProxyRulesToNewAsync();
         await MergeOldDnsAndProxyRulesAsync();
+
+        // Add Default Malicious Servers
+        await AddDefaultMaliciousServers_Async();
 
         // Initialize Status
         InitializeStatus(CustomDataGridViewStatus);
@@ -729,4 +732,5 @@ public partial class FormMain : Form
         OpenLinks.OpenUrl("https://github.com/nonbarbari");
     }
 
+    
 }

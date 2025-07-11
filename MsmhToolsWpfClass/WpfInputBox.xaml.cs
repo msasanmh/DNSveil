@@ -100,8 +100,8 @@ public partial class WpfInputBox : Window
 
     public override void OnApplyTemplate()
     {
-        this.ClipTo(5, 5, this);
         base.OnApplyTemplate();
+        this.ClipTo(5, 5, this);
     }
 
     private void MainWindow_MouseDown(object sender, MouseButtonEventArgs e)

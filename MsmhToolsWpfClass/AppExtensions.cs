@@ -9,7 +9,6 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using MsmhToolsClass;
 using Brush = System.Windows.Media.Brush;
@@ -242,8 +241,44 @@ public static class AppExtensions
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("AppExtensions GetParent: " + ex.Message);
+            Debug.WriteLine("AppExtensions GetParentOfType: " + ex.Message);
             return default;
+        }
+    }
+
+    public static T? GetChildOfType<T>(this DependencyObject? depObj) where T : DependencyObject
+    {
+        try
+        {
+            if (depObj != null)
+            {
+                for (int n = 0; n < VisualTreeHelper.GetChildrenCount(depObj); n++)
+                {
+                    DependencyObject child = VisualTreeHelper.GetChild(depObj, n);
+                    if (child is not null and T tChild) return tChild;
+                    T? childOfChild = GetChildOfType<T>(child);
+                    if (childOfChild != null) return childOfChild;
+                }
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions GetChildOfType: " + ex.Message);
+            return null;
+        }
+    }
+
+    public static IEnumerable<T> GetChildrenOfType<T>(this DependencyObject? depObj) where T : DependencyObject
+    {
+        if (depObj != null)
+        {
+            for (int n = 0; n < VisualTreeHelper.GetChildrenCount(depObj); n++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(depObj, n);
+                if (child is not null and T tChild) yield return tChild;
+                foreach (T childOfChild in GetChildrenOfType<T>(child)) yield return childOfChild;
+            }
         }
     }
 
@@ -645,36 +680,6 @@ public static class AppExtensions
         catch (Exception ex)
         {
             Debug.WriteLine("AppExtensions SetMaxLines: " + ex.Message);
-        }
-    }
-
-    // Animations
-    public static async Task RotateAsync(this FrameworkElement element, double fromDegree, double toDegree, int durationMS)
-    {
-        DoubleAnimation? animPath;
-        Storyboard? storyboard;
-        try
-        {
-            animPath = new(fromDegree, toDegree, new Duration(TimeSpan.FromMilliseconds(durationMS)));
-            element.RenderTransform = new RotateTransform();
-            element.RenderTransformOrigin = new Point(0.5, 0.5);
-            storyboard = new();
-            storyboard.Children.Add(animPath);
-            Storyboard.SetTarget(animPath, element);
-            Storyboard.SetTargetProperty(animPath, new PropertyPath("RenderTransform.Angle"));
-            storyboard.Begin();
-            await Task.Delay(durationMS);
-            storyboard.Children.Clear();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("AppExtensions RotateAsync: " + ex.Message);
-        }
-        finally
-        {
-            animPath = null;
-            storyboard = null;
-            GC.Collect();
         }
     }
 

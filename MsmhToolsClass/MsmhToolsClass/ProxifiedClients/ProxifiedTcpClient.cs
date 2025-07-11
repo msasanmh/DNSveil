@@ -20,7 +20,9 @@ public class ProxifiedTcpClient
     {
         if (!string.IsNullOrEmpty(ProxyScheme))
         {
-            NetworkTool.GetUrlDetails(ProxyScheme, 443, out _, out string proxyHost, out _, out _, out int proxyPort, out _, out _);
+            NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(ProxyScheme, 443);
+            string proxyHost = urid.Host;
+            int proxyPort = urid.Port;
 
             try
             {

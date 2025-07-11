@@ -17,7 +17,7 @@ internal class TunnelManager
     {
         try
         {
-            Tunnels.GetOrAdd(pt.ConnectionId, id => new Lazy<ProxyTunnel>(pt));
+            Tunnels.TryAdd(pt.ConnectionId, new Lazy<ProxyTunnel>(() => pt, LazyThreadSafetyMode.ExecutionAndPublication));
         }
         catch (Exception ex)
         {
@@ -30,14 +30,12 @@ internal class TunnelManager
         try
         {
             int connectionId = pt.ConnectionId;
-            if (Tunnels.ContainsKey(connectionId))
+            bool keyExist = Tunnels.TryGetValue(connectionId, out Lazy<ProxyTunnel>? lpt);
+            if (keyExist && lpt != null)
             {
-                ProxyTunnel curr = Tunnels[connectionId].Value;
-                if (curr != null)
-                {
-                    curr.Disconnect();
-                    Tunnels.TryRemove(connectionId, out Lazy<ProxyTunnel>? _);
-                }
+                ProxyTunnel curr = lpt.Value;
+                curr.Disconnect();
+                Tunnels.TryRemove(connectionId, out _);
             }
         }
         catch (Exception ex)
@@ -50,6 +48,24 @@ internal class TunnelManager
     {
         Dictionary<int, Lazy<ProxyTunnel>> tempDic = new(Tunnels);
         return tempDic;
+    }
+
+    internal void KillAllRequests()
+    {
+        try
+        {
+            var dic = GetTunnels();
+            Debug.WriteLine(dic.Count);
+            foreach (var item in dic)
+            {
+                Debug.WriteLine(item.Key);
+                Remove(item.Value.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("TunnelManager KillAllRequests: " + ex.Message);
+        }
     }
 
     public int Count

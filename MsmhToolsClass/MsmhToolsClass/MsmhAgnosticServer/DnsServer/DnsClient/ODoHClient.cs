@@ -49,9 +49,7 @@ public class ODoHClient
                     if (relayReader.IsDnsCryptStamp) relayServerIP = relayReader.IP.ToString();
                     else
                     {
-                        relayServerIP = await Bootstrap.GetDnsIpAsync(relayReader.Host, BootstrapIP, BootstrapPort, 3, false, ProxyScheme, ProxyUser, ProxyPass);
-                        if (relayServerIP.Equals(relayReader.Host))
-                            relayServerIP = await Bootstrap.GetDnsIpAsync(relayReader.Host, BootstrapIP, BootstrapPort, 3, true, ProxyScheme, ProxyUser, ProxyPass);
+                        relayServerIP = await Bootstrap.GetDnsIpAsync(relayReader.Host, BootstrapIP, BootstrapPort, 3, ProxyScheme, ProxyUser, ProxyPass);
                     }
 
                     string scheme = relayReader.Scheme;

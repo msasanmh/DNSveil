@@ -81,8 +81,8 @@ public partial class MsmhAgnosticServer
             if (Cancel) return null;
             if (req == null) return null;
             if (string.IsNullOrEmpty(req.Address)) return null;
-            if (req.Address.Equals("0.0.0.0")) return null;
-            if (req.Address.StartsWith("10.")) return null;
+            if (req.Address.Equals(IPAddress.Any.ToString())) return null;
+            if (req.Address.Equals(IPAddress.IPv6Any.ToStringNoScopeId())) return null;
 
             // Apply Settings To Request
             req.ClientIP = clientIP;
@@ -159,30 +159,26 @@ public partial class MsmhAgnosticServer
             {
                 string dnsServer = Settings_.ServerUdpDnsAddress;
 
-                IPAddress ipv4Addr = IPAddress.None;
-                if (Settings_.IsIPv4SupportedByISP)
+                IPAddress ipAddr = IPAddress.None;
+                ipAddr = await GetIP.GetIpFromDnsAddressAsync(req.Address, dnsServer, false, Settings_); // IPv4
+                if (ipAddr.Equals(IPAddress.None) || ipAddr.Equals(IPAddress.IPv6None))
                 {
-                    ipv4Addr = await GetIP.GetIpFromDnsAddressAsync(req.Address, dnsServer, false, Settings_);
+                    ipAddr = await GetIP.GetIpFromDnsAddressAsync(req.Address, dnsServer, true, Settings_); // IPv6
                 }
 
-                if (ipv4Addr.Equals(IPAddress.None))
+                if (!ipAddr.Equals(IPAddress.None) && !ipAddr.Equals(IPAddress.IPv6None))
                 {
-                    if (Settings_.IsIPv6SupportedByISP)
-                    {
-                        IPAddress ipv6Addr = await GetIP.GetIpFromDnsAddressAsync(req.Address, dnsServer, true, Settings_);
-
-                        if (!ipv6Addr.Equals(IPAddress.IPv6None))
-                            req.Address = ipv6Addr.ToString();
-                    }
-                }
-                else
-                {
-                    req.Address = ipv4Addr.ToString();
+                    req.Address = ipAddr.ToString();
                 }
             }
 
             // Check If Address Is An IP (After DNS Applied)
             isIp = NetworkTool.IsIP(req.Address, out IPAddress? ip);
+            bool isIpv6 = false;
+            if (isIp && ip != null)
+            {
+                isIpv6 = NetworkTool.IsIPv6(ip);
+            }
 
             //// Rules Program: IP
             if (!rr.IsMatch && isIp && !req.AddressIsIp)
@@ -235,82 +231,68 @@ public partial class MsmhAgnosticServer
                     msgReqEvent += $"{req.AddressOrig}:{req.Port} => {req.Address}";
             }
 
-            // Add Orig Values To Cache
-            ProxyRequestsCache.ProxyRequestsCacheResult prcr = new();
-            prcr.OrigValues.ApplyChangeSNI = req.ApplyChangeSNI;
-            prcr.OrigValues.ApplyFragment = req.ApplyFragment;
-            prcr.OrigValues.IsDestBlocked = req.IsDestBlocked;
-
-            // Cache Requests
-            string checkRequest = $"{req.ClientIP}_{req.ProxyName}_{req.AddressOrig}_{req.Port}";
-            var cachedReq = ProxyRequestsCaches.Get(checkRequest, req);
-
-            // Check If IP Is Blocked
-            HttpStatusCode hsc = HttpStatusCode.RequestTimeout;
-            bool isIpv6 = false;
-            if (isIp && ip != null)
+            if (req.ProxyName != Proxy.Name.Test)
             {
-                isIpv6 = NetworkTool.IsIPv6(ip);
-                if ((!isIpv6 && Settings_.IsIPv4SupportedByISP) || (isIpv6 && Settings_.IsIPv6SupportedByISP))
+                // Add Orig Values To Cache
+                ProxyRequestsCache.ProxyRequestsCacheResult prcr = new();
+                prcr.OrigValues.ApplyChangeSNI = req.ApplyChangeSNI;
+                prcr.OrigValues.ApplyFragment = req.ApplyFragment;
+                prcr.OrigValues.IsDestBlocked = req.IsDestBlocked;
+
+                // Cache Requests
+                string checkRequest = $"{req.ClientIP}_{req.ProxyName}_{req.AddressOrig}_{req.Port}";
+                var cachedReq = ProxyRequestsCaches.Get(checkRequest, req);
+
+                // Check If IP Is Blocked
+                HttpStatusCode hsc = HttpStatusCode.RequestTimeout;
+                if (isIp && ip != null)
                 {
-                    if (req.ProxyName != Proxy.Name.Test)
+                    if (req.ApplyUpstreamProxy && req.ApplyUpstreamProxyToBlockedIPs)
                     {
-                        if (req.ApplyUpstreamProxy && req.ApplyUpstreamProxyToBlockedIPs)
+                        if (cachedReq != null)
                         {
-                            if (cachedReq != null)
+                            req.IsDestBlocked = cachedReq.IsDestBlocked.Apply;
+                        }
+                        else
+                        {
+                            if (req.AddressIsIp)
                             {
-                                req.IsDestBlocked = cachedReq.IsDestBlocked.Apply;
+                                bool canPing = await NetworkTool.CanPingAsync(req.AddressOrig, 3000);
+                                req.IsDestBlocked = !canPing;
                             }
                             else
                             {
-                                if (req.AddressIsIp)
-                                {
-                                    bool canPing = await NetworkTool.CanPingAsync(req.AddressOrig, 3000);
-                                    req.IsDestBlocked = !canPing;
-                                }
-                                else
-                                {
-                                    if (hsc == HttpStatusCode.RequestTimeout)
-                                        hsc = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
-                                    req.IsDestBlocked = hsc == HttpStatusCode.RequestTimeout || hsc == HttpStatusCode.Forbidden;
-                                }
+                                if (hsc == HttpStatusCode.RequestTimeout)
+                                    hsc = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
+                                req.IsDestBlocked = hsc == HttpStatusCode.RequestTimeout || hsc == HttpStatusCode.Forbidden;
                             }
                         }
                     }
                 }
-                else
+
+                // Apply Upstream
+                bool applyUpstream = (req.ApplyUpstreamProxy && !req.ApplyUpstreamProxyToBlockedIPs) ||
+                                     (req.ApplyUpstreamProxy && req.ApplyUpstreamProxyToBlockedIPs && req.IsDestBlocked);
+                req.ApplyUpstreamProxy = applyUpstream;
+                if (req.ApplyUpstreamProxy)
                 {
-                    req.IsDestBlocked = true; // IP Protocol Is Not Supported
-                    string ipP = isIpv6 ? "IPv6" : "IPv4";
-                    msgReqEvent += $" (Your Network Does Not Support {ipP})";
+                    req.ApplyChangeSNI = false;
+                    req.ApplyFragment = false;
+
+                    // Event: Upstream
+                    msgReqEvent += $" => Using Upstream: {req.UpstreamProxyScheme}";
                 }
-            }
 
-            // Apply Upstream
-            bool applyUpstream = (req.ApplyUpstreamProxy && !req.ApplyUpstreamProxyToBlockedIPs) ||
-                                 (req.ApplyUpstreamProxy && req.ApplyUpstreamProxyToBlockedIPs && req.IsDestBlocked);
-            req.ApplyUpstreamProxy = applyUpstream;
-            if (req.ApplyUpstreamProxy)
-            {
-                req.ApplyChangeSNI = false;
-                req.ApplyFragment = false;
-
-                // Event: Upstream
-                msgReqEvent += $" => Using Upstream: {req.UpstreamProxyScheme}";
-            }
-
-            // If Both Anti-DPI Methods Are Active Pick One
-            if (req.ApplyChangeSNI && req.ApplyFragment)
-            {
-                // Check Cached Request
-                if (cachedReq != null)
+                // If Both Anti-DPI Methods Are Active Pick One
+                if (req.ApplyChangeSNI && req.ApplyFragment)
                 {
-                    req.ApplyChangeSNI = cachedReq.ApplyChangeSNI.Apply;
-                    req.ApplyFragment = cachedReq.ApplyFragment.Apply;
-                }
-                else
-                {
-                    if (req.ProxyName != Proxy.Name.Test)
+                    // Check Cached Request
+                    if (cachedReq != null)
+                    {
+                        req.ApplyChangeSNI = cachedReq.ApplyChangeSNI.Apply;
+                        req.ApplyFragment = cachedReq.ApplyFragment.Apply;
+                    }
+                    else
                     {
                         TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, false));
 
@@ -329,8 +311,18 @@ public partial class MsmhAgnosticServer
                         }
                     }
                 }
-            }
 
+                // Add To Cache
+                if (InternetState == NetworkTool.InternetState.Online)
+                {
+                    prcr.ApplyChangeSNI.Apply = req.ApplyChangeSNI;
+                    prcr.ApplyFragment.Apply = req.ApplyFragment;
+                    prcr.IsDestBlocked.Apply = req.IsDestBlocked;
+
+                    ProxyRequestsCaches.Add(checkRequest, prcr);
+                }
+            }
+            
             // If Both Are Still Active Use Fragment
             if (req.ApplyChangeSNI && req.ApplyFragment) req.ApplyChangeSNI = false;
 
@@ -360,19 +352,8 @@ public partial class MsmhAgnosticServer
                 if (isIp && ip != null)
                 {
                     if (isIpv6) req.AddressType = Socks.AddressType.Ipv6;
-                    else
-                        req.AddressType = Socks.AddressType.Ipv4;
+                    else req.AddressType = Socks.AddressType.Ipv4;
                 }
-            }
-
-            // Add To Cache
-            if (req.ProxyName != Proxy.Name.Test && InternetState == NetworkTool.InternetState.Online)
-            {
-                prcr.ApplyChangeSNI.Apply = req.ApplyChangeSNI;
-                prcr.ApplyFragment.Apply = req.ApplyFragment;
-                prcr.IsDestBlocked.Apply = req.IsDestBlocked;
-
-                ProxyRequestsCaches.Add(checkRequest, prcr);
             }
             
             return req;
@@ -392,17 +373,17 @@ public partial class MsmhAgnosticServer
         {
             if (!string.IsNullOrEmpty(proxyScheme))
             {
-                NetworkTool.GetUrlDetails(proxyScheme, 443, out _, out string host, out _, out _, out int port, out _, out _);
-                if (Settings_.ListenerPort == port)
+                NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(proxyScheme, 443);
+                if (Settings_.ListenerPort == urid.Port)
                 {
-                    bool isIP = NetworkTool.IsIP(host, out IPAddress? ip);
+                    bool isIP = NetworkTool.IsIP(urid.Host, out IPAddress? ip);
                     if (isIP && ip != null)
                     {
-                        if (IPAddress.IsLoopback(ip)) result = true;
+                        if (IPAddress.IsLoopback(ip) || ip.Equals(Settings_.LocalIpAddress)) result = true;
                     }
                     else
                     {
-                        if (host.ToLower().Equals("localhost")) result = true;
+                        if (urid.Host.ToLower().Equals("localhost")) result = true;
                     }
                 }
             }

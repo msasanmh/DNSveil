@@ -687,8 +687,8 @@ public partial class FormMain
             catch (Exception) { }
 
             //// Settings Connect
-            spaceV = 40;
-            CustomLabelSettingMaxServers.Location = new Point(spaceHH, 50);
+            spaceV = 20;
+            CustomLabelSettingMaxServers.Location = new Point(spaceH, 50);
 
             CustomNumericUpDownSettingMaxServers.Left = CustomLabelSettingMaxServers.Right + spaceH2;
             CustomNumericUpDownSettingMaxServers.Top = CustomLabelSettingMaxServers.Top - 2;
@@ -698,6 +698,14 @@ public partial class FormMain
 
             CustomCheckBoxDnsEventShowRequest.Left = CustomCheckBoxSettingConnectRetry.Left;
             CustomCheckBoxDnsEventShowRequest.Top = CustomCheckBoxSettingConnectRetry.Bottom + spaceV;
+
+            spaceV = 40;
+            CustomLabelSettingMalicious.Left = CustomCheckBoxDnsEventShowRequest.Left;
+            CustomLabelSettingMalicious.Top = CustomCheckBoxDnsEventShowRequest.Bottom + spaceV;
+
+            spaceV = 10;
+            CustomButtonSettingMalicious.Left = CustomLabelSettingMalicious.Left;
+            CustomButtonSettingMalicious.Top = CustomLabelSettingMalicious.Bottom + spaceV;
 
             //// Settings Set/Unset DNS
             spaceV = 30;

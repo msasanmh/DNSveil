@@ -6,13 +6,20 @@ using MsmhToolsClass;
 using System.Runtime.InteropServices;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace SecureDNSClient;
 
 public class SecureDNS
 {
+    // User Data
+    private const string UDN = "UserData";
+
+    // Binaries Directory Name
+    private const string BinariesDirName = "binary";
+
     // App Name Without Extension
-    private static readonly string appNameWithoutExtension = GetFileNameWithoutExtension(Application.ExecutablePath);
+    private static readonly string AppNameNoExtension = GetFileNameWithoutExtension(Application.ExecutablePath);
     
     // App Directory Path
     public static readonly string CurrentPath = GetFullPath(AppContext.BaseDirectory);
@@ -35,22 +42,19 @@ public class SecureDNS
     }
 
     // Binaries path
-    public static readonly string BinaryDirPath = GetFullPath(CurrentPath, "binary");
-    public static readonly string DnsLookup = GetFullPath(CurrentPath, "binary", "dnslookup.exe");
+    public static readonly string BinaryDirPath = GetFullPath(CurrentPath, BinariesDirName);
+    public static readonly string DnsLookup = GetFullPath(CurrentPath, BinariesDirName, "dnslookup.exe");
     public static readonly string RandomPath = GetRandomPath();
-    public static readonly string SDCLookupPath = GetFullPath(CurrentPath, "binary", "SDCLookup.exe");
-    public static readonly string AgnosticServerPath = GetFullPath(CurrentPath, "binary", "SDCAgnosticServer.exe");
-    public static readonly string GoodbyeDpi = GetFullPath(CurrentPath, "binary", "goodbyedpi.exe");
-    public static readonly string WinDivert = GetFullPath(CurrentPath, "binary", "WinDivert.dll");
-    public static readonly string WinDivert32 = GetFullPath(CurrentPath, "binary", "WinDivert32.sys");
-    public static readonly string WinDivert64 = GetFullPath(CurrentPath, "binary", "WinDivert64.sys");
-    public static readonly string BinariesVersionPath = GetFullPath(CurrentPath, "binary", "versions.txt");
+    public static readonly string SDCLookupPath = GetFullPath(CurrentPath, BinariesDirName, "SDCLookup.exe");
+    public static readonly string AgnosticServerPath = GetFullPath(CurrentPath, BinariesDirName, "SDCAgnosticServer.exe");
+    public static readonly string GoodbyeDpi = GetFullPath(CurrentPath, BinariesDirName, "goodbyedpi.exe");
+    public static readonly string WinDivert = GetFullPath(CurrentPath, BinariesDirName, "WinDivert.dll");
+    public static readonly string WinDivert32 = GetFullPath(CurrentPath, BinariesDirName, "WinDivert32.sys");
+    public static readonly string WinDivert64 = GetFullPath(CurrentPath, BinariesDirName, "WinDivert64.sys");
+    public static readonly string BinariesVersionPath = GetFullPath(CurrentPath, BinariesDirName, "versions.txt");
 
     // Others
     public static readonly string DPIBlacklistFPPath = GetFullPath(CurrentPath, "DPIBlacklistFP.txt");
-
-    // User Data
-    private const string UDN = "UserData";
 
     public static string UserDataDirPath
     {
@@ -66,8 +70,8 @@ public class SecureDNS
                 }
                 catch (Exception)
                 {
-                    string msgErr = "System AppData Folder Is Not Reachable.";
-                    MessageBox.Show(msgErr, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    //string msgErr = "System AppData Folder Is Not Reachable.";
+                    //MessageBox.Show(msgErr, "System", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Environment.Exit(0);
                     Application.Exit();
                     return GetFullPath(GetParent, UDN);
@@ -77,7 +81,7 @@ public class SecureDNS
     }
 
     public static readonly string FirstRun = GetFullPath(UserDataDirPath, "FirstRun.txt");
-    public static readonly string SettingsXmlPath = GetFullPath(UserDataDirPath, appNameWithoutExtension + ".xml"); // AgnosticSettings XML path
+    public static readonly string SettingsXmlPath = GetFullPath(UserDataDirPath, AppNameNoExtension + ".xml"); // AgnosticSettings XML path
     public static readonly string SettingsXmlDnsLookup = GetFullPath(UserDataDirPath, "DnsLookupSettings.xml");
     public static readonly string SettingsXmlIpScanner = GetFullPath(UserDataDirPath, "IpScannerSettings.xml");
     public static readonly string SettingsXmlDnsScanner = GetFullPath(UserDataDirPath, "DnsScannerSettings.xml");
@@ -87,6 +91,8 @@ public class SecureDNS
     public static readonly string BuiltInServersSecurePath = GetFullPath(UserDataDirPath, "BuiltInServers_Secure.txt");
     public static readonly string BuiltInServersInsecureUpdateUrl = "https://github.com/msasanmh/SecureDNSClient/raw/main/Subs/sdc-insecure.txt";
     public static readonly string BuiltInServersInsecurePath = GetFullPath(UserDataDirPath, "BuiltInServers_Insecure.txt");
+    public static readonly string BuiltInServersSubscriptionPath = GetFullPath(UserDataDirPath, "BuiltInServers_Subscription.txt");
+    public static readonly string BuiltInServersMaliciousPath = GetFullPath(UserDataDirPath, "BuiltInServers_Malicious.txt");
     public static readonly string CustomServersPath = GetFullPath(UserDataDirPath, "CustomServers.txt");
     public static readonly string CustomServersXmlPath = GetFullPath(UserDataDirPath, "CustomServers.xml");
     public static readonly string WorkingServersPath = GetFullPath(UserDataDirPath, "CustomServers_Working.txt");
@@ -376,7 +382,8 @@ public class SecureDNS
     {
         try
         {
-            string? content = NecessaryFiles.Resource1.versions;
+            byte[] contentBytes = NecessaryFiles.Resource1.versions;
+            string? content = Encoding.UTF8.GetString(contentBytes);
             if (!string.IsNullOrWhiteSpace(content))
             {
                 List<string> lines = content.SplitToLines();

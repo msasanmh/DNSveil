@@ -28,15 +28,17 @@ public class UdpPlainClient
             {
                 IPEndPoint ep = new(IPAddress.Parse(Reader.Host), Reader.Port);
 
-                Socket socket = new(ep.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-                socket.SendTimeout = TimeoutMS;
-                socket.ReceiveTimeout = TimeoutMS;
+                Socket socket = new(ep.AddressFamily, SocketType.Dgram, ProtocolType.Udp)
+                {
+                    SendTimeout = TimeoutMS,
+                    ReceiveTimeout = TimeoutMS
+                };
 
                 try
                 {
                     await socket.ConnectAsync(ep, CT).ConfigureAwait(false);
                     await socket.SendAsync(QueryBuffer, SocketFlags.None, CT).ConfigureAwait(false);
-                    byte[] buffer = new byte[MsmhAgnosticServer.MaxDataSize];
+                    byte[] buffer = new byte[MsmhAgnosticServer.MaxUdpDnsDataSize];
                     int receivedLength = await socket.ReceiveAsync(buffer, SocketFlags.None, CT).ConfigureAwait(false);
 
                     if (receivedLength > 0) result = buffer[..receivedLength];

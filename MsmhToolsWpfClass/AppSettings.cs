@@ -47,7 +47,7 @@ public class AppSettings
         ParentVisual = visual;
         if (xmlFilePath != null)
         {
-            if (XmlTool.IsValidXMLFile(xmlFilePath))
+            if (XmlTool.IsValidFile(xmlFilePath))
                 LoadFromXMLFile(ParentVisual, xmlFilePath);
             else
                 MessageBox.Show("XML file is not valid.", "ERROR", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -61,7 +61,7 @@ public class AppSettings
 
     private void LoadFromXML(string xmlString)
     {
-        if (XmlTool.IsValidXML(xmlString))
+        if (XmlTool.IsValid(xmlString))
             XDoc = XDocument.Parse(xmlString);
     }
 
@@ -69,7 +69,7 @@ public class AppSettings
     {
         try
         {
-            if (xmlFilePath != null && XmlTool.IsValidXMLFile(xmlFilePath))
+            if (xmlFilePath != null && XmlTool.IsValidFile(xmlFilePath))
             {
                 // Clear List
                 SettingList.Clear();

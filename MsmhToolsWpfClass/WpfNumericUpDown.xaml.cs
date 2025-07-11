@@ -114,6 +114,8 @@ public partial class WpfNumericUpDown : Control
 
     public override void OnApplyTemplate()
     {
+        base.OnApplyTemplate();
+
         PART_UpButton = GetTemplateChild(nameof(PART_UpButton)) as RepeatButton;
         if (PART_UpButton != null)
         {
@@ -140,8 +142,6 @@ public partial class WpfNumericUpDown : Control
             PART_TextBox.LostFocus -= PART_TextBox_LostFocus;
             PART_TextBox.LostFocus += PART_TextBox_LostFocus;
         }
-
-        base.OnApplyTemplate();
     }
 
     public WpfNumericUpDown()

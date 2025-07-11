@@ -16,7 +16,8 @@ public partial class FormMain
         string dohUrl = CustomTextBoxSettingFakeProxyDohAddress.Text.Trim();
         if (string.IsNullOrEmpty(dohUrl)) return false;
 
-        NetworkTool.GetUrlDetails(dohUrl, 443, out _, out string dohHost, out _, out _, out int _, out string _, out bool _);
+        NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dohUrl, 443);
+        string dohHost = urid.Host;
 
         // Get DoH Clean IP
         string dohCleanIP = CustomTextBoxSettingFakeProxyDohCleanIP.Text.Trim();
