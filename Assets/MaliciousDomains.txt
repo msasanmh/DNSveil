@@ -1,0 +1,17 @@
+// Suspected Malicious Servers (Reported By Users):
+7vpn.com
+cretu.xyz
+dnsadguard.co.uk
+farshidhakimy.de
+flm9.net
+fomichev.cloud
+goldplate.org
+jpr.space
+nguyendn.com
+ningkelle.id
+safeservedns.com
+shoupperuser.com
+silentlybren.com
+tezoi.com
+torgues.net
+yovbak.com
