@@ -19,7 +19,7 @@ public class TextTool
             {
                 List<string> interLinks = new();
                 if (!interLine.Contains(find)) return interLinks;
-
+                
                 await Task.Run(async () =>
                 {
                     try
@@ -46,7 +46,7 @@ public class TextTool
                                     break;
                                 }
                             }
-
+                            
                             while (true)
                             {
                                 end++;
@@ -73,7 +73,7 @@ public class TextTool
                         Debug.WriteLine("TextTool GetLinksAsync getLinksInternalAsync: " + ex.Message);
                     }
                 });
-
+                
                 return interLinks;
             }
 
@@ -84,7 +84,7 @@ public class TextTool
                 if (subLine.Contains(find))
                     links.AddRange(await getLinksInternalAsync(subLine));
             }
-
+            
             links = links.Distinct().ToList();
         }
         catch (Exception ex)
@@ -200,6 +200,7 @@ public class TextTool
             {
                 // For MarkDown
                 html = await RemoveTextAsync(html, '(', ')', replaceTagsWithSpace);
+                html = await RemoveTextAsync(html, '\u0060', '\u0060', replaceTagsWithSpace); // `
             }
             
             // Split To Lines By Space

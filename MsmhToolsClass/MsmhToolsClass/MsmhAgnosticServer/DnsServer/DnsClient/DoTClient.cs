@@ -1,4 +1,5 @@
 ﻿using MsmhToolsClass.ProxifiedClients;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -93,14 +94,17 @@ public class DoTClient
                     }
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("DoTClient: " + ex.GetInnerExceptions());
+            }
             finally
             {
                 try
                 {
-                    tcpClient?.Client.Shutdown(SocketShutdown.Both);
-                    tcpClient?.Client.Close();
+                    tcpClient?.Close();
                     tcpClient?.Dispose();
+                    sslStream?.Close();
                     sslStream?.Dispose();
                 }
                 catch (Exception) { }

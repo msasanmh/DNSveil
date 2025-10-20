@@ -33,7 +33,7 @@ public partial class DnsServersManager
 
     public DnsServersManager()
     {
-        BackgroundWorker_AutoUpdate_Groups();
+        BackgroundWorker_AutoUpdate_SettingsAndGroups();
     }
 
     public async Task SaveAsync()
@@ -41,10 +41,32 @@ public partial class DnsServersManager
         await XDoc.SaveAsync(XmlFilePath);
     }
 
-    public static XDocument CreateXDoc()
+    private static XElement CreateSettings()
     {
-        XElement root = new("DNSveilDnsGroups");
+        XElement settings = new("Settings");
+        XElement maliciousDomains = new("MaliciousDomains");
+
+        XElement sourceElement = new("Source"); // Contains URL Elements
+        maliciousDomains.Add(sourceElement);
+
+        XElement updateDetails = new("UpdateDetails");
+        updateDetails.Add(new XElement("UpdateSource", 24));
+        updateDetails.Add(new XElement("LastUpdateSource", DateTime.MinValue));
+        maliciousDomains.Add(updateDetails);
+
+        maliciousDomains.Add(new XElement("ServerItems")); // Contains Item Elements
+        maliciousDomains.Add(new XElement("UserItems")); // Contains Item Elements
+        maliciousDomains.Add(new XElement("UserExceptionItems")); // Contains Item Elements
+
+        settings.Add(maliciousDomains);
+        return settings;
+    }
+
+    public static XDocument CreateXDoc(bool withEmptySettings)
+    {
         XDocument xDoc = new();
+        XElement root = new("DNSveilDnsGroups");
+        if (withEmptySettings) root.Add(CreateSettings());
         xDoc.Add(root);
         return xDoc;
     }
@@ -71,7 +93,7 @@ public partial class DnsServersManager
                 if (!isBuiltInValid)
                 {
                     File.Create(XmlFilePath).Dispose();
-                    XDoc = CreateXDoc();
+                    XDoc = CreateXDoc(true);
                     isSaved = await XDoc.SaveAsync(XmlFilePath);
                 }
                 else
@@ -92,7 +114,7 @@ public partial class DnsServersManager
                 bool isBuiltInValid = await XmlTool.IsValidFileAsync(XmlFilePath_BultIn);
                 if (!isBuiltInValid)
                 {
-                    XDoc = CreateXDoc();
+                    XDoc = CreateXDoc(true);
                     isSaved = await XDoc.SaveAsync(XmlFilePath);
                 }
                 else
@@ -133,7 +155,7 @@ public partial class DnsServersManager
                     bool isBuiltInValid = await XmlTool.IsValidFileAsync(XmlFilePath_BultIn);
                     if (!isBuiltInValid)
                     {
-                        XDoc = CreateXDoc();
+                        XDoc = CreateXDoc(true);
                         isSaved = await XDoc.SaveAsync(XmlFilePath);
 
                         if (isSaved)
@@ -338,6 +360,7 @@ public partial class DnsServersManager
         XElement element = new(nameof(FilterByProtocols));
         element.Add(new XElement(nameof(filterByProtocols.UDP), filterByProtocols.UDP));
         element.Add(new XElement(nameof(filterByProtocols.TCP), filterByProtocols.TCP));
+        element.Add(new XElement(nameof(filterByProtocols.TcpOverUdp), filterByProtocols.TcpOverUdp));
         element.Add(new XElement(nameof(filterByProtocols.DnsCrypt), filterByProtocols.DnsCrypt));
         element.Add(new XElement(nameof(filterByProtocols.DoT), filterByProtocols.DoT));
         element.Add(new XElement(nameof(filterByProtocols.DoH), filterByProtocols.DoH));
@@ -366,6 +389,11 @@ public partial class DnsServersManager
                 {
                     bool isBool = bool.TryParse(element.Value, out bool result);
                     if (isBool) filterByProtocols.TCP = result;
+                }
+                else if (element.Name.LocalName.Equals(nameof(filterByProtocols.TcpOverUdp)))
+                {
+                    bool isBool = bool.TryParse(element.Value, out bool result);
+                    if (isBool) filterByProtocols.TcpOverUdp = result;
                 }
                 else if (element.Name.LocalName.Equals(nameof(filterByProtocols.DnsCrypt)))
                 {
@@ -695,7 +723,393 @@ public partial class DnsServersManager
         }
     }
 
-    public XElement? Get_Group_Element(string groupName)
+    public XElement? Get_Settings_Element()
+    {
+        List<XmlTool.XmlPath> paths = new()
+        {
+            new XmlTool.XmlPath("Settings", 1)
+        };
+
+        List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+        if (elements.Count > 0) return elements[0];
+        return null;
+    }
+
+    public async Task<bool> Import_Settings_Element_Async(XElement settingsElement, bool saveToFile)
+    {
+        try
+        {
+            bool isSuccess = false;
+            XElement? currentSettingsElement = Get_Settings_Element();
+            if (currentSettingsElement != null)
+            {
+                // Exist
+                currentSettingsElement.ReplaceWith(settingsElement);
+                isSuccess = true;
+            }
+            else
+            {
+                // Not Exist
+                if (XDoc.Root != null)
+                {
+                    XDoc.Root.AddFirst(settingsElement);
+                    isSuccess = true;
+                }
+            }
+
+            if (isSuccess && saveToFile) await SaveAsync();
+            return isSuccess;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager Import_Settings_Element_Async: " + ex.Message);
+            return false;
+        }
+    }
+
+    // ========== START: Settings: Malicious Domains
+    private XElement? MaliciousDomains_Get_UpdateDetails_Element()
+    {
+        List<XmlTool.XmlPath> paths = new()
+        {
+            new XmlTool.XmlPath("Settings", 1),
+            new XmlTool.XmlPath("MaliciousDomains", 1),
+            new XmlTool.XmlPath("UpdateDetails", 1)
+        };
+
+        List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+        if (elements.Count > 0) return elements[0];
+        return null;
+    }
+
+    private static XElement MaliciousDomains_Create_UpdateDetails_Element(SettingsUpdateDetails sud)
+    {
+        XElement element = new("UpdateDetails");
+        element.Add(new XElement(nameof(sud.UpdateSource), sud.UpdateSource));
+        element.Add(new XElement(nameof(sud.LastUpdateSource), sud.LastUpdateSource));
+        return element;
+    }
+
+    private static SettingsUpdateDetails MaliciousDomains_Create_UpdateDetails(XElement? updateDetailsElement)
+    {
+        SettingsUpdateDetails sud = new();
+
+        try
+        {
+            if (updateDetailsElement == null) return sud;
+            var elements = updateDetailsElement.Elements();
+            foreach (XElement element in elements)
+            {
+                if (element.Name.LocalName.Equals(nameof(sud.UpdateSource)))
+                {
+                    bool isInt = int.TryParse(element.Value, out int value);
+                    if (isInt) sud.UpdateSource = value;
+                }
+                else if (element.Name.LocalName.Equals(nameof(sud.LastUpdateSource)))
+                {
+                    bool isDateTime = DateTime.TryParse(element.Value, out DateTime value);
+                    if (isDateTime) sud.LastUpdateSource = value;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Create_UpdateDetails: " + ex.Message);
+        }
+
+        return sud;
+    }
+
+    public SettingsUpdateDetails MaliciousDomains_Get_UpdateDetails()
+    {
+        XElement? updateDetailsElement = MaliciousDomains_Get_UpdateDetails_Element();
+        return MaliciousDomains_Create_UpdateDetails(updateDetailsElement);
+    }
+
+    public async Task MaliciousDomains_Update_UpdateDetails_Async(SettingsUpdateDetails updateDetails, bool saveToFile)
+    {
+        try
+        {
+            // Update UpdateDetails
+            XElement? updateDetailsElement = MaliciousDomains_Get_UpdateDetails_Element();
+            SettingsUpdateDetails sud = MaliciousDomains_Create_UpdateDetails(updateDetailsElement);
+            if (updateDetails.UpdateSource != -1) sud.UpdateSource = updateDetails.UpdateSource;
+            if (updateDetails.LastUpdateSource != DateTime.MinValue) sud.LastUpdateSource = updateDetails.LastUpdateSource;
+            updateDetailsElement?.ReplaceWith(MaliciousDomains_Create_UpdateDetails_Element(sud));
+
+            if (saveToFile) await SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Update_UpdateDetails_Async: " + ex.Message);
+        }
+    }
+
+    public List<string> MaliciousDomains_Get_Source_URLs()
+    {
+        try
+        {
+            List<XmlTool.XmlPath> paths = new()
+            {
+                new XmlTool.XmlPath("Settings", 1),
+                new XmlTool.XmlPath("MaliciousDomains", 1),
+                new XmlTool.XmlPath("Source", 1),
+                new XmlTool.XmlPath("URL")
+            };
+
+            List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+            return elements.Select(x => x.Value).ToList();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Get_Source_URLs: " + ex.Message);
+            return new List<string>();
+        }
+    }
+
+    public async Task MaliciousDomains_Update_Source_URLs_Async(List<string> urls, bool saveToFile)
+    {
+        try
+        {
+            List<XmlTool.XmlPath> paths = new()
+            {
+                new XmlTool.XmlPath("Settings", 1),
+                new XmlTool.XmlPath("MaliciousDomains", 1),
+                new XmlTool.XmlPath("Source", 1)
+            };
+
+            List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+            if (elements.Count > 0)
+            {
+                XElement sourceElement = elements[0];
+
+                sourceElement.RemoveNodes();
+                await Task.Delay(50);
+
+                for (int n = 0; n < urls.Count; n++)
+                {
+                    string url = urls[n];
+                    url = url.Trim();
+                    if (string.IsNullOrWhiteSpace(url)) continue;
+                    if (!url.Contains("://") && !url.Contains(":\\")) continue; // Support URLs And Paths
+                    sourceElement.Add(new XElement("URL", url));
+                }
+            }
+
+            if (saveToFile) await SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Update_Source_URLs_Async: " + ex.Message);
+        }
+    }
+
+    public List<string> MaliciousDomains_Get_ServerItems()
+    {
+        try
+        {
+            List<XmlTool.XmlPath> paths = new()
+            {
+                new XmlTool.XmlPath("Settings", 1),
+                new XmlTool.XmlPath("MaliciousDomains", 1),
+                new XmlTool.XmlPath("ServerItems", 1),
+                new XmlTool.XmlPath("Item")
+            };
+
+            List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+            return elements.Select(x => x.Value).ToList();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Get_ServerItems: " + ex.Message);
+            return new List<string>();
+        }
+    }
+
+    public async Task MaliciousDomains_Update_ServerItems_Async(List<string> domains, bool saveToFile)
+    {
+        try
+        {
+            List<XmlTool.XmlPath> paths = new()
+            {
+                new XmlTool.XmlPath("Settings", 1),
+                new XmlTool.XmlPath("MaliciousDomains", 1),
+                new XmlTool.XmlPath("ServerItems", 1)
+            };
+
+            List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+            if (elements.Count > 0)
+            {
+                XElement serverItemsElement = elements[0];
+                if (domains.Count > 0)
+                {
+                    serverItemsElement.RemoveNodes();
+                    await Task.Delay(50);
+
+                    for (int n = 0; n < domains.Count; n++)
+                    {
+                        string domain = domains[n];
+                        if (string.IsNullOrWhiteSpace(domain)) continue;
+                        serverItemsElement.Add(new XElement("Item", domain));
+                    }
+                }
+            }
+
+            if (saveToFile) await SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Update_ServerItems_Async: " + ex.Message);
+        }
+    }
+
+    public List<string> MaliciousDomains_Get_UserItems()
+    {
+        try
+        {
+            List<XmlTool.XmlPath> paths = new()
+            {
+                new XmlTool.XmlPath("Settings", 1),
+                new XmlTool.XmlPath("MaliciousDomains", 1),
+                new XmlTool.XmlPath("UserItems", 1),
+                new XmlTool.XmlPath("Item")
+            };
+
+            List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+            return elements.Select(x => x.Value).ToList();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Get_UserItems: " + ex.Message);
+            return new List<string>();
+        }
+    }
+
+    public async Task MaliciousDomains_Update_UserItems_Async(List<string> domains, bool saveToFile)
+    {
+        try
+        {
+            List<XmlTool.XmlPath> paths = new()
+            {
+                new XmlTool.XmlPath("Settings", 1),
+                new XmlTool.XmlPath("MaliciousDomains", 1),
+                new XmlTool.XmlPath("UserItems", 1)
+            };
+
+            List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+            if (elements.Count > 0)
+            {
+                XElement userItemsElement = elements[0];
+
+                userItemsElement.RemoveNodes();
+                await Task.Delay(50);
+
+                for (int n = 0; n < domains.Count; n++)
+                {
+                    string domain = domains[n];
+                    if (string.IsNullOrWhiteSpace(domain)) continue;
+                    userItemsElement.Add(new XElement("Item", domain));
+                }
+            }
+
+            if (saveToFile) await SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Update_UserItems_Async: " + ex.Message);
+        }
+    }
+
+    public List<string> MaliciousDomains_Get_UserExceptionItems()
+    {
+        try
+        {
+            List<XmlTool.XmlPath> paths = new()
+            {
+                new XmlTool.XmlPath("Settings", 1),
+                new XmlTool.XmlPath("MaliciousDomains", 1),
+                new XmlTool.XmlPath("UserExceptionItems", 1),
+                new XmlTool.XmlPath("Item")
+            };
+
+            List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+            return elements.Select(x => x.Value).ToList();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Get_UserExceptionItems: " + ex.Message);
+            return new List<string>();
+        }
+    }
+
+    public async Task MaliciousDomains_Update_UserExceptionItems_Async(List<string> domains, bool saveToFile)
+    {
+        try
+        {
+            List<XmlTool.XmlPath> paths = new()
+            {
+                new XmlTool.XmlPath("Settings", 1),
+                new XmlTool.XmlPath("MaliciousDomains", 1),
+                new XmlTool.XmlPath("UserExceptionItems", 1)
+            };
+
+            List<XElement> elements = XmlTool.GetElements(XDoc, paths);
+            if (elements.Count > 0)
+            {
+                XElement userExceptionItemsElement = elements[0];
+
+                userExceptionItemsElement.RemoveNodes();
+                await Task.Delay(50);
+
+                for (int n = 0; n < domains.Count; n++)
+                {
+                    string domain = domains[n];
+                    if (string.IsNullOrWhiteSpace(domain)) continue;
+                    userExceptionItemsElement.Add(new XElement("Item", domain));
+                }
+            }
+
+            if (saveToFile) await SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Update_UserExceptionItems_Async: " + ex.Message);
+        }
+    }
+
+    public List<string> MaliciousDomains_Get_TotalItems()
+    {
+        try
+        {
+            // Get Server And User Items
+            List<string> items = MaliciousDomains_Get_ServerItems();
+            items.AddRange(MaliciousDomains_Get_UserItems());
+            items = items.Distinct().ToList();
+
+            // Get User Exception Items
+            List<string> exceptionItems = MaliciousDomains_Get_UserExceptionItems();
+
+            // Create List Without Exception
+            List<string> result = new();
+            for (int n = 0; n < items.Count; n++)
+            {
+                string domain = items[n];
+                if (domain.StartsWith("//")) continue;
+                if (exceptionItems.IsContain(domain)) continue;
+                result.Add(domain);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServersManager MaliciousDomains_Get_TotalItems: " + ex.Message);
+            return new List<string>();
+        }
+    }
+    // ========== END: Settings: Malicious Domains
+
+    private XElement? Get_Group_Element(string groupName)
     {
         groupName = groupName.Trim();
         List<XmlTool.XmlPath> paths = new()
@@ -804,8 +1218,8 @@ public partial class DnsServersManager
     /// Set As BuiltIn Or User
     /// </summary>
     /// <param name="groupName">Group Name</param>
-    /// <param name="newValue">BuiltIn: True, User: False</param>
-    public async Task Update_GroupItem_BuiltIn_Async(string groupName, bool newValue, bool saveToFile = true)
+    /// <param name="setAsBuiltIn">BuiltIn: True, User: False</param>
+    public async Task Update_GroupItem_BuiltIn_Async(string groupName, bool setAsBuiltIn, bool saveToFile = true)
     {
         try
         {
@@ -814,7 +1228,15 @@ public partial class DnsServersManager
             if (groupElement != null && groupElement.HasAttributes)
             {
                 XAttribute? xAttribute = groupElement.Attribute("BuiltIn");
-                xAttribute?.SetValue(newValue);
+                xAttribute?.SetValue(setAsBuiltIn);
+            }
+
+            if (setAsBuiltIn)
+            {
+                // Reset LastAutoUpdate To DateTime.MinValue
+                XElement? autoUpdateElement = Get_AutoUpdate_Element(groupName);
+                AutoUpdate autoUpdate = Create_AutoUpdate(autoUpdateElement);
+                autoUpdateElement?.ReplaceWith(Create_AutoUpdate_Element(autoUpdate, new LastAutoUpdate()));
             }
 
             if (saveToFile) await SaveAsync();
@@ -889,13 +1311,24 @@ public partial class DnsServersManager
         return null;
     }
 
-    public XDocument? Export_Groups(List<string> groupNames)
+    public XDocument? Export_Settings_Groups(bool exportSettings, List<string> groupNames)
     {
         try
         {
-            XDocument? xDoc_Export = CreateXDoc();
+            XDocument? xDoc_Export = CreateXDoc(false);
             if (xDoc_Export != null && xDoc_Export.Root != null)
             {
+                // Export Settings
+                if (exportSettings)
+                {
+                    XElement? settingsElement = Get_Settings_Element();
+                    if (settingsElement != null)
+                    {
+                        xDoc_Export.Root.Add(settingsElement);
+                    }
+                }
+
+                // Export Groups
                 for (int n = 0; n < groupNames.Count; n++)
                 {
                     string groupName = groupNames[n];
@@ -928,7 +1361,7 @@ public partial class DnsServersManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("DnsServersManager Export_Groups: " + ex.Message);
+            Debug.WriteLine("DnsServersManager Export_Settings_Groups: " + ex.Message);
             return null;
         }
     }
@@ -1104,8 +1537,22 @@ public partial class DnsServersManager
             }
             
             // Add
-            if (addFirst) XDoc.Root.AddFirst(groupElement);
-            else XDoc.Root.Add(groupElement);
+            if (addFirst)
+            {
+                XElement? settingsElement = Get_Settings_Element();
+                if (settingsElement != null)
+                {
+                    settingsElement.AddAfterSelf(groupElement);
+                }
+                else
+                {
+                    XDoc.Root.AddFirst(groupElement);
+                }
+            }
+            else
+            {
+                XDoc.Root.Add(groupElement);
+            }
 
             if (saveToFile) await SaveAsync();
             return groupName;
@@ -1201,6 +1648,7 @@ public partial class DnsServersManager
             {
                 XElement xElement = elements[0];
                 int fromIndex = xElement.ElementsBeforeSelf().Count();
+                toIndex++; // Skip Settings Element
                 XDoc = XmlTool.UpdateElementsPosition(XDoc, paths, fromIndex, toIndex);
                 if (saveToFile) await SaveAsync();
             }
@@ -1432,20 +1880,21 @@ public partial class DnsServersManager
                 new XmlTool.XmlPath("Source", 1)
             };
 
-            XDoc = XmlTool.RemoveChildElements(XDoc, paths);
-            await Task.Delay(50);
-
             List<XElement> elements = XmlTool.GetElements(XDoc, paths);
             if (elements.Count > 0)
             {
-                XElement subscriptionSourceElement = elements[0];
+                XElement sourceElement = elements[0];
+
+                sourceElement.RemoveNodes();
+                await Task.Delay(50);
+
                 for (int n = 0; n < urls.Count; n++)
                 {
                     string url = urls[n];
                     url = url.Trim();
                     if (string.IsNullOrWhiteSpace(url)) continue;
                     if (!url.Contains("://") && !url.Contains(":\\")) continue; // Support URLs And Paths
-                    subscriptionSourceElement.Add(new XElement("URL", url));
+                    sourceElement.Add(new XElement("URL", url));
                 }
             }
 
@@ -1474,13 +1923,14 @@ public partial class DnsServersManager
                 new XmlTool.XmlPath("Relays", 1)
             };
 
-            XDoc = XmlTool.RemoveChildElements(XDoc, relay_Paths);
-            await Task.Delay(50);
-
             List<XElement> relaysElements = XmlTool.GetElements(XDoc, relay_Paths);
             if (relaysElements.Count > 0)
             {
                 XElement relaysElement = relaysElements[0];
+
+                relaysElement.RemoveNodes();
+                await Task.Delay(50);
+
                 for (int n = 0; n < relayURLs.Count; n++)
                 {
                     string url = relayURLs[n];
@@ -1500,13 +1950,14 @@ public partial class DnsServersManager
                 new XmlTool.XmlPath("Targets", 1)
             };
 
-            XDoc = XmlTool.RemoveChildElements(XDoc, target_Paths);
-            await Task.Delay(50);
-
             List<XElement> targetsElements = XmlTool.GetElements(XDoc, target_Paths);
             if (targetsElements.Count > 0)
             {
                 XElement targetsElement = targetsElements[0];
+
+                targetsElement.RemoveNodes();
+                await Task.Delay(50);
+
                 for (int n = 0; n < targetURLs.Count; n++)
                 {
                     string url = targetURLs[n];
@@ -1891,11 +2342,10 @@ public partial class DnsServersManager
     {
         try
         {
-            if (dnss.Count == 0) return;
             XElement? dnsItemsElement = Get_DnsItems_Element(groupName);
             if (dnsItemsElement == null) return;
 
-            if (clearFirst)
+            if (clearFirst && dnss.Count > 0)
             {
                 dnsItemsElement.RemoveNodes();
                 await Task.Delay(50);
@@ -1922,11 +2372,10 @@ public partial class DnsServersManager
     {
         try
         {
-            if (dnsItemElementList.Count == 0) return;
             XElement? dnsItemsElement = Get_DnsItems_Element(groupName);
             if (dnsItemsElement == null) return;
 
-            if (clearFirst)
+            if (clearFirst && dnsItemElementList.Count > 0)
             {
                 dnsItemsElement.RemoveNodes();
                 await Task.Delay(50);
@@ -1947,11 +2396,10 @@ public partial class DnsServersManager
     {
         try
         {
-            if (dnsItemList.Count == 0) return;
             XElement? dnsItemsElement = Get_DnsItems_Element(groupName);
             if (dnsItemsElement == null) return;
 
-            if (clearFirst)
+            if (clearFirst && dnsItemList.Count > 0)
             {
                 dnsItemsElement.RemoveNodes();
                 await Task.Delay(50);
@@ -1988,27 +2436,27 @@ public partial class DnsServersManager
     }
 
     /// <summary>
-    /// Makes DnsItems Element Empty First.
+    /// Makes DnsItems Element Empty If Count > 0.
     /// </summary>
     public async Task Add_DnsItems_Async(string groupName, List<string> dnss, bool saveToFile = true)
     {
-        await Internal_DnsItems_AddAppend_Async(groupName, dnss, true, saveToFile);
+        await Internal_DnsItems_AddAppend_Async(groupName, dnss, dnss.Count > 0, saveToFile);
     }
 
     /// <summary>
-    /// Makes DnsItems Element Empty First.
+    /// Makes DnsItems Element Empty If Count > 0.
     /// </summary>
     public async Task Add_DnsItems_Async(string groupName, List<XElement> dnsItemElementList, bool saveToFile = true)
     {
-        await Internal_DnsItems_AddAppend_Async(groupName, dnsItemElementList, true, saveToFile);
+        await Internal_DnsItems_AddAppend_Async(groupName, dnsItemElementList, dnsItemElementList.Count > 0, saveToFile);
     }
 
     /// <summary>
-    /// Makes DnsItems Element Empty First.
+    /// Makes DnsItems Element Empty If Count > 0.
     /// </summary>
     public async Task Add_DnsItems_Async(string groupName, List<DnsItem> dnsItemList, bool saveToFile = true)
     {
-        await Internal_DnsItems_AddAppend_Async(groupName, dnsItemList, true, saveToFile);
+        await Internal_DnsItems_AddAppend_Async(groupName, dnsItemList, dnsItemList.Count > 0, saveToFile);
     }
 
     public async Task Clear_AnonDNSCrypt_RelayItems_Async(string groupName, bool saveToFile = true)
@@ -2044,7 +2492,8 @@ public partial class DnsServersManager
                 DnsReader dnsReader = new(dns);
                 if (dnsReader.Protocol == DnsEnums.DnsProtocol.AnonymizedDNSCryptRelay ||
                     dnsReader.Protocol == DnsEnums.DnsProtocol.UDP ||
-                    dnsReader.Protocol == DnsEnums.DnsProtocol.TCP)
+                    dnsReader.Protocol == DnsEnums.DnsProtocol.TCP ||
+                    dnsReader.Protocol == DnsEnums.DnsProtocol.TcpOverUdp)
                 {
                     relayItemElements.Add(new XElement("URL", dnsReader.Dns));
                 }
@@ -2303,6 +2752,7 @@ public partial class DnsServersManager
 
         return ((protocol == DnsEnums.DnsProtocol.UDP && filterByProtocols.UDP) ||
                 (protocol == DnsEnums.DnsProtocol.TCP && filterByProtocols.TCP) ||
+                (protocol == DnsEnums.DnsProtocol.TcpOverUdp && filterByProtocols.TcpOverUdp) ||
                 (protocol == DnsEnums.DnsProtocol.DnsCrypt && filterByProtocols.DnsCrypt) ||
                 (protocol == DnsEnums.DnsProtocol.DoT && filterByProtocols.DoT) ||
                 (protocol == DnsEnums.DnsProtocol.DoH && filterByProtocols.DoH) ||

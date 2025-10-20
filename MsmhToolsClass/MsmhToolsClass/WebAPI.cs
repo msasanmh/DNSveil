@@ -11,6 +11,8 @@ public class WebAPI
 
         try
         {
+            if (url.StartsWith("//", StringComparison.InvariantCulture)) return bytes;
+            if (!url.Contains("://", StringComparison.InvariantCulture)) return bytes;
             Uri uri = new(url, UriKind.Absolute);
             HttpRequest hr = new()
             {
@@ -46,6 +48,33 @@ public class WebAPI
         }
 
         return bytes;
+    }
+
+    public static async Task<List<string>> GetLinesFromTextLinkAsync(string urlOrFile, int timeoutMs)
+    {
+        List<string> linesResult = new();
+
+        try
+        {
+            byte[] bytes = Array.Empty<byte>();
+
+            if (File.Exists(urlOrFile))
+                bytes = await File.ReadAllBytesAsync(urlOrFile);
+            else
+                bytes = await DownloadFileAsync(urlOrFile, timeoutMs).ConfigureAwait(false);
+
+            if (bytes.Length > 0)
+            {
+                string content = Encoding.UTF8.GetString(bytes);
+                linesResult = content.SplitToLines(StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsTools GetLinesFromTextLinkAsync: " + ex.Message);
+        }
+
+        return linesResult.Distinct().ToList();
     }
 
     /// <summary>

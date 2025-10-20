@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
+using MsmhToolsClass;
 
 namespace SDCAgnosticServer;
 
@@ -26,20 +27,14 @@ public static class ConsoleTools
         }
     }
 
+    public static string? GetLogPath()
+    {
+        return Info.GetAppExecutablePathWithPreferredExtension("log");
+    }
+
     public static string? GetCommandsPath()
     {
-        try
-        {
-            using Process currentProcess = Process.GetCurrentProcess();
-            string al = Path.GetFullPath(currentProcess.ProcessName);
-            string? n = Path.GetFileNameWithoutExtension(al);
-            return !string.IsNullOrEmpty(n) ? Path.GetFullPath(n + ".txt") : null;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("ConsoleTool GetCommandsPath: " + ex.Message);
-            return null;
-        }
+        return Info.GetAppExecutablePathWithPreferredExtension("config");
     }
 
     public static async Task<object> ReadValueAsync(string msg, object value, Type type)

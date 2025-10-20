@@ -253,7 +253,7 @@ public partial class FormMain
             {
                 // Get Built-In Servers
                 CheckRequest checkRequest = new() { CheckMode = CheckMode.BuiltIn };
-                rdrList = await ReadBuiltInServersAsync(checkRequest, insecure, true);
+                rdrList = await ReadBuiltInServersAndSubsAsync(checkRequest, insecure, true);
             }
             else
             {
@@ -268,7 +268,7 @@ public partial class FormMain
                 {
                     // Get Built-In Servers
                     CheckRequest checkRequest = new() { CheckMode = CheckMode.BuiltIn };
-                    rdrList = await ReadBuiltInServersAsync(checkRequest, insecure, true);
+                    rdrList = await ReadBuiltInServersAndSubsAsync(checkRequest, insecure, true);
                 }
             }
 
@@ -283,7 +283,7 @@ public partial class FormMain
                 string dns = rdrList[n].DNS.Trim();
                 if (!string.IsNullOrEmpty(dns))
                 {
-                    if (IsDnsProtocolSupported(dns))
+                    if (DnsTools.IsDnsProtocolSupported(dns))
                     {
                         // Get DNS Details
                         DnsReader dnsReader = new(dns, null);

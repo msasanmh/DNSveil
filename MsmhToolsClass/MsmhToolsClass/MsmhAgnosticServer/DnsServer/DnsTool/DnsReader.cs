@@ -78,6 +78,7 @@ public class DnsReader
 
                     if (Protocol == DnsEnums.DnsProtocol.UDP) Scheme = "udp://";
                     else if (Protocol == DnsEnums.DnsProtocol.TCP) Scheme = "tcp://";
+                    else if (Protocol == DnsEnums.DnsProtocol.TcpOverUdp) Scheme = string.Empty; // Just IP:Port
                     else if (Protocol == DnsEnums.DnsProtocol.DoT) Scheme = "tls://";
                     else if (Protocol == DnsEnums.DnsProtocol.DoH) Scheme = "https://";
                     else if (Protocol == DnsEnums.DnsProtocol.DoQ) Scheme = "quic://";
@@ -104,7 +105,7 @@ public class DnsReader
 
                     // Get Company Name (SDNS)
                     string stampHost = stampReader.Host;
-                    if (string.IsNullOrEmpty(stampHost)) stampHost = stampReader.IP.ToString();
+                    if (string.IsNullOrEmpty(stampHost)) stampHost = stampReader.IP.ToStringNoScopeId();
                     if (string.IsNullOrEmpty(stampHost)) stampHost = stampReader.ProviderName;
                     if (!string.IsNullOrEmpty(CompanyNameDataFileContent))
                         CompanyName = GetCompanyName.HostToCompanyOffline(stampHost, CompanyNameDataFileContent);
@@ -156,6 +157,7 @@ public class DnsReader
                 }
                 else if (Dns.ToLower().Equals("system"))
                 {
+                    // System
                     Protocol = DnsEnums.DnsProtocol.System;
                     ProtocolName = DnsEnums.DnsProtocolName.System;
                 }
@@ -165,16 +167,17 @@ public class DnsReader
 
                     if (NetworkTool.IsIP(urid.Host, out _))
                     {
-                        // Plain DNS UDP
-                        Dns = $"udp://{urid.Host}:{urid.Port}";
+                        // Plain DNS TCP-Over-UDP
+                        Dns = $"{urid.Host}:{urid.Port}";
                         DnsWithRelay = Dns;
                         SetIpPortHostPath(Dns, 53);
 
-                        Protocol = DnsEnums.DnsProtocol.UDP;
-                        ProtocolName = DnsEnums.DnsProtocolName.UDP;
+                        Protocol = DnsEnums.DnsProtocol.TcpOverUdp;
+                        ProtocolName = DnsEnums.DnsProtocolName.TcpOverUdp;
                     }
                     else
                     {
+                        // Unknown
                         Protocol = DnsEnums.DnsProtocol.Unknown;
                         ProtocolName = DnsEnums.DnsProtocolName.Unknown;
                     }
@@ -202,7 +205,7 @@ public class DnsReader
             if (!string.IsNullOrEmpty(CompanyNameDataFileContent))
             {
                 string? ipOrHost = Host;
-                if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = IP.ToString();
+                if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = IP.ToStringNoScopeId();
                 if (string.IsNullOrEmpty(ipOrHost)) ipOrHost = urid.Host;
                 CompanyName = GetCompanyName.HostToCompanyOffline(ipOrHost, CompanyNameDataFileContent);
             }
@@ -271,7 +274,7 @@ public class DnsReader
     {
         var protocol = stampProtocol switch
         {
-            DNSCryptStampReader.StampProtocol.PlainDNS => DnsEnums.DnsProtocol.UDP,
+            DNSCryptStampReader.StampProtocol.PlainDNS => DnsEnums.DnsProtocol.TcpOverUdp,
             DNSCryptStampReader.StampProtocol.DnsCrypt => DnsEnums.DnsProtocol.DnsCrypt,
             DNSCryptStampReader.StampProtocol.DoT => DnsEnums.DnsProtocol.DoT,
             DNSCryptStampReader.StampProtocol.DoH => DnsEnums.DnsProtocol.DoH,

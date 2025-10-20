@@ -154,7 +154,7 @@
                                         </ScrollViewer>
                                         <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Background="{DynamicResource {x:Static themes:AppTheme.BackgroundDarkerBrush}}">
                                             <StackPanel Orientation="Horizontal" Margin="10,4,10,4">
-                                                <MsmhToolsWpfClass:WpfButton x:Name="QC_Rules_Button" Margin="0,0,10,0" Content="Rules" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                <MsmhToolsWpfClass:WpfButton x:Name="QC_Rules_Button" Margin="0,0,10,0" Content="Rules" HorizontalAlignment="Left" VerticalAlignment="Center" Click="QC_Rules_Button_Click"/>
 
                                             </StackPanel>
                                         </Grid>

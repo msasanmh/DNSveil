@@ -1,12 +1,26 @@
-﻿using MsmhToolsClass;
+﻿using System.Net;
+using MsmhToolsClass;
 using MsmhToolsClass.MsmhAgnosticServer;
-using System.Net;
 using static MsmhToolsClass.MsmhAgnosticServer.AgnosticProgram;
 
 namespace DNSveil.Logic.DnsServers;
 
 public static class EnumsAndStructs
 {
+    public struct SettingsUpdateDetails
+    {
+        public int UpdateSource { get; set; } = 24;
+        public DateTime LastUpdateSource { get; set; } = DateTime.MinValue;
+
+        public SettingsUpdateDetails() { }
+
+        public SettingsUpdateDetails(int updateSource, DateTime lastUpdateSource)
+        {
+            UpdateSource = updateSource;
+            LastUpdateSource = lastUpdateSource;
+        }
+    }
+
     public enum GroupMode
     {
         Subscription,
@@ -209,6 +223,7 @@ public static class EnumsAndStructs
     {
         public bool UDP { get; set; } = true;
         public bool TCP { get; set; } = true;
+        public bool TcpOverUdp { get; set; } = true;
         public bool DnsCrypt { get; set; } = true;
         public bool DoT { get; set; } = true;
         public bool DoH { get; set; } = true;
@@ -218,10 +233,11 @@ public static class EnumsAndStructs
 
         public FilterByProtocols() { }
 
-        public FilterByProtocols(bool udp, bool tcp, bool dnsCrypt, bool doT, bool doH, bool doQ, bool anonymizedDNSCrypt, bool obliviousDoH)
+        public FilterByProtocols(bool udp, bool tcp, bool tcpOverUdp, bool dnsCrypt, bool doT, bool doH, bool doQ, bool anonymizedDNSCrypt, bool obliviousDoH)
         {
             UDP = udp;
             TCP = tcp;
+            TcpOverUdp = tcpOverUdp;
             DnsCrypt = dnsCrypt;
             DoT = doT;
             DoH = doH;

@@ -54,7 +54,8 @@ public partial class MsmhAgnosticServer
                     req.ApplyFragment = IsFragmentActive;
                     req.ApplyChangeSNI = IsFakeSniActive;
                     if (!string.IsNullOrEmpty(rr.Sni) && !rr.Sni.Equals(req.AddressOrig)) req.AddressSNI = rr.Sni;
-                    if (rr.ApplyUpStreamProxy && !string.IsNullOrWhiteSpace(rr.ProxyScheme) && !IsUpstreamEqualToServerAddress(rr.ProxyScheme))
+                    if (rr.ApplyUpStreamProxy && !string.IsNullOrWhiteSpace(rr.ProxyScheme) &&
+                        !Endless.IsUpstreamEqualToServerAddress(rr.ProxyScheme))
                     {
                         req.ApplyUpstreamProxy = true;
                         req.ApplyUpstreamProxyToBlockedIPs = rr.ApplyUpStreamProxyToBlockedIPs;
@@ -94,7 +95,7 @@ public partial class MsmhAgnosticServer
                 req.AddressSNI = SettingsSSL_.DefaultSni;
             }
             if (!string.IsNullOrWhiteSpace(Settings_.UpstreamProxyScheme) &&
-                !IsUpstreamEqualToServerAddress(Settings_.UpstreamProxyScheme))
+                !Endless.IsUpstreamEqualToServerAddress(Settings_.UpstreamProxyScheme))
             {
                 req.ApplyUpstreamProxy = true;
                 req.ApplyUpstreamProxyToBlockedIPs = Settings_.ApplyUpstreamOnlyToBlockedIps;
@@ -106,7 +107,7 @@ public partial class MsmhAgnosticServer
             // Event
             string msgReqEvent = $"[{req.ClientIP}] [{req.ProxyName}] ";
 
-            if (req.ProxyName == Proxy.Name.HTTP || req.ProxyName == Proxy.Name.HTTPS)
+            if (req.ProxyName == Proxy.Name.HTTP || req.ProxyName == Proxy.Name.HTTP_S || req.ProxyName == Proxy.Name.HTTPS_SSL || req.ProxyName == Proxy.Name.SniProxy)
                 msgReqEvent += $"[{req.HttpMethod}] ";
 
             if (req.ProxyName == Proxy.Name.Socks4 || req.ProxyName == Proxy.Name.Socks4A || req.ProxyName == Proxy.Name.Socks5)
@@ -144,13 +145,13 @@ public partial class MsmhAgnosticServer
             AgnosticProgram.Rules.RulesResult rr = new();
             if (RulesProgram.RulesMode != AgnosticProgram.Rules.Mode.Disable)
             {
-                rr = await RulesProgram.GetAsync(req.ClientIP.ToString(), req.Address, req.Port, Settings_);
+                rr = await RulesProgram.GetAsync(req.ClientIP.ToStringNoScopeId(), req.Address, req.Port, Settings_, Endless, true, true);
             }
 
             // Apply Rules To Request
             req = ApplyRulesToRequest(req, rr, ref msgReqEvent, isCaptivePortal);
             if (req == null) return null;
-
+            
             // Check If Address Is An IP (Before Applying DNS)
             bool isIp = NetworkTool.IsIP(req.Address, out _);
 
@@ -158,17 +159,17 @@ public partial class MsmhAgnosticServer
             if (req.AddressOrig.Equals(req.Address) && !isIp)
             {
                 string dnsServer = Settings_.ServerUdpDnsAddress;
-
-                IPAddress ipAddr = IPAddress.None;
-                ipAddr = await GetIP.GetIpFromDnsAddressAsync(req.Address, dnsServer, false, Settings_); // IPv4
+                
+                IPAddress ipAddr = IPAddress.None; // DNS Upstream Proxy Will Be Applied On The DNS-Server Side. (Except UDP)
+                ipAddr = await GetIP.GetIpFromDnsAddressAsync(req.Address, dnsServer, Settings_.AllowInsecure, Settings_.DnsTimeoutSec, false, Settings_.BootstrapIpAddress, Settings_.BootstrapPort); // IPv4
                 if (ipAddr.Equals(IPAddress.None) || ipAddr.Equals(IPAddress.IPv6None))
                 {
-                    ipAddr = await GetIP.GetIpFromDnsAddressAsync(req.Address, dnsServer, true, Settings_); // IPv6
+                    ipAddr = await GetIP.GetIpFromDnsAddressAsync(req.Address, dnsServer, Settings_.AllowInsecure, Settings_.DnsTimeoutSec, true, Settings_.BootstrapIpAddress, Settings_.BootstrapPort); // IPv6
                 }
 
                 if (!ipAddr.Equals(IPAddress.None) && !ipAddr.Equals(IPAddress.IPv6None))
                 {
-                    req.Address = ipAddr.ToString();
+                    req.Address = ipAddr.ToStringNoScopeId();
                 }
             }
 
@@ -185,18 +186,26 @@ public partial class MsmhAgnosticServer
             {
                 if (RulesProgram.RulesMode != AgnosticProgram.Rules.Mode.Disable)
                 {
-                    rr = await RulesProgram.GetAsync(req.ClientIP.ToString(), req.Address, req.Port, Settings_);
+                    rr = await RulesProgram.GetAsync(req.ClientIP.ToStringNoScopeId(), req.Address, req.Port, Settings_, Endless, false, false);
                 }
 
                 // Apply Rules To Request
                 req = ApplyRulesToRequest(req, rr, ref msgReqEvent, isCaptivePortal);
                 if (req == null) return null;
             }
-
+            
             // If IP Is Cloudflare IP, Set The Clean IP
             if (isIp && !string.IsNullOrEmpty(Settings_.CloudflareCleanIP) &&
                 !req.Address.Equals(Settings_.CloudflareCleanIP) && CommonTools.IsCfIP(req.Address))
                 req.Address = Settings_.CloudflareCleanIP;
+
+            // HTTP Does Not Support Fake SNI (http://example.com)
+            if (req.ProxyName == Proxy.Name.HTTP)
+                req.ApplyChangeSNI = false;
+
+            // HTTPS_SSL Does Not Support Fragmentation
+            if (req.ProxyName == Proxy.Name.HTTPS_SSL)
+                req.ApplyFragment = false;
 
             // UDP Does Not Support Fragmentation
             if (req.ProxyName == Proxy.Name.Socks5 && req.Command == Socks.Commands.UDP)
@@ -217,7 +226,7 @@ public partial class MsmhAgnosticServer
             }
 
             // Turn ApplyChangeSNI Off If No SNI Is Set
-            if (string.IsNullOrWhiteSpace(req.AddressSNI) || req.AddressSNI.Equals(req.AddressOrig))
+            if (string.IsNullOrWhiteSpace(req.AddressSNI) || req.AddressSNI.Equals(req.AddressOrig) || req.AddressIsIp)
                 req.ApplyChangeSNI = false;
 
             // Event: Address
@@ -345,7 +354,9 @@ public partial class MsmhAgnosticServer
 
             // Change AddressType Based On DNS
             if (req.ProxyName == Proxy.Name.HTTP ||
-                req.ProxyName == Proxy.Name.HTTPS ||
+                req.ProxyName == Proxy.Name.HTTP_S ||
+                req.ProxyName == Proxy.Name.HTTPS_SSL ||
+                req.ProxyName == Proxy.Name.SniProxy ||
                 (req.ProxyName == Proxy.Name.Socks4A && req.AddressType == Socks.AddressType.Domain) ||
                 (req.ProxyName == Proxy.Name.Socks5 && req.AddressType == Socks.AddressType.Domain))
             {
@@ -365,31 +376,4 @@ public partial class MsmhAgnosticServer
         }
     }
 
-    private bool IsUpstreamEqualToServerAddress(string? proxyScheme)
-    {
-        bool result = false;
-
-        try
-        {
-            if (!string.IsNullOrEmpty(proxyScheme))
-            {
-                NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(proxyScheme, 443);
-                if (Settings_.ListenerPort == urid.Port)
-                {
-                    bool isIP = NetworkTool.IsIP(urid.Host, out IPAddress? ip);
-                    if (isIP && ip != null)
-                    {
-                        if (IPAddress.IsLoopback(ip) || ip.Equals(Settings_.LocalIpAddress)) result = true;
-                    }
-                    else
-                    {
-                        if (urid.Host.ToLower().Equals("localhost")) result = true;
-                    }
-                }
-            }
-        }
-        catch (Exception) { }
-
-        return result;
-    }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using System.Diagnostics;
+using System.Net;
 
 namespace MsmhToolsClass;
 
@@ -137,10 +138,10 @@ public sealed class ProcessMonitor : IDisposable
 
         Task task = Task.Run(() =>
         {
-            AddNewConnectedDevice(obj.saddr.ToString(), obj.ProcessID, obj.ProcessName);
-            AddNewConnectedDevice(obj.daddr.ToString(), obj.ProcessID, obj.ProcessName);
+            AddNewConnectedDevice(obj.saddr, obj.ProcessID, obj.ProcessName);
+            AddNewConnectedDevice(obj.daddr, obj.ProcessID, obj.ProcessName);
 
-            if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr.ToString())) return;
+            if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr)) return;
 
             PNetStatistics.BytesSent += obj.size;
         });
@@ -154,10 +155,10 @@ public sealed class ProcessMonitor : IDisposable
 
         Task task = Task.Run(() =>
         {
-            AddNewConnectedDevice(obj.saddr.ToString(), obj.ProcessID, obj.ProcessName);
-            AddNewConnectedDevice(obj.daddr.ToString(), obj.ProcessID, obj.ProcessName);
+            AddNewConnectedDevice(obj.saddr, obj.ProcessID, obj.ProcessName);
+            AddNewConnectedDevice(obj.daddr, obj.ProcessID, obj.ProcessName);
 
-            if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr.ToString())) return;
+            if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr)) return;
 
             PNetStatistics.BytesSent += obj.size;
         });
@@ -171,10 +172,10 @@ public sealed class ProcessMonitor : IDisposable
 
         Task task = Task.Run(() =>
         {
-            AddNewConnectedDevice(obj.saddr.ToString(), obj.ProcessID, obj.ProcessName);
-            AddNewConnectedDevice(obj.daddr.ToString(), obj.ProcessID, obj.ProcessName);
+            AddNewConnectedDevice(obj.saddr, obj.ProcessID, obj.ProcessName);
+            AddNewConnectedDevice(obj.daddr, obj.ProcessID, obj.ProcessName);
 
-            if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr.ToString())) return;
+            if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr)) return;
 
             PNetStatistics.BytesReceived += obj.size;
         });
@@ -188,10 +189,10 @@ public sealed class ProcessMonitor : IDisposable
 
         Task task = Task.Run(() =>
         {
-            AddNewConnectedDevice(obj.saddr.ToString(), obj.ProcessID, obj.ProcessName);
-            AddNewConnectedDevice(obj.daddr.ToString(), obj.ProcessID, obj.ProcessName);
+            AddNewConnectedDevice(obj.saddr, obj.ProcessID, obj.ProcessName);
+            AddNewConnectedDevice(obj.daddr, obj.ProcessID, obj.ProcessName);
 
-            if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr.ToString())) return;
+            if (BypassLocal && NetworkTool.IsLocalIP(obj.daddr)) return;
 
             PNetStatistics.BytesReceived += obj.size;
         });
@@ -248,13 +249,13 @@ public sealed class ProcessMonitor : IDisposable
         return false;
     }
 
-    private void AddNewConnectedDevice(string ipStr, int pid, string processName)
+    private void AddNewConnectedDevice(IPAddress ip, int pid, string processName)
     {
-        if (!NetworkTool.IsLocalIP(ipStr)) return;
+        if (!NetworkTool.IsLocalIP(ip)) return;
 
         ConnectedDevices cd = new()
         {
-            DeviceIP = ipStr,
+            DeviceIP = ip.ToStringNoScopeId(),
             ProcessID = pid,
             ProcessName = processName
         };

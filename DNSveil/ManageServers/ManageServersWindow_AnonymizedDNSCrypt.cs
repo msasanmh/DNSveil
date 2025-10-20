@@ -20,6 +20,7 @@ public partial class ManageServersWindow : WpfWindow
     {
         this.DispatchIt(() =>
         {
+            if (PART_Button1 != null) PART_Button1.IsEnabled = enable;
             AnonDNSCrypt_Settings_WpfFlyoutPopup.IsHitTestVisible = enable;
             AnonDNSCryptRelayBrowseButton.IsEnabled = enable;
             AnonDNSCryptTargetBrowseButton.IsEnabled = enable;
@@ -251,7 +252,7 @@ public partial class ManageServersWindow : WpfWindow
             await MainWindow.ServersManager.Update_GroupSettings_Async(groupItem.Name, groupSettings, true);
             await LoadSelectedGroupAsync(false); // Refresh
             await AnonDNSCrypt_Settings_WpfFlyoutPopup.CloseFlyAsync();
-            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -289,11 +290,11 @@ public partial class ManageServersWindow : WpfWindow
             if (DGG.SelectedItem is not GroupItem groupItem) return;
 
             // Update URLs
-            List<string> relayURLs = AnonDNSCryptRelayTextBox.Text.ReplaceLineEndings().Split(NL).ToList();
-            List<string> targetURLs = AnonDNSCryptTargetTextBox.Text.ReplaceLineEndings().Split(NL).ToList();
+            List<string> relayURLs = AnonDNSCryptRelayTextBox.Text.SplitToLines();
+            List<string> targetURLs = AnonDNSCryptTargetTextBox.Text.SplitToLines();
             await MainWindow.ServersManager.Update_Source_URLs_Async(groupItem.Name, relayURLs, targetURLs, true);
             await LoadSelectedGroupAsync(false); // Refresh
-            if (showToast) WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            if (showToast) WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -328,8 +329,8 @@ public partial class ManageServersWindow : WpfWindow
             // Save First
             await AnonDNSCryptSaveSourceAsync(false);
 
-            List<string> relayUrlsOrFiles = AnonDNSCryptRelayTextBox.Text.ReplaceLineEndings().Split(NL, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-            List<string> targetUrlsOrFiles = AnonDNSCryptTargetTextBox.Text.ReplaceLineEndings().Split(NL, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            List<string> relayUrlsOrFiles = AnonDNSCryptRelayTextBox.Text.SplitToLines(StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            List<string> targetUrlsOrFiles = AnonDNSCryptTargetTextBox.Text.SplitToLines(StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
             if (relayUrlsOrFiles.Count == 0 || targetUrlsOrFiles.Count == 0)
             {
@@ -339,6 +340,9 @@ public partial class ManageServersWindow : WpfWindow
                 return;
             }
 
+            // Get Malicious Domains
+            List<string> maliciousDomains = MainWindow.ServersManager.MaliciousDomains_Get_TotalItems();
+
             List<string> allRelays = new();
             for (int n = 0; n < relayUrlsOrFiles.Count; n++)
             {
@@ -347,12 +351,18 @@ public partial class ManageServersWindow : WpfWindow
                 for (int i = 0; i < relays.Count; i++)
                 {
                     string relay = relays[i];
-                    DnsReader dnsReader = new(relay);
-                    if (dnsReader.Protocol == DnsEnums.DnsProtocol.AnonymizedDNSCryptRelay ||
-                        dnsReader.Protocol == DnsEnums.DnsProtocol.UDP ||
-                        dnsReader.Protocol == DnsEnums.DnsProtocol.TCP)
+                    DnsReader dr = new(relay);
+                    if (dr.Protocol == DnsEnums.DnsProtocol.AnonymizedDNSCryptRelay ||
+                        dr.Protocol == DnsEnums.DnsProtocol.UDP ||
+                        dr.Protocol == DnsEnums.DnsProtocol.TCP ||
+                        dr.Protocol == DnsEnums.DnsProtocol.TcpOverUdp)
                     {
-                        allRelays.Add(dnsReader.Dns);
+                        // Ignore Malicious Domains
+                        if (maliciousDomains.IsContain(dr.Host)) continue;
+                        NetworkTool.URL url = NetworkTool.GetUrlOrDomainDetails(dr.Host, dr.Port);
+                        if (maliciousDomains.IsContain(url.BaseHost)) continue;
+
+                        allRelays.Add(dr.Dns);
                     }
                 }
             }
@@ -376,10 +386,15 @@ public partial class ManageServersWindow : WpfWindow
                 for (int i = 0; i < targets.Count; i++)
                 {
                     string target = targets[i];
-                    DnsReader dnsReader = new(target);
-                    if (dnsReader.Protocol == DnsEnums.DnsProtocol.DnsCrypt)
+                    DnsReader dr = new(target);
+                    if (dr.Protocol == DnsEnums.DnsProtocol.DnsCrypt)
                     {
-                        allTargets.Add(dnsReader.Dns);
+                        // Ignore Malicious Domains
+                        if (maliciousDomains.IsContain(dr.Host)) continue;
+                        NetworkTool.URL url = NetworkTool.GetUrlOrDomainDetails(dr.Host, dr.Port);
+                        if (maliciousDomains.IsContain(url.BaseHost)) continue;
+
+                        allTargets.Add(dr.Dns);
                     }
                 }
             }
@@ -457,7 +472,7 @@ public partial class ManageServersWindow : WpfWindow
 
             await LoadSelectedGroupAsync(true); // Refresh
 
-            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {

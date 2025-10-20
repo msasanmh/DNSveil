@@ -259,7 +259,7 @@ public class HttpRequest
                         if (scheme.ToLower().Equals("http://") && port == -1) port = 80;
                         if (string.IsNullOrEmpty(scheme) && port != -1) scheme = "https://";
                         if (string.IsNullOrEmpty(scheme) && port == -1) path = rawUrl; // e.g. DoH Request
-
+                        
                         // If Host Is IPv6
                         if (host.StartsWith('[')) host = host.TrimStart('[');
                         if (host.EndsWith(']')) host = host.TrimEnd(']');
@@ -394,7 +394,7 @@ public class HttpRequest
                         handler.ClientCertificateOptions = ClientCertificateOption.Manual;
                         handler.ServerCertificateCustomValidationCallback = callback;
                     }
-                    
+
                     if (!string.IsNullOrEmpty(hr.ProxyScheme))
                     {
                         NetworkCredential credential = new(hr.ProxyUser, hr.ProxyPass);
@@ -410,7 +410,7 @@ public class HttpRequest
                         handler.ClientCertificates.Add(hr.Certificate);
                     }
 
-                    httpClient = new(handler);
+                    httpClient = new(handler, disposeHandler: true);
                 }
                 else
                 {
@@ -428,7 +428,7 @@ public class HttpRequest
                             return new NetworkStream(socket, ownsSocket: true);
                         }
                     };
-                    
+
                     handler.SslOptions.EnabledSslProtocols = protocols;
                     handler.AllowAutoRedirect = hr.AllowAutoRedirect;
 
@@ -438,7 +438,7 @@ public class HttpRequest
                         handler.SslOptions.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
                         handler.SslOptions.RemoteCertificateValidationCallback = callback;
                     }
-                    
+
                     if (!string.IsNullOrEmpty(hr.ProxyScheme))
                     {
                         NetworkCredential credential = new(hr.ProxyUser, hr.ProxyPass);
@@ -456,13 +456,15 @@ public class HttpRequest
 
                     httpClient = new(handler, disposeHandler: true);
                 }
-                
+
                 HttpContent? content = null;
                 if (hr.DataToSend.Length > 0 && hr.Method != HttpMethod.Get && hr.Method != HttpMethod.Head)
                 {
                     content = new ReadOnlyMemoryContent(hr.DataToSend);
                     if (!string.IsNullOrEmpty(hr.ContentType))
+                    {
                         content.Headers.ContentType = new MediaTypeHeaderValue(hr.ContentType);
+                    }
                 }
 
                 httpClient.Timeout = TimeSpan.FromMilliseconds(hr.TimeoutMS);
@@ -471,8 +473,25 @@ public class HttpRequest
 
                 HttpRequestMessage message = new(hr.Method, hr.URI)
                 {
-                    Content = content
+                    Content = content,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher
                 };
+
+                if (hr.IsHttp3) // Only Windows 11 Above
+                {
+                    message.Version = HttpVersion.Version30;
+                    message.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                    httpClient.DefaultRequestVersion = HttpVersion.Version30;
+                    httpClient.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                }
+                else
+                {
+                    // Necessary For Newer DoHes
+                    message.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+                    httpClient.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+                }
+
                 if (!string.IsNullOrEmpty(hr.ContentType))
                     message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(hr.ContentType));
                 message.Headers.TryAddWithoutValidation("User-Agent", hr.UserAgent);
@@ -534,15 +553,9 @@ public class HttpRequest
                 {
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {hr.Authorization.BearerToken}");
                 }
-
-                if (hr.IsHttp3) // Only Windows 11 Above
-                {
-                    httpClient.DefaultRequestVersion = HttpVersion.Version30;
-                    httpClient.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-                }
                 
                 HttpResponseMessage response = await httpClient.SendAsync(message, hr.CT).ConfigureAwait(false);
-
+                
                 hrr.IsSuccess = response.IsSuccessStatusCode;
                 hrr.ProtocolVersion = $"HTTP/{response.Version}";
                 hrr.StatusCode = response.StatusCode;
@@ -646,6 +659,14 @@ public class HttpRequest
                     }
                     catch (Exception) { }
                 }
+                else
+                {
+                    string exceptionMsg = we.Message;
+                    hrr.StatusDescription = exceptionMsg;
+                    Debug.WriteLine("HttpRequest SendAsync: " + exceptionMsg);
+
+                    hrr.IsSuccess = false;
+                }
             }
             catch (HttpRequestException hre)
             {
@@ -655,11 +676,19 @@ public class HttpRequest
                     hrr.StatusCodeNumber = (int)hrr.StatusCode;
                     hrr.StatusDescription = hrr.StatusCode.ToString();
                 }
+                else
+                {
+                    hrr.StatusDescription = hre.Message;
+                }
+
+                hrr.IsSuccess = false;
             }
             catch (Exception ex)
             {
                 if (hr.URI == null)
-                    Debug.WriteLine("HttpRequest SendAsync: " + ex.GetInnerExceptions());
+                {
+                    Debug.WriteLine("HttpRequest SendAsync: URI Is NULL.");
+                }
                 else
                 {
                     try
@@ -679,11 +708,16 @@ public class HttpRequest
                                 break;
                             }
                         }
-                        //Debug.WriteLine($"HttpRequest SendAsync. URL: {hr.URI}, Host Header: {host}");
-                        Debug.WriteLine("HttpRequest SendAsync: " + ex.GetInnerExceptions());
+                        if (!string.IsNullOrEmpty(host))
+                            Debug.WriteLine($"HttpRequest SendAsync. URL: {hr.URI}, Host Header: {host}");
                     }
                     catch (Exception) { }
                 }
+
+                string innerExceptions = ex.GetInnerExceptions();
+                hrr.StatusDescription = innerExceptions;
+                Debug.WriteLine("HttpRequest SendAsync: " + innerExceptions);
+
                 hrr.IsSuccess = false;
             }
         });

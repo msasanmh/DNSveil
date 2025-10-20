@@ -1,4 +1,6 @@
-﻿namespace MsmhToolsClass.MsmhAgnosticServer;
+﻿using System.Diagnostics;
+
+namespace MsmhToolsClass.MsmhAgnosticServer;
 
 public class Stats
 {
@@ -52,18 +54,31 @@ public class Stats
 
     public void AddBytes(int bytes, ByteType byteType)
     {
-        bool isDouble = double.TryParse(bytes.ToString(), out double value);
-        if (isDouble)
+        try
         {
-            if (byteType == ByteType.Sent)
+            bool isDouble = double.TryParse(bytes.ToString(), out double value);
+            if (isDouble)
             {
-                BandwidthSent += value;
-            }
+                if (byteType == ByteType.Sent)
+                {
+                    lock (this)
+                    {
+                        BandwidthSent += value;
+                    }
+                }
 
-            if (byteType == ByteType.Received)
-            {
-                BandwidthReceived += value;
+                if (byteType == ByteType.Received)
+                {
+                    lock (this)
+                    {
+                        BandwidthReceived += value;
+                    }
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Stats: " + ex.Message);
         }
     }
 

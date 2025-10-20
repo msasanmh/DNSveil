@@ -6,11 +6,12 @@ public class Proxy
     {
         Test = 0,
         HTTP = 1,
-        HTTPS = 2,
-        Socks4 = 3,
-        Socks4A = 4,
-        Socks5 = 5,
-        SniProxy = 6
+        HTTP_S = 2,
+        HTTPS_SSL = 3,
+        Socks4 = 4,
+        Socks4A = 5,
+        Socks5 = 6,
+        SniProxy = 7
     }
 }
 

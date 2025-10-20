@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
@@ -52,7 +53,7 @@ public class DoHClient
                 };
 
                 Uri uri = uriBuilder.Uri;
-                
+
                 HttpRequest hr = new()
                 {
                     CT = CT,
@@ -68,13 +69,16 @@ public class DoHClient
                 };
                 hr.Headers.Add("host", Reader.Host); // In Case Of Using Bootstrap
                 if (NetworkTool.IsIP(dnsServerIP, out IPAddress? ip) && ip != null) hr.AddressIP = ip;
-                
+
                 if (Reader.Scheme.Equals("h3://")) hr.IsHttp3 = true;
-                
+
                 HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
                 result = hrr.Data;
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("DoHClient: " + ex.GetInnerExceptions());
+            }
         });
         try { await task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMS), CT).ConfigureAwait(false); } catch (Exception) { }
         

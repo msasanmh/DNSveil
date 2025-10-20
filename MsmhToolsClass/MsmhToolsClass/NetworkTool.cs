@@ -292,6 +292,9 @@ public static class NetworkTool
                 url.SchemeName = scheme[..(indexOfScheme - separator_Scheme.Length)];
             }
 
+            // Has Domain
+            bool hasDomain = true;
+
             // Get Port
             string tempGetPort = urlOrDomain.Trim();
             int pathIndex = tempGetPort.IndexOf('/');
@@ -299,10 +302,14 @@ public static class NetworkTool
             {
                 // Strip Path
                 tempGetPort = tempGetPort[..pathIndex];
+                hasDomain = !string.IsNullOrEmpty(tempGetPort);
             }
             int portIndex = tempGetPort.LastIndexOf(':'); // LastIndexOf (Domain May Be IPv6)
             if (portIndex != -1)
             {
+                string domainOnly = tempGetPort[..portIndex];
+                hasDomain = !string.IsNullOrEmpty(domainOnly);
+
                 string portStr = tempGetPort[(portIndex + 1)..];
                 bool isPortInt = int.TryParse(portStr, out int portOut);
                 if (isPortInt)
@@ -315,8 +322,11 @@ public static class NetworkTool
             urlOrDomain = urlOrDomain.Trim();
             if (string.IsNullOrEmpty(urlOrDomain)) return url;
 
+            // e.g. DoH Get Would Be Like: /dns-query?dns=AAABAAABAAAAAAAABXlhaG9vA2NvbQAAAQAB
+            string readURI = hasDomain ? $"https://{urlOrDomain}" : urlOrDomain.StartsWith('/') ? $"https://{IPAddress.Loopback}{urlOrDomain}" : $"https://{IPAddress.Loopback}/{urlOrDomain}";
+            
             Uri? uri = null;
-            try { uri = new($"https://{urlOrDomain}", UriKind.Absolute); }
+            try { uri = new(readURI, UriKind.Absolute); }
             catch (Exception ex)
             {
                 Debug.WriteLine("NetworkTool GetUrlOrDomainDetails Domain ==> " + urlOrDomain);
@@ -692,29 +702,22 @@ public static class NetworkTool
     /// <summary>
     /// IsLocalIP
     /// </summary>
-    /// <param name="ipStr">IPv4 Or IPv6</param>
-    public static bool IsLocalIP(string ipStr)
+    /// <param name="ip">IPv4 Or IPv6</param>
+    public static bool IsLocalIP(IPAddress ip)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(ipStr)) return false;
-            bool isIp = IsIP(ipStr, out IPAddress? ip);
-            if (!isIp) return false;
+            if (IPAddress.IsLoopback(ip)) return true;
+            if (ip.IsIPv6LinkLocal) return true;
+            if (ip.IsIPv6SiteLocal) return true;
+            if (ip.IsIPv6UniqueLocal) return true;
+            if (ip.Equals(IPAddress.None)) return true;
+            if (ip.Equals(IPAddress.IPv6None)) return true;
+            if (ip.Equals(IPAddress.Any)) return true;
+            if (ip.Equals(IPAddress.IPv6Any)) return true;
+            if (ip.Equals(IPAddress.Loopback)) return true;
+            if (ip.Equals(IPAddress.IPv6Loopback)) return true;
 
-            if (isIp && ip != null)
-            {
-                if (IPAddress.IsLoopback(ip)) return true;
-                if (ip.IsIPv6LinkLocal) return true;
-                if (ip.IsIPv6SiteLocal) return true;
-                if (ip.IsIPv6UniqueLocal) return true;
-                if (ip.Equals(IPAddress.None)) return true;
-                if (ip.Equals(IPAddress.IPv6None)) return true;
-                if (ip.Equals(IPAddress.Any)) return true;
-                if (ip.Equals(IPAddress.IPv6Any)) return true;
-                if (ip.Equals(IPAddress.Loopback)) return true;
-                if (ip.Equals(IPAddress.IPv6Loopback)) return true;
-            }
-            
             List<string> localCIDRs = new()
             {
                 "0.0.0.0/8",
@@ -741,7 +744,7 @@ public static class NetworkTool
             for (int n = 0; n < localCIDRs.Count; n++)
             {
                 string cidr = localCIDRs[n].Trim();
-                bool isInRange = IsIpInRange(ipStr, cidr);
+                bool isInRange = IsIpInRange(ip, cidr);
                 if (isInRange) return true;
             }
             return false;
@@ -750,6 +753,17 @@ public static class NetworkTool
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// IsLocalIP
+    /// </summary>
+    /// <param name="ipStr">IPv4 Or IPv6</param>
+    public static bool IsLocalIP(string ipStr)
+    {
+        bool isIP = IsIP(ipStr, out IPAddress? ip);
+        if (isIP && ip != null) return IsLocalIP(ip);
+        return false;
     }
 
     /// <summary>
@@ -1138,17 +1152,17 @@ public static class NetworkTool
     /// <summary>
     /// Is Ip In Range
     /// </summary>
-    /// <param name="ipStr">IPv4 Or IPv6</param>
+    /// <param name="ip">IPv4 Or IPv6</param>
     /// <param name="cidr">IPv4 CIDR Or IPv6 CIDR</param>
     /// <returns>True Or False</returns>
-    public static bool IsIpInRange(string ipStr, string cidr)
+    public static bool IsIpInRange(IPAddress ip, string cidr)
     {
         bool isInRange = false;
 
         try
         {
             // Split CIDR Into Base IP And Prefix Length
-            if (!string.IsNullOrWhiteSpace(ipStr) && cidr.Contains('/'))
+            if (cidr.Contains('/'))
             {
                 string[] split = cidr.Split('/', StringSplitOptions.TrimEntries);
                 if (split.Length == 2)
@@ -1159,38 +1173,34 @@ public static class NetworkTool
                     if (isInt)
                     {
                         // Convert Input IP And CIDR Base To Byte Array
-                        bool isInputIP = IPAddress.TryParse(ipStr, out IPAddress? ip);
-                        if (isInputIP && ip != null)
+                        bool isCidrBaseIP = IPAddress.TryParse(cidrBase, out IPAddress? cidrIP);
+                        if (isCidrBaseIP && cidrIP != null)
                         {
-                            bool isCidrBaseIP = IPAddress.TryParse(cidrBase, out IPAddress? cidrIP);
-                            if (isCidrBaseIP && cidrIP != null)
+                            byte[] ipBytes = ip.GetAddressBytes();
+                            byte[] cidrBytes = cidrIP.GetAddressBytes();
+
+                            // If IP Address Families Match
+                            if (ipBytes.Length == cidrBytes.Length)
                             {
-                                byte[] ipBytes = ip.GetAddressBytes();
-                                byte[] cidrBytes = cidrIP.GetAddressBytes();
+                                // Calculate The Mask From The Prefix Length
+                                int maskBits = prefixLength;
+                                byte[] maskBytes = new byte[ipBytes.Length];
 
-                                // If IP Address Families Match
-                                if (ipBytes.Length == cidrBytes.Length)
+                                for (int n = 0; n < maskBytes.Length; n++)
                                 {
-                                    // Calculate The Mask From The Prefix Length
-                                    int maskBits = prefixLength;
-                                    byte[] maskBytes = new byte[ipBytes.Length];
-
-                                    for (int n = 0; n < maskBytes.Length; n++)
-                                    {
-                                        int remainingBits = Math.Min(maskBits, 8);
-                                        maskBytes[n] = (byte)(255 << (8 - remainingBits));
-                                        maskBits -= remainingBits;
-                                    }
-
-                                    // Apply The Mask And Compare
-                                    for (int n = 0; n < ipBytes.Length; n++)
-                                    {
-                                        if ((ipBytes[n] & maskBytes[n]) != (cidrBytes[n] & maskBytes[n])) return false;
-                                    }
-
-                                    // If All Matches It's In Range
-                                    isInRange = true;
+                                    int remainingBits = Math.Min(maskBits, 8);
+                                    maskBytes[n] = (byte)(255 << (8 - remainingBits));
+                                    maskBits -= remainingBits;
                                 }
+
+                                // Apply The Mask And Compare
+                                for (int n = 0; n < ipBytes.Length; n++)
+                                {
+                                    if ((ipBytes[n] & maskBytes[n]) != (cidrBytes[n] & maskBytes[n])) return false;
+                                }
+
+                                // If All Matches It's In Range
+                                isInRange = true;
                             }
                         }
                     }
@@ -1203,6 +1213,19 @@ public static class NetworkTool
         }
 
         return isInRange;
+    }
+
+    /// <summary>
+    /// Is Ip In Range
+    /// </summary>
+    /// <param name="ipStr">IPv4 Or IPv6</param>
+    /// <param name="cidr">IPv4 CIDR Or IPv6 CIDR</param>
+    /// <returns>True Or False</returns>
+    public static bool IsIpInRange(string ipStr, string cidr)
+    {
+        bool isIP = IsIP(ipStr, out IPAddress? ip);
+        if (isIP && ip != null) return IsIpInRange(ip, cidr);
+        return false;
     }
 
     public static int GetNextPort(int currentPort)
@@ -1659,7 +1682,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("NetworkTool SetDnsIPv4: " + ex.Message);
+            Debug.WriteLine("NetworkTool SetDnsIPv4Async: " + ex.Message);
         }
     }
 
@@ -1713,7 +1736,7 @@ public static class NetworkTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("NetworkTool SetDnsIPv6: " + ex.Message);
+            Debug.WriteLine("NetworkTool SetDnsIPv6Async: " + ex.Message);
         }
     }
 
@@ -1861,6 +1884,246 @@ public static class NetworkTool
     }
 
     /// <summary>
+    /// Set Loopback To System. (Windows And Linux)
+    /// </summary>
+    public static async Task SetDnsToLoopbackAutoAsync()
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Find Active NICs
+                List<NICResult> nics = GetAllNetworkInterfaces();
+                for (int n = 0; n < nics.Count; n++)
+                {
+                    NICResult nicR = nics[n];
+                    if (nicR.IsUpAndRunning)
+                    {
+                        await SetDnsIPv4Async(nicR.NIC_Name, IPAddress.Loopback.ToString());
+                        await SetDnsIPv6Async(nicR.NIC_Name, IPAddress.IPv6Loopback.ToStringNoScopeId());
+                    }
+                }
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                try
+                {
+                    // 1. Try Systemd (resolvectl)
+                    // Find Active NICs
+                    List<NICResult> nics = GetNetworkInterfaces();
+                    for (int n = 0; n < nics.Count; n++)
+                    {
+                        NICResult nicR = nics[n];
+                        if (nicR.IsUpAndRunning)
+                        {
+                            string command = "resolvectl";
+                            string args1 = $"dns {nicR.NIC_Name} 127.0.0.1";
+                            string args2 = $"domain {nicR.NIC_Name} ~.";
+                            await ProcessManager.ExecuteAsync(command, null, args1, true, true);
+                            await ProcessManager.ExecuteAsync(command, null, args2, true, true);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("NetworkTool SetDnsToLoopbackAutoAsync Linux Systemd: " + e.Message);
+                }
+
+                try
+                {
+                    // 2. Try No Systemd (resolv.conf)
+                    string resolveConfPath = "/etc/resolv.conf";
+
+                    // Backup First
+                    string backupPath = "/etc/resolv.conf.backup";
+
+                    bool isBackupSetToLoopback = false;
+                    if (File.Exists(backupPath))
+                    {
+                        string backupContent = await File.ReadAllTextAsync(backupPath);
+                        if (backupContent.Contains(IPAddress.Loopback.ToString())) isBackupSetToLoopback = true;
+                    }
+
+                    if (File.Exists(resolveConfPath) && !isBackupSetToLoopback)
+                    {
+                        byte[] bytes = await File.ReadAllBytesAsync(resolveConfPath);
+                        await File.WriteAllBytesAsync(backupPath, bytes);
+                    }
+
+                    // Set DNS To Loopback
+                    string[] lines =
+                    {
+                        "nameserver 127.0.0.1",
+                        "options edns0 trust-ad", // Support DNSSEC/EDNS
+                        "search local" // Resolve Short Hostnames With Suffix
+                    };
+
+                    await File.WriteAllLinesAsync(resolveConfPath, lines);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("NetworkTool SetDnsToLoopbackAutoAsync Linux No Systemd: " + e.Message);
+                }
+
+                try
+                {
+                    // 3. Try Disable System DNS (systemctl)
+                    string command = "systemctl";
+                    string args1 = $"stop systemd-resolved.service";
+                    string args2 = $"disable systemd-resolved.service";
+                    await ProcessManager.ExecuteAsync(command, null, args1, true, true);
+                    await ProcessManager.ExecuteAsync(command, null, args2, true, true);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("NetworkTool SetDnsToLoopbackAutoAsync Linux Disable System DNS: " + e.Message);
+                }
+
+                try
+                {
+                    // Restart Service
+                    string command = "systemctl";
+                    string args1 = $"daemon-reexec";
+                    string args2 = $"daemon-reload";
+                    await ProcessManager.ExecuteAsync(command, null, args1, true, true);
+                    await ProcessManager.ExecuteAsync(command, null, args2, true, true);
+                }
+                catch (Exception) { }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool SetDnsToLoopbackAutoAsync: " + ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Unset DNS To DHCP. (Windows And Linux)
+    /// </summary>
+    public static async Task UnsetDnsAutoAsync()
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Find Active NICs
+                List<NICResult> nics = GetAllNetworkInterfaces();
+                for (int n = 0; n < nics.Count; n++)
+                {
+                    NICResult nicR = nics[n];
+                    if (nicR.IsUpAndRunning)
+                    {
+                        // Unset To DHCP
+                        await UnsetDnsIPv4Async(nicR.NIC_Name);
+                        await UnsetDnsIPv6Async(nicR.NIC_Name);
+                    }
+                }
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                try
+                {
+                    // 1. Try Systemd (resolvectl)
+                    // Find Active NICs
+                    List<NICResult> nics = GetNetworkInterfaces();
+                    for (int n = 0; n < nics.Count; n++) // Revert All Interfaces
+                    {
+                        NICResult nicR = nics[n];
+                        if (nicR.IsUpAndRunning)
+                        {
+                            string command = "resolvectl";
+                            string args = $"revert -i {nicR.NIC_Name}";
+                            await ProcessManager.ExecuteAsync(command, null, args, true, true);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("NetworkTool UnsetDnsAutoAsync Linux Systemd: " + e.Message);
+                }
+
+                try
+                {
+                    // 2. Try No Systemd (resolv.conf)
+                    string resolveConfPath = "/etc/resolv.conf";
+
+                    // Backup Path
+                    string backupPath = "/etc/resolv.conf.backup";
+
+                    bool isConfSetToLoopback = false;
+                    if (File.Exists(resolveConfPath))
+                    {
+                        string confContent = await File.ReadAllTextAsync(resolveConfPath);
+                        if (confContent.Contains(IPAddress.Loopback.ToString())) isConfSetToLoopback = true;
+                    }
+                    else
+                    {
+                        isConfSetToLoopback = true; // It Doesn't Exist And Must Be Rewrite.
+                    }
+
+                    if (isConfSetToLoopback)
+                    {
+                        bool isBackupExist = false;
+                        if (File.Exists(backupPath))
+                        {
+                            string backupContent = await File.ReadAllTextAsync(backupPath);
+                            if (!string.IsNullOrWhiteSpace(backupContent) && !backupContent.Contains(IPAddress.Loopback.ToString())) isBackupExist = true;
+                        }
+
+                        if (isBackupExist)
+                        {
+                            // Revert To Backup
+                            byte[] bytes = await File.ReadAllBytesAsync(backupPath);
+                            await File.WriteAllBytesAsync(resolveConfPath, bytes);
+                        }
+                        else
+                        {
+                            // Backup Not Exist. Set To Google
+                            string line = "nameserver 8.8.8.8\n";
+                            await File.WriteAllTextAsync(resolveConfPath, line);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("NetworkTool UnsetDnsAutoAsync Linux No Systemd: " + e.Message);
+                }
+
+                try
+                {
+                    // 3. Try Enable System DNS (systemctl)
+                    string command = "systemctl";
+                    string args1 = $"enable systemd-resolved.service";
+                    string args2 = $"start systemd-resolved.service";
+                    string args3 = $"restart systemd-resolved.service"; // Must Be Last Command
+                    await ProcessManager.ExecuteAsync(command, null, args1, true, true);
+                    await ProcessManager.ExecuteAsync(command, null, args2, true, true);
+                    await ProcessManager.ExecuteAsync(command, null, args3, true, true);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("NetworkTool UnsetDnsAutoAsync Linux Disable System DNS: " + e.Message);
+                }
+
+                try
+                {
+                    // Restart Service
+                    string command = "systemctl";
+                    string args1 = $"daemon-reexec";
+                    string args2 = $"daemon-reload";
+                    await ProcessManager.ExecuteAsync(command, null, args1, true, true);
+                    await ProcessManager.ExecuteAsync(command, null, args2, true, true);
+                }
+                catch (Exception) { }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool UnsetDnsAutoAsync: " + ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Is DNS Set to 127.0.0.1 - Using Nslookup (Windows Only) // Hangs
     /// </summary>
     public static async Task<(bool IsSet, string Host, string IP)> IsDnsSetToLocalAsync()
@@ -2001,6 +2264,9 @@ public static class NetworkTool
 
             if (string.IsNullOrWhiteSpace(nonBlockedForeignDomain)) nonBlockedForeignDomain = "google.com";
 
+            if (timeoutMS < 1000) timeoutMS = 1000;
+            int timeoutSec = timeoutMS / 1000;
+
             bool byPing = false, byDnsIPv4 = false, byDnsIPv6 = false, byDnsIP = false;
 
             async Task byPingAsync()
@@ -2010,24 +2276,23 @@ public static class NetworkTool
 
             async Task byDnsIPv4Async()
             {
-                IPAddress domainIPv4 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{ip}", false, timeoutMS, false, IPAddress.None, 0);
+                IPAddress domainIPv4 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{ip}", false, timeoutSec, false, IPAddress.None, 0);
                 byDnsIPv4 = domainIPv4 != IPAddress.None && domainIPv4 != IPAddress.IPv6None;
             }
 
             async Task byDnsIPv6Async()
             {
-                IPAddress domainIPv6 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{ip}", false, timeoutMS, true, IPAddress.None, 0);
+                IPAddress domainIPv6 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{ip}", false, timeoutSec, true, IPAddress.None, 0);
                 byDnsIPv6 = domainIPv6 != IPAddress.None && domainIPv6 != IPAddress.IPv6None;
             }
-
+            
             await Task.WhenAll(byPingAsync(), byDnsIPv4Async(), byDnsIPv6Async());
-
             byDnsIP = byDnsIPv4 || byDnsIPv6;
             
             if (byPing && byDnsIP) return InternetState.Online;
             if (byPing && !byDnsIP) return InternetState.PingOnly;
             if (!byPing && byDnsIP) return InternetState.DnsOnly;
-
+            
             bool isAliveByNic = await IsInternetAliveByNicAsync(ip, timeoutMS);
             return isAliveByNic ? InternetState.Unstable : InternetState.Offline;
         }
@@ -2125,9 +2390,9 @@ public static class NetworkTool
                     HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
 
                     List<string> resultList = new()
-                {
-                    hrr.StatusCode.ToString()
-                };
+                    {
+                        hrr.StatusCode.ToString()
+                    };
 
                     for (int n = 0; n < hrr.Headers.Count; n++)
                     {
@@ -2457,29 +2722,46 @@ public static class NetworkTool
         try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
     }
 
-    public static async Task<bool> CanConnectAsync(string host, int port, int timeoutMS)
+    public static TcpState GetTcpRemoteState(TcpClient tcpClient)
     {
-        var task = Task.Run(async () =>
+        try
         {
-            try
+            if (tcpClient.Client == null) return TcpState.Unknown;
+
+            IPGlobalProperties ipgp = IPGlobalProperties.GetIPGlobalProperties();
+            if (ipgp != null)
             {
-                string url = $"https://{host}:{port}";
-                Uri uri = new(url, UriKind.Absolute);
+                TcpConnectionInformation[]? tcis = ipgp.GetActiveTcpConnections();
+                if (tcis != null)
+                {
+                    for (int n = 0; n < tcis.Length; n++)
+                    {
+                        TcpConnectionInformation? tci = tcis[n];
+                        if (tci != null)
+                        {
+                            if (tcpClient.Client != null)
+                            {
+                                if (tcpClient.Client.RemoteEndPoint is IPEndPoint tcpClientEndPoint)
+                                {
+                                    if (tcpClientEndPoint.Address.Equals(tci.RemoteEndPoint.Address) || tcpClientEndPoint.Address.ToString().EndsWith(tci.RemoteEndPoint.Address.ToString()))
+                                        if (tci.RemoteEndPoint.Port.Equals(tcpClientEndPoint.Port))
+                                        {
+                                            return tci.State;
+                                        }
 
-                using HttpClient httpClient = new();
-                httpClient.Timeout = TimeSpan.FromMilliseconds(timeoutMS);
-
-                await httpClient.GetAsync(uri);
-
-                return true;
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            catch (Exception)
-            {
-                return false;
-            }
-        });
 
-        try { return await task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMS + 100)); } catch (Exception) { return false; }
+            return TcpState.Unknown;
+        }
+        catch (Exception)
+        {
+            return TcpState.Unknown;
+        }
     }
 
 }

@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using System.Reflection;
+using MsmhToolsClass.MsmhAgnosticServer;
 
 namespace SDCAgnosticServer;
 
@@ -87,7 +89,7 @@ public class Help
         await WriteToStdoutAsync(help);
 
         // Option Of ParentProcess
-        help = "\n  <Option>";
+        help = $"\n  <Option>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
         help = $"    -{Key.ParentProcess.PID}=";
@@ -103,7 +105,7 @@ public class Help
 
         // Setting Command Mode
         // setting -Port=m -WorkingMode= -MaxRequests= -DnsTimeoutSec= -ProxyTimeoutSec= -KillOnCpuUsage= -BlockPort80=
-        // -AllowInsecure= -DNSs= -CfCleanIP= -BootstrapIp= -BootstrapPort=
+        // -AllowInsecure= -DNSs="" -CfCleanIP= -BootstrapIp= -BootstrapPort=
         // -ProxyScheme= -ProxyUser= -ProxyPass= -OnlyBlockedIPs=
         help = $"\n{Key.Setting.Name} <Option>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
@@ -111,12 +113,19 @@ public class Help
         await WriteToStdoutAsync(help);
 
         // Option Of AgnosticSettings
-        help = "\n  <Option>";
+        help = $"\n  <Option>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
         help = $"    -{Key.Setting.Port}=";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
         help = $"      Server Listener Port.";
+        await WriteToStdoutAsync(help);
+
+        help = $"    -{Key.Setting.WorkingMode}=";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      {AgnosticSettings.WorkingMode.Dns}: Only DNS Servers (UDP/TCP/DoH).";
+        help += $"      {AgnosticSettings.WorkingMode.Proxy}: UDP/TCP DNS Servers And Proxies.";
+        help += $"      {AgnosticSettings.WorkingMode.DnsAndProxy}: All DNS And Proxy Servers (Not Recommended).";
         await WriteToStdoutAsync(help);
 
         help = $"    -{Key.Setting.MaxRequests}=";
@@ -151,7 +160,9 @@ public class Help
 
         help = $"    -{Key.Setting.DNSs}=";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      DNS Servers To Connect To (Comma Separated).";
+        help = $"      DNS Servers To Connect To (Require Double Quotes).";
+        help += $"      Format 1: (Comma Separated) e.g. \"tcp://8.8.8.8,udp://9.9.9.9:9953,https://dns.google/dns-query\"";
+        help += $"      Format 2: (File Path - Each Line One DNS) e.g. \"PathToFile.txt\"";
         await WriteToStdoutAsync(help);
 
         help = $"    -{Key.Setting.CfCleanIP}=";
@@ -207,7 +218,7 @@ public class Help
         await WriteToStdoutAsync(help);
 
         // Option Of SSLSettings
-        help = "\n  <Option>";
+        help = $"\n  <Option>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
         help = $"    -{Key.SSLSetting.Enable}=";
@@ -215,35 +226,45 @@ public class Help
         help = $"      Use Certificate To Enable DoH/HTTPS Proxy And Decrypt SSL (True/False).";
         await WriteToStdoutAsync(help);
 
-        help = $"    -{Key.SSLSetting.RootCA_Path}=";
+        help = $"    -{Key.SSLSetting.ServerDomainName}=";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Path To Your Root Certificate File (e.g. C:\\RootCA.crt) - Leave Empty To Generate.";
-        await WriteToStdoutAsync(help);
-
-        help = $"    -{Key.SSLSetting.RootCA_KeyPath}=";
-        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Path To Your Root Certificate Private Key File. (e.g. C:\\RootCA.key).";
-        await WriteToStdoutAsync(help);
-
-        help = $"    -{Key.SSLSetting.Cert_Path}=";
-        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Path To Your Certificate File Issued With Your RootCA (e.g. C:\\Local.crt) - Leave Empty To Generate.";
-        await WriteToStdoutAsync(help);
-
-        help = $"    -{Key.SSLSetting.Cert_KeyPath}=";
-        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Path To Your Certificate Private Key File. (e.g. C:\\Local.key).";
+        help = $"      Your Server Domain Name To Distinguish DoH/HTTPS/SNI-Proxy Requests If Running On A VPS.";
+        help += $"\n      Leave Empty If Your 'WorkingMode' Is 'DNS'.";
+        help += $"\n      Leave Empty If You're Running The Server On A Local PC.";
+        help += $"\n      Leave Empty If You're Working Directly With Server IP.";
+        help += $"\n      * Your Server Cert Must Match Your IP Or Support SAN With IP, Unless It's A Local IP.";
         await WriteToStdoutAsync(help);
 
         help = $"    -{Key.SSLSetting.ChangeSni}=";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Change SNI To Bypass DPI.";
+        help = $"      Change SNI To Bypass DPI (Only On A Local PC, Not A VPS).";
+        help += $"\n      * If Active, Certificates Will Be Generated Automatically.";
         await WriteToStdoutAsync(help);
 
         help = $"    -{Key.SSLSetting.DefaultSni}=";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
         help = $"      Change All SNIs To This SNI (Leave Empty To Use Original SNI).";
-        help += $"\n      You Can Also Use FakeSNI To Set A Custom SNI For A Domain.";
+        help += $"\n      * Original SNI Can't Bypass DPI.";
+        await WriteToStdoutAsync(help);
+
+        help = $"    -{Key.SSLSetting.RootCA_Path}=";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      Path To Your Root Certificate File (e.g. C:\\RootCA.crt) - Leave Empty If Not Running On A VPS.";
+        await WriteToStdoutAsync(help);
+
+        help = $"    -{Key.SSLSetting.RootCA_KeyPath}=";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      Path To Your Root Certificate Private Key File If It's Not Included In The 'Root Certificate' File. (e.g. C:\\RootCA.key).";
+        await WriteToStdoutAsync(help);
+
+        help = $"    -{Key.SSLSetting.Cert_Path}=";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      Path To Your Certificate File Issued With Your RootCA (e.g. C:\\Local.crt) - Leave Empty If Not Running On A VPS.";
+        await WriteToStdoutAsync(help);
+
+        help = $"    -{Key.SSLSetting.Cert_KeyPath}=";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      Path To Your Certificate Private Key File If It's Not Included In The 'Certificate' File. (e.g. C:\\Local.key).";
         await WriteToStdoutAsync(help);
 
         // Programs Interactive Mode
@@ -259,7 +280,7 @@ public class Help
         await WriteToStdoutAsync(help);
 
         // Programs
-        help = "\n  <Program>";
+        help = $"\n  <Program>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
         help = $"    {Key.Programs.Fragment.Name}";
@@ -283,19 +304,31 @@ public class Help
         // KillAll
         help = $"\n{Key.Common.KillAll}";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
-        help = $"  Kill All Requests.";
+        help = $"  Kill All Active Proxy Requests.";
+        await WriteToStdoutAsync(help);
+
+        // Set DNS
+        help = $"\n{Key.Common.SetDNS}";
+        await WriteToStdoutAsync(help, ConsoleColor.Blue);
+        help = $"  Set DNS To Loopback. (A DNS Server Must Be Run On {IPAddress.Loopback}:53)";
+        await WriteToStdoutAsync(help);
+
+        // Unset DNS
+        help = $"\n{Key.Common.UnsetDNS}";
+        await WriteToStdoutAsync(help, ConsoleColor.Blue);
+        help = $"  Set System DNS To DHCP.";
         await WriteToStdoutAsync(help);
 
         // Write Requests
         help = $"\n{Key.Common.Requests} <Option>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
-        help = "\n  <Option>";
+        help = $"\n  <Option>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
         help = $"    True";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
-        help = $"      Write Requests To Stdout.";
+        help = $"      Write Requests To Stderr.";
         await WriteToStdoutAsync(help);
 
         help = $"    False";
@@ -307,7 +340,7 @@ public class Help
         help = $"\n{Key.Common.FragmentDetails} <Option>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
-        help = "\n  <Option>";
+        help = $"\n  <Option>";
         await WriteToStdoutAsync(help, ConsoleColor.Blue);
 
         help = $"    True";
@@ -318,6 +351,40 @@ public class Help
         help = $"    False";
         await WriteToStdoutAsync(help, ConsoleColor.Cyan);
         help = $"      Stop Writing Chunk Details.";
+        await WriteToStdoutAsync(help);
+
+        // Write DebugInfo
+        help = $"\n{Key.Common.DebugInfo} <Option>";
+        await WriteToStdoutAsync(help, ConsoleColor.Blue);
+
+        help = $"\n  <Option>";
+        await WriteToStdoutAsync(help, ConsoleColor.Blue);
+
+        help = $"    True";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      Write DebugInfo To Stderr.";
+        await WriteToStdoutAsync(help);
+
+        help = $"    False";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      Stop Writing DebugInfo.";
+        await WriteToStdoutAsync(help);
+
+        // LogToFile
+        help = $"\n{Key.Common.LogToFile} <Option>";
+        await WriteToStdoutAsync(help, ConsoleColor.Blue);
+
+        help = $"\n  <Option>";
+        await WriteToStdoutAsync(help, ConsoleColor.Blue);
+
+        help = $"    True";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      Write Requests And DebugInfo To File.";
+        await WriteToStdoutAsync(help);
+
+        help = $"    False";
+        await WriteToStdoutAsync(help, ConsoleColor.Cyan);
+        help = $"      Stop Writing To File.";
         await WriteToStdoutAsync(help);
 
         // Save

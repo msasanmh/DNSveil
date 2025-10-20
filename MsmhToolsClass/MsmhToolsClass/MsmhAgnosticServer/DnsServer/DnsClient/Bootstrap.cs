@@ -33,7 +33,7 @@ public static class Bootstrap
             if (bootstrapIP == IPAddress.None || bootstrapIP == IPAddress.IPv6None || bootstrapPort < 1)
             {
                 IPAddress ip = GetIP.GetIpFromSystem(domain, getIPv6, true);
-                if (ip != IPAddress.None && ip != IPAddress.IPv6None) domainIP = ip.ToString();
+                if (ip != IPAddress.None && ip != IPAddress.IPv6None) domainIP = ip.ToStringNoScopeId();
             }
             else
             {
@@ -48,7 +48,7 @@ public static class Bootstrap
                     ip = await GetIP.GetIpFromDnsAddressAsync(domain, bootstrap, false, timeoutSec, getIPv6, IPAddress.None, 0, proxyScheme, proxyUser, proxyPass);
                 }
 
-                if (ip != IPAddress.None && ip != IPAddress.IPv6None) domainIP = ip.ToString();
+                if (ip != IPAddress.None && ip != IPAddress.IPv6None) domainIP = ip.ToStringNoScopeId();
             }
         }
         return domainIP;

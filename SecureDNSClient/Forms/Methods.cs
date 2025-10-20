@@ -627,35 +627,6 @@ public partial class FormMain
         }
     }
 
-    public static bool IsDnsProtocolSupported(string dns)
-    {
-        try
-        {
-            dns = dns.Trim();
-            StringComparison sc = StringComparison.OrdinalIgnoreCase;
-            if (dns.StartsWith("udp://", sc) || dns.StartsWith("tcp://", sc) || dns.StartsWith("http://", sc) || dns.StartsWith("https://", sc) ||
-                dns.StartsWith("h3://", sc) || dns.StartsWith("tls://", sc) || dns.StartsWith("quic://", sc) || dns.StartsWith("sdns://", sc))
-                return true;
-            else
-                return isPlainDnsWithUnusualPort(dns);
-
-            static bool isPlainDnsWithUnusualPort(string dns) // Support for plain DNS with unusual port
-            {
-                if (dns.Contains(':'))
-                {
-                    NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dns, 53);
-                    if (NetworkTool.IsIP(urid.Host, out _)) return urid.Port >= 1 && urid.Port <= 65535;
-                }
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("Methods IsDnsProtocolSupported: " + ex.Message);
-            return false;
-        }
-    }
-
     private void InitializeStatus(CustomDataGridView dgv)
     {
         try
@@ -1270,7 +1241,7 @@ public partial class FormMain
             else if (dnsRulesExist && proxyRulesExist)
             {
                 var merged = await AgnosticProgram.Rules.MergeAsync(AgnosticProgram.Rules.Mode.File, SecureDNS.DnsRulesPath, AgnosticProgram.Rules.Mode.File, SecureDNS.ProxyRulesPath);
-                List<string> rules = await AgnosticProgram.Rules.ConvertToTextRulesAsync(merged.Variables, merged.Defaults, merged.MainRulesList);
+                List<string> rules = await AgnosticProgram.Rules.ConvertToTextRulesAsync(merged.Variables, merged.Defaults, merged.RuleList);
 
                 await rules.SaveToFileAsync(SecureDNS.RulesPath);
                 File.Move(SecureDNS.DnsRulesPath, Path.GetFullPath(Path.ChangeExtension(SecureDNS.DnsRulesPath, ".BAK")), true);

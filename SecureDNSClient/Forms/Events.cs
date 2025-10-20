@@ -21,7 +21,7 @@ public partial class FormMain : Form
         if (!string.IsNullOrEmpty(msg) && writeDnsToLog)
         {
             if (!StopWatchWriteDnsOutputDelay.IsRunning) StopWatchWriteDnsOutputDelay.Start();
-            if (StopWatchWriteDnsOutputDelay.ElapsedMilliseconds < 80) return;
+            if (StopWatchWriteDnsOutputDelay.ElapsedMilliseconds < 10) return;
             StopWatchWriteDnsOutputDelay.Restart();
             if (!IsInternetOnline) return;
 
@@ -43,7 +43,7 @@ public partial class FormMain : Form
         if (!string.IsNullOrEmpty(msg))
         {
             if (!StopWatchWriteProxyOutputDelay.IsRunning) StopWatchWriteProxyOutputDelay.Start();
-            if (StopWatchWriteProxyOutputDelay.ElapsedMilliseconds < 80) return;
+            if (StopWatchWriteProxyOutputDelay.ElapsedMilliseconds < 10) return;
             StopWatchWriteProxyOutputDelay.Restart();
             if (!IsInternetOnline) return;
 

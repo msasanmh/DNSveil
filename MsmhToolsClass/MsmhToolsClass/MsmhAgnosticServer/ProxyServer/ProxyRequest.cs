@@ -9,7 +9,7 @@ public class ProxyRequest
     // More than this means there is no internet or destination is blocked so it's better to cancel the request
     private static readonly int TimeoutRequestCreationMS = 500;
 
-    public static async Task<ProxyRequest?> RequestHTTP_S(byte[] firstBuffer, CancellationToken ct)
+    public static async Task<ProxyRequest?> RequestHTTP_S(AgnosticResult aResult, CancellationToken ct)
     {
         Task<ProxyRequest?> task = Task.Run(() =>
         {
@@ -18,7 +18,7 @@ public class ProxyRequest
                 // Set Security Protocols
                 //ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
                 
-                HttpRequestResult hrResult = HttpRequest.Read(firstBuffer);
+                HttpRequestResult hrResult = HttpRequest.Read(aResult.FirstBuffer);
                 if (!hrResult.IsSuccess) return null;
                 if (hrResult.URI == null) return null;
 
@@ -31,11 +31,12 @@ public class ProxyRequest
                     UserAgent = hrResult.UserAgent,
                     TimeoutMS = 30000
                 };
-                
-                Proxy.Name proxyName = httpRequest.URI.Scheme.Equals("http") ? Proxy.Name.HTTP : Proxy.Name.HTTPS;
+
+                Proxy.Name proxyName = httpRequest.URI.Scheme.Equals("http") ? Proxy.Name.HTTP : Proxy.Name.HTTP_S;
                 if (httpRequest.UserAgent.Equals("DNSveil - A Secure DNS Client", StringComparison.OrdinalIgnoreCase)) proxyName = Proxy.Name.Test;
+                if (aResult.Ssl_Kind == SslKind.SSL) proxyName = Proxy.Name.HTTPS_SSL;
                 
-                // I Set User and Pass to none (I don't support Auth)
+                // I Set User And Pass To None (I Don't Support Auth)
                 string user = string.Empty, pass = string.Empty;
 
                 // Create Request
@@ -104,7 +105,7 @@ public class ProxyRequest
 
                 if (command == Socks.Commands.Unknown) return null;
 
-                // The AddressType of Socks4 is always Ipv4
+                // The AddressType of Socks4 Is Always IPv4
 
                 // Get Port
                 byte[] portBuffer = new[] { firstBuffer[2], firstBuffer[3] };
@@ -133,7 +134,7 @@ public class ProxyRequest
                 }
 
                 // Get Password
-                // Oops Sock4 doesn't support password
+                // Oops Sock4 Doesn't Support Password
 
                 // Socks4A
                 if (IsSocks4aProtocol(addressBuffer))
@@ -212,12 +213,12 @@ public class ProxyRequest
                 // Connection Request
                 byte[] buffer = new byte[MsmhAgnosticServer.MaxDataSize];
                 int recv = await client.ReceiveAsync(buffer).ConfigureAwait(false);
-                if (recv == -1) return null; // recv = -1 Will Result in Overflow
+                if (recv == 0) return null; // recv = 0 Will Result In Overflow
 
                 byte[] buff = new byte[recv];
                 Buffer.BlockCopy(buffer, 0, buff, 0, recv);
 
-                // Read Connection Request to Create SocksRequest
+                // Read Connection Request To Create SocksRequest
                 if ((Socks.Version)buff[0] != Socks.Version.Socks5) return null;
 
                 // Get Command
@@ -231,7 +232,7 @@ public class ProxyRequest
 
                 if (command == Socks.Commands.Unknown) return null;
 
-                // buff[2] is RSV and it's always 0x00
+                // buff[2] Is RSV And It's Always 0x00
 
                 // Get AddressType (ATYP)
                 Socks.AddressType addressType = buff[3] switch
@@ -262,9 +263,9 @@ public class ProxyRequest
                 else if (addressType == Socks.AddressType.Ipv6)
                 {
                     addressBuffer = new[] { buff[4], buff[5], buff[6], buff[7],
-                                        buff[8], buff[9], buff[10], buff[11],
-                                        buff[12], buff[13], buff[14], buff[15],
-                                        buff[16], buff[17], buff[18], buff[19]};
+                                            buff[8], buff[9], buff[10], buff[11],
+                                            buff[12], buff[13], buff[14], buff[15],
+                                            buff[16], buff[17], buff[18], buff[19] };
                     string ipv6 = new IPAddress(addressBuffer).ToString();
                     address = $"{ipv6}";
                 }
@@ -276,7 +277,7 @@ public class ProxyRequest
                 Buffer.BlockCopy(buff, buff.Length - 2, portBuffer, 0, 2);
                 int port = (portBuffer[0] << 8) + portBuffer[1];
 
-                // I Set User and Pass to none (I don't support Auth)
+                // I Set User And Pass To None (I Don't Support Auth)
                 string user = string.Empty, pass = string.Empty;
 
                 // Create Socks Request
@@ -305,7 +306,7 @@ public class ProxyRequest
         {
             try
             {
-                // Sni Proxy Doesn't Have A User And Pass
+                // SNI Proxy Doesn't Have A User And Pass
                 string user = string.Empty, pass = string.Empty;
 
                 // Create Request
@@ -404,7 +405,7 @@ public class ProxyRequest
             {
                 (byte)Version,
                 (byte)Status,
-                (byte)Socks.Version.Zero, // RSV it's always 0x00
+                (byte)Socks.Version.Zero, // RSV It's Always 0x00
                 (byte)AddressType
             };
 
@@ -415,7 +416,7 @@ public class ProxyRequest
                 // Get AddressOnlyBuffer
                 byte[] addressOnlyBuffer = Encoding.UTF8.GetBytes(Address);
 
-                // Get Length of AddressBuffer
+                // Get Length Of AddressBuffer
                 byte[] lenOfAddressBuffer = new byte[] { (byte)addressOnlyBuffer.Length };
 
                 addressBuffer = lenOfAddressBuffer.Concat(addressOnlyBuffer).ToArray();

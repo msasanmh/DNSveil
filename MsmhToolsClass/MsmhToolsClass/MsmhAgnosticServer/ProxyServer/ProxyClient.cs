@@ -1,70 +1,44 @@
 ﻿using System.Diagnostics;
+using System.Net.Security;
 using System.Net.Sockets;
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
 public class ProxyClient
 {
+    public Socket Socket_ { get; set; }
+    public SslStream? SslStream_ { get; set; }
     private bool Disposed_ { get; set; } = false;
 
-    public Socket Socket_ { get; set; }
-    public event EventHandler<DataEventArgs>? OnDataReceived;
-    public event EventHandler<DataEventArgs>? OnDataSent;
-
-    public ProxyClient(Socket socket)
+    public ProxyClient(Socket socket, SslStream? sslStream)
     {
         // Start Data Exchange.
         Socket_ = socket;
         Socket_.ReceiveBufferSize = MsmhAgnosticServer.MaxDataSize;
+        SslStream_ = sslStream;
     }
 
-    public async Task StartReceiveAsync()
+    public async Task<int> ReceiveAsync(byte[] buffer, SocketFlags socketFlags = SocketFlags.None)
     {
         try
         {
-            if (Disposed_ || Socket_ is null) return;
-
-            byte[] buffer = new byte[MsmhAgnosticServer.MaxDataSize];
-            int received = 0;
-            try { received = await Socket_.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false); } catch (Exception) { /* HSTS / Timeout / Done */ }
-            
-            if (received <= 0)
+            if (Socket_.Connected)
             {
-                Disconnect();
-                return;
+                int received = await Socket_.ReceiveAsync(buffer, socketFlags).ConfigureAwait(false);
+                if (received <= 0)
+                {
+                    Disconnect();
+                    return 0;
+                }
+                return received;
             }
-            
-            buffer = buffer[..received];
-
-            DataEventArgs data = new(this, buffer);
-            OnDataReceived?.Invoke(this, data);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.ToString());
-            Disconnect();
-        }
-    }
-
-    public async Task<int> ReceiveAsync(byte[] data, SocketFlags socketFlags = SocketFlags.None)
-    {
-        try
-        {
-            int received = await Socket_.ReceiveAsync(data, socketFlags).ConfigureAwait(false);
-            
-            if (received <= 0)
-            {
-                Disconnect();
-                return -1;
-            }
-
-            return received;
+            return 0;
         }
         catch (Exception ex)
         {
             Debug.WriteLine("ProxyClient ReceiveAsync: " + ex.ToString());
             Disconnect();
-            return -1;
+            return 0;
         }
     }
 
@@ -72,7 +46,7 @@ public class ProxyClient
     {
         try
         {
-            if (Socket_ != null && Socket_.Connected)
+            if (Socket_.Connected)
             {
                 int sent = await Socket_.SendAsync(buffer, SocketFlags.None).ConfigureAwait(false);
 
@@ -82,8 +56,6 @@ public class ProxyClient
                     return false;
                 }
 
-                DataEventArgs data = new(this, buffer);
-                OnDataSent?.Invoke(this, data);
                 return true;
             }
 
@@ -106,8 +78,9 @@ public class ProxyClient
                 if (Socket_ != null && Socket_.Connected)
                 {
                     Disposed_ = true;
-                    Socket_.Shutdown(SocketShutdown.Both);
                     Socket_.Close();
+                    Socket_.Dispose();
+                    tcpClient?.Close();
                     tcpClient?.Dispose();
                     return;
                 }

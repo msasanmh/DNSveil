@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Reflection;
+using System.Text;
 
 namespace SDCAgnosticServer;
 
@@ -14,22 +15,22 @@ public static partial class Program
     private const int DefaultPort = 8080;
     private const int DefaultPortMin = 53;
     private const int DefaultPortMax = 65535;
-    private const AgnosticSettings.WorkingMode DefaultWorkingMode = AgnosticSettings.WorkingMode.DnsAndProxy;
-    private const int DefaultMaxRequests = 5000;
+    private const AgnosticSettings.WorkingMode DefaultWorkingMode = AgnosticSettings.WorkingMode.Proxy;
+    private const int DefaultMaxRequests = 1000000;
     private const int DefaultMaxRequestsMin = 20;
     private const int DefaultMaxRequestsMax = int.MaxValue;
     private const int DefaultDnsTimeoutSec = 5;
     private const int DefaultDnsTimeoutSecMin = 3;
     private const int DefaultDnsTimeoutSecMax = 10;
-    private const int DefaultProxyTimeoutSec = 40;
+    private const int DefaultProxyTimeoutSec = 0;
     private const int DefaultProxyTimeoutSecMin = 0;
     private const int DefaultProxyTimeoutSecMax = 600;
     private const float DefaultKillOnCpuUsage = 40;
     private const int DefaultKillOnCpuUsageMin = 10;
     private const int DefaultKillOnCpuUsageMax = 95;
-    private const bool DefaultBlockPort80 = true;
+    private const bool DefaultBlockPort80 = false;
     private const bool DefaultAllowInsecure = false;
-    private static readonly IPAddress DefaultBootstrapIp = IPAddress.None;
+    private static readonly IPAddress DefaultBootstrapIp = IPAddress.Parse("8.8.8.8");
     private const int DefaultBootstrapPort = 53;
     private const bool DefaultApplyUpstreamOnlyToBlockedIps = true;
     // Defaults SSL AgnosticSettings
@@ -47,7 +48,7 @@ public static partial class Program
     private const int DefaultFragmentAntiPatternOffset = 2;
     private const int DefaultFragmentAntiPatternOffsetMin = 0;
     private const int DefaultFragmentAntiPatternOffsetMax = 50;
-    private const int DefaultFragmentFragmentDelay = 1;
+    private const int DefaultFragmentFragmentDelay = 5;
     private const int DefaultFragmentFragmentDelayMin = 0;
     private const int DefaultFragmentFragmentDelayMax = 500;
 
@@ -59,13 +60,18 @@ public static partial class Program
 
     private static bool WriteRequestsToLog { get; set; } = false;
     private static bool WriteFragmentDetailsToLog { get; set; } = false;
+    private static bool WriteDebugInfoToLog { get; set; } = false;
+    private static bool LogToFile { get; set; } = false;
+    private static ulong LogToFileCount { get; set; } = 0;
+    private static ConcurrentDictionary<ulong, string> LogToFileDict { get; set; } = new();
     private static int ParentPID { get; set; } = -1;
     private static ConcurrentDictionary<uint, string> WaitingInputCommands { get; set; } = new();
 
     public static async void ProxyServer_OnRequestReceived(object? sender, EventArgs e)
     {
-        if (WriteRequestsToLog)
-            if (sender is string msg)
+        if (sender is string msg)
+        {
+            if (WriteRequestsToLog)
             {
                 if (!StopWatchShowRequests.IsRunning) StopWatchShowRequests.Start();
                 if (StopWatchShowRequests.ElapsedMilliseconds > 2)
@@ -75,12 +81,20 @@ public static partial class Program
                     StopWatchShowRequests.Restart();
                 }
             }
+
+            if (LogToFile)
+            {
+                LogToFileCount++;
+                LogToFileDict.TryAdd(LogToFileCount, msg);
+            }
+        }
     }
 
     public static async void FragmentStaticProgram_OnChunkDetailsReceived(object? sender, EventArgs e)
     {
-        if (WriteFragmentDetailsToLog)
-            if (sender is string msg)
+        if (sender is string msg)
+        {
+            if (WriteFragmentDetailsToLog)
             {
                 if (!StopWatchShowChunkDetails.IsRunning) StopWatchShowChunkDetails.Start();
                 if (StopWatchShowChunkDetails.ElapsedMilliseconds > 50)
@@ -90,6 +104,22 @@ public static partial class Program
                     StopWatchShowChunkDetails.Restart();
                 }
             }
+        }
+    }
+
+    public static async void ProxyServer_OnDebugInfoReceived(object? sender, EventArgs e)
+    {
+        if (sender is string msg)
+        {
+            if (WriteDebugInfoToLog)
+                await WriteToStderrAsync(msg, ConsoleColor.DarkRed, false);
+
+            if (LogToFile)
+            {
+                LogToFileCount++;
+                LogToFileDict.TryAdd(LogToFileCount, msg);
+            }
+        }
     }
 
     /// <summary>
@@ -98,14 +128,8 @@ public static partial class Program
     [STAThread]
     static async Task Main()
     {
-        try
-        {
-            // Setting Culture Is Necessary To Read Args In Any Windows Display Language Other Than English
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
-        }
-        catch (Exception) { }
+        // Invariant Culture // Setting Culture Is Necessary To Read Args In Any Windows Display Language Other Than English
+        Info.SetCulture(CultureInfo.InvariantCulture);
 
         // Title
         string title = $"Msmh Agnostic Server v{Assembly.GetExecutingAssembly().GetName().Version}";
@@ -118,6 +142,9 @@ public static partial class Program
         await WriteToStdoutAsync(title);
         await WriteToStdoutAsync("Type \"Help\" To Get Help.");
 
+        // Log To File
+        LogToFileAuto();
+
         // Exit When Parent Terminated
         ExitAuto();
 
@@ -126,6 +153,60 @@ public static partial class Program
 
         // Read Commands
         await ReadCommandsAsync();
+    }
+
+    private static async void LogToFileAuto()
+    {
+        await Task.Run(async () =>
+        {
+            string? logPath = ConsoleTools.GetLogPath();
+            if (string.IsNullOrEmpty(logPath)) return;
+
+            while (true)
+            {
+                try
+                {
+                    if (!LogToFile) await Task.Delay(200);
+                    if (LogToFileDict.IsEmpty) await Task.Delay(50);
+                    else
+                    {
+                        while (true)
+                        {
+                            int n1 = LogToFileDict.Count;
+                            await Task.Delay(200);
+                            int n2 = LogToFileDict.Count;
+                            if (n1 == n2) break;
+                        }
+
+                        List<KeyValuePair<ulong, string>> logsList = LogToFileDict.ToList();
+                        var sortedLogsList = logsList.OrderBy(x => x.Key);
+                        foreach (KeyValuePair<ulong, string> log in sortedLogsList)
+                        {
+                            LogToFileDict.TryRemove(log.Key, out _);
+                            await FileDirectory.AppendTextLineAsync(logPath, log.Value, new UTF8Encoding(false));
+                            //Debug.WriteLine($"{log.Key}: {log.Value}");
+                            await Task.Delay(25);
+
+                            try
+                            {
+                                // Delete If >= 1MB
+                                byte[] bytes = await File.ReadAllBytesAsync(logPath);
+                                if (bytes.Length >= 1000000)
+                                {
+                                    File.Delete(logPath);
+                                    await Task.Delay(200);
+                                }
+                            }
+                            catch (Exception) { }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("LogToFileAuto: " + ex.Message);
+                }
+            }
+        });
     }
 
     private static async void ExitAuto()
@@ -189,6 +270,27 @@ public static partial class Program
         await Task.Run(() =>
         {
             uint n = 0;
+
+            // Read By Argument (Only Supports Load, Start And A Few Other)
+            try
+            {
+
+                string[] args = Environment.GetCommandLineArgs();
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (i == 0) continue; // First Arg Is The App Executable Path
+                    string arg = args[i];
+                    if (string.IsNullOrWhiteSpace(arg)) continue;
+                    n++;
+                    WaitingInputCommands.TryAdd(n, arg);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("ReadCommandsAsync Read By Argument: " + ex.Message);
+            }
+
+            // Read By Input
             while (true)
             {
                 try
@@ -203,7 +305,7 @@ public static partial class Program
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("ReadCommandsAsync: " + ex.Message);
+                    Debug.WriteLine("ReadCommandsAsync Read By Input: " + ex.Message);
                 }
             }
         });
@@ -355,6 +457,10 @@ public static partial class Program
             msg += $"\nEnabled: {settingsSSL.EnableSSL}";
             if (settingsSSL.EnableSSL)
             {
+                if (!string.IsNullOrEmpty(settingsSSL.ServerDomainName))
+                {
+                    msg += $"\nServer Domain Name: {settingsSSL.ServerDomainName}";
+                }
                 if (!string.IsNullOrEmpty(settingsSSL.RootCA_Path))
                 {
                     msg += $"\nRootCA_Path:";
@@ -589,13 +695,20 @@ public static partial class Program
                             cmd += $" -{Key.Setting.KillOnCpuUsage}={sf.Settings.KillOnCpuUsage}";
                             cmd += $" -{Key.Setting.BlockPort80}={sf.Settings.BlockPort80}";
                             cmd += $" -{Key.Setting.AllowInsecure}={sf.Settings.AllowInsecure}";
-                            if (sf.Settings.DNSs.Any())
+
+                            List<string> dnss = sf.Settings.DNSs_Backup;
+                            if (dnss.Count == 0) dnss.AddRange(sf.Settings.DNSs);
+                            if (dnss.Any())
                             {
-                                cmd += $" -{Key.Setting.DNSs}=";
-                                foreach (string dns in sf.Settings.DNSs)
+                                cmd += $" -{Key.Setting.DNSs}=\"";
+                                foreach (string dns in dnss)
+                                {
                                     cmd += $"{dns},";
+                                }
                                 if (cmd.EndsWith(',')) cmd = cmd.TrimEnd(',');
+                                cmd += '\"';
                             }
+
                             if (!string.IsNullOrEmpty(sf.Settings.CloudflareCleanIP))
                                 cmd += $" -{Key.Setting.CfCleanIP}={sf.Settings.CloudflareCleanIP}";
                             cmd += $" -{Key.Setting.BootstrapIp}={sf.Settings.BootstrapIpAddress}";
@@ -614,6 +727,7 @@ public static partial class Program
                         {
                             baseCmd = Key.SSLSetting.Name;
                             cmd = $"{baseCmd} -{Key.SSLSetting.Enable}={sf.SettingsSSL.EnableSSL}";
+                            cmd += $" -{Key.SSLSetting.ServerDomainName}={sf.SettingsSSL.ServerDomainName}";
                             cmd += $" -{Key.SSLSetting.RootCA_Path}=\"{sf.SettingsSSL.RootCA_Path}\"";
                             cmd += $" -{Key.SSLSetting.RootCA_KeyPath}=\"{sf.SettingsSSL.RootCA_KeyPath}\"";
                             cmd += $" -{Key.SSLSetting.Cert_Path}=\"{sf.SettingsSSL.Cert_Path}\"";

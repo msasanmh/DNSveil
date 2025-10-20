@@ -66,7 +66,7 @@ public partial class FormMain
                 DnsTimeoutSec = 5,
                 CloudflareCleanIP = GetCfCleanIpSetting()
             };
-            AgnosticProgram.Rules.RulesResult prr = await CheckRules.GetAsync(IPAddress.Loopback.ToString(), host, port, agnosticSettings);
+            AgnosticProgram.Rules.RulesResult prr = await CheckRules.GetAsync(IPAddress.Loopback.ToString(), host, port, agnosticSettings, new Endless(), true, false);
 
             this.InvokeIt(() => log.AppendText($"Domain:{NL}"));
             this.InvokeIt(() => log.AppendText($"{host}{NL}", Color.DodgerBlue));

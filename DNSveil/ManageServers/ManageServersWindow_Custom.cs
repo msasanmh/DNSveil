@@ -22,6 +22,7 @@ public partial class ManageServersWindow : WpfWindow
     {
         this.DispatchIt(() =>
         {
+            if (PART_Button1 != null) PART_Button1.IsEnabled = enable;
             Custom_Settings_WpfFlyoutPopup.IsHitTestVisible = enable;
             if (enable || (!enable && IsScanning))
                 CustomSourceStackPanel.IsEnabled = enable;
@@ -190,11 +191,11 @@ public partial class ManageServersWindow : WpfWindow
             if (DGG.SelectedItem is not GroupItem groupItem) return;
 
             // DeDup
-            int nextIndex = GetPreviousOrNextIndex(DGS_Custom); // Get Next Index
+            int nextIndex = GetPreviousOrNextIndex(DGS_Custom, false); // Get Next Index
             await MainWindow.ServersManager.DeDup_DnsItems_Async(groupItem.Name, true);
             await LoadSelectedGroupAsync(true); // Refresh
             await DGS_Custom.ScrollIntoViewAsync(nextIndex); // Scroll To Next
-            if (showToast) WpfToastDialog.Show(this, "Duplicates Removed", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            if (showToast) WpfToastDialog.Show(this, "Duplicates Removed", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -236,11 +237,11 @@ public partial class ManageServersWindow : WpfWindow
             if (mbr != MessageBoxResult.Yes) return;
 
             // Delete
-            int nextIndex = GetPreviousOrNextIndex(DGS_Custom); // Get Next Index
+            int nextIndex = GetPreviousOrNextIndex(DGS_Custom, true); // Get Next Index
             await MainWindow.ServersManager.Remove_DnsItems_Async(groupItem.Name, selectedDnsItems, true);
             await LoadSelectedGroupAsync(true); // Refresh
             await DGS_Custom.ScrollIntoViewAsync(nextIndex); // Scroll To Next
-            WpfToastDialog.Show(this, "Deleted", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            WpfToastDialog.Show(this, "Deleted", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -269,7 +270,7 @@ public partial class ManageServersWindow : WpfWindow
             // Delete All
             await MainWindow.ServersManager.Clear_DnsItems_Async(groupItem.Name, true);
             await LoadSelectedGroupAsync(true); // Refresh
-            WpfToastDialog.Show(this, "All Items Deleted", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            WpfToastDialog.Show(this, "All Items Deleted", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -352,7 +353,7 @@ public partial class ManageServersWindow : WpfWindow
             await MainWindow.ServersManager.Update_GroupSettings_Async(groupItem.Name, groupSettings, true);
             await LoadSelectedGroupAsync(false); // Refresh
             await Custom_Settings_WpfFlyoutPopup.CloseFlyAsync();
-            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -409,6 +410,9 @@ public partial class ManageServersWindow : WpfWindow
                 return;
             }
 
+            // Decode If It's A Stamp
+            dns_Address = await DnsTools.DecodeStampAsync(dns_Address);
+
             if (TrueAdd_FalseModify)
             {
                 // Add
@@ -416,7 +420,7 @@ public partial class ManageServersWindow : WpfWindow
                 await MainWindow.ServersManager.Append_DnsItems_Async(groupItem.Name, new List<DnsItem>() { dnsItem }, true);
                 await LoadSelectedGroupAsync(true); // Refresh
                 await DGS_Custom.ScrollIntoViewAsync(DGS_Custom.Items.Count - 1); // Scroll To Last Item
-                WpfToastDialog.Show(this, "Added", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+                WpfToastDialog.Show(this, "Added", MessageBoxImage.None, 3);
             }
             else
             {
@@ -426,7 +430,7 @@ public partial class ManageServersWindow : WpfWindow
                 currentDnsItem.Description = dns_description;
                 await MainWindow.ServersManager.Update_DnsItems_Async(groupItem.Name, new List<DnsItem>() { currentDnsItem }, true);
                 await LoadSelectedGroupAsync(true); // Refresh
-                WpfToastDialog.Show(this, "Modified", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+                WpfToastDialog.Show(this, "Modified", MessageBoxImage.None, 3);
             }
         }
         catch (Exception ex)
@@ -462,10 +466,10 @@ public partial class ManageServersWindow : WpfWindow
             if (DGG.SelectedItem is not GroupItem groupItem) return;
 
             // Update URLs
-            List<string> urlsOrFiles = CustomSourceTextBox.Text.ReplaceLineEndings().Split(NL).ToList();
+            List<string> urlsOrFiles = CustomSourceTextBox.Text.SplitToLines();
             await MainWindow.ServersManager.Update_Source_URLs_Async(groupItem.Name, urlsOrFiles, true);
             await LoadSelectedGroupAsync(false); // Refresh
-            if (showToast) WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            if (showToast) WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -493,7 +497,7 @@ public partial class ManageServersWindow : WpfWindow
             // Save First
             await CustomSaveSourceAsync(false);
 
-            List<string> urlsOrFiles = CustomSourceTextBox.Text.ReplaceLineEndings().Split(NL, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            List<string> urlsOrFiles = CustomSourceTextBox.Text.SplitToLines(StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
             if (urlsOrFiles.Count == 0)
             {
@@ -503,12 +507,27 @@ public partial class ManageServersWindow : WpfWindow
                 return;
             }
 
+            // Get Malicious Domains
+            List<string> maliciousDomains = MainWindow.ServersManager.MaliciousDomains_Get_TotalItems();
+
             List<string> allDNSs = new();
-            for (int n = 0; n < urlsOrFiles.Count; n++)
+            for (int i = 0; i < urlsOrFiles.Count; i++)
             {
-                string urlOrFile = urlsOrFiles[n];
+                string urlOrFile = urlsOrFiles[i];
                 List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
-                allDNSs.AddRange(dnss);
+                dnss = await DnsTools.DecodeStampAsync(dnss);
+                for (int j = 0; j < dnss.Count; j++)
+                {
+                    string dns = dnss[j];
+
+                    // Ignore Malicious Domains
+                    DnsReader dr = new(dns);
+                    if (maliciousDomains.IsContain(dr.Host)) continue;
+                    NetworkTool.URL url = NetworkTool.GetUrlOrDomainDetails(dr.Host, dr.Port);
+                    if (maliciousDomains.IsContain(url.BaseHost)) continue;
+
+                    allDNSs.Add(dns);
+                }
             }
 
             // Convert To DnsItem
@@ -565,13 +584,14 @@ public partial class ManageServersWindow : WpfWindow
             // FilterByProtocols
             bool udp = CustomFilter_UDP_CheckBox.IsChecked ?? false;
             bool tcp = CustomFilter_TCP_CheckBox.IsChecked ?? false;
+            bool tcpOverUdp = CustomFilter_TcpOverUdp_CheckBox.IsChecked ?? false;
             bool dnsCrypt = CustomFilter_DNSCrypt_CheckBox.IsChecked ?? false;
             bool anonymizedDNSCrypt = CustomFilter_AnonymizedDNSCrypt_CheckBox.IsChecked ?? false;
             bool doT = CustomFilter_DoT_CheckBox.IsChecked ?? false;
             bool doH = CustomFilter_DoH_CheckBox.IsChecked ?? false;
             bool oDoH = CustomFilter_ODoH_CheckBox.IsChecked ?? false;
             bool doQ = CustomFilter_DoQ_CheckBox.IsChecked ?? false;
-            FilterByProtocols filterByProtocols = new(udp, tcp, dnsCrypt, doT, doH, doQ, anonymizedDNSCrypt, oDoH);
+            FilterByProtocols filterByProtocols = new(udp, tcp, tcpOverUdp, dnsCrypt, doT, doH, doQ, anonymizedDNSCrypt, oDoH);
 
             // FilterByProperties
             DnsFilter google = BoolToDnsFilter(CustomFilter_Google_CheckBox.IsChecked);
@@ -591,7 +611,7 @@ public partial class ManageServersWindow : WpfWindow
 
             await LoadSelectedGroupAsync(true); // Refresh
 
-            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {

@@ -8,7 +8,7 @@
 	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <ApplicationIcon>SecureDNSClientMulti.ico</ApplicationIcon>
-    <Version>$(VersionPrefix)1.1.4</Version>
+    <Version>$(VersionPrefix)1.2.0</Version>
     <Description>SDC DNS Lookup</Description>
     <Copyright>MSasanMH</Copyright>
   </PropertyGroup>

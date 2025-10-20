@@ -406,7 +406,7 @@ public partial class FormMain
             int timeoutMS = 6000;
             IPAddress bootstrapIP = GetBootstrapSetting(out _);
             NetState = await NetworkTool.GetInternetStateAsync(bootstrapIP, null, timeoutMS);
-
+            
             if (!IsAppReady) return;
             if (IsExiting) return;
 

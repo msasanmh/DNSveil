@@ -115,7 +115,7 @@ public partial class FormMain
 
         // Send DNS Settings
         string dnsSettingsCmd = $"Setting -Port={dnsPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
-        dnsSettingsCmd += $" -AllowInsecure={insecure} -DNSs={dnss} -CfCleanIP={cfCleanIP}";
+        dnsSettingsCmd += $" -AllowInsecure={insecure} -DNSs=\"{dnss}\" -CfCleanIP={cfCleanIP}";
         dnsSettingsCmd += $" -BootstrapIp={bootstrapIP} -BootstrapPort={bootstrapPort}";
         isCmdSent = await DnsConsole.SendCommandAsync(dnsSettingsCmd, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
         if (!isCmdSent) return false;
@@ -141,7 +141,7 @@ public partial class FormMain
                 
                 // Send DoH Settings
                 string dohSettingsCmd = $"Setting -Port={dohPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
-                dohSettingsCmd += $" -AllowInsecure={insecure} -DNSs={dnss} -CfCleanIP={cfCleanIP}";
+                dohSettingsCmd += $" -AllowInsecure={insecure} -DNSs=\"{dnss}\" -CfCleanIP={cfCleanIP}";
                 dohSettingsCmd += $" -BootstrapIp={bootstrapIP} -BootstrapPort={bootstrapPort}";
                 isCmdSent = await DnsConsole.SendCommandAsync(dohSettingsCmd, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
                 if (!isCmdSent) return false;

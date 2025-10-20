@@ -1,7 +1,9 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsClass.MsmhAgnosticServer;
+using System;
 using System.Diagnostics;
 using System.Net;
+using System.Threading;
 
 namespace ConsoleAppTest;
 
@@ -9,6 +11,43 @@ internal class Program
 {
     static async Task Main(string[] args)
     {
+        //// Test HTTP Proxy
+        //string website = "https://google.com";
+        //string proxy = "http://216.205.52.246:80";
+
+        //HttpRequest hr = new()
+        //{
+        //    URI = new Uri(website, UriKind.Absolute),
+        //    Method = HttpMethod.Get,
+        //    TimeoutMS = 20000,
+        //    AllowInsecure = true, // Ignore Cert Check To Make It Faster
+        //    AllowAutoRedirect = true,
+        //    ProxyScheme = proxy
+        //};
+
+        //HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
+        //Console.WriteLine("========> " + hrr.StatusDescription);
+        //Console.ReadLine();
+        //return;
+
+
+        //// Test TcpOverUdp
+        //string tcp = "8.8.8.8:53";
+        //var ttcp = await GetIP.GetIpFromDnsAddressAsync("google.com", tcp, false, 9, false, IPAddress.Parse("8.8.8.8"), 53);
+        //Console.WriteLine("========> " + ttcp);
+        //Console.ReadLine();
+        //return;
+
+
+        //// Test DoH TLSv1.3
+        //string doh = "https://protective.joindns4.eu/dns-query";
+        //var tt = await GetIP.GetIpFromDnsAddressAsync("google.com", doh, false, 9, false, IPAddress.Parse("8.8.8.8"), 53);
+        //Console.WriteLine("========> " + tt);
+        //Console.ReadLine();
+        //return;
+
+
+        //// Create DNS List (Stamp Decode)
         //List<string> urlsOrFiles = new()
         //{
         //    "https://github.com/DNSCrypt/dnscrypt-resolvers/blob/master/v3/public-resolvers.md",
@@ -73,7 +112,7 @@ internal class Program
         //return;
 
 
-
+        // Test Server
         MsmhAgnosticServer server1 = new();
 
         server1.OnRequestReceived += Server_OnRequestReceived;
@@ -93,16 +132,16 @@ internal class Program
             //"https://dns.cloudflare.com/dns-query",
             //"https://dns.google/dns-query",
             //"https://45.90.29.204:443/dns-query",
-            "udp://208.67.222.222:5353",
-            "9.9.9.9:9953",
+            //"udp://208.67.222.222:5353",
+            //"9.9.9.9:9953",
         };
 
         AgnosticSettings settings1 = new()
         {
             Working_Mode = AgnosticSettings.WorkingMode.DnsAndProxy,
-            ListenerPort = 8080,
+            ListenerPort = 443,
             DnsTimeoutSec = 10,
-            ProxyTimeoutSec = 1000,
+            ProxyTimeoutSec = 0,
             MaxRequests = 1000000,
             KillOnCpuUsage = 40,
             DNSs = dnsServers1,
@@ -110,14 +149,36 @@ internal class Program
             BootstrapPort = 53,
             AllowInsecure = false,
             BlockPort80 = false,
-            //UpstreamProxyScheme = $"http://fodev.org:8118", // http://fodev.org:8118
-            ApplyUpstreamOnlyToBlockedIps = true
+            //UpstreamProxyScheme = $"socks5://127.0.0.1:8080", // http://fodev.org:8118
+            ApplyUpstreamOnlyToBlockedIps = false
         };
 
         AgnosticProgram.Fragment fragment = new();
-        fragment.Set(AgnosticProgram.Fragment.Mode.Program, 50, AgnosticProgram.Fragment.ChunkMode.SNI, 5, 2, 1);
+        fragment.Set(AgnosticProgram.Fragment.Mode.Program, 50, AgnosticProgram.Fragment.ChunkMode.SNI, 5, 2, 3);
         server1.EnableFragment(fragment);
 
+        AgnosticProgram.Rules rules = new(AgnosticProgram.Rules.Mode.Text)
+        {
+            RuleList = new()
+            {
+                new AgnosticProgram.Rules.Rule()
+                {
+                    Address = "msn.com",
+                    IsBlock = true,
+                },
+                new AgnosticProgram.Rules.Rule()
+                {
+                    Address = "*",
+                    //Dnss = new()
+                    //{
+                    //    "https://dns.cloudflare.com/dns-query"
+                    //},
+                    DnsProxyScheme = "socks5://127.0.0.1:8080"
+                },
+            }
+        };
+        //server1.EnableRules(rules);
+        
         AgnosticSettingsSSL settingsSSL = new(true)
         {
             ChangeSni = true,
@@ -131,6 +192,7 @@ internal class Program
         //server1.Stop();
         //await Task.Delay(TimeSpan.FromSeconds(10));
         //await server1.StartAsync(settings1);
+
 
         Console.ReadLine();
     }

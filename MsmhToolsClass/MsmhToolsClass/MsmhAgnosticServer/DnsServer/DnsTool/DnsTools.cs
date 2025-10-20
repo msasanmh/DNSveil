@@ -6,26 +6,14 @@ namespace MsmhToolsClass.MsmhAgnosticServer;
 
 public static class DnsTools
 {
-    private static readonly string NL = Environment.NewLine;
-
     public static bool IsDnsProtocolSupported(string dns)
     {
         try
         {
             dns = dns.Trim();
-            StringComparison sc = StringComparison.OrdinalIgnoreCase;
-            if (dns.StartsWith("udp://", sc) || dns.StartsWith("tcp://", sc) || dns.StartsWith("http://", sc) || dns.StartsWith("https://", sc) ||
-                dns.StartsWith("h3://", sc) || dns.StartsWith("tls://", sc) || dns.StartsWith("quic://", sc) || dns.StartsWith("sdns://", sc))
-                return true;
-            else
-                return isPlainDns(dns);
 
-            static bool isPlainDns(string dns) // Support For Plain DNS
-            {
-                NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dns, 53);
-                if (NetworkTool.IsIP(urid.Host, out _)) return urid.Port >= 1 && urid.Port <= 65535;
-                return false;
-            }
+            DnsReader dr = new(dns);
+            return dr.Protocol != DnsEnums.DnsProtocol.Unknown && dr.Port >= 1 && dr.Port <= 65535;
         }
         catch (Exception ex)
         {
@@ -53,22 +41,32 @@ public static class DnsTools
                 
                 List<string> urlsAndEndPoints = new();
                 List<string> lines = await TextTool.RemoveHtmlAndMarkDownTagsAsync(content, true);
-
                 for (int n = 0; n < lines.Count; n++)
                 {
                     string line = lines[n].Trim();
-                    
+
                     List<string> urls = await TextTool.GetLinksAsync(line);
                     urlsAndEndPoints.AddRange(urls);
 
                     List<string> endPoints = TextTool.GetEndPoints(line);
-                    for (int n2 = 0; n2 < endPoints.Count; n2++)
+                    for (int i = 0; i < endPoints.Count; i++) // Add EndPoints Which Is Not In The URLs
                     {
-                        string tcpPlainDNS = $"tcp://{endPoints[n2]}";
-                        urlsAndEndPoints.Add(tcpPlainDNS);
+                        string endPoint = endPoints[i];
+                        bool isInUrl = false;
+                        for (int j = 0; j < urls.Count; j++)
+                        {
+                            string url = urls[j];
+                            if (url.Contains(endPoint, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                isInUrl = true;
+                                break;
+                            }
+                        }
+                        if (isInUrl) continue;
+                        urlsAndEndPoints.Add(endPoint);
                     }
                 }
-
+                
                 for (int n = 0; n < urlsAndEndPoints.Count; n++)
                 {
                     string dns = urlsAndEndPoints[n];
@@ -76,6 +74,7 @@ public static class DnsTools
                     {
                         if (dns.EndsWith(".html", StringComparison.OrdinalIgnoreCase)) continue;
                         if (dns.EndsWith(".htm", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (dns.EndsWith(".md", StringComparison.OrdinalIgnoreCase)) continue;
                         if (dns.EndsWith(".php", StringComparison.OrdinalIgnoreCase)) continue;
                         if (dns.Contains("github.com", StringComparison.OrdinalIgnoreCase)) continue;
                         if (dns.Contains("githubusercontent.com", StringComparison.OrdinalIgnoreCase)) continue;
@@ -86,8 +85,6 @@ public static class DnsTools
                         if (dns.Contains("/faq", StringComparison.OrdinalIgnoreCase)) continue;
                         if (dns.Contains("/news", StringComparison.OrdinalIgnoreCase)) continue;
                         if (dns.Contains("/wiki", StringComparison.OrdinalIgnoreCase)) continue;
-                        NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dns, 443);
-                        if (urid.Path.Length < 2) continue;
                     }
                     dns = dns.TrimEnd('/');
                     if (IsDnsProtocolSupported(dns)) dnss.Add(dns);
@@ -104,7 +101,7 @@ public static class DnsTools
 
     public static async Task<List<string>> DecodeStampAsync(List<string> dnss)
     {
-        List<string> temp = new();
+        List<string> result = new();
 
         await Task.Run(() =>
         {
@@ -113,70 +110,69 @@ public static class DnsTools
                 for (int n = 0; n < dnss.Count; n++)
                 {
                     string dns = dnss[n];
-                    DnsReader dnsReader = new(dns);
+                    DnsReader dr = new(dns);
                     bool added = false;
-                    if (dnsReader.IsDnsCryptStamp)
+                    if (dr.IsDnsCryptStamp)
                     {
-                        if (dnsReader.Protocol == DnsEnums.DnsProtocol.UDP || dnsReader.Protocol == DnsEnums.DnsProtocol.TCP)
+                        if (dr.Protocol == DnsEnums.DnsProtocol.UDP || dr.Protocol == DnsEnums.DnsProtocol.TCP || dr.Protocol == DnsEnums.DnsProtocol.TcpOverUdp)
                         {
-                            if (dnsReader.IsHostIP)
+                            if (dr.IsHostIP)
                             {
-                                if (!NetworkTool.IsLocalIP(dnsReader.Host))
+                                if (!NetworkTool.IsLocalIP(dr.Host))
                                 {
-                                    bool isIP = NetworkTool.IsIP(dnsReader.Host, out IPAddress? ipOut);
+                                    bool isIP = NetworkTool.IsIP(dr.Host, out IPAddress? ipOut);
                                     if (isIP && ipOut != null)
                                     {
-                                        string dns_IP_URL = NetworkTool.IpToUrl(dnsReader.Scheme, ipOut, dnsReader.Port, string.Empty);
-                                        temp.Add(dns_IP_URL);
+                                        string dns_IP_URL = NetworkTool.IpToUrl(dr.Scheme, ipOut, dr.Port, string.Empty);
+                                        result.Add(dns_IP_URL);
                                         added = true;
                                     }
                                 }
                             }
                             else
                             {
-                                if (!NetworkTool.IsLocalIP(dnsReader.IP.ToString()))
+                                if (!NetworkTool.IsLocalIP(dr.IP))
                                 {
-                                    string dns_IP_URL = NetworkTool.IpToUrl(dnsReader.Scheme, dnsReader.IP, dnsReader.Port, string.Empty);
-                                    temp.Add(dns_IP_URL);
+                                    string dns_IP_URL = NetworkTool.IpToUrl(dr.Scheme, dr.IP, dr.Port, string.Empty);
+                                    result.Add(dns_IP_URL);
                                     added = true;
                                 }
                             }
                         }
-                        else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoT)
+                        else if (dr.Protocol == DnsEnums.DnsProtocol.DoT)
                         {
-                            string dns_URL = $"{dnsReader.Scheme}{dnsReader.Host}";
-                            if (dnsReader.Port != 853) dns_URL = $"{dnsReader.Scheme}{dnsReader.Host}:{dnsReader.Port}";
-                            temp.Add(dns_URL);
-
-                            if (!dnsReader.IsHostIP && !NetworkTool.IsLocalIP(dnsReader.IP.ToString()))
+                            string dns_URL = $"{dr.Scheme}{dr.Host}";
+                            if (dr.Port != 853) dns_URL = $"{dr.Scheme}{dr.Host}:{dr.Port}";
+                            result.Add(dns_URL);
+                            
+                            if (!dr.IsHostIP && !NetworkTool.IsLocalIP(dr.IP))
                             {
-                                string dns_IP_URL = NetworkTool.IpToUrl(dnsReader.Scheme, dnsReader.IP, dnsReader.Port, string.Empty);
-                                temp.Add(dns_IP_URL);
+                                string dns_IP_URL = NetworkTool.IpToUrl(dr.Scheme, dr.IP, dr.Port, string.Empty);
+                                result.Add(dns_IP_URL);
                             }
 
                             added = true;
                         }
-                        else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoH)
+                        else if (dr.Protocol == DnsEnums.DnsProtocol.DoH)
                         {
-                            string dns_URL = $"{dnsReader.Scheme}{dnsReader.Host}{dnsReader.Path}";
-                            if (dnsReader.Port != 443) dns_URL = $"{dnsReader.Scheme}{dnsReader.Host}:{dnsReader.Port}{dnsReader.Path}";
-                            temp.Add(dns_URL);
+                            string dns_URL = $"{dr.Scheme}{dr.Host}{dr.Path}";
+                            if (dr.Port != 443) dns_URL = $"{dr.Scheme}{dr.Host}:{dr.Port}{dr.Path}";
+                            result.Add(dns_URL);
 
-                            if (!dnsReader.IsHostIP && !NetworkTool.IsLocalIP(dnsReader.IP.ToString()))
+                            if (!dr.IsHostIP && !NetworkTool.IsLocalIP(dr.IP))
                             {
-                                string dns_IP_URL = NetworkTool.IpToUrl(dnsReader.Scheme, dnsReader.IP, dnsReader.Port, dnsReader.Path);
-                                Debug.WriteLine(dns_IP_URL);
-                                temp.Add(dns_IP_URL);
+                                string dns_IP_URL = NetworkTool.IpToUrl(dr.Scheme, dr.IP, dr.Port, dr.Path);
+                                result.Add(dns_IP_URL);
                             }
 
                             added = true;
                         }
                     }
 
-                    if (!added) temp.Add(dns);
+                    if (!added) result.Add(dns);
                 }
 
-                temp = temp.Distinct().ToList();
+                result = result.Distinct().ToList();
             }
             catch (Exception ex)
             {
@@ -184,6 +180,25 @@ public static class DnsTools
             }
         });
 
-        return temp;
+        return result;
     }
+
+    public static async Task<string> DecodeStampAsync(string dns)
+    {
+        string result = dns;
+
+        try
+        {
+            List<string> dnss = new() { dns };
+            List<string> decoded = await DecodeStampAsync(dnss);
+            if (decoded.Count > 0)
+            {
+                result = decoded[0];
+            }
+        }
+        catch (Exception) { }
+
+        return result;
+    }
+
 }

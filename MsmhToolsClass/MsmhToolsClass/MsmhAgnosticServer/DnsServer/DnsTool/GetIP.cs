@@ -63,7 +63,7 @@ public static class GetIP
                     AddressFamily addressFamily = ipAddresses[n].AddressFamily;
                     IPAddress ip = ipAddresses[n];
                     if (addressFamily != AddressFamily.InterNetworkV6)
-                        if (!string.IsNullOrEmpty(ip.ToString()) && !NetworkTool.IsLocalIP(ip.ToString()) && !IPAddress.IsLoopback(ip))
+                        if (!string.IsNullOrEmpty(ip.ToString()) && !NetworkTool.IsLocalIP(ip) && !IPAddress.IsLoopback(ip))
                             ips.Add(ip);
                 }
             }
@@ -119,8 +119,7 @@ public static class GetIP
                     else
                     {
                         if (irr is not ARecord aRecord) continue;
-                        string ipStr = aRecord.IP.ToString();
-                        bool isLocalIP = NetworkTool.IsLocalIP(ipStr);
+                        bool isLocalIP = NetworkTool.IsLocalIP(aRecord.IP);
                         bool isLoopbackIP = IPAddress.IsLoopback(aRecord.IP);
                         if (!isLocalIP && !isLoopbackIP) ips.Add(aRecord.IP);
                     }
@@ -182,7 +181,7 @@ public static class GetIP
         {
             byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnss, allowInsecure, bootstrapIP, bootstrapPort, timeoutSec * 1000, proxyScheme, proxyUser, proxyPass);
             DnsMessage dmA = DnsMessage.Read(dmABuffer, DnsEnums.DnsProtocol.UDP);
-
+            
             if (dmA.IsSuccess && dmA.Header.AnswersCount > 0)
             {
                 foreach (IResourceRecord irr in dmA.Answers.AnswerRecords)
@@ -196,8 +195,7 @@ public static class GetIP
                     else
                     {
                         if (irr is not ARecord aRecord) continue;
-                        string ipStr = aRecord.IP.ToString();
-                        bool isLocalIP = NetworkTool.IsLocalIP(ipStr);
+                        bool isLocalIP = NetworkTool.IsLocalIP(aRecord.IP);
                         bool isLoopbackIP = IPAddress.IsLoopback(aRecord.IP);
                         if (!isLocalIP && !isLoopbackIP) return aRecord.IP;
                     }

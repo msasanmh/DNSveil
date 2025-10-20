@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Net;
 using MsmhToolsClass.ProxifiedClients;
+using System.Diagnostics;
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
@@ -49,7 +50,7 @@ public class TcpPlainClient
                     ProxifiedTcpClient proxifiedTcpClient = new(ProxyScheme, ProxyUser, ProxyPass);
                     var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(ep);
                     if (upstream.isSuccess && upstream.proxifiedTcpClient != null) tcpClient = upstream.proxifiedTcpClient;
-
+                    
                     try
                     {
                         if (!upstream.isSuccess)
@@ -76,12 +77,14 @@ public class TcpPlainClient
                     }
                     catch (Exception) { }
 
-                    tcpClient.Client.Shutdown(SocketShutdown.Both);
-                    tcpClient.Client.Close();
+                    tcpClient.Close();
                     tcpClient.Dispose();
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("TcpPlainClient: " + ex.GetInnerExceptions());
+            }
         });
         try { await task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMS), CT).ConfigureAwait(false); } catch (Exception) { }
 

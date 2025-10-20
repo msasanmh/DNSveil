@@ -21,6 +21,7 @@ public partial class ManageServersWindow : WpfWindow
     {
         this.DispatchIt(() =>
         {
+            if (PART_Button1 != null) PART_Button1.IsEnabled = enable;
             Subscription_Settings_WpfFlyoutPopup.IsHitTestVisible = enable;
             if (enable || (!enable && IsScanning))
                 SubscriptionSourceStackPanel.IsEnabled = enable;
@@ -229,7 +230,7 @@ public partial class ManageServersWindow : WpfWindow
             await MainWindow.ServersManager.Update_GroupSettings_Async(groupItem.Name, groupSettings, true);
             await LoadSelectedGroupAsync(false); // Refresh
             await Subscription_Settings_WpfFlyoutPopup.CloseFlyAsync();
-            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -262,10 +263,10 @@ public partial class ManageServersWindow : WpfWindow
             if (DGG.SelectedItem is not GroupItem groupItem) return;
 
             // Update URLs
-            List<string> urlsOrFiles = SubscriptionSourceTextBox.Text.ReplaceLineEndings().Split(NL).ToList();
+            List<string> urlsOrFiles = SubscriptionSourceTextBox.Text.SplitToLines();
             await MainWindow.ServersManager.Update_Source_URLs_Async(groupItem.Name, urlsOrFiles, true);
             await LoadSelectedGroupAsync(false); // Refresh
-            if (showToast) WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            if (showToast) WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {
@@ -300,7 +301,7 @@ public partial class ManageServersWindow : WpfWindow
             // Save First
             await SubscriptionSaveSourceAsync(false);
 
-            List<string> urlsOrFiles = SubscriptionSourceTextBox.Text.ReplaceLineEndings().Split(NL, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            List<string> urlsOrFiles = SubscriptionSourceTextBox.Text.SplitToLines(StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
             if (urlsOrFiles.Count == 0)
             {
@@ -310,12 +311,27 @@ public partial class ManageServersWindow : WpfWindow
                 return;
             }
 
+            // Get Malicious Domains
+            List<string> maliciousDomains = MainWindow.ServersManager.MaliciousDomains_Get_TotalItems();
+
             List<string> allDNSs = new();
-            for (int n = 0; n < urlsOrFiles.Count; n++)
+            for (int i = 0; i < urlsOrFiles.Count; i++)
             {
-                string urlOrFile = urlsOrFiles[n];
+                string urlOrFile = urlsOrFiles[i];
                 List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
-                allDNSs.AddRange(dnss);
+                dnss = await DnsTools.DecodeStampAsync(dnss);
+                for (int j = 0; j < dnss.Count; j++)
+                {
+                    string dns = dnss[j];
+
+                    // Ignore Malicious Domains
+                    DnsReader dr = new(dns);
+                    if (maliciousDomains.IsContain(dr.Host)) continue;
+                    NetworkTool.URL url = NetworkTool.GetUrlOrDomainDetails(dr.Host, dr.Port);
+                    if (maliciousDomains.IsContain(url.BaseHost)) continue;
+
+                    allDNSs.Add(dns);
+                }
             }
 
             // Convert To DnsItem
@@ -372,13 +388,14 @@ public partial class ManageServersWindow : WpfWindow
             // FilterByProtocols
             bool udp = SubscriptionFilter_UDP_CheckBox.IsChecked ?? false;
             bool tcp = SubscriptionFilter_TCP_CheckBox.IsChecked ?? false;
+            bool tcpOverUdp = SubscriptionFilter_TcpOverUdp_CheckBox.IsChecked ?? false;
             bool dnsCrypt = SubscriptionFilter_DNSCrypt_CheckBox.IsChecked ?? false;
             bool anonymizedDNSCrypt = SubscriptionFilter_AnonymizedDNSCrypt_CheckBox.IsChecked ?? false;
             bool doT = SubscriptionFilter_DoT_CheckBox.IsChecked ?? false;
             bool doH = SubscriptionFilter_DoH_CheckBox.IsChecked ?? false;
             bool oDoH = SubscriptionFilter_ODoH_CheckBox.IsChecked ?? false;
             bool doQ = SubscriptionFilter_DoQ_CheckBox.IsChecked ?? false;
-            FilterByProtocols filterByProtocols = new(udp, tcp, dnsCrypt, doT, doH, doQ, anonymizedDNSCrypt, oDoH);
+            FilterByProtocols filterByProtocols = new(udp, tcp, tcpOverUdp, dnsCrypt, doT, doH, doQ, anonymizedDNSCrypt, oDoH);
 
             // FilterByProperties
             DnsFilter google = BoolToDnsFilter(SubscriptionFilter_Google_CheckBox.IsChecked);
@@ -398,7 +415,7 @@ public partial class ManageServersWindow : WpfWindow
 
             await LoadSelectedGroupAsync(true); // Refresh
 
-            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3, WpfToastDialog.Location.BottomCenter);
+            WpfToastDialog.Show(this, "Saved", MessageBoxImage.None, 3);
         }
         catch (Exception ex)
         {

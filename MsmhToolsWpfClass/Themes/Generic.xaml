@@ -1204,9 +1204,9 @@
                                     </Grid>
                                     <Grid x:Name="PART_TitleGrid_Right" Grid.Column="1">
                                         <StackPanel Orientation="Horizontal">
-                                            <local:WpfButton x:Name="PART_Button1" Margin="0,0,2,0" VerticalAlignment="Stretch"/>
-                                            <local:WpfButton x:Name="PART_Button2" Margin="0,0,2,0" VerticalAlignment="Stretch"/>
-                                            <local:WpfButton x:Name="PART_Button3" Margin="0,0,2,0" VerticalAlignment="Stretch"/>
+                                            <local:WpfButton x:Name="PART_Button1" Margin="0,2,2,2" VerticalAlignment="Stretch"/>
+                                            <local:WpfButton x:Name="PART_Button2" Margin="0,2,2,2" VerticalAlignment="Stretch"/>
+                                            <local:WpfButton x:Name="PART_Button3" Margin="0,2,2,2" VerticalAlignment="Stretch"/>
                                             <Separator x:Name="PART_Separator" Margin="3,0,5,0"
                                                        Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"
                                                        Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>

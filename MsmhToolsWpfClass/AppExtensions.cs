@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -386,6 +387,61 @@ public static class AppExtensions
         return -1;
     }
 
+    public static void UpdateColumnsWidthToAuto(this DataGrid dataGrid)
+    {
+        try
+        {
+            foreach (DataGridColumn column in dataGrid.Columns)
+                dataGrid.DispatchIt(() => column.Width = 0);
+            dataGrid.DispatchIt(() => dataGrid.UpdateLayout());
+            foreach (DataGridColumn column in dataGrid.Columns)
+                dataGrid.DispatchIt(() => column.Width = new DataGridLength(1.0, DataGridLengthUnitType.Auto));
+        }
+        catch (Exception) { }
+    }
+
+    public static void LastColumnFill(this DataGrid dataGrid)
+    {
+        try
+        {
+            if (dataGrid.Columns.Count > 0)
+            {
+                DataGridColumn lastColumn = dataGrid.Columns[^1];
+                lastColumn.CanUserResize = true;
+                lastColumn.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions SetLastColumnFillSpaces: " + ex.Message);
+        }
+    }
+
+    public static (int MinSelectedIndex, int MaxSelectedIndex, int SelectedCount) GetSelectedRowsIndexes(this DataGrid dataGrid)
+    {
+        int minSelected = dataGrid.SelectedIndex, maxSelected = dataGrid.SelectedIndex, selectedCount = 0;
+
+        try
+        {
+            selectedCount = dataGrid.SelectedItems.Count;
+            for (int n = 0; n < selectedCount; n++)
+            {
+                object? item = dataGrid.SelectedItems[n];
+                if (item == null) continue;
+                int itemIndex = dataGrid.Items.IndexOf(item);
+                if (itemIndex == -1) continue;
+                if (itemIndex < minSelected) minSelected = itemIndex;
+                if (itemIndex > maxSelected) maxSelected = itemIndex;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions GetSelectedRowsIndexes: " + ex.Message);
+        }
+
+        return (minSelected, maxSelected, selectedCount);
+    }
+
     /// <summary>
     /// Returns -1 If Fail
     /// </summary>
@@ -512,6 +568,29 @@ public static class AppExtensions
         return false;
     }
 
+    public static DataGridRow? GetRowByIndex(this DataGrid dataGrid, int rowIndex)
+    {
+        try
+        {
+            DependencyObject row = dataGrid.ItemContainerGenerator.ContainerFromIndex(rowIndex);
+            if (row == null)
+            {
+                dataGrid.UpdateLayout();
+                if (rowIndex >= 0 && rowIndex <= dataGrid.Items.Count - 1)
+                {
+                    dataGrid.ScrollIntoView(dataGrid.Items[rowIndex]);
+                    row = dataGrid.ItemContainerGenerator.ContainerFromIndex(rowIndex);
+                }
+            }
+            if (row != null) return row as DataGridRow;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions GetRowByIndex: " + ex.Message);
+        }
+        return null;
+    }
+
     /// <summary>
     /// This Is Not Precise
     /// </summary>
@@ -550,17 +629,100 @@ public static class AppExtensions
         return null;
     }
 
+    public static DataGridCell? GetCell(this DataGrid dataGrid, DataGridRow row, int columnIndex)
+    {
+        try
+        {
+            if (row != null)
+            {
+                DataGridCellsPresenter? presenter = GetChildOfType<DataGridCellsPresenter>(row);
+                if (presenter == null)
+                {
+                    dataGrid.UpdateLayout();
+                    if (columnIndex >= 0 && columnIndex <= dataGrid.Columns.Count - 1)
+                    {
+                        dataGrid.ScrollIntoView(row, dataGrid.Columns[columnIndex]);
+                        presenter = GetChildOfType<DataGridCellsPresenter>(row);
+                    }
+                }
+                if (presenter != null)
+                {
+                    DependencyObject cell = presenter.ItemContainerGenerator.ContainerFromIndex(columnIndex);
+                    if (cell != null) return cell as DataGridCell;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions GetCell By Row & Column Index: " + ex.Message);
+        }
+        return null;
+    }
+
+    public static DataGridCell? GetCell(this DataGrid dataGrid, int rowIndex, int columnIndex)
+    {
+        try
+        {
+            DataGridRow? rowContainer = dataGrid.GetRowByIndex(rowIndex);
+            if (rowContainer != null)
+            {
+                return dataGrid.GetCell(rowContainer, columnIndex);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions GetCell By Row Index & Column Index: " + ex.Message);
+        }
+        return null;
+    }
+
+    public static string GetValue(this DataGridCell cell)
+    {
+        try
+        {
+            if (cell.Content is TextBlock textBlock) return textBlock.Text;
+            else if (cell.Content is TextBox textBox) return textBox.Text;
+            else if (cell.Content is CheckBox checkBox && checkBox.IsChecked.HasValue)
+            {
+                string? str = checkBox.IsChecked.ToString();
+                if (str != null) return str;
+            }
+            else if (cell.Content is string str) return str;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions GetValue: " + ex.Message);
+        }
+        return string.Empty;
+    }
+
     public static bool IsContain(this Visual visual, Point point)
     {
-        HitTestResult? result = VisualTreeHelper.HitTest(visual, point);
-        return result != null;
+        try
+        {
+            HitTestResult? result = VisualTreeHelper.HitTest(visual, point);
+            return result != null;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions IsContain: " + ex.Message);
+            return false;
+        }
     }
 
     public static bool IsContain2(this Control control, Point point)
     {
-        Point buttonPosition = control.PointToScreen(new Point(0, 0));
-        return point.X >= buttonPosition.X && point.X <= buttonPosition.X + control.ActualWidth &&
-               point.Y >= buttonPosition.Y && point.Y <= buttonPosition.Y + control.ActualHeight;
+        try
+        {
+            Point buttonPosition = control.PointToScreen(new Point(0, 0));
+            return point.X >= buttonPosition.X && point.X <= buttonPosition.X + control.ActualWidth &&
+                   point.Y >= buttonPosition.Y && point.Y <= buttonPosition.Y + control.ActualHeight;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions IsContain2: " + ex.Message);
+            return false;
+        }
     }
 
     public static void HideHeader(this TabControl tabControl)
@@ -585,19 +747,6 @@ public static class AppExtensions
                 if (tabControl.Items[n] is TabItem ti)
                     ti.DispatchIt(() => ti.Visibility = Visibility.Visible);
             }
-        }
-        catch (Exception) { }
-    }
-
-    public static void UpdateColumnsWidthToAuto(this DataGrid dataGrid)
-    {
-        try
-        {
-            foreach (DataGridColumn column in dataGrid.Columns)
-                dataGrid.DispatchIt(() => column.Width = 0);
-            dataGrid.DispatchIt(() => dataGrid.UpdateLayout());
-            foreach (DataGridColumn column in dataGrid.Columns)
-                dataGrid.DispatchIt(() => column.Width = new DataGridLength(1.0, DataGridLengthUnitType.Auto));
         }
         catch (Exception) { }
     }

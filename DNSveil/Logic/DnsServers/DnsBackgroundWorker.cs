@@ -20,6 +20,7 @@ public partial class DnsServersManager
 
     public bool IsScanning { get; set; } = false;
     private bool StopScanning { get; set; } = false;
+    private CancellationTokenSource StopCTS = new();
 
     public BackgroundWorkerEventArgs GetBackgroundWorkerStatus { get; private set; } = new();
 
@@ -79,6 +80,7 @@ public partial class DnsServersManager
             if (!IsScanning && groupItem.Mode != GroupMode.None)
             {
                 IsScanning = true;
+                StopCTS = new();
                 bw.ButtonText = "Stop";
                 bw.ButtonEnable = true;
                 bw.Description = "Scanning...";
@@ -116,7 +118,7 @@ public partial class DnsServersManager
                         if (isBackground && PauseBackgroundTask) break;
                         
                         List<DnsItem> dnsItemList = selectedDnsItemLists[n];
-                        var cdp = await scanDns.CheckDnsInParallelAsync(gs.LookupDomain, dnsItemList, options.FilterByProtocols, options.FilterByProperties, gsTimeoutMS, gs.BootstrapIP, gs.BootstrapPort, useExternal);
+                        var cdp = await scanDns.CheckDnsInParallelAsync(gs.LookupDomain, dnsItemList, options.FilterByProtocols, options.FilterByProperties, gsTimeoutMS, gs.BootstrapIP, gs.BootstrapPort, useExternal, StopCTS.Token);
                         dnsItemList = cdp.DnsItemList;
                         bw.OnlineServers += cdp.ParallelResult.OnlineServers;
                         bw.SelectedServers += cdp.ParallelResult.SelectedServers;
@@ -134,7 +136,7 @@ public partial class DnsServersManager
                             if (n == selectedDnsItemLists.Count - 1) bw.ProgressValue = bw.ProgressMax;
                             try
                             {
-                                if (isCustomRange)
+                                if (isCustomRange && dnsItemList.Count > 0)
                                     bw.LastIndex = Get_IndexOf_DnsItem(groupItem.Name, dnsItemList[^1]);
                                 else bw.LastIndex = bw.ProgressValue - 1;
                             }
@@ -204,7 +206,7 @@ public partial class DnsServersManager
                         if (isBackground && PauseBackgroundTask) break;
                         
                         List<DnsItem> targetAsDnsItemList = targetsAsDnsItemList[n];
-                        var cdp = await scanDns.CheckDNSCryptInParallelAsync(gs.LookupDomain, targetAsDnsItemList, relays, gs.ParallelSize, options.FilterByProperties, gsTimeoutMS, gs.BootstrapIP, gs.BootstrapPort, useExternal);
+                        var cdp = await scanDns.CheckDNSCryptInParallelAsync(gs.LookupDomain, targetAsDnsItemList, relays, gs.ParallelSize, options.FilterByProperties, gsTimeoutMS, gs.BootstrapIP, gs.BootstrapPort, useExternal, StopCTS.Token);
                         bw.OnlineServers += cdp.ParallelResult.OnlineServers;
                         bw.SelectedServers += cdp.ParallelResult.SelectedServers;
                         bw.SumLatencyMS += cdp.ParallelResult.SumLatencyMS;
@@ -222,7 +224,7 @@ public partial class DnsServersManager
                             if (n == targetsAsDnsItemList.Count - 1) bw.ProgressValue = bw.ProgressMax;
                             try
                             {
-                                if (isCustomRange)
+                                if (isCustomRange && cdp.DnsItemElementsList.Count > 0)
                                     bw.LastIndex = Get_IndexOf_DnsItem(groupItem.Name, cdp.DnsItemElementsList[^1]);
                                 else bw.LastIndex = bw.ProgressValue - 1;
                             }
@@ -280,7 +282,7 @@ public partial class DnsServersManager
                         KillOnCpuUsage = 40,
                         MaxRequests = 1000000,
                         ListenerPort = await NetworkTool.GetAFreePortAsync(),
-                        Working_Mode = AgnosticSettings.WorkingMode.DnsAndProxy
+                        Working_Mode = AgnosticSettings.WorkingMode.Proxy
                     };
 
                     // Create Proxy Server
@@ -308,7 +310,7 @@ public partial class DnsServersManager
                         if (isBackground && PauseBackgroundTask) break;
 
                         List<DnsItem> dnsItemList = selectedDnsItemLists[n];
-                        var cdp = await scanDns.CheckDnsInParallelAsync(gs.LookupDomain, dnsItemList, options.FilterByProperties, gsTimeoutMS, IPAddress.Loopback, serverSettings.ListenerPort, useExternal, proxyScheme);
+                        var cdp = await scanDns.CheckDnsInParallelAsync(gs.LookupDomain, dnsItemList, options.FilterByProperties, gsTimeoutMS, IPAddress.Loopback, serverSettings.ListenerPort, useExternal, StopCTS.Token, proxyScheme);
                         dnsItemList = cdp.DnsItemList;
                         bw.OnlineServers += cdp.ParallelResult.OnlineServers;
                         bw.SelectedServers += cdp.ParallelResult.SelectedServers;
@@ -326,7 +328,7 @@ public partial class DnsServersManager
                             if (n == selectedDnsItemLists.Count - 1) bw.ProgressValue = bw.ProgressMax;
                             try
                             {
-                                if (isCustomRange)
+                                if (isCustomRange && dnsItemList.Count > 0)
                                     bw.LastIndex = Get_IndexOf_DnsItem(groupItem.Name, dnsItemList[^1]);
                                 else bw.LastIndex = bw.ProgressValue - 1;
                             }
@@ -371,7 +373,7 @@ public partial class DnsServersManager
                         if (isBackground && PauseBackgroundTask) break;
 
                         List<DnsItem> dnsItemList = selectedDnsItemLists[n];
-                        var cdp = await scanDns.CheckDnsInParallelAsync(gs.LookupDomain, dnsItemList, options.FilterByProtocols, options.FilterByProperties, gsTimeoutMS, gs.BootstrapIP, gs.BootstrapPort, useExternal);
+                        var cdp = await scanDns.CheckDnsInParallelAsync(gs.LookupDomain, dnsItemList, options.FilterByProtocols, options.FilterByProperties, gsTimeoutMS, gs.BootstrapIP, gs.BootstrapPort, useExternal, StopCTS.Token);
                         dnsItemList = cdp.DnsItemList;
                         bw.OnlineServers += cdp.ParallelResult.OnlineServers;
                         bw.SelectedServers += cdp.ParallelResult.SelectedServers;
@@ -389,7 +391,7 @@ public partial class DnsServersManager
                             if (n == selectedDnsItemLists.Count - 1) bw.ProgressValue = bw.ProgressMax;
                             try
                             {
-                                if (isCustomRange)
+                                if (isCustomRange && dnsItemList.Count > 0)
                                     bw.LastIndex = Get_IndexOf_DnsItem(groupItem.Name, dnsItemList[^1]);
                                 else bw.LastIndex = bw.ProgressValue - 1;
                             }
@@ -444,6 +446,7 @@ public partial class DnsServersManager
                 }
                 
                 StopScanning = true;
+                StopCTS.CancelAfter(500);
             }
         }
         catch (Exception ex)
@@ -462,88 +465,152 @@ public partial class DnsServersManager
         await ScanServersAsync(groupItem, selectedDnsItemList, false);
     }
 
-    private async Task SubscriptionFetchSourceAsync(GroupItem gi)
+    private async Task<bool> MaliciousDomainsFetchSourceAsync(List<string> urlsOrFiles)
     {
         try
         {
-            List<string> urlsOrFiles = Get_Source_URLs(gi.Name);
-            if (urlsOrFiles.Count == 0) return;
+            if (urlsOrFiles.Count == 0) return false;
 
-            List<string> allDNSs = new();
+            List<string> serverDomains = new();
             for (int n = 0; n < urlsOrFiles.Count; n++)
             {
                 string urlOrFile = urlsOrFiles[n];
-                List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
-                allDNSs.AddRange(dnss);
+                List<string> domains = await WebAPI.GetLinesFromTextLinkAsync(urlOrFile, 20000);
+                if (PauseBackgroundTask) return false;
+                serverDomains.AddRange(domains);
             }
-            if (PauseBackgroundTask) return;
+            if (PauseBackgroundTask) return false;
+
+            // DeDup
+            serverDomains = serverDomains.Distinct().ToList();
+            if (serverDomains.Count == 0) return false;
+
+            // Add To MaliciousDomains => ServerItems Element
+            await MaliciousDomains_Update_ServerItems_Async(serverDomains, false);
+            // Update Last AutoUpdate
+            await MaliciousDomains_Update_UpdateDetails_Async(new SettingsUpdateDetails(-1, DateTime.Now), true);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("DnsServers DnsBackgroundWorker MaliciousDomainsFetchSourceAsync: " + ex.Message);
+            return false;
+        }
+    }
+
+    private async Task<bool> SubscriptionFetchSourceAsync(GroupItem gi, List<string> urlsOrFiles)
+    {
+        try
+        {
+            if (urlsOrFiles.Count == 0) return false;
+
+            // Get Malicious Domains
+            List<string> maliciousDomains = MaliciousDomains_Get_TotalItems();
+
+            List<string> allDNSs = new();
+            for (int i = 0; i < urlsOrFiles.Count; i++)
+            {
+                string urlOrFile = urlsOrFiles[i];
+                List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
+                dnss = await DnsTools.DecodeStampAsync(dnss);
+                if (PauseBackgroundTask) return false;
+                for (int j = 0; j < dnss.Count; j++)
+                {
+                    string dns = dnss[j];
+
+                    // Ignore Malicious Domains
+                    DnsReader dr = new(dns);
+                    if (maliciousDomains.IsContain(dr.Host)) continue;
+                    NetworkTool.URL url = NetworkTool.GetUrlOrDomainDetails(dr.Host, dr.Port);
+                    if (maliciousDomains.IsContain(url.BaseHost)) continue;
+
+                    allDNSs.Add(dns);
+                }
+            }
+            if (PauseBackgroundTask) return false;
 
             // DeDup
             allDNSs = allDNSs.Distinct().ToList();
-            if (allDNSs.Count == 0) return;
+            if (allDNSs.Count == 0) return false;
 
             // Add To Group => DnsItems Element
             await Add_DnsItems_Async(gi.Name, allDNSs, false);
             // Update Last AutoUpdate
             await Update_LastAutoUpdate_Async(gi.Name, new LastAutoUpdate(DateTime.Now, DateTime.MinValue), true);
+            return true;
         }
         catch (Exception ex)
         {
             Debug.WriteLine("DnsServers DnsBackgroundWorker SubscriptionFetchSourceAsync: " + ex.Message);
+            return false;
         }
     }
 
-    private async Task AnonDNSCryptFetchSourceAsync(GroupItem gi)
+    private async Task<bool> AnonDNSCryptFetchSourceAsync(GroupItem gi, List<string> relayUrlsOrFiles, List<string> targetUrlsOrFiles)
     {
         try
         {
-            List<string> relayUrlsOrFiles = Get_AnonDNSCrypt_Relay_URLs(gi.Name);
-            List<string> targetUrlsOrFiles = Get_AnonDNSCrypt_Target_URLs(gi.Name);
-            if (relayUrlsOrFiles.Count == 0 || targetUrlsOrFiles.Count == 0) return;
+            if (relayUrlsOrFiles.Count == 0 || targetUrlsOrFiles.Count == 0) return false;
+
+            // Get Malicious Domains
+            List<string> maliciousDomains = MaliciousDomains_Get_TotalItems();
 
             List<string> allRelays = new();
             for (int n = 0; n < relayUrlsOrFiles.Count; n++)
             {
                 string relayUrlOrFile = relayUrlsOrFiles[n];
                 List<string> relays = await DnsTools.GetServersFromLinkAsync(relayUrlOrFile, 20000);
+                if (PauseBackgroundTask) return false;
                 for (int i = 0; i < relays.Count; i++)
                 {
                     string relay = relays[i];
-                    DnsReader dnsReader = new(relay);
-                    if (dnsReader.Protocol == DnsEnums.DnsProtocol.AnonymizedDNSCryptRelay ||
-                        dnsReader.Protocol == DnsEnums.DnsProtocol.UDP ||
-                        dnsReader.Protocol == DnsEnums.DnsProtocol.TCP)
+                    DnsReader dr = new(relay);
+                    if (dr.Protocol == DnsEnums.DnsProtocol.AnonymizedDNSCryptRelay ||
+                        dr.Protocol == DnsEnums.DnsProtocol.UDP ||
+                        dr.Protocol == DnsEnums.DnsProtocol.TCP ||
+                        dr.Protocol == DnsEnums.DnsProtocol.TcpOverUdp)
                     {
-                        allRelays.Add(dnsReader.Dns);
+                        // Ignore Malicious Domains
+                        if (maliciousDomains.IsContain(dr.Host)) continue;
+                        NetworkTool.URL url = NetworkTool.GetUrlOrDomainDetails(dr.Host, dr.Port);
+                        if (maliciousDomains.IsContain(url.BaseHost)) continue;
+
+                        allRelays.Add(dr.Dns);
                     }
                 }
             }
-            if (PauseBackgroundTask) return;
+            if (PauseBackgroundTask) return false;
 
             // DeDup Relays
             allRelays = allRelays.Distinct().ToList();
-            if (allRelays.Count == 0) return;
+            if (allRelays.Count == 0) return false;
 
             List<string> allTargets = new();
             for (int n = 0; n < targetUrlsOrFiles.Count; n++)
             {
                 string targetUrlOrFile = targetUrlsOrFiles[n];
                 List<string> targets = await DnsTools.GetServersFromLinkAsync(targetUrlOrFile, 20000);
+                if (PauseBackgroundTask) return false;
                 for (int i = 0; i < targets.Count; i++)
                 {
                     string target = targets[i];
-                    DnsReader dnsReader = new(target);
-                    if (dnsReader.Protocol == DnsEnums.DnsProtocol.DnsCrypt)
+                    DnsReader dr = new(target);
+                    if (dr.Protocol == DnsEnums.DnsProtocol.DnsCrypt)
                     {
-                        allTargets.Add(dnsReader.Dns);
+                        // Ignore Malicious Domains
+                        if (maliciousDomains.IsContain(dr.Host)) continue;
+                        NetworkTool.URL url = NetworkTool.GetUrlOrDomainDetails(dr.Host, dr.Port);
+                        if (maliciousDomains.IsContain(url.BaseHost)) continue;
+
+                        allTargets.Add(dr.Dns);
                     }
                 }
             }
-            if (PauseBackgroundTask) return;
+            if (PauseBackgroundTask) return false;
 
             // DeDup Targets
             allTargets = allTargets.Distinct().ToList();
-            if (allTargets.Count == 0) return;
+            if (allTargets.Count == 0) return false;
 
             // Add To Group => RelayItems Element
             await Add_AnonDNSCrypt_RelayItems_Async(gi.Name, allRelays, false);
@@ -551,60 +618,52 @@ public partial class DnsServersManager
             await Add_AnonDNSCrypt_TargetItems_Async(gi.Name, allTargets, false);
             // Update Last AutoUpdate
             await Update_LastAutoUpdate_Async(gi.Name, new LastAutoUpdate(DateTime.Now, DateTime.MinValue), true);
+            return true;
         }
         catch (Exception ex)
         {
             Debug.WriteLine("DnsServers DnsBackgroundWorker AnonDNSCryptFetchSourceAsync: " + ex.Message);
+            return false;
         }
     }
 
-    private async Task FragmentDoHFetchSourceAsync(GroupItem gi)
+    private async Task<bool> FragmentDoHFetchSourceAsync(GroupItem gi, List<string> urlsOrFiles)
     {
         try
         {
-            List<string> urlsOrFiles = Get_Source_URLs(gi.Name);
-            if (urlsOrFiles.Count == 0) return;
+            if (urlsOrFiles.Count == 0) return false;
 
-            List<DnsItem> allDoHStamps = new();
+            List<string> allDNSs = new();
             for (int n = 0; n < urlsOrFiles.Count; n++)
             {
                 string urlOrFile = urlsOrFiles[n];
                 List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
-                for (int i = 0; i < dnss.Count; i++)
-                {
-                    string dns = dnss[i];
-                    DnsReader dnsReader = new(dns);
-                    if (dnsReader.IsDnsCryptStamp && dnsReader.Protocol == DnsEnums.DnsProtocol.DoH)
-                    {
-                        if (!dnsReader.IsHostIP && !NetworkTool.IsLocalIP(dnsReader.StampReader.IP.ToString()))
-                        {
-                            string dns_URL = $"{dnsReader.Scheme}{dnsReader.Host}{dnsReader.Path}";
-                            if (dnsReader.Port != 443) dns_URL = $"{dnsReader.Scheme}{dnsReader.Host}:{dnsReader.Port}{dnsReader.Path}";
-                            IPAddress dns_IP = dnsReader.StampReader.IP;
-                            DnsItem di = new() { DNS_URL = dns_URL, DNS_IP = dns_IP, Protocol = dnsReader.ProtocolName };
-                            allDoHStamps.Add(di);
-                        }
-                    }
-                }
+                if (PauseBackgroundTask) return false;
+                allDNSs.AddRange(dnss);
             }
-            if (PauseBackgroundTask) return;
+            if (PauseBackgroundTask) return false;
 
-            // DeDup Stamps
-            allDoHStamps = allDoHStamps.DistinctBy(x => x.DNS_URL).ToList();
-            if (allDoHStamps.Count == 0) return;
+            // Get Malicious Domains
+            List<string> maliciousDomains = MaliciousDomains_Get_TotalItems();
+
+            // Convert To DnsItem
+            List<DnsItem> allDoHStamps = Tools.Convert_DNSs_To_DnsItem_ForFragmentDoH(allDNSs, maliciousDomains);
+            if (allDoHStamps.Count == 0) return false;
 
             // Add To Group => DnsItems Element
             await Add_DnsItems_Async(gi.Name, allDoHStamps, false);
             // Update Last AutoUpdate
             await Update_LastAutoUpdate_Async(gi.Name, new LastAutoUpdate(DateTime.Now, DateTime.MinValue), true);
+            return true;
         }
         catch (Exception ex)
         {
             Debug.WriteLine("DnsServers DnsBackgroundWorker FragmentDoHFetchSourceAsync: " + ex.Message);
+            return false;
         }
     }
 
-    private async Task<bool> AutoUpdate_Groups_InternalAsync()
+    private async Task<bool> AutoUpdate_SettingsAndGroups_InternalAsync()
     {
         bool updated = false;
         try
@@ -625,6 +684,24 @@ public partial class DnsServersManager
 #endif
             }
 
+            // Update Settings: Malicious Domains
+            SettingsUpdateDetails sudMD = MaliciousDomains_Get_UpdateDetails();
+            if (sudMD.UpdateSource > 0)
+            {
+                bool isUpdateTime_ByDate = (DateTime.Now - sudMD.LastUpdateSource) >= new TimeSpan(sudMD.UpdateSource, 0, 0);
+                if (isUpdateTime_ByDate)
+                {
+                    List<string> urlsOrFiles = MaliciousDomains_Get_Source_URLs();
+                    bool hasSourcePath = urlsOrFiles.Count > 0;
+                    if (hasSourcePath)
+                    {
+                        updated = await MaliciousDomainsFetchSourceAsync(urlsOrFiles);
+                        if (PauseBackgroundTask) return updated;
+                    }
+                }
+            }
+
+            // Update Groups
             List<GroupItem> groupItems = Get_GroupItems(true);
             for (int n = 0; n < groupItems.Count; n++)
             {
@@ -641,16 +718,16 @@ public partial class DnsServersManager
                         bool isSourceByPath = Get_Source_EnableDisable(gi.Name);
                         if (isSourceByPath)
                         {
-                            List<string> urlsOrFiles = Get_Source_URLs(gi.Name);
-                            bool hasSourcePath = urlsOrFiles.Count > 0;
-                            if (hasSourcePath)
+                            bool isUpdateTime_ByItems = dii.TotalServers == 0;
+                            bool isUpdateTime_ByDate = (DateTime.Now - lau.LastUpdateSource) >= new TimeSpan(au.UpdateSource, 0, 0);
+                            if (isUpdateTime_ByItems || isUpdateTime_ByDate)
                             {
-                                bool isUpdateTime_ByItems = dii.TotalServers == 0;
-                                bool isUpdateTime_ByDate = (DateTime.Now - lau.LastUpdateSource) >= new TimeSpan(au.UpdateSource, 0, 0);
-                                if (isUpdateTime_ByItems || isUpdateTime_ByDate)
+                                List<string> urlsOrFiles = Get_Source_URLs(gi.Name);
+                                bool hasSourcePath = urlsOrFiles.Count > 0;
+                                if (hasSourcePath)
                                 {
                                     debug(true, isUpdateTime_ByItems, gi, au, lau);
-                                    await SubscriptionFetchSourceAsync(gi);
+                                    updated = await SubscriptionFetchSourceAsync(gi, urlsOrFiles);
                                     if (PauseBackgroundTask) return updated;
                                 }
                             }
@@ -682,17 +759,17 @@ public partial class DnsServersManager
                         bool isSourceByPath = Get_Source_EnableDisable(gi.Name);
                         if (isSourceByPath)
                         {
-                            List<string> relayUrlsOrFiles = Get_AnonDNSCrypt_Relay_URLs(gi.Name);
-                            List<string> targetUrlsOrFiles = Get_AnonDNSCrypt_Target_URLs(gi.Name);
-                            bool hasSourcePath = relayUrlsOrFiles.Count > 0 && targetUrlsOrFiles.Count > 0;
-                            if (hasSourcePath)
+                            bool isUpdateTime_ByItems = dii.TotalServers == 0;
+                            bool isUpdateTime_ByDate = (DateTime.Now - lau.LastUpdateSource) >= new TimeSpan(au.UpdateSource, 0, 0);
+                            if (isUpdateTime_ByItems || isUpdateTime_ByDate)
                             {
-                                bool isUpdateTime_ByItems = dii.TotalServers == 0;
-                                bool isUpdateTime_ByDate = (DateTime.Now - lau.LastUpdateSource) >= new TimeSpan(au.UpdateSource, 0, 0);
-                                if (isUpdateTime_ByItems || isUpdateTime_ByDate)
+                                List<string> relayUrlsOrFiles = Get_AnonDNSCrypt_Relay_URLs(gi.Name);
+                                List<string> targetUrlsOrFiles = Get_AnonDNSCrypt_Target_URLs(gi.Name);
+                                bool hasSourcePath = relayUrlsOrFiles.Count > 0 && targetUrlsOrFiles.Count > 0;
+                                if (isSourceByPath)
                                 {
                                     debug(true, isUpdateTime_ByItems, gi, au, lau);
-                                    await AnonDNSCryptFetchSourceAsync(gi);
+                                    updated = await AnonDNSCryptFetchSourceAsync(gi, relayUrlsOrFiles, targetUrlsOrFiles);
                                     updated = true;
                                     if (PauseBackgroundTask) return updated;
                                 }
@@ -728,16 +805,16 @@ public partial class DnsServersManager
                         bool isSourceByPath = Get_Source_EnableDisable(gi.Name);
                         if (isSourceByPath)
                         {
-                            List<string> urlsOrFiles = Get_Source_URLs(gi.Name);
-                            bool hasSourcePath = urlsOrFiles.Count > 0;
-                            if (hasSourcePath)
+                            bool isUpdateTime_ByItems = dii.TotalServers == 0;
+                            bool isUpdateTime_ByDate = (DateTime.Now - lau.LastUpdateSource) >= new TimeSpan(au.UpdateSource, 0, 0);
+                            if (isUpdateTime_ByItems || isUpdateTime_ByDate)
                             {
-                                bool isUpdateTime_ByItems = dii.TotalServers == 0;
-                                bool isUpdateTime_ByDate = (DateTime.Now - lau.LastUpdateSource) >= new TimeSpan(au.UpdateSource, 0, 0);
-                                if (isUpdateTime_ByItems || isUpdateTime_ByDate)
+                                List<string> urlsOrFiles = Get_Source_URLs(gi.Name);
+                                bool hasSourcePath = urlsOrFiles.Count > 0;
+                                if (hasSourcePath)
                                 {
                                     debug(true, isUpdateTime_ByItems, gi, au, lau);
-                                    await FragmentDoHFetchSourceAsync(gi);
+                                    updated = await FragmentDoHFetchSourceAsync(gi, urlsOrFiles);
                                     updated = true;
                                     if (PauseBackgroundTask) return updated;
                                 }
@@ -791,12 +868,12 @@ public partial class DnsServersManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("DnsServers DnsBackgroundWorker AutoUpdate_Groups_InternalAsync: " + ex.Message);
+            Debug.WriteLine("DnsServers DnsBackgroundWorker AutoUpdate_SettingsAndGroups_InternalAsync: " + ex.Message);
         }
         return updated;
     }
 
-    private async void BackgroundWorker_AutoUpdate_Groups()
+    private async void BackgroundWorker_AutoUpdate_SettingsAndGroups()
     {
         await Task.Run(async () =>
         {
@@ -816,11 +893,11 @@ public partial class DnsServersManager
                         }
                         catch (Exception ex)
                         {
-                            Debug.WriteLine("DnsServers DnsBackgroundWorker AutoUpdate_Groups (Create Backup): " + ex.Message);
+                            Debug.WriteLine("DnsServers DnsBackgroundWorker AutoUpdate_SettingsAndGroups (Create Backup): " + ex.Message);
                         }
                     }
 
-                    updated = await AutoUpdate_Groups_InternalAsync();
+                    updated = await AutoUpdate_SettingsAndGroups_InternalAsync();
                     IsBackgroundTaskWorking = false;
                     await Task.Delay(TimeSpan.FromMinutes(1));
                 }

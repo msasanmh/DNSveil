@@ -13,12 +13,16 @@ public struct Key
         public static readonly string Status = "Status";
         public static readonly string Flush = "Flush";
         public static readonly string Start = "Start";
+        public static readonly string SetDNS = "SetDNS";
+        public static readonly string UnsetDNS = "UnsetDNS";
         public static readonly string Stop = "Stop";
         public static readonly string Update = "Update";
         public static readonly string Save = "Save";
         public static readonly string KillAll = "KillAll";
         public static readonly string Requests = "Requests";
         public static readonly string FragmentDetails = "FragmentDetails";
+        public static readonly string DebugInfo = "DebugInfo";
+        public static readonly string LogToFile = "LogToFile";
     }
 
     public readonly struct ParentProcess
@@ -52,6 +56,7 @@ public struct Key
     {
         public static readonly string Name = "SSLSetting";
         public static readonly string Enable = "Enable";
+        public static readonly string ServerDomainName = "ServerDomainName";
         public static readonly string RootCA_Path = "RootCA_Path";
         public static readonly string RootCA_KeyPath = "RootCA_KeyPath";
         public static readonly string Cert_Path = "Cert_Path";

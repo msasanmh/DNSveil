@@ -192,7 +192,7 @@ public class CheckDns
                             {
                                 IResourceRecord irr = dmA.Answers.AnswerRecords[n];
                                 if (irr is not ARecord aRecord) continue;
-                                if (NetworkTool.IsLocalIP(aRecord.IP.ToString())) hasLocalIp = true;
+                                if (NetworkTool.IsLocalIP(aRecord.IP)) hasLocalIp = true;
                                 aRecordCount++;
                             }
                         }
@@ -244,7 +244,7 @@ public class CheckDns
                     var ipToHost2 = await NetworkTool.IpToHostAsync(domainIP.ToString());
                     string host = ipToHost2.BaseHost;
                     if (string.IsNullOrEmpty(host)) continue;
-                    if (NetworkTool.IsLocalIP(domainIP.ToString())) continue;
+                    if (NetworkTool.IsLocalIP(domainIP)) continue;
 
                     Debug.WriteLine(realHost + " == " + host);
                     if (!realHost.Equals(host, StringComparison.OrdinalIgnoreCase))
@@ -439,7 +439,7 @@ public class CheckDns
                     hasSameItem = true;
                     break;
                 }
-                if (checkForLocalIPs && NetworkTool.IsLocalIP(ip.ToString()))
+                if (checkForLocalIPs && NetworkTool.IsLocalIP(ip))
                 {
                     hasSameItem = true;
                     break;
@@ -454,7 +454,7 @@ public class CheckDns
         for (int n = 0; n < list.Count; n++)
         {
             IPAddress ip = list[n];
-            if (NetworkTool.IsLocalIP(ip.ToString())) return true;
+            if (NetworkTool.IsLocalIP(ip)) return true;
         }
         return false;
     }

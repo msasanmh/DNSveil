@@ -1,9 +1,4 @@
-﻿using Microsoft.Win32;
-using MsmhToolsClass;
-using MsmhToolsClass.MsmhAgnosticServer;
-using MsmhToolsWpfClass;
-using MsmhToolsWpfClass.Themes;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -12,6 +7,11 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml.Linq;
+using Microsoft.Win32;
+using MsmhToolsClass;
+using MsmhToolsClass.MsmhAgnosticServer;
+using MsmhToolsWpfClass;
+using MsmhToolsWpfClass.Themes;
 using static DNSveil.Logic.DnsServers.DnsServersManager;
 using static DNSveil.Logic.DnsServers.EnumsAndStructs;
 using GroupItem = DNSveil.Logic.DnsServers.EnumsAndStructs.GroupItem;
@@ -88,16 +88,39 @@ public partial class ManageServersWindow : WpfWindow
         Flyout_Custom_Options.IsOpen = false;
     }
 
-    private static int GetPreviousOrNextIndex(DataGrid dg)
+    private static int GetPreviousOrNextIndex(DataGrid dg, bool onRemove)
     {
-        int r = dg.SelectedIndex;
+        int i = -1;
         try
         {
-            if (r > 0) r--;
-            else if (r < dg.Items.Count - 1) r++;
+            i = dg.SelectedIndex;
+            int min = 0, max = dg.Items.Count - 1;
+            var indexes = dg.GetSelectedRowsIndexes();
+            i = indexes.MinSelectedIndex;
+            int removedMax = max - indexes.SelectedCount;
+            if (onRemove)
+            {
+                if (i > min)
+                {
+                    int otherSelected = indexes.SelectedCount - 1;
+                    if (i + otherSelected == max) i = removedMax;
+                }
+            }
+            else
+            {
+                if (i > min)
+                {
+                    i--;
+                    if (removedMax > i) i++;
+                }
+                else
+                {
+                    i++;
+                }
+            }
         }
         catch (Exception) { }
-        return r;
+        return i;
     }
 
     private async Task LoadGroupsAsync(string? selectGroupByName)
@@ -167,7 +190,7 @@ public partial class ManageServersWindow : WpfWindow
         }
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    private async void WpfWindow_Loaded(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -176,6 +199,7 @@ public partial class ManageServersWindow : WpfWindow
 
             // Load Theme
 
+            // Wait For Background Task
             await Task.Run(async () =>
             {
                 while (true)
@@ -197,6 +221,14 @@ public partial class ManageServersWindow : WpfWindow
                 }
             });
 
+            if (PART_Button1 != null)
+            {
+                PART_Button1.Content = "Malicious Domains";
+                PART_Button1.Visibility = Visibility.Visible;
+                PART_Button1.Click -= PART_Button1_Click;
+                PART_Button1.Click += PART_Button1_Click;
+            }
+            
             // Set Helps
             Help_Groups_Import.Content = $"Restore Your Backup.{NL}Import Groups From File.";
             Help_Groups_Export.Content = $"Backup Your Groups.{NL}Export Groups To File.";
@@ -237,11 +269,35 @@ public partial class ManageServersWindow : WpfWindow
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ManageServersWindow Window_Loaded: " + ex.Message);
+            Debug.WriteLine("ManageServersWindow WpfWindow_Loaded: " + ex.Message);
         }
     }
 
-    private void Window_ContentRendered(object sender, EventArgs e)
+    private void PART_Button1_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (IsScanning)
+            {
+                WpfToastDialog.Show(this, "Can't Do This While Scanning.", MessageBoxImage.Stop, 2);
+                return;
+            }
+
+            MaliciousWindow mw = new()
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Title = "Malicious Domains"
+            };
+            mw.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(this, ex.Message, "ERROR", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void WpfWindow_ContentRendered(object sender, EventArgs e)
     {
         try
         {
@@ -498,7 +554,7 @@ public partial class ManageServersWindow : WpfWindow
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ManageServersWindow Window_ContentRendered: " + ex.Message);
+            Debug.WriteLine("ManageServersWindow WpfWindow_ContentRendered: " + ex.Message);
         }
     }
 
@@ -513,10 +569,11 @@ public partial class ManageServersWindow : WpfWindow
         try
         {
             if (DGG.SelectedItem is not GroupItem groupItem) return;
+            if (!bw.GroupItem.Name.Equals(groupItem.Name)) return;
             IsScanning = bw.IsWorking;
             await Import_FlyoutOverlay.CloseFlyAsync();
 
-            if (bw.GroupItem.Mode == GroupMode.Subscription && bw.GroupItem.Name.Equals(groupItem.Name))
+            if (bw.GroupItem.Mode == GroupMode.Subscription)
             {
                 // Scan Subscription
                 ChangeControlsState_Subscription(!bw.IsWorking);
@@ -547,7 +604,7 @@ public partial class ManageServersWindow : WpfWindow
                     if (bw.LastIndex != -1) await DGS_Subscription.ScrollIntoViewAsync(bw.LastIndex); // Scroll
                 }
             }
-            else if (bw.GroupItem.Mode == GroupMode.AnonymizedDNSCrypt && bw.GroupItem.Name.Equals(groupItem.Name))
+            else if (bw.GroupItem.Mode == GroupMode.AnonymizedDNSCrypt)
             {
                 // Scan AnonymizedDNSCrypt
                 ChangeControlsState_AnonDNSCrypt(!bw.IsWorking);
@@ -593,7 +650,7 @@ public partial class ManageServersWindow : WpfWindow
                     if (bw.LastIndex != -1) await DGS_AnonDNSCrypt.ScrollIntoViewAsync(bw.LastIndex); // Scroll
                 }
             }
-            else if (bw.GroupItem.Mode == GroupMode.FragmentDoH && bw.GroupItem.Name.Equals(groupItem.Name))
+            else if (bw.GroupItem.Mode == GroupMode.FragmentDoH)
             {
                 // Scan FragmentDoH
                 ChangeControlsState_FragmentDoH(!bw.IsWorking);
@@ -624,7 +681,7 @@ public partial class ManageServersWindow : WpfWindow
                     if (bw.LastIndex != -1) await DGS_FragmentDoH.ScrollIntoViewAsync(bw.LastIndex); // Scroll
                 }
             }
-            else if (bw.GroupItem.Mode == GroupMode.Custom && bw.GroupItem.Name.Equals(groupItem.Name))
+            else if (bw.GroupItem.Mode == GroupMode.Custom)
             {
                 // Scan Custom
                 ChangeControlsState_Custom(!bw.IsWorking);
@@ -716,6 +773,9 @@ public partial class ManageServersWindow : WpfWindow
             // Clear Import List
             if (e.IsFlyoutOpen)
             {
+                // Enable Settings CheckBox
+                Import_Settings_CheckBox.IsEnabled = false;
+                Import_Settings_CheckBox.IsChecked = false;
                 Import_ListBox.ItemsSource = new List<GroupItem>();
                 Import_ListBox.Tag = new List<XElement>();
             }
@@ -740,13 +800,13 @@ public partial class ManageServersWindow : WpfWindow
                 Multiselect = false,
                 RestoreDirectory = true
             };
-
+            
             bool? dr = ofd.ShowDialog(this);
             if (dr.HasValue && dr.Value)
             {
                 string filePath = ofd.FileName;
-                string xmlContent = await File.ReadAllTextAsync(filePath);
-                if (!XmlTool.IsValid(xmlContent))
+                bool isValidXML = await XmlTool.IsValidFileAsync(filePath);
+                if (!isValidXML)
                 {
                     string msg = $"{Path.GetExtension(filePath).ToUpperInvariant()} File Is Not Valid!";
                     WpfMessageBox.Show(this, msg, "Not Valid", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -754,44 +814,59 @@ public partial class ManageServersWindow : WpfWindow
                     return;
                 }
 
-                XDocument? importedXML = XDocument.Load(filePath);
+                // Load From File
+                XDocument? importedXML = new();
+                var loadImported = await importedXML.LoadAsync(filePath);
+                if (loadImported.IsLoaded) importedXML = loadImported.XDoc;
+
                 if (importedXML.Root == null)
                 {
                     ImportBrowseButton.IsEnabled = true;
+                    WpfToastDialog.Show(this, "Couldn't Load XML From File!", MessageBoxImage.Error, 3);
                     return;
                 }
-                var groupElements = importedXML.Root.Elements();
-
-                if (!groupElements.Any())
+                var settingsOrGroupElements = importedXML.Root.Elements();
+                
+                if (!settingsOrGroupElements.Any())
                 {
-                    string msg = $"{Path.GetExtension(filePath).ToUpperInvariant()} File Has No Groups!";
-                    WpfMessageBox.Show(this, msg, "No Groups", MessageBoxButton.OK, MessageBoxImage.Stop);
+                    string msg = $"{Path.GetExtension(filePath).ToUpperInvariant()} File Has No Settings Or Groups!";
+                    WpfMessageBox.Show(this, msg, "No Settings/Groups", MessageBoxButton.OK, MessageBoxImage.Stop);
                     ImportBrowseButton.IsEnabled = true;
                     return;
                 }
 
+                // Get Settings Element
+                XElement? settingsElement = null;
+
                 // Remove Groups Without Name Element Or Empty Name
-                List<XElement> groupElementList = new();
-                foreach (XElement groupElement in groupElements)
+                List<XElement> elementList = new();
+                foreach (XElement settingsOrGroupElement in settingsOrGroupElements)
                 {
-                    GroupItem groupItem = Get_GroupItem(groupElement); // Get Name
-                    if (!string.IsNullOrWhiteSpace(groupItem.Name)) groupElementList.Add(groupElement);
+                    if (settingsOrGroupElement.Name.LocalName.Equals("Settings"))
+                    {
+                        settingsElement = settingsOrGroupElement;
+                    }
+                    else
+                    {
+                        GroupItem groupItem = Get_GroupItem(settingsOrGroupElement); // Get Name
+                        if (!string.IsNullOrWhiteSpace(groupItem.Name)) elementList.Add(settingsOrGroupElement);
+                    }
                 }
 
                 importedXML = null;
-                if (groupElementList.Count == 0)
+                if (settingsElement == null && elementList.Count == 0)
                 {
-                    string msg = $"There Is No Valid Groups!";
-                    WpfMessageBox.Show(this, msg, "No Groups", MessageBoxButton.OK, MessageBoxImage.Stop);
+                    string msg = $"There Is No Settings Or Valid Groups!";
+                    WpfMessageBox.Show(this, msg, "No Settings/Groups", MessageBoxButton.OK, MessageBoxImage.Stop);
                     ImportBrowseButton.IsEnabled = true;
                     return;
                 }
-
-                // Get GroupItems To List
+                
+                // Create GroupItems
                 List<GroupItem> groupItems = new();
-                for (int n = 0; n < groupElementList.Count; n++)
+                for (int n = 0; n < elementList.Count; n++)
                 {
-                    XElement groupElement = groupElementList[n];
+                    XElement groupElement = elementList[n];
                     GroupItem groupItem = new();
                     XElement? nameElement = groupElement.Element(nameof(groupItem.Name));
                     if (nameElement != null)
@@ -805,8 +880,18 @@ public partial class ManageServersWindow : WpfWindow
                 // Open Fly
                 await Import_FlyoutOverlay.OpenFlyAsync();
 
+                if (settingsElement != null)
+                {
+                    // Enable Settings CheckBox
+                    Import_Settings_CheckBox.IsEnabled = true;
+                    Import_Settings_CheckBox.IsChecked = true;
+
+                    // Add Settings Element To elementList
+                    elementList.Insert(0, settingsElement);
+                }
+
                 Import_ListBox.ItemsSource = groupItems;
-                Import_ListBox.Tag = groupElementList;
+                Import_ListBox.Tag = elementList;
                 ImportBrowseButton.IsEnabled = true;
             }
         }
@@ -849,16 +934,18 @@ public partial class ManageServersWindow : WpfWindow
         try
         {
             if (Import_ListBox.ItemsSource is not List<GroupItem> groupItems) return;
-            if (Import_ListBox.Tag is not List<XElement> groupElementList) return;
+            if (Import_ListBox.Tag is not List<XElement> settingsOrGroupElementList) return;
 
             ImportButton.IsEnabled = false;
-            
-            if (groupItems.Count == 0)
+
+            if (settingsOrGroupElementList.Count == 0)
             {
                 WpfToastDialog.Show(this, "Browse Your Backup File.", MessageBoxImage.Stop, 3);
                 ImportButton.IsEnabled = true;
                 return;
             }
+
+            bool importSettings = Import_Settings_CheckBox.IsChecked.HasValue && Import_Settings_CheckBox.IsChecked.Value;
 
             List<string> groupNamesToImport = new();
             for (int n = 0; n < groupItems.Count; n++)
@@ -867,25 +954,41 @@ public partial class ManageServersWindow : WpfWindow
                 if (groupItem.Selected) groupNamesToImport.Add(groupItem.Name);
             }
 
-            if (groupNamesToImport.Count == 0)
+            if (!importSettings && groupNamesToImport.Count == 0)
             {
-                WpfToastDialog.Show(this, "Select At Least One Group To Import.", MessageBoxImage.Stop, 3);
+                WpfToastDialog.Show(this, "Select Settings Or At Least One Group To Import.", MessageBoxImage.Stop, 3);
                 ImportButton.IsEnabled = true;
                 return;
             }
-            
+
+            // Get Settings Element
+            XElement? settingsElement = null;
+            bool isImportSettingsSuccess = false;
+
             string lastImportedGroupName = string.Empty;
-            for (int n = 0; n < groupElementList.Count; n++)
+            for (int n = 0; n < settingsOrGroupElementList.Count; n++)
             {
-                XElement groupElement = groupElementList[n];
-                GroupItem groupItem = Get_GroupItem(groupElement); // Get Name
-                if (groupNamesToImport.IsContain(groupItem.Name))
+                XElement settingsOrGroupElement = settingsOrGroupElementList[n];
+                if (settingsOrGroupElement.Name.LocalName.Equals("Settings"))
                 {
-                    lastImportedGroupName = await MainWindow.ServersManager.Add_Group_Async(groupElement, false, false);
+                    // Settings Element
+                    settingsElement = settingsOrGroupElement;
+                    // Add To XDoc
+                    isImportSettingsSuccess = await MainWindow.ServersManager.Import_Settings_Element_Async(settingsElement, false);
+                }
+                else
+                {
+                    // Group Element
+                    GroupItem groupItem = Get_GroupItem(settingsOrGroupElement); // Get Name
+                    if (groupNamesToImport.IsContain(groupItem.Name))
+                    {
+                        // Add To XDoc
+                        lastImportedGroupName = await MainWindow.ServersManager.Add_Group_Async(settingsOrGroupElement, false, false);
+                    }
                 }
             }
 
-            if (!string.IsNullOrEmpty(lastImportedGroupName))
+            if (isImportSettingsSuccess || !string.IsNullOrEmpty(lastImportedGroupName))
             {
                 await MainWindow.ServersManager.SaveAsync(); // Save
                 await LoadGroupsAsync(lastImportedGroupName); // Refresh
@@ -893,7 +996,7 @@ public partial class ManageServersWindow : WpfWindow
                 ImportButton.IsEnabled = true;
                 await Import_FlyoutOverlay.CloseFlyAsync();
 
-                string msg = "Selected Groups Imported Successfully.";
+                string msg = "Settings Or Selected Groups Imported Successfully.";
                 WpfMessageBox.Show(this, msg, "Imported", MessageBoxButton.OK);
             }
             else
@@ -901,7 +1004,7 @@ public partial class ManageServersWindow : WpfWindow
                 ImportButton.IsEnabled = true;
                 await Import_FlyoutOverlay.CloseFlyAsync();
 
-                string msg = "Group Name Is Empty.";
+                string msg = "Settings Element Is NULL Or Group Name Is Empty!";
                 WpfMessageBox.Show(this, msg, "Something Went Wrong!", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -921,13 +1024,11 @@ public partial class ManageServersWindow : WpfWindow
             {
                 List<GroupItem> groupItems = MainWindow.ServersManager.Get_GroupItems(false);
                 Export_ListBox.ItemsSource = groupItems;
-                Export_ListBox.Tag = groupItems;
                 Export_ListBox.SelectedIndex = -1;
             }
             else
             {
                 Export_ListBox.ItemsSource = null;
-                Export_ListBox.Tag = null;
             }
         }
         catch (Exception ex)
@@ -956,7 +1057,7 @@ public partial class ManageServersWindow : WpfWindow
                 }
             }
 
-            Export_ListBox.Tag = groupItems;
+            Export_ListBox.ItemsSource = groupItems;
         }
         catch (Exception ex)
         {
@@ -968,8 +1069,11 @@ public partial class ManageServersWindow : WpfWindow
     {
         try
         {
-            if (Export_ListBox.Tag is not List<GroupItem> groupItems) return;
+            if (Export_ListBox.ItemsSource is not List<GroupItem> groupItems) return;
             ExportButton.IsEnabled = false;
+
+            bool exportSettings = Export_Settings_CheckBox.IsChecked.HasValue && Export_Settings_CheckBox.IsChecked.Value;
+
             List<string> groupNamesToExport = new();
             for (int n = 0; n < groupItems.Count; n++)
             {
@@ -977,14 +1081,14 @@ public partial class ManageServersWindow : WpfWindow
                 if (groupItem.Selected) groupNamesToExport.Add(groupItem.Name);
             }
 
-            if (groupNamesToExport.Count == 0)
+            if (!exportSettings && groupNamesToExport.Count == 0)
             {
-                WpfToastDialog.Show(this, "Select At Least One Group To Export.", MessageBoxImage.Stop, 3);
+                WpfToastDialog.Show(this, "Select Settings Or At Least One Group To Export.", MessageBoxImage.Stop, 3);
                 ExportButton.IsEnabled = true;
                 return;
             }
 
-            XDocument? xDoc_Export = MainWindow.ServersManager.Export_Groups(groupNamesToExport);
+            XDocument? xDoc_Export = MainWindow.ServersManager.Export_Settings_Groups(exportSettings, groupNamesToExport);
             if (xDoc_Export == null || xDoc_Export.Root == null)
             {
                 WpfToastDialog.Show(this, "ERROR: Creating XDocument, Root Is NULL.", MessageBoxImage.Error, 3);
@@ -1171,7 +1275,7 @@ public partial class ManageServersWindow : WpfWindow
             MessageBoxResult mbr = WpfMessageBox.Show(this, msg, "Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (mbr != MessageBoxResult.Yes) return;
 
-            int nextIndex = GetPreviousOrNextIndex(DGG); // Get Next Index
+            int nextIndex = GetPreviousOrNextIndex(DGG, true); // Get Next Index
             await MainWindow.ServersManager.Remove_Group_Async(groupItem.Name); // Remove
             await LoadGroupsAsync(nextIndex); // Refresh
         }
@@ -1368,7 +1472,7 @@ public partial class ManageServersWindow : WpfWindow
             }
             else if (e.Key == Key.F2)
                 MenuItem_Group_Rename_Click(null, null);
-
+            
             dg.Focus();
         }
         catch (Exception ex)
@@ -1763,234 +1867,248 @@ public partial class ManageServersWindow : WpfWindow
 
     private async Task CreateDnsItemColumns_Async(DataGrid dg)
     {
-        DnsItem di;
-        dg.Columns.Clear();
-        dg.AutoGenerateColumns = false;
-
-        DataGridCheckBoxColumn c_Enabled = new()
+        try
         {
-            Header = "Enabled",
-            Binding = new Binding(nameof(di.Enabled)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            ElementStyle = TryFindResource("DataGridCheckBoxColumn_ReadOnlyStyle") as Style,
-            EditingElementStyle = TryFindResource("DataGridCheckBoxColumn_ReadOnlyStyle") as Style
-        };
-        dg.Columns.Add(c_Enabled);
+            DnsItem di;
+            dg.Columns.Clear();
+            dg.AutoGenerateColumns = false;
 
-        DataGridTextColumn c_DNS = new()
+            DataGridCheckBoxColumn c_Enabled = new()
+            {
+                Header = "Enabled",
+                Binding = new Binding(nameof(di.Enabled)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                ElementStyle = TryFindResource("DataGridCheckBoxColumn_ReadOnlyStyle") as Style,
+                EditingElementStyle = TryFindResource("DataGridCheckBoxColumn_ReadOnlyStyle") as Style
+            };
+            dg.Columns.Add(c_Enabled);
+
+            DataGridTextColumn c_DNS = new()
+            {
+                Header = "DNS Address",
+                Binding = new Binding(nameof(di.DNS_URL)),
+                IsReadOnly = true,
+                CanUserResize = true,
+                FontWeight = FontWeights.UltraLight
+            };
+            dg.Columns.Add(c_DNS);
+
+            DataGridTextColumn c_Protocol = new()
+            {
+                Header = "Protocol",
+                Binding = new Binding(nameof(di.Protocol)),
+                IsReadOnly = true,
+                CanUserResize = false
+            };
+            dg.Columns.Add(c_Protocol);
+
+            DataGridTextColumn c_Status = new()
+            {
+                Header = "Status",
+                Binding = new Binding(nameof(di.Status)),
+                MinWidth = 70,
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnStatus_Style") as Style
+            };
+            dg.Columns.Add(c_Status);
+
+            DataGridTextColumn c_Latency = new()
+            {
+                Header = "Latency",
+                Binding = new Binding(nameof(di.Latency)),
+                IsReadOnly = true,
+                CanUserResize = false
+            };
+            dg.Columns.Add(c_Latency);
+
+            DataGridTextColumn c_IsGoogleSafeSearchEnabled = new()
+            {
+                Header = "Google Safe Search",
+                Binding = new Binding(nameof(di.IsGoogleSafeSearchEnabled)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
+            };
+            dg.Columns.Add(c_IsGoogleSafeSearchEnabled);
+
+            DataGridTextColumn c_IsBingSafeSearchEnabled = new()
+            {
+                Header = "Bing Safe Search",
+                Binding = new Binding(nameof(di.IsBingSafeSearchEnabled)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
+            };
+            dg.Columns.Add(c_IsBingSafeSearchEnabled);
+
+            DataGridTextColumn c_IsYoutubeRestricted = new()
+            {
+                Header = "Youtube Restricted",
+                Binding = new Binding(nameof(di.IsYoutubeRestricted)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
+            };
+            dg.Columns.Add(c_IsYoutubeRestricted);
+
+            DataGridTextColumn c_IsAdultBlocked = new()
+            {
+                Header = "Adult Blocked",
+                Binding = new Binding(nameof(di.IsAdultBlocked)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
+            };
+            dg.Columns.Add(c_IsAdultBlocked);
+
+            DataGridTextColumn c_Description = new()
+            {
+                Header = "Description",
+                Binding = new Binding(nameof(di.Description)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                FontWeight = FontWeights.Normal
+            };
+            dg.Columns.Add(c_Description);
+
+            // Set DNS Address Column's Width To Avoid Blinking On Update Items
+            c_DNS.Width = SetDataGridDnsServersSize(dg);
+            await Task.Delay(50);
+        }
+        catch (Exception ex)
         {
-            Header = "DNS Address",
-            Binding = new Binding(nameof(di.DNS_URL)),
-            IsReadOnly = true,
-            CanUserResize = true,
-            FontWeight = FontWeights.UltraLight
-        };
-        dg.Columns.Add(c_DNS);
-
-        DataGridTextColumn c_Protocol = new()
-        {
-            Header = "Protocol",
-            Binding = new Binding(nameof(di.Protocol)),
-            IsReadOnly = true,
-            CanUserResize = false
-        };
-        dg.Columns.Add(c_Protocol);
-
-        DataGridTextColumn c_Status = new()
-        {
-            Header = "Status",
-            Binding = new Binding(nameof(di.Status)),
-            MinWidth = 70,
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnStatus_Style") as Style
-        };
-        dg.Columns.Add(c_Status);
-
-        DataGridTextColumn c_Latency = new()
-        {
-            Header = "Latency",
-            Binding = new Binding(nameof(di.Latency)),
-            IsReadOnly = true,
-            CanUserResize = false
-        };
-        dg.Columns.Add(c_Latency);
-
-        DataGridTextColumn c_IsGoogleSafeSearchEnabled = new()
-        {
-            Header = "Google Safe Search",
-            Binding = new Binding(nameof(di.IsGoogleSafeSearchEnabled)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
-        };
-        dg.Columns.Add(c_IsGoogleSafeSearchEnabled);
-
-        DataGridTextColumn c_IsBingSafeSearchEnabled = new()
-        {
-            Header = "Bing Safe Search",
-            Binding = new Binding(nameof(di.IsBingSafeSearchEnabled)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
-        };
-        dg.Columns.Add(c_IsBingSafeSearchEnabled);
-
-        DataGridTextColumn c_IsYoutubeRestricted = new()
-        {
-            Header = "Youtube Restricted",
-            Binding = new Binding(nameof(di.IsYoutubeRestricted)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
-        };
-        dg.Columns.Add(c_IsYoutubeRestricted);
-
-        DataGridTextColumn c_IsAdultBlocked = new()
-        {
-            Header = "Adult Blocked",
-            Binding = new Binding(nameof(di.IsAdultBlocked)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
-        };
-        dg.Columns.Add(c_IsAdultBlocked);
-
-        DataGridTextColumn c_Description = new()
-        {
-            Header = "Description",
-            Binding = new Binding(nameof(di.Description)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            FontWeight = FontWeights.Normal
-        };
-        dg.Columns.Add(c_Description);
-
-        // Set DNS Address Column's Width To Avoid Blinking On Update Items
-        c_DNS.Width = SetDataGridDnsServersSize(dg);
-        await Task.Delay(50);
+            WpfMessageBox.Show(this, ex.Message, "Something Went Wrong!", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private async Task CreateDnsItemColumns_FragmentDoH_Async(DataGrid dg)
     {
-        DnsItem fi;
-        dg.Columns.Clear();
-        dg.AutoGenerateColumns = false;
-
-        DataGridCheckBoxColumn c_Enabled = new()
+        try
         {
-            Header = "Enabled",
-            Binding = new Binding(nameof(fi.Enabled)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            ElementStyle = TryFindResource("DataGridCheckBoxColumn_ReadOnlyStyle") as Style,
-            EditingElementStyle = TryFindResource("DataGridCheckBoxColumn_ReadOnlyStyle") as Style
-        };
-        dg.Columns.Add(c_Enabled);
+            DnsItem fi;
+            dg.Columns.Clear();
+            dg.AutoGenerateColumns = false;
 
-        DataGridTextColumn c_DoH_URL = new()
+            DataGridCheckBoxColumn c_Enabled = new()
+            {
+                Header = "Enabled",
+                Binding = new Binding(nameof(fi.Enabled)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                ElementStyle = TryFindResource("DataGridCheckBoxColumn_ReadOnlyStyle") as Style,
+                EditingElementStyle = TryFindResource("DataGridCheckBoxColumn_ReadOnlyStyle") as Style
+            };
+            dg.Columns.Add(c_Enabled);
+
+            DataGridTextColumn c_DoH_URL = new()
+            {
+                Header = "DoH Address",
+                Binding = new Binding(nameof(fi.DNS_URL)),
+                IsReadOnly = true,
+                CanUserResize = true,
+                FontWeight = FontWeights.UltraLight
+            };
+            dg.Columns.Add(c_DoH_URL);
+
+            DataGridTextColumn c_DoH_IP = new()
+            {
+                Header = "DoH IP Address",
+                Binding = new Binding(nameof(fi.DNS_IP)),
+                IsReadOnly = true,
+                CanUserResize = true,
+                FontWeight = FontWeights.UltraLight
+            };
+            dg.Columns.Add(c_DoH_IP);
+
+            DataGridTextColumn c_Protocol = new()
+            {
+                Header = "Protocol",
+                Binding = new Binding(nameof(fi.Protocol)),
+                IsReadOnly = true,
+                CanUserResize = false
+            };
+            dg.Columns.Add(c_Protocol);
+
+            DataGridTextColumn c_Status = new()
+            {
+                Header = "Status",
+                Binding = new Binding(nameof(fi.Status)),
+                MinWidth = 70,
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnStatus_Style") as Style
+            };
+            dg.Columns.Add(c_Status);
+
+            DataGridTextColumn c_Latency = new()
+            {
+                Header = "Latency",
+                Binding = new Binding(nameof(fi.Latency)),
+                IsReadOnly = true,
+                CanUserResize = false
+            };
+            dg.Columns.Add(c_Latency);
+
+            DataGridTextColumn c_IsGoogleSafeSearchEnabled = new()
+            {
+                Header = "Google Safe Search",
+                Binding = new Binding(nameof(fi.IsGoogleSafeSearchEnabled)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
+            };
+            dg.Columns.Add(c_IsGoogleSafeSearchEnabled);
+
+            DataGridTextColumn c_IsBingSafeSearchEnabled = new()
+            {
+                Header = "Bing Safe Search",
+                Binding = new Binding(nameof(fi.IsBingSafeSearchEnabled)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
+            };
+            dg.Columns.Add(c_IsBingSafeSearchEnabled);
+
+            DataGridTextColumn c_IsYoutubeRestricted = new()
+            {
+                Header = "Youtube Restricted",
+                Binding = new Binding(nameof(fi.IsYoutubeRestricted)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
+            };
+            dg.Columns.Add(c_IsYoutubeRestricted);
+
+            DataGridTextColumn c_IsAdultBlocked = new()
+            {
+                Header = "Adult Blocked",
+                Binding = new Binding(nameof(fi.IsAdultBlocked)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
+            };
+            dg.Columns.Add(c_IsAdultBlocked);
+
+            DataGridTextColumn c_Description = new()
+            {
+                Header = "Description",
+                Binding = new Binding(nameof(fi.Description)),
+                IsReadOnly = true,
+                CanUserResize = false,
+                FontWeight = FontWeights.Normal
+            };
+            dg.Columns.Add(c_Description);
+
+            // Set DNS Address Column's Width To Avoid Blinking On Update Items
+            c_DoH_URL.Width = SetDataGridDnsServersSize(dg);
+            await Task.Delay(50);
+        }
+        catch (Exception ex)
         {
-            Header = "DoH Address",
-            Binding = new Binding(nameof(fi.DNS_URL)),
-            IsReadOnly = true,
-            CanUserResize = true,
-            FontWeight = FontWeights.UltraLight
-        };
-        dg.Columns.Add(c_DoH_URL);
-
-        DataGridTextColumn c_DoH_IP = new()
-        {
-            Header = "DoH IP Address",
-            Binding = new Binding(nameof(fi.DNS_IP)),
-            IsReadOnly = true,
-            CanUserResize = true,
-            FontWeight = FontWeights.UltraLight
-        };
-        dg.Columns.Add(c_DoH_IP);
-
-        DataGridTextColumn c_Protocol = new()
-        {
-            Header = "Protocol",
-            Binding = new Binding(nameof(fi.Protocol)),
-            IsReadOnly = true,
-            CanUserResize = false
-        };
-        dg.Columns.Add(c_Protocol);
-
-        DataGridTextColumn c_Status = new()
-        {
-            Header = "Status",
-            Binding = new Binding(nameof(fi.Status)),
-            MinWidth = 70,
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnStatus_Style") as Style
-        };
-        dg.Columns.Add(c_Status);
-
-        DataGridTextColumn c_Latency = new()
-        {
-            Header = "Latency",
-            Binding = new Binding(nameof(fi.Latency)),
-            IsReadOnly = true,
-            CanUserResize = false
-        };
-        dg.Columns.Add(c_Latency);
-
-        DataGridTextColumn c_IsGoogleSafeSearchEnabled = new()
-        {
-            Header = "Google Safe Search",
-            Binding = new Binding(nameof(fi.IsGoogleSafeSearchEnabled)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
-        };
-        dg.Columns.Add(c_IsGoogleSafeSearchEnabled);
-
-        DataGridTextColumn c_IsBingSafeSearchEnabled = new()
-        {
-            Header = "Bing Safe Search",
-            Binding = new Binding(nameof(fi.IsBingSafeSearchEnabled)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
-        };
-        dg.Columns.Add(c_IsBingSafeSearchEnabled);
-
-        DataGridTextColumn c_IsYoutubeRestricted = new()
-        {
-            Header = "Youtube Restricted",
-            Binding = new Binding(nameof(fi.IsYoutubeRestricted)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
-        };
-        dg.Columns.Add(c_IsYoutubeRestricted);
-
-        DataGridTextColumn c_IsAdultBlocked = new()
-        {
-            Header = "Adult Blocked",
-            Binding = new Binding(nameof(fi.IsAdultBlocked)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            CellStyle = TryFindResource("DataGridTextColumnHasFilter_Style") as Style
-        };
-        dg.Columns.Add(c_IsAdultBlocked);
-
-        DataGridTextColumn c_Description = new()
-        {
-            Header = "Description",
-            Binding = new Binding(nameof(fi.Description)),
-            IsReadOnly = true,
-            CanUserResize = false,
-            FontWeight = FontWeights.Normal
-        };
-        dg.Columns.Add(c_Description);
-
-        // Set DNS Address Column's Width To Avoid Blinking On Update Items
-        c_DoH_URL.Width = SetDataGridDnsServersSize(dg);
-        await Task.Delay(50);
+            WpfMessageBox.Show(this, ex.Message, "Something Went Wrong!", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private static void DGS_DnsServers_PreviewKeyDown(DataGrid dg, KeyEventArgs e)
@@ -2039,7 +2157,7 @@ public partial class ManageServersWindow : WpfWindow
         {
             // Set Header
             string header = $"Group: \"{groupItem.Name}\", Mode: \"{Get_GroupModeName(groupItem.Mode)}\" - DNS No: {dg.SelectedIndex + 1}";
-            ServersTitleGroupBox.Header = header;
+            this.DispatchIt(() => ServersTitleGroupBox.Header = header);
 
             // Set URL And IP To Manual Edit
             if (groupItem.Mode == GroupMode.FragmentDoH)
@@ -2227,7 +2345,7 @@ public partial class ManageServersWindow : WpfWindow
                 menuItem_CopyToCustom.Items.Add(subMenuItem);
             }
 
-            if (customGroups.Count == 0) menuItem_CopyToCustom.IsEnabled = false;
+            menuItem_CopyToCustom.IsEnabled = customGroups.Count > 0;
         }
         catch (Exception ex)
         {
@@ -2272,6 +2390,7 @@ public partial class ManageServersWindow : WpfWindow
                 IsClosing = true;
 
                 // === Start Custom Dispose/Actions
+                // Stop Scan
                 if (MainWindow.ServersManager.IsScanning)
                 {
                     MainWindow.ServersManager.ScanServers(new GroupItem(), null);

@@ -1,5 +1,6 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
+using MsmhToolsClass.MsmhAgnosticServer;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
@@ -3023,7 +3024,7 @@ public partial class FormCustomServers : Form
                 CustomMessageBox.Show(this, "DNS Address cannot be empty.", "Message", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            else if (!FormMain.IsDnsProtocolSupported(CustomTextBoxDNS.Text.Trim()))
+            else if (!DnsTools.IsDnsProtocolSupported(CustomTextBoxDNS.Text.Trim()))
             {
                 CustomMessageBox.Show(this, "DNS protocol is not supported.", "Message", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -3063,7 +3064,7 @@ public partial class FormCustomServers : Form
                 CustomMessageBox.Show(this, "DNS Address cannot be empty.", "Message", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            else if (!FormMain.IsDnsProtocolSupported(CustomTextBoxDNS.Text.Trim()))
+            else if (!DnsTools.IsDnsProtocolSupported(CustomTextBoxDNS.Text.Trim()))
             {
                 CustomMessageBox.Show(this, "DNS protocol is not supported.", "Message", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -3306,7 +3307,7 @@ public partial class FormCustomServers : Form
         }
 
         // Check DNS is Supported
-        if (!FormMain.IsDnsProtocolSupported(CustomTextBoxDNS.Text.Trim()))
+        if (!DnsTools.IsDnsProtocolSupported(CustomTextBoxDNS.Text.Trim()))
         {
             CustomMessageBox.Show(this, "DNS is not supported.", "Supported DNS");
             return;

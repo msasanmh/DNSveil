@@ -1,7 +1,9 @@
 ﻿using DNSveil.Logic;
 using DNSveil.Logic.DnsServers;
+using DNSveil.ManageRules;
 using DNSveil.ManageServers;
 using MsmhToolsClass;
+using MsmhToolsClass.MsmhAgnosticServer;
 using MsmhToolsClass.V2RayConfigTool;
 using MsmhToolsWpfClass;
 using MsmhToolsWpfClass.Themes;
@@ -28,6 +30,7 @@ public partial class MainWindow : Window
     private AppSettings AppSettings = new(Application.Current.MainWindow);
 
     public static readonly DnsServersManager ServersManager = new();
+    public static readonly AgnosticProgram.Rules Rules = new();
     private SetDnsOnNic SetDnsOnNic_ = new();
     private Interface Interface_ = new();
 
@@ -202,39 +205,38 @@ public partial class MainWindow : Window
 
     private void Msw_Closed(object? sender, EventArgs e)
     {
-        if (sender is ManageServersWindow msw)
+        try
         {
-            try
+            if (sender is not ManageServersWindow msw) return;
+
+            // Get Selected
+            EnumsAndStructs.GroupItem gi = new();
+            if (QC_DnsGroup_ComboBox.SelectedItem is EnumsAndStructs.GroupItem groupItem) gi = groupItem;
+
+            // Bind
+            List<EnumsAndStructs.GroupItem> updatedGIs = ServersManager.Get_GroupItems(true);
+            QC_DnsGroup_ComboBox.ItemsSource = updatedGIs;
+
+            // Restore Selected
+            bool exist = false;
+            for (int n = 0; n < updatedGIs.Count; n++)
             {
-                // Get Selected
-                EnumsAndStructs.GroupItem gi = new();
-                if (QC_DnsGroup_ComboBox.SelectedItem is EnumsAndStructs.GroupItem groupItem) gi = groupItem;
-
-                // Bind
-                List<EnumsAndStructs.GroupItem> updatedGIs = ServersManager.Get_GroupItems(true);
-                QC_DnsGroup_ComboBox.ItemsSource = updatedGIs;
-
-                // Restore Selected
-                bool exist = false;
-                for (int n = 0; n < updatedGIs.Count; n++)
+                EnumsAndStructs.GroupItem updatedGI = updatedGIs[n];
+                if (updatedGI.Name.Equals(gi.Name))
                 {
-                    EnumsAndStructs.GroupItem updatedGI = updatedGIs[n];
-                    if (updatedGI.Name.Equals(gi.Name))
-                    {
-                        exist = true;
-                        break;
-                    }
+                    exist = true;
+                    break;
                 }
-                if (exist) QC_DnsGroup_ComboBox.SelectedItem = gi;
-                else QC_DnsGroup_ComboBox.SelectedIndex = 0;
+            }
+            if (exist) QC_DnsGroup_ComboBox.SelectedItem = gi;
+            else QC_DnsGroup_ComboBox.SelectedIndex = 0;
 
-                // Unsubscribe Event
-                msw.Closed -= Msw_Closed;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"ERROR: ManageServersWindow Closed{NL}{ex.Message}");
-            }
+            // Unsubscribe Event
+            msw.Closed -= Msw_Closed;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"ERROR: ManageServersWindow Closed{NL}{ex.Message}");
         }
     }
 
@@ -267,10 +269,38 @@ public partial class MainWindow : Window
         }
     }
 
+    private void QC_Rules_Button_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            ManageRulesWindow mrw = new()
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+            mrw.Closed -= Mrw_Closed;
+            mrw.Closed += Mrw_Closed;
+            mrw.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            WpfMessageBox.Show(this, ex.Message, "ERROR", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
-
-
-
+    private async void Mrw_Closed(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (sender is not ManageRulesWindow mrw) return;
+            await Rules.SaveAsync();
+            mrw.Closed -= Mrw_Closed;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"ERROR: ManageRulesWindow Closed{NL}{ex.Message}");
+        }
+    }
 
     private void Flyout_Info_DnsAddresses_FlyoutChanged(object sender, WpfFlyoutGroupBox.FlyoutChangedEventArgs e)
     {

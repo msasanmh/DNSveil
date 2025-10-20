@@ -1,25 +1,37 @@
 ﻿namespace MsmhToolsClass.MsmhAgnosticServer;
 
-public class DataEventArgs : EventArgs
+public class ProxyTunnelEventArgs : EventArgs
 {
-    public DataEventArgs(ProxyClient sc, byte[] buffer)
+    public ProxyTunnelEventArgs(ProxyTunnel pTunnel, byte[] buffer)
     {
-        Client = sc;
+        Tunnel = pTunnel;
         Buffer = buffer;
     }
 
-    public ProxyClient Client { get; set; }
+    public ProxyTunnel Tunnel { get; set; }
     public byte[] Buffer { get; set; }
 }
 
-public class SSLDataEventArgs : EventArgs
+public class ProxyRelayEventArgs : EventArgs
 {
-    public SSLDataEventArgs(ProxyClientSSL sc, byte[] buffer)
+    public ProxyRelayEventArgs(ProxyRelay pRelay, byte[] buffer)
     {
-        Client = sc;
+        Relay = pRelay;
         Buffer = buffer;
     }
 
-    public ProxyClientSSL Client { get; set; }
+    public ProxyRelay Relay { get; set; }
+    public byte[] Buffer { get; set; }
+}
+
+public class ProxyRelayMITMEventArgs : EventArgs
+{
+    public ProxyRelayMITMEventArgs(ProxyRelayMITM prm, byte[] buffer)
+    {
+        RelayMITM = prm;
+        Buffer = buffer;
+    }
+
+    public ProxyRelayMITM RelayMITM { get; set; }
     public byte[] Buffer { get; set; }
 }

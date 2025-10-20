@@ -107,7 +107,7 @@ public static class CommonTools
 
     public static bool IsCfIP(IPAddress ipv4)
     {
-        return IsCfIP(ipv4.ToString());
+        return IsCfIP(ipv4.ToStringNoScopeId());
     }
 
 }

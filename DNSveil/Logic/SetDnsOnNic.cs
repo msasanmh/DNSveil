@@ -127,7 +127,7 @@ public class SetDnsOnNic
 
             if (nics.Count < 1)
             {
-                Debug.WriteLine("There is no Network Interface.");
+                Debug.WriteLine("There Is No Network Interface.");
                 return (allNICs, primaryActiveNic);
             }
 

@@ -84,7 +84,7 @@ public partial class FormMain
 
         // Send DNS Settings
         command = $"Setting -Port={dnsPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
-        command += $" -AllowInsecure={insecure} -DNSs={dnss} -CfCleanIP={cfCleanIP}";
+        command += $" -AllowInsecure={insecure} -DNSs=\"{dnss}\" -CfCleanIP={cfCleanIP}";
         command += $" -BootstrapIp={bootstrapIP} -BootstrapPort={bootstrapPort}";
         command += $" -ProxyScheme={proxyScheme}";
         isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
@@ -112,7 +112,7 @@ public partial class FormMain
 
                 // Send DoH Settings
                 command = $"Setting -Port={dohPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
-                command += $" -AllowInsecure={insecure} -DNSs={dnss} -CfCleanIP={cfCleanIP}";
+                command += $" -AllowInsecure={insecure} -DNSs=\"{dnss}\" -CfCleanIP={cfCleanIP}";
                 command += $" -BootstrapIp={bootstrapIP} -BootstrapPort={bootstrapPort}";
                 command += $" -ProxyScheme={proxyScheme}";
                 isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");

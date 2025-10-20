@@ -82,6 +82,7 @@ public partial class FormMain
 
                 // Kill If It's Already Running
                 await ProcessManager.KillProcessByPidAsync(PIDProxyServer);
+                await Task.Delay(50);
                 bool isCmdSent = false;
                 int consoleDelayMs = 50, consoleTimeoutSec = 15;
                 PIDProxyServer = ProxyConsole.Execute(SecureDNS.AgnosticServerPath, null, true, true, SecureDNS.CurrentPath, GetCPUPriority());
@@ -119,8 +120,8 @@ public partial class FormMain
                 }
 
                 // Send Settings
-                string settingsCmd = $"Setting -Port={proxyPort} -WorkingMode=DnsAndProxy -MaxRequests={maxRequests} -DnsTimeoutSec=5 -ProxyTimeoutSec={proxyTimeoutSec}";
-                settingsCmd += $" -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80} -AllowInsecure=True -DNSs={dnss} -CfCleanIP={cfCleanIP}";
+                string settingsCmd = $"Setting -Port={proxyPort} -WorkingMode=Proxy -MaxRequests={maxRequests} -DnsTimeoutSec=5 -ProxyTimeoutSec={proxyTimeoutSec}";
+                settingsCmd += $" -KillOnCpuUsage={killOnCpuUsage} -BlockPort80={blockPort80} -AllowInsecure=True -DNSs=\"{dnss}\" -CfCleanIP={cfCleanIP}";
                 settingsCmd += $" -BootstrapIp={bootstrapIp} -BootstrapPort={bootstrapPort}";
                 settingsCmd += $" -ProxyScheme={upstream.ProxyScheme} -ProxyUser={upstream.ProxyUser} -ProxyPass={upstream.ProxyPass} -OnlyBlockedIPs={upstream.OnlyBlockedIPs}";
                 isCmdSent = await ProxyConsole.SendCommandAsync(settingsCmd, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");

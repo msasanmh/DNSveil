@@ -120,7 +120,7 @@ public partial class FormMain
 
         // Send DNS Settings
         command = $"Setting -Port={dnsPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
-        command += $" -AllowInsecure={insecure} -DNSs={dohUrl} -CfCleanIP={cfCleanIP}";
+        command += $" -AllowInsecure={insecure} -DNSs=\"{dohUrl}\" -CfCleanIP={cfCleanIP}";
         command += $" -BootstrapIp={IPAddress.Loopback} -BootstrapPort={dnsPort}";
         isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
         if (!isCmdSent) return false;
@@ -147,7 +147,7 @@ public partial class FormMain
 
                 // Send DoH Settings
                 command = $"Setting -Port={dohPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
-                command += $" -AllowInsecure={insecure} -DNSs=udp://{IPAddress.Loopback}:{dnsPort}";
+                command += $" -AllowInsecure={insecure} -DNSs=\"udp://{IPAddress.Loopback}:{dnsPort}\"";
                 command += $" -BootstrapIp={IPAddress.Loopback} -BootstrapPort={dnsPort}";
                 isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
                 if (!isCmdSent) return false;

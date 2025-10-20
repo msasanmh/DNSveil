@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 #nullable enable
 namespace MsmhToolsClass.MsmhAgnosticServer;
@@ -12,8 +13,9 @@ public class AgnosticSettings
 {
     public enum WorkingMode
     {
-        Dns,
-        DnsAndProxy
+        Dns, // DNS Only (UDP/TCP/DoH)
+        Proxy, // UDP/TCP DNS And Proxies
+        DnsAndProxy // All
     }
 
     private int PListenerPort { get; set; } = 53;
@@ -30,7 +32,7 @@ public class AgnosticSettings
         }
     }
 
-    public WorkingMode Working_Mode { get; set; } = WorkingMode.DnsAndProxy;
+    public WorkingMode Working_Mode { get; set; } = WorkingMode.Proxy;
 
     private int PMaxRequests { get; set; } = 10000;
     /// <summary>
@@ -64,7 +66,11 @@ public class AgnosticSettings
 
     public bool AllowInsecure { get; set; } = false;
 
+    /// <summary>
+    /// DNS Addresses Or Path Of A File Which Contains DNS Addresses Per Each Line.
+    /// </summary>
     public List<string> DNSs { get; set; } = new();
+    public List<string> DNSs_Backup { get; private set; } = new();
     public string? CloudflareCleanIP { get; set; }
 
     private IPAddress PBootstrapIpAddress { get; set; } = IPAddress.None;
@@ -108,9 +114,8 @@ public class AgnosticSettings
             "tcp://8.8.8.8:53",
             "tcp://1.1.1.1:53",
             "udp://9.9.9.9:9953",
-            "udp://8.8.8.8:53",
-            "udp://1.1.1.1:53",
-            "system"
+            "https://max.rethinkdns.com/dns-query",
+            //"system"
         };
     }
 
@@ -124,11 +129,19 @@ public class AgnosticSettings
     public string ServerHttpProxyAddress { get; internal set; } = string.Empty;
     public string ServerSocks5ProxyAddress { get; internal set; } = string.Empty;
 
+    public string ToStringDebug()
+    {
+        string result = string.Empty;
+        result += $"ServerEndPoint: {ServerEndPoint}\n";
+        result += $"IsIPv4SupportedByOS: {IsIPv4SupportedByOS}\n";
+        result += $"IsIPv6SupportedByOS: {IsIPv6SupportedByOS}";
+        return result;
+    }
+
     public AgnosticSettings()
     {
         IsIPv4SupportedByOS = NetworkTool.IsIPv4SupportedByOS();
         IsIPv6SupportedByOS = NetworkTool.IsIPv6SupportedByOS();
-
         ListenerIP = IsIPv6SupportedByOS ? IPAddress.IPv6Any : IsIPv4SupportedByOS ? IPAddress.Any : null;
     }
 
@@ -136,7 +149,7 @@ public class AgnosticSettings
     {
         try
         {
-            if (OperatingSystem.IsWindows()) ProcessManager.ExecuteOnly("ipconfig", null, "/flushdns", true, true);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ProcessManager.ExecuteOnly("ipconfig", null, "/flushdns", true, true);
 
             if (ListenerIP != null) ServerEndPoint = new(ListenerIP, ListenerPort);
 
@@ -156,6 +169,58 @@ public class AgnosticSettings
                 ServerDohDnsAddress = NetworkTool.IpToUrl("https", IPAddress.IPv6Loopback, ListenerPort, "dns-query");
                 ServerHttpProxyAddress = NetworkTool.IpToUrl("http", IPAddress.IPv6Loopback, ListenerPort, string.Empty);
                 ServerSocks5ProxyAddress = NetworkTool.IpToUrl("socks5", IPAddress.IPv6Loopback, ListenerPort, string.Empty);
+            }
+
+            DNSs_Backup = DNSs; // Backup Original
+
+            if (DNSs.Count == 0)
+            {
+                DNSs = DefaultDNSs(); // Set Default DNSs
+            }
+            else
+            {
+                // DNS Address Can Be Path Of A File Containing DNS Servers On Each Line
+                List<string> dnss = new();
+                for (int n = 0; n < DNSs.Count; n++)
+                {
+                    string dnsOrPath = DNSs[n];
+
+                    string fullPath = Path.GetFullPath(dnsOrPath);
+                    string content = string.Empty;
+                    bool isPath = false;
+                    if (File.Exists(fullPath))
+                    {
+                        try
+                        {
+                            content = await File.ReadAllTextAsync(fullPath);
+                            if (content.Length > 0) isPath = true;
+                        }
+                        catch (Exception) { }
+                    }
+
+                    if (isPath)
+                    {
+                        string[] dnssArray = content.ReplaceLineEndings().Split(Environment.NewLine, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                        for (int i = 0; i < dnssArray.Length; i++)
+                        {
+                            string dns = dnssArray[i];
+                            if (DnsTools.IsDnsProtocolSupported(dns))
+                            {
+                                dnss.Add(dns);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (DnsTools.IsDnsProtocolSupported(dnsOrPath))
+                        {
+                            dnss.Add(dnsOrPath);
+                        }
+                    }
+                }
+
+                await Task.Delay(10);
+                DNSs = dnss;
             }
 
             await Task.Delay(10);

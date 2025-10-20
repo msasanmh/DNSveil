@@ -26,7 +26,7 @@ public partial class AgnosticProgram
             public static readonly string Pass = "&Pass:";
         }
 
-        public static string GetValue(string line, string key, string? subKey, out bool isList, out List<string> list, List<Tuple<string, string>> variables)
+        public static string GetValue(string line, string key, string? subKey, bool canBeList, out bool isList, out List<string> list, List<Tuple<string, string>> variables)
         {
             string result = line.Trim();
             isList = false;
@@ -40,13 +40,13 @@ public partial class AgnosticProgram
                     {
                         if (key.Equals(KEYS.FirstKey, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            result = result.Remove(result.IndexOf(';'));
+                            result = result[..result.IndexOf(';')];
                             result = result.Trim();
                         }
                         else
                         {
-                            result = result.Remove(0, result.IndexOf(key, StringComparison.InvariantCultureIgnoreCase) + key.Length);
-                            result = result.Remove(result.IndexOf(';'));
+                            result = result[(result.IndexOf(key, StringComparison.InvariantCultureIgnoreCase) + key.Length)..];
+                            result = result[..result.IndexOf(';')];
                             result = result.Trim();
                         }
                     }
@@ -60,7 +60,7 @@ public partial class AgnosticProgram
                             {
                                 try
                                 {
-                                    result = result.Remove(result.IndexOf('&'));
+                                    result = result[..result.IndexOf('&')];
                                 }
                                 catch (Exception) { }
                             }
@@ -71,7 +71,7 @@ public partial class AgnosticProgram
                             {
                                 try
                                 {
-                                    result = result.Remove(0, result.IndexOf(subKey, StringComparison.InvariantCultureIgnoreCase) + subKey.Length);
+                                    result = result[(result.IndexOf(subKey, StringComparison.InvariantCultureIgnoreCase) + subKey.Length)..];
                                 }
                                 catch (Exception) { }
 
@@ -79,7 +79,7 @@ public partial class AgnosticProgram
                                 {
                                     try
                                     {
-                                        result = result.Remove(result.IndexOf('&'));
+                                        result = result[..result.IndexOf('&')];
                                     }
                                     catch (Exception) { }
                                 }
@@ -87,12 +87,7 @@ public partial class AgnosticProgram
                         }
                     }
 
-                    if (!result.Contains(','))
-                    {
-                        // Not A List
-                        return ApplyVariables(result, variables);
-                    }
-                    else
+                    if (canBeList && result.Contains(','))
                     {
                         // It's A List
                         isList = true;
@@ -100,9 +95,14 @@ public partial class AgnosticProgram
                         for (int n = 0; n < split.Length; n++)
                         {
                             string value = split[n].Trim();
-                            list.Add(ApplyVariables(value, variables));
+                            list.Add(Vari_NameToValue(value, variables));
                         }
                         if (list.Any()) return list[0];
+                    }
+                    else
+                    {
+                        // Not A List
+                        return Vari_NameToValue(result, variables);
                     }
                 }
             }
@@ -111,79 +111,101 @@ public partial class AgnosticProgram
             return string.Empty;
         }
 
-        private static string ApplyVariables(string vari, List<Tuple<string, string>> variables)
+        public static string Vari_NameToValue(string name, List<Tuple<string, string>> variables)
         {
-            string result = vari;
+            string value = name;
             try
             {
                 variables = variables.ToList();
                 for (int n = 0; n < variables.Count; n++)
                 {
                     Tuple<string, string> tuple = variables[n];
-                    if (vari.Equals(tuple.Item1) && !string.IsNullOrWhiteSpace(tuple.Item2))
+                    if (name.Equals(tuple.Item1) && !string.IsNullOrWhiteSpace(tuple.Item2))
                     {
-                        result = tuple.Item2; break;
+                        value = tuple.Item2; break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Rules ApplyVariables: " + ex.Message);
+                Debug.WriteLine("Rules Vari_NameToValue: " + ex.Message);
             }
-            return result;
+            return value;
         }
 
-        public static string GetReplacedValues(string values, List<Tuple<string, string>>? variables)
+        public static string Vari_NamesToValues(string names, List<Tuple<string, string>> variables, string separator = ",")
         {
-            string result = values.Trim();
-
+            string result = names.Trim();
             try
             {
-                if (!result.Contains(','))
+                if (string.IsNullOrEmpty(separator) || !result.Contains(separator, StringComparison.InvariantCulture))
                 {
                     // Not A List
-                    return ApplyVariablesReverse(result, variables);
+                    return Vari_NameToValue(result, variables);
                 }
                 else
                 {
                     // It's A List
                     List<string> list = new();
-                    string[] split = result.Split(',');
+                    string[] split = result.Split(separator);
                     for (int n = 0; n < split.Length; n++)
                     {
-                        string value = split[n].Trim();
-                        list.Add(ApplyVariablesReverse(value, variables));
+                        string name = split[n].Trim();
+                        list.Add(Vari_NameToValue(name, variables));
                     }
-                    if (list.Any()) result = list.ToString(',');
+                    if (list.Any()) result = list.ToString(separator);
                 }
             }
             catch (Exception) { }
-
             return result;
         }
 
-        private static string ApplyVariablesReverse(string vari, List<Tuple<string, string>>? variables)
+        public static string Vari_ValueToName(string value, List<Tuple<string, string>> variables)
         {
-            string result = vari;
+            string name = value;
             try
             {
-                if (variables != null)
+                variables = variables.ToList();
+                for (int n = 0; n < variables.Count; n++)
                 {
-                    variables = variables.ToList();
-                    for (int n = 0; n < variables.Count; n++)
+                    Tuple<string, string> tuple = variables[n];
+                    if (value.Equals(tuple.Item2) && !string.IsNullOrWhiteSpace(tuple.Item1))
                     {
-                        Tuple<string, string> tuple = variables[n];
-                        if (vari.Equals(tuple.Item2) && !string.IsNullOrWhiteSpace(tuple.Item1))
-                        {
-                            result = tuple.Item1; break;
-                        }
+                        name = tuple.Item1; break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Rules ApplyVariablesReverse: " + ex.Message);
+                Debug.WriteLine("Rules Vari_ValueToName: " + ex.Message);
             }
+            return name;
+        }
+
+        public static string Vari_ValuesToNames(string values, List<Tuple<string, string>> variables, string separator = ",")
+        {
+            string result = values.Trim();
+            try
+            {
+                if (string.IsNullOrEmpty(separator) || !result.Contains(separator, StringComparison.InvariantCulture))
+                {
+                    // Not A List
+                    return Vari_ValueToName(result, variables);
+                }
+                else
+                {
+                    // It's A List
+                    List<string> list = new();
+                    string[] split = result.Split(separator);
+                    for (int n = 0; n < split.Length; n++)
+                    {
+                        string value = split[n].Trim();
+                        list.Add(Vari_ValueToName(value, variables));
+                    }
+                    if (list.Any()) result = list.ToString(separator);
+                }
+            }
+            catch (Exception) { }
             return result;
         }
 

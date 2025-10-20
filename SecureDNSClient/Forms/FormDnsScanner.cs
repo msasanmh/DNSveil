@@ -285,8 +285,8 @@ public partial class FormDnsScanner : Form
 
             urls = urls.Trim(Environment.NewLine.ToCharArray());
 
-            string msg = "Extract and read DNS Servers from URLs.\n";
-            msg += "Each line one URL. e.g.\n";
+            string msg = "Extract And Read DNS Servers From URLs.\n";
+            msg += "Each Line One URL. e.g.\n";
             msg += "          http://example.com/servers.txt\n";
             msg += "          https://google.com/dns.html\n";
             DialogResult dr = CustomInputBox.Show(this, ref urls, msg, true, "Extract DNS Servers", 300);
@@ -321,8 +321,8 @@ public partial class FormDnsScanner : Form
 
             domains = domains.Trim(Environment.NewLine.ToCharArray());
 
-            string msg = "Domains to check for SmartDNS support.\n";
-            msg += "Each line one domain. e.g.\n";
+            string msg = "Domains To Check For SmartDNS Support.\n";
+            msg += "Each Line One Domain. e.g.\n";
             msg += "          example.com\n";
             msg += "          google.com\n";
             DialogResult dr = CustomInputBox.Show(this, ref domains, msg, true, "SmartDNS Check", 10, 10);
@@ -330,7 +330,7 @@ public partial class FormDnsScanner : Form
             {
                 if (domains.ToLower().Contains("http://") || domains.ToLower().Contains("https://"))
                 {
-                    msg = "Only domains, without \"HTTP://\" or \"HTTPS://\"";
+                    msg = "Only Domains, Without \"HTTP://\" Or \"HTTPS://\"";
                     CustomMessageBox.Show(this, msg, "Only Domains", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
@@ -463,7 +463,7 @@ public partial class FormDnsScanner : Form
 
             if (string.IsNullOrWhiteSpace(ScanContent))
             {
-                string msg = "There is no server to check.";
+                string msg = "There Is No Server To Check.";
                 CustomMessageBox.Show(this, msg, "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return false;
             }
@@ -557,7 +557,7 @@ public partial class FormDnsScanner : Form
 
                 // Send DNS Settings
                 string dnsSettingsCmd = $"Setting -Port={port} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
-                dnsSettingsCmd += $" -AllowInsecure=True -DNSs={uncensoredDnss.ToString(",")}";
+                dnsSettingsCmd += $" -AllowInsecure=True -DNSs=\"{uncensoredDnss.ToString(",")}\"";
                 dnsSettingsCmd += $" -BootstrapIp={bootstrapIP} -BootstrapPort={bootstrapPort}";
                 await dnsConsole.SendCommandAsync(dnsSettingsCmd);
                 // Send Start Command
@@ -652,7 +652,7 @@ public partial class FormDnsScanner : Form
 
                     string dns = dnss[n].Trim();
 
-                    if (FormMain.IsDnsProtocolSupported(dns))
+                    if (DnsTools.IsDnsProtocolSupported(dns))
                     {
                         await ScanDnsAsync(dns, companyDataContent, bootstrapIP, bootstrapPort, isSimpleTest);
                     }

@@ -6,39 +6,45 @@ using System.Text;
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
-internal class ProxyTunnel
+public class ProxyTunnel
 {
     public readonly int ConnectionId;
     public ProxyClient Client;
-    public ProxyClient RemoteClient;
+    public ProxyClient Remote;
     public ProxyRequest Req;
 
     private TcpClient? ProxifiedTcpClient_;
 
-    // Handle SSL
+    public AgnosticProgram.Fragment FragmentProgram { get; set; }
     public readonly AgnosticSettingsSSL SettingsSSL_;
-    public ProxyClientSSL? ClientSSL;
 
+    public ProxyRelay? ProxyRelay;
+    public ProxyRelayMITM? ProxyRelayMITM;
+
+    public event EventHandler<ProxyTunnelEventArgs>? OnClientDataReceived;
+    public event EventHandler<ProxyTunnelEventArgs>? OnClientDataSent;
+    public event EventHandler<ProxyTunnelEventArgs>? OnRemoteDataReceived;
+    public event EventHandler<ProxyTunnelEventArgs>? OnRemoteDataSent;
     public event EventHandler<EventArgs>? OnTunnelDisconnected;
-    public event EventHandler<EventArgs>? OnDataReceived;
 
     public readonly Stopwatch KillOnTimeout = new();
     public bool ManualDisconnect { get; set; } = false;
-
-    public ProxyTunnel(int connectionId, ProxyClient sc, ProxyRequest req, AgnosticSettingsSSL settingsSSL)
+    
+    public ProxyTunnel(int connectionId, ProxyClient pc, ProxyRequest req, AgnosticProgram.Fragment fp, AgnosticSettingsSSL settingsSSL)
     {
         ConnectionId = connectionId;
-        Client = sc;
+        Client = pc;
         Req = req;
+        FragmentProgram = fp;
         SettingsSSL_ = settingsSSL;
-
+        
         try
         {
-            // Default Remote / Socks4 Remote / Socks4A
+            // Default Remote / SOCKS4/4A Remote
             Socket remoteSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            // HTTP & HTTPS Remote
-            if (Req.ProxyName == Proxy.Name.Test || Req.ProxyName == Proxy.Name.HTTP || Req.ProxyName == Proxy.Name.HTTPS || Req.ProxyName == Proxy.Name.SniProxy)
+            // HTTP/HTTP_S/HTTPS_SSL/SNI Remote
+            if (Req.ProxyName == Proxy.Name.Test || Req.ProxyName == Proxy.Name.HTTP || Req.ProxyName == Proxy.Name.HTTP_S || Req.ProxyName == Proxy.Name.HTTPS_SSL || Req.ProxyName == Proxy.Name.SniProxy)
             {
                 // TCP Ipv4
                 if (Req.AddressType == Socks.AddressType.Domain || Req.AddressType == Socks.AddressType.Ipv4)
@@ -73,23 +79,23 @@ internal class ProxyTunnel
 
                 if (Req.Command == Socks.Commands.UDP)
                 {
-                    // UDP Ipv4
+                    // UDP IPv4
                     if (Req.AddressType == Socks.AddressType.Domain || Req.AddressType == Socks.AddressType.Ipv4)
                         remoteSocket = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-                    // UDP Ipv6
+                    // UDP IPv6
                     if (Req.AddressType == Socks.AddressType.Ipv6)
                         remoteSocket = new(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
                 }
             }
 
-            RemoteClient = new ProxyClient(remoteSocket);
+            Remote = new ProxyClient(remoteSocket, null);
 
             KillOnTimeoutCheck();
         }
         catch (Exception ex)
         {
-            RemoteClient = new ProxyClient(Client.Socket_);
+            Remote = new ProxyClient(Client.Socket_, null);
             Debug.WriteLine("=================> ProxyTunnel: " + ex.Message);
             OnTunnelDisconnected?.Invoke(this, EventArgs.Empty);
             return;
@@ -114,7 +120,7 @@ internal class ProxyTunnel
                     break;
                 }
 
-                // Manual ManualDisconnect
+                // Manual Disconnect
                 if (ManualDisconnect)
                 {
                     OnTunnelDisconnected?.Invoke(this, EventArgs.Empty);
@@ -134,8 +140,8 @@ internal class ProxyTunnel
                 OnTunnelDisconnected?.Invoke(this, EventArgs.Empty);
                 return;
             }
-
-            if (!KillOnTimeout.IsRunning) KillOnTimeout.Start();
+            
+            if (Req.TimeoutSec > 0 && !KillOnTimeout.IsRunning) KillOnTimeout.Start();
 
             if (Req.ProxyName == Proxy.Name.HTTP)
             {
@@ -151,15 +157,16 @@ internal class ProxyTunnel
                 return;
             }
             
-            // Connect
+            // CONNECT
             if (Req.ProxyName == Proxy.Name.Test ||
-                Req.ProxyName == Proxy.Name.HTTPS ||
+                Req.ProxyName == Proxy.Name.HTTP_S ||
+                Req.ProxyName == Proxy.Name.HTTPS_SSL ||
                 Req.ProxyName == Proxy.Name.SniProxy ||
                 (Req.ProxyName == Proxy.Name.Socks4 && Req.Command == Socks.Commands.Connect) ||
                 (Req.ProxyName == Proxy.Name.Socks4A && Req.Command == Socks.Commands.Connect) ||
                 (Req.ProxyName == Proxy.Name.Socks5 && Req.Command == Socks.Commands.Connect))
             {
-                // Only Connect Can Support Upstream
+                // Only CONNECT Can Support Upstream
                 bool upStreamProxyApplied = false;
                 
                 if (Req.ApplyUpstreamProxy && !string.IsNullOrWhiteSpace(Req.UpstreamProxyScheme))
@@ -172,13 +179,13 @@ internal class ProxyTunnel
                     if (ProxifiedTcpClient_ != null)
                     {
                         upStreamProxyApplied = true;
-                        RemoteClient.Socket_ = ProxifiedTcpClient_.Client;
+                        Remote.Socket_ = ProxifiedTcpClient_.Client;
                     }
                 }
 
                 if (!upStreamProxyApplied)
                 {
-                    await RemoteClient.Socket_.ConnectAsync(Req.Address, Req.Port).ConfigureAwait(false);
+                    await Remote.Socket_.ConnectAsync(Req.Address, Req.Port).ConfigureAwait(false);
                 }
 
                 ConnectHandler();
@@ -189,27 +196,31 @@ internal class ProxyTunnel
                 (Req.ProxyName == Proxy.Name.Socks4A && Req.Command == Socks.Commands.Bind) ||
                 (Req.ProxyName == Proxy.Name.Socks5 && Req.Command == Socks.Commands.Bind))
             {
-                SocketOptionName socketOptionName = SocketOptionName.ReuseAddress | SocketOptionName.ReuseUnicastPort;
-                RemoteClient.Socket_.SetSocketOption(SocketOptionLevel.Socket, socketOptionName, true);
+                // ReuseAddress: We Only Need It If We Want To Bind To Specific Local Port That Might Be In TIME_WAIT.
+                // ReuseAddress: No Need To Set For A Temporary Outbound Socket.
+                // ReuseUnicastPort: Let Multiple Sockets Share The Same Local Port For Load Balancing On Windows 8+. Does Nothing On Linux/Android.
+                // ReuseUnicastPort: It's Not Necessary For Normal Client Sockets.
+                SocketOptionName socketOptionName = SocketOptionName.ReuseAddress; // Cross Platform.
+                Remote.Socket_.SetSocketOption(SocketOptionLevel.Socket, socketOptionName, true);
 
-                if (RemoteClient.Socket_.AddressFamily == AddressFamily.InterNetworkV6)
-                    RemoteClient.Socket_.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                if (Remote.Socket_.AddressFamily == AddressFamily.InterNetworkV6)
+                    Remote.Socket_.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
                 else
-                    RemoteClient.Socket_.Bind(new IPEndPoint(IPAddress.Any, 0));
+                    Remote.Socket_.Bind(new IPEndPoint(IPAddress.Any, 0));
 
                 ConnectHandler();
             }
 
-            // UDP (Only Socks5 Supports UDP)
+            // UDP (Only SOCKS5 Supports UDP)
             if (Req.ProxyName == Proxy.Name.Socks5 && Req.Command == Socks.Commands.UDP)
             {
                 SocketOptionName socketOptionName = SocketOptionName.ReuseAddress | SocketOptionName.ReuseUnicastPort;
-                RemoteClient.Socket_.SetSocketOption(SocketOptionLevel.Socket, socketOptionName, true);
+                Remote.Socket_.SetSocketOption(SocketOptionLevel.Socket, socketOptionName, true);
 
-                if (RemoteClient.Socket_.AddressFamily == AddressFamily.InterNetworkV6)
-                    RemoteClient.Socket_.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                if (Remote.Socket_.AddressFamily == AddressFamily.InterNetworkV6)
+                    Remote.Socket_.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
                 else
-                    RemoteClient.Socket_.Bind(new IPEndPoint(IPAddress.Any, 0));
+                    Remote.Socket_.Bind(new IPEndPoint(IPAddress.Any, 0));
 
                 ConnectHandler();
             }
@@ -227,38 +238,58 @@ internal class ProxyTunnel
     {
         try
         {
-            // Https Response
-            if (Req.ProxyName == Proxy.Name.Test || Req.ProxyName == Proxy.Name.HTTPS)
-            {
-                string resp = "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
-                byte[] httpsResponse = Encoding.UTF8.GetBytes(resp);
+            // HTTP_S/HTTPS_SSL Response
+            string resp = "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
+            byte[] httpsResponse = Encoding.UTF8.GetBytes(resp);
 
+            if (Req.ProxyName == Proxy.Name.Test || Req.ProxyName == Proxy.Name.HTTP_S)
+            {
                 await Client.SendAsync(httpsResponse).ConfigureAwait(false);
             }
 
-            // Socks5 Response
+            if (Req.ProxyName == Proxy.Name.HTTPS_SSL && Client.SslStream_ != null)
+            {
+                await Client.SslStream_.WriteAsync(httpsResponse).ConfigureAwait(false);
+            }
+
+            // SOCKS5 Response
             if (Req.ProxyName == Proxy.Name.Socks5)
             {
-                // Send Connection Request Frame to Server
+                // Send Connection Request Frame To Server
                 byte[] request = Req.GetConnectionRequestFrameData();
                 await Client.SendAsync(request).ConfigureAwait(false);
             }
 
             // Receive Data From Both EndPoints
-            bool ssl = Req.ApplyChangeSNI && !string.IsNullOrWhiteSpace(Req.AddressSNI) && !Req.AddressSNI.Equals(Req.AddressOrig) && !Req.AddressIsIp; // Cert Can't Be Valid When There's An IP Without A Domain. Like SOCKS4
-            if (ssl)
+            bool mitm = Req.ApplyChangeSNI && !string.IsNullOrWhiteSpace(Req.AddressSNI) && !Req.AddressSNI.Equals(Req.AddressOrig) && !Req.AddressIsIp; // Cert Can't Be Valid When There's An IP Without A Domain. Like SOCKS4
+            
+            if (mitm || Req.ProxyName == Proxy.Name.HTTPS_SSL)
             {
-                ClientSSL = new(this);
-                OnDataReceived?.Invoke(this, EventArgs.Empty);
-                await ClientSSL.Execute().ConfigureAwait(false);
+                // SSL Relay - With MITM To Support Fake SNI
+                ProxyRelayMITM = new(this, mitm);
+                ProxyRelayMITM.OnClientDataReceived -= ProxyRelayMITM_OnClientDataReceived;
+                ProxyRelayMITM.OnClientDataReceived += ProxyRelayMITM_OnClientDataReceived;
+                ProxyRelayMITM.OnClientDataSent -= ProxyRelayMITM_OnClientDataSent;
+                ProxyRelayMITM.OnClientDataSent += ProxyRelayMITM_OnClientDataSent;
+                ProxyRelayMITM.OnRemoteDataReceived -= ProxyRelayMITM_OnRemoteDataReceived;
+                ProxyRelayMITM.OnRemoteDataReceived += ProxyRelayMITM_OnRemoteDataReceived;
+                ProxyRelayMITM.OnRemoteDataSent -= ProxyRelayMITM_OnRemoteDataSent;
+                ProxyRelayMITM.OnRemoteDataSent += ProxyRelayMITM_OnRemoteDataSent;
+                await ProxyRelayMITM.ExecuteAsync().ConfigureAwait(false);
             }
             else
             {
-                OnDataReceived?.Invoke(this, EventArgs.Empty);
-
-                Task ct = Client.StartReceiveAsync();
-                Task rt = RemoteClient.StartReceiveAsync();
-                await Task.WhenAll(ct, rt).ConfigureAwait(false); // Both Must Receive At The Same Time
+                // HTTP_S Relay - Supports Fragment
+                ProxyRelay = new(this);
+                ProxyRelay.OnClientDataReceived -= ProxyRelay_OnClientDataReceived;
+                ProxyRelay.OnClientDataReceived += ProxyRelay_OnClientDataReceived;
+                ProxyRelay.OnClientDataSent -= ProxyRelay_OnClientDataSent;
+                ProxyRelay.OnClientDataSent += ProxyRelay_OnClientDataSent;
+                ProxyRelay.OnRemoteDataReceived -= ProxyRelay_OnRemoteDataReceived;
+                ProxyRelay.OnRemoteDataReceived += ProxyRelay_OnRemoteDataReceived;
+                ProxyRelay.OnRemoteDataSent -= ProxyRelay_OnRemoteDataSent;
+                ProxyRelay.OnRemoteDataSent += ProxyRelay_OnRemoteDataSent;
+                await ProxyRelay.ExecuteAsync().ConfigureAwait(false);
             }
         }
         catch (Exception ex)
@@ -318,7 +349,7 @@ internal class ProxyTunnel
 
                 bufferList.AddRange(Encoding.UTF8.GetBytes("\r\n"));
                 
-                // Merge Headers and Body
+                // Merge Headers And Body
                 bufferList.AddRange(hrr.Data);
 
                 // Send
@@ -326,10 +357,17 @@ internal class ProxyTunnel
 
                 if (isSent)
                 {
-                    // Receive
-                    Task ct = Client.StartReceiveAsync();
-                    Task rt = RemoteClient.StartReceiveAsync();
-                    await Task.WhenAll(ct, rt).ConfigureAwait(false); // Both Must Receive at the Same Time
+                    // Relay
+                    ProxyRelay = new(this);
+                    ProxyRelay.OnClientDataReceived -= ProxyRelay_OnClientDataReceived;
+                    ProxyRelay.OnClientDataReceived += ProxyRelay_OnClientDataReceived;
+                    ProxyRelay.OnClientDataSent -= ProxyRelay_OnClientDataSent;
+                    ProxyRelay.OnClientDataSent += ProxyRelay_OnClientDataSent;
+                    ProxyRelay.OnRemoteDataReceived -= ProxyRelay_OnRemoteDataReceived;
+                    ProxyRelay.OnRemoteDataReceived += ProxyRelay_OnRemoteDataReceived;
+                    ProxyRelay.OnRemoteDataSent -= ProxyRelay_OnRemoteDataSent;
+                    ProxyRelay.OnRemoteDataSent += ProxyRelay_OnRemoteDataSent;
+                    await ProxyRelay.ExecuteAsync().ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -339,10 +377,84 @@ internal class ProxyTunnel
         }
     }
 
+    private void ProxyRelay_OnClientDataReceived(object? sender, ProxyRelayEventArgs e)
+    {
+        ProxyTunnelEventArgs ea = new(this, e.Buffer);
+        OnClientDataReceived?.Invoke(this, ea);
+    }
+
+    private void ProxyRelay_OnClientDataSent(object? sender, ProxyRelayEventArgs e)
+    {
+        ProxyTunnelEventArgs ea = new(this, e.Buffer);
+        OnClientDataSent?.Invoke(this, ea);
+    }
+
+    private void ProxyRelay_OnRemoteDataReceived(object? sender, ProxyRelayEventArgs e)
+    {
+        ProxyTunnelEventArgs ea = new(this, e.Buffer);
+        OnRemoteDataReceived?.Invoke(this, ea);
+    }
+
+    private void ProxyRelay_OnRemoteDataSent(object? sender, ProxyRelayEventArgs e)
+    {
+        ProxyTunnelEventArgs ea = new(this, e.Buffer);
+        OnRemoteDataSent?.Invoke(this, ea);
+    }
+
+    private void ProxyRelayMITM_OnClientDataReceived(object? sender, ProxyRelayMITMEventArgs e)
+    {
+        ProxyTunnelEventArgs ea = new(this, e.Buffer);
+        OnClientDataReceived?.Invoke(this, ea);
+    }
+
+    private void ProxyRelayMITM_OnClientDataSent(object? sender, ProxyRelayMITMEventArgs e)
+    {
+        ProxyTunnelEventArgs ea = new(this, e.Buffer);
+        OnClientDataSent?.Invoke(this, ea);
+    }
+
+    private void ProxyRelayMITM_OnRemoteDataReceived(object? sender, ProxyRelayMITMEventArgs e)
+    {
+        ProxyTunnelEventArgs ea = new(this, e.Buffer);
+        OnRemoteDataReceived?.Invoke(this, ea);
+    }
+
+    private void ProxyRelayMITM_OnRemoteDataSent(object? sender, ProxyRelayMITMEventArgs e)
+    {
+        ProxyTunnelEventArgs ea = new(this, e.Buffer);
+        OnRemoteDataSent?.Invoke(this, ea);
+    }
+
     public void Disconnect()
     {
+        if (ProxyRelay != null)
+        {
+            try
+            {
+                ProxyRelay.OnClientDataReceived -= ProxyRelay_OnClientDataReceived;
+                ProxyRelay.OnClientDataSent -= ProxyRelay_OnClientDataSent;
+                ProxyRelay.OnRemoteDataReceived -= ProxyRelay_OnRemoteDataReceived;
+                ProxyRelay.OnRemoteDataSent -= ProxyRelay_OnRemoteDataSent;
+            }
+            catch (Exception) { }
+        }
+
+        if (ProxyRelayMITM != null)
+        {
+            try
+            {
+                ProxyRelayMITM.OnClientDataReceived -= ProxyRelayMITM_OnClientDataReceived;
+                ProxyRelayMITM.OnClientDataSent -= ProxyRelayMITM_OnClientDataSent;
+                ProxyRelayMITM.OnRemoteDataReceived -= ProxyRelayMITM_OnRemoteDataReceived;
+                ProxyRelayMITM.OnRemoteDataSent -= ProxyRelayMITM_OnRemoteDataSent;
+            }
+            catch (Exception) { }
+        }
+        
         Client?.Disconnect();
-        RemoteClient?.Disconnect();
+        Remote?.Disconnect();
+        ProxyRelay?.Disconnect();
+        ProxyRelayMITM?.Disconnect();
     }
 
 }

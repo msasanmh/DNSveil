@@ -7,19 +7,34 @@ public static class ByteArrayTool
 {
     public static byte[] Append(this byte[] orig, byte[] append)
     {
-        if (append == null) return orig;
-        if (orig == null) return append;
-
-        byte[] bytes = new byte[orig.Length + append.Length];
-        Buffer.BlockCopy(orig, 0, bytes, 0, orig.Length);
-        Buffer.BlockCopy(append, 0, bytes, orig.Length, append.Length);
-        return bytes;
+        try
+        {
+            if (append == null) return orig;
+            if (orig == null) return append;
+            byte[] bytes = new byte[orig.Length + append.Length];
+            Buffer.BlockCopy(orig, 0, bytes, 0, orig.Length);
+            Buffer.BlockCopy(append, 0, bytes, orig.Length, append.Length);
+            return bytes;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ByteArrayTool Append: " + ex.Message);
+            return orig;
+        }
     }
 
     public static bool CanFitInBits(int number, int numberOfBits)
     {
-        int maxValue = (1 << numberOfBits) - 1;
-        return number >= 0 && number <= maxValue;
+        try
+        {
+            int maxValue = (1 << numberOfBits) - 1;
+            return number >= 0 && number <= maxValue;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ByteArrayTool CanFitInBits: " + ex.Message);
+            return false;
+        }
     }
 
     public static byte[] GenerateRandom(int length)
@@ -35,7 +50,7 @@ public static class ByteArrayTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("GenerateRandom: " + ex.Message);
+            Debug.WriteLine("ByteArrayTool GenerateRandom: " + ex.Message);
         }
         return bytes;
     }
@@ -51,6 +66,8 @@ public static class ByteArrayTool
                 return false;
             }
             result = Convert.ToUInt16(n);
+            // OR
+            //BinaryPrimitives.TryReadUInt16BigEndian(bytes, out ushort result);
             // OR
             //if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
             //result = BitConverter.ToUInt16(bytes, 0);
@@ -111,6 +128,8 @@ public static class ByteArrayTool
             bytes[0] = (byte)(value >> 8);
             bytes[1] = (byte)value;
             result = bytes;
+            // OR
+            //BinaryPrimitives.TryWriteUInt16BigEndian(bytes, value);
             // OR
             //byte[] result0 = BitConverter.GetBytes(value);
             //result = BitConverter.IsLittleEndian ? result0.Reverse().ToArray() : result0;
@@ -261,7 +280,7 @@ public static class ByteArrayTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("TryConvertSplittedBinaryToBytes: " + ex.Message);
+            Debug.WriteLine("ByteArrayTool TryConvertSplittedBinaryToBytes: " + ex.Message);
             result = Array.Empty<byte>();
             return false;
         }

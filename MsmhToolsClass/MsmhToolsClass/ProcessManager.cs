@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Management;
 using Process = System.Diagnostics.Process;
+using System.Text.RegularExpressions;
 
 namespace MsmhToolsClass;
 
@@ -66,13 +67,12 @@ public static class ProcessManager
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Get CPU Usage Async: {ex.Message}");
+                Debug.WriteLine($"ProcessManager GetCpuUsageAsync: {ex.Message}");
             }
         });
 
         return result;
     }
-
     //-----------------------------------------------------------------------------------
 
     /// <summary>
@@ -103,7 +103,6 @@ public static class ProcessManager
             }
         }
     }
-
     //-----------------------------------------------------------------------------------
 
     /// <summary>
@@ -255,69 +254,74 @@ public static class ProcessManager
     public static int ExecuteOnly(string processName, Dictionary<string, string>? environmentVariables = null, string? args = null, bool hideWindow = true, bool runAsAdmin = false, string? workingDirectory = null, ProcessPriorityClass processPriorityClass = ProcessPriorityClass.Normal)
     {
         int pid;
-        // Create process
-        Process process0 = new();
-        process0.StartInfo.FileName = processName;
-
-        if (environmentVariables != null)
-        {
-            foreach (KeyValuePair<string, string> kvp in environmentVariables)
-                process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
-        }
-
-        if (args != null)
-            process0.StartInfo.Arguments = args;
-
-        if (hideWindow)
-        {
-            process0.StartInfo.CreateNoWindow = true;
-            process0.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-        }
-        else
-        {
-            process0.StartInfo.CreateNoWindow = false;
-            process0.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-        }
-
-        if (runAsAdmin)
-        {
-            process0.StartInfo.Verb = "runas";
-        }
-        else
-        {
-            process0.StartInfo.Verb = "";
-        }
-
-        // Redirect input output to get ability of sending and reading process output
-        process0.StartInfo.UseShellExecute = false;
-        process0.StartInfo.RedirectStandardInput = true;
-        process0.StartInfo.RedirectStandardOutput = true;
-        process0.StartInfo.RedirectStandardError = true;
-
-        if (workingDirectory != null)
-            process0.StartInfo.WorkingDirectory = workingDirectory;
-
+        
         try
         {
+            // Create process
+            Process process0 = new();
+            process0.StartInfo.FileName = processName;
+
+            if (environmentVariables != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in environmentVariables)
+                    process0.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+            }
+
+            if (args != null)
+                process0.StartInfo.Arguments = args;
+
+            if (hideWindow)
+            {
+                process0.StartInfo.CreateNoWindow = true;
+                process0.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            }
+            else
+            {
+                process0.StartInfo.CreateNoWindow = false;
+                process0.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
+            }
+
+            if (runAsAdmin)
+            {
+                process0.StartInfo.Verb = "runas";
+            }
+            else
+            {
+                process0.StartInfo.Verb = "";
+            }
+
+            // Redirect input output to get ability of sending and reading process output
+            process0.StartInfo.UseShellExecute = false;
+            process0.StartInfo.RedirectStandardInput = true;
+            process0.StartInfo.RedirectStandardOutput = true;
+            process0.StartInfo.RedirectStandardError = true;
+
+            if (workingDirectory != null)
+                process0.StartInfo.WorkingDirectory = workingDirectory;
+
             process0.Start();
 
             // Set process priority
             process0.PriorityClass = processPriorityClass;
             pid = process0.Id;
+
+            // Dispose
+            process0.Dispose();
         }
         catch (Exception ex)
         {
             pid = -1;
-            Debug.WriteLine($"ExecuteOnly: {ex.Message}");
+            Debug.WriteLine($"ProcessManager ExecuteOnly: {ex.Message}");
         }
 
-        process0.Dispose();
         return pid;
     }
     //-----------------------------------------------------------------------------------
+
     public static bool FindProcessByName(string processName)
     {
         int result = 0;
+
         try
         {
             Process[] processes = Process.GetProcessesByName(processName);
@@ -331,14 +335,17 @@ public static class ProcessManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("FindProcessByName: " + ex.Message);
+            Debug.WriteLine("ProcessManager FindProcessByName: " + ex.Message);
         }
+
         return result > 0;
     }
     //-----------------------------------------------------------------------------------
+
     public static bool FindProcessByPID(int pid)
     {
         bool result = false;
+
         try
         {
             Process[] processes = Process.GetProcesses();
@@ -354,40 +361,60 @@ public static class ProcessManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("FindProcessByPID: " + ex.Message);
+            Debug.WriteLine("ProcessManager FindProcessByPID: " + ex.Message);
         }
+
         return result;
     }
     //-----------------------------------------------------------------------------------
+
     public static async Task KillProcessByPidAsync(int pid, bool killEntireProcessTree = false)
     {
         try
         {
             if (FindProcessByPID(pid))
             {
-                using Process process = Process.GetProcessById(pid);
-                process.Kill(killEntireProcessTree);
-
-                if (FindProcessByPID(pid) && OperatingSystem.IsWindows())
+                try
                 {
-                    string taskKillArgs = $"/F /PID {pid}";
-                    if (killEntireProcessTree) taskKillArgs += " /T";
-                    await ExecuteAsync("taskkill", null, taskKillArgs, true, true);
+                    using Process process = Process.GetProcessById(pid);
+                    process.Kill(killEntireProcessTree);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("ProcessManager KillProcessByPidAsync 1: " + e.Message);
+                }
 
-                    if (FindProcessByPID(pid))
+                if (FindProcessByPID(pid))
+                {
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        string wmicArgs = $"process where processid=\"{pid}\" delete";
-                        await ExecuteAsync("wmic", null, wmicArgs, true, true);
+                        string command = "taskkill";
+                        string taskKillArgs = $"/F /PID {pid}";
+                        if (killEntireProcessTree) taskKillArgs += " /T";
+                        await ExecuteAsync(command, null, taskKillArgs, true, true);
+
+                        if (FindProcessByPID(pid))
+                        {
+                            string wmicArgs = $"process where processid=\"{pid}\" delete";
+                            await ExecuteAsync("wmic", null, wmicArgs, true, true);
+                        }
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    {
+                        string command = "kill";
+                        string killArgs = $"-9 {pid}";
+                        await ExecuteAsync(command, null, killArgs, true, true);
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("ProcessManager KillProcessByPidAsync 2: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
+
     public static async Task KillProcessByNameAsync(string processName, bool killEntireProcessTree = false)
     {
         try
@@ -398,10 +425,11 @@ public static class ProcessManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("ProcessManager KillProcessByNameAsync: " + ex.Message);
         }
     }
     //-----------------------------------------------------------------------------------
+
     /// <summary>
     /// Returns first PID, if faild returns -1
     /// </summary>
@@ -422,18 +450,39 @@ public static class ProcessManager
         return pid;
     }
     //-----------------------------------------------------------------------------------
+
     /// <summary>
-    /// Returns A List Of PIDs (Windows Only)
+    /// Returns A List Of PIDs
     /// </summary>
     public static async Task<List<int>> GetProcessPidsByUsingPortAsync(int port, bool onlyListeningPorts = true)
     {
         List<int> list = new();
-        if (!OperatingSystem.IsWindows()) return list;
+        
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            list = await GetProcessPidsByUsingPort_Windows_Async(port, onlyListeningPorts);
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            list = await GetProcessPidsByUsingPort_Linux_Async(port, onlyListeningPorts);
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// Returns A List Of PIDs (Windows Only)
+    /// </summary>
+    private static async Task<List<int>> GetProcessPidsByUsingPort_Windows_Async(int port, bool onlyListeningPorts = true)
+    {
+        List<int> list = new();
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return list;
 
         try
         {
+            string command = "netstat";
             string netstatArgs = "-a -n -o";
-            var p = await ExecuteAsync("netstat", null, netstatArgs);
+            var p = await ExecuteAsync(command, null, netstatArgs, true, true);
             if (p.IsSeccess)
             {
                 string? stdout = p.Output;
@@ -447,7 +496,7 @@ public static class ProcessManager
                         {
                             if (onlyListeningPorts && line.StartsWith("TCP") && !line.Contains("LISTENING")) continue;
                             string[] splitLine = line.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                            if (splitLine.Length > 2)
+                            if (splitLine.Length > 3) // Has 4 Or 5 Columns
                             {
                                 string localAddress = splitLine[1];
                                 if (localAddress.EndsWith($":{port}"))
@@ -464,12 +513,68 @@ public static class ProcessManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ProcessManager GetProcessPidsByUsingPortAsync: " + ex.Message);
+            Debug.WriteLine("ProcessManager GetProcessPidsByUsingPort_Windows_Async: " + ex.Message);
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// Returns A List Of PIDs (Linux/WSL Only)
+    /// </summary>
+    private static async Task<List<int>> GetProcessPidsByUsingPort_Linux_Async(int port, bool onlyListeningPorts = true)
+    {
+        List<int> list = new();
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return list;
+
+        try
+        {
+            string command = "ss";
+            // string args = $"/bin/bash -c \"ss -tulpn | grep :{port}\"";
+            string args = "-tulpn";
+            var p = await ExecuteAsync(command, null, args, true, true);
+            if (p.IsSeccess)
+            {
+                string? stdout = p.Output;
+                if (!string.IsNullOrWhiteSpace(stdout))
+                {
+                    List<string> lines = stdout.SplitToLines();
+                    for (int n = 0; n < lines.Count; n++)
+                    {
+                        string line = lines[n].Trim();
+                        if (!string.IsNullOrEmpty(line) && line.Contains($":{port} "))
+                        {
+                            if (onlyListeningPorts && line.StartsWith("tcp") && !line.Contains("LISTEN")) continue;
+                            string[] splitLine = line.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                            if (splitLine.Length > 5) // Has 6 Or 7 Columns
+                            {
+                                string localAddress = splitLine[4];
+                                if (localAddress.EndsWith($":{port}"))
+                                {
+                                    string users = splitLine[^1]; // Last Column Has PID In It
+                                    Match pidMatch = Regex.Match(users, @"pid=(\d+)");
+                                    if (pidMatch.Success)
+                                    {
+                                        string pidStr = pidMatch.Groups[1].Value;
+                                        bool isBool = int.TryParse(pidStr, out int pid);
+                                        if (isBool && pid != 0 && !list.IsContain(pid)) list.Add(pid);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ProcessManager GetProcessPidsByUsingPort_Linux_Async: " + ex.Message);
         }
 
         return list;
     }
     //-----------------------------------------------------------------------------------
+
     /// <summary>
     /// Get Process By PID
     /// </summary>
@@ -477,16 +582,24 @@ public static class ProcessManager
     /// <returns>Returns null if not exist.</returns>
     public static Process? GetProcessByPID(int pid)
     {
-        Process[] processes = Process.GetProcesses();
-        for (int n = 0; n < processes.Length; n++)
+        try
         {
-            Process process = processes[n];
-            if (process.Id == pid) return process;
-            else process.Dispose();
+            Process[] processes = Process.GetProcesses();
+            for (int n = 0; n < processes.Length; n++)
+            {
+                Process process = processes[n];
+                if (process.Id == pid) return process;
+                else process.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ProcessManager GetProcessByPID: " + ex.Message);
         }
         return null;
     }
     //-----------------------------------------------------------------------------------
+
     /// <summary>
     /// Get Process Name By PID
     /// </summary>
@@ -497,20 +610,28 @@ public static class ProcessManager
         string result = string.Empty;
         if (pid < 0) return result;
 
-        Process[] processes = Process.GetProcesses();
-        for (int n = 0; n < processes.Length; n++)
+        try
         {
-            Process process = processes[n];
-            if (process.Id == pid)
+            Process[] processes = Process.GetProcesses();
+            for (int n = 0; n < processes.Length; n++)
             {
-                try { result = process.ProcessName; } catch (Exception) { }
+                Process process = processes[n];
+                if (process.Id == pid)
+                {
+                    result = process.ProcessName;
+                }
+                process.Dispose();
             }
-            process.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("ProcessManager GetProcessNameByPID: " + ex.Message);
         }
 
         return result;
     }
     //-----------------------------------------------------------------------------------
+
     public static int GetParentPID(int pid)
     {
         int parentPid = -1;
@@ -527,6 +648,7 @@ public static class ProcessManager
         return parentPid;
     }
     //-----------------------------------------------------------------------------------
+
     private static List<int> GetAllChildProcesses(int parentPID)
     {
         List<int> pids = new();
@@ -562,12 +684,13 @@ public static class ProcessManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("GetAllChildProcesses: " + ex.Message);
+            Debug.WriteLine("ProcessManager GetAllChildProcesses: " + ex.Message);
         }
 
         return pids;
     }
     //-----------------------------------------------------------------------------------
+
     /// <summary>
     /// Windows Only
     /// </summary>
@@ -594,11 +717,13 @@ public static class ProcessManager
         return result;
     }
     //-----------------------------------------------------------------------------------
+
     public static void SetProcessPriority(ProcessPriorityClass processPriorityClass)
     {
         Process.GetCurrentProcess().PriorityClass = processPriorityClass;
     }
     //-----------------------------------------------------------------------------------
+
     [Flags]
     private enum ThreadAccess : int
     {
@@ -689,4 +814,5 @@ public static class ProcessManager
         }
     }
     //-----------------------------------------------------------------------------------
+
 }

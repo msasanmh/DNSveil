@@ -190,7 +190,7 @@ public partial class FormMain
         return output;
     }
 
-    public async Task<List<ReadDnsResult>> ReadBuiltInServersAndSubsAsync(CheckRequest checkRequest, bool readInsecure)
+    public async Task<List<ReadDnsResult>> ReadBuiltInServersAndSubsAsync(CheckRequest checkRequest, bool readInsecure, bool isBackground = false)
     {
         Task<List<ReadDnsResult>> rbs = Task.Run(async () =>
         {
@@ -211,9 +211,16 @@ public partial class FormMain
 
                 // Try URL Built-In Secure
                 string encryptedContent = string.Empty;
-                string msg = $"Downloading {url_Secure}{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                string msg = string.Empty;
+
+                if (!isBackground)
+                {
+                    msg = $"Downloading {url_Secure}{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                }
+                
                 byte[] bytes = await WebAPI.DownloadFileAsync(url_Secure, 20000).ConfigureAwait(false);
+                if (StopChecking) return output;
                 if (bytes.Length > 0)
                 {
                     try
@@ -223,20 +230,26 @@ public partial class FormMain
                         if (!string.IsNullOrWhiteSpace(encryptedContent))
                         {
                             await File.WriteAllTextAsync(file_Secure, encryptedContent, new UTF8Encoding(false));
+                            if (StopChecking) return output;
                         }
                     }
                     catch (Exception) { }
                 }
                 else
                 {
-                    msg = $"Download Failed. Reading Backup...{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                    if (!isBackground)
+                    {
+                        msg = $"Download Failed. Reading Backup...{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                    }
+                    
                     if (File.Exists(file_Secure))
                     {
                         try
                         {
                             // Try Read From File
                             encryptedContent = await File.ReadAllTextAsync(file_Secure, new UTF8Encoding(false));
+                            if (StopChecking) return output;
                         }
                         catch (Exception) { }
                     }
@@ -244,21 +257,32 @@ public partial class FormMain
                     {
                         // Try Read From Resource
                         encryptedContent = await ResourceTool.GetResourceTextFileAsync(resource_Secure, Assembly.GetExecutingAssembly());
+                        if (StopChecking) return output;
                     }
                 }
 
                 string[] encryptedDnss = encryptedContent.ReplaceLineEndings().Split(NL, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                 List<string> dnss = await BuiltInDecryptAsync(encryptedDnss.ToList());
+                if (StopChecking) return output;
                 allDNSs.AddRange(dnss);
-                msg = $"Fetched {dnss.Count} Servers.{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
 
+                if (!isBackground)
+                {
+                    msg = $"Fetched {dnss.Count} Servers.{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                }
+                
                 if (readInsecure)
                 {
                     // Try URL Built-In Insecure
-                    msg = $"Downloading {url_Insecure}{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                    if (!isBackground)
+                    {
+                        msg = $"Downloading {url_Insecure}{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                    }
+                    
                     bytes = await WebAPI.DownloadFileAsync(url_Insecure, 20000).ConfigureAwait(false);
+                    if (StopChecking) return output;
                     if (bytes.Length > 0)
                     {
                         try
@@ -268,20 +292,26 @@ public partial class FormMain
                             if (!string.IsNullOrWhiteSpace(encryptedContent))
                             {
                                 await File.WriteAllTextAsync(file_Insecure, encryptedContent, new UTF8Encoding(false));
+                                if (StopChecking) return output;
                             }
                         }
                         catch (Exception) { }
                     }
                     else
                     {
-                        msg = $"Download Failed. Reading Backup...{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                        if (!isBackground)
+                        {
+                            msg = $"Download Failed. Reading Backup...{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                        }
+                        
                         if (File.Exists(file_Insecure))
                         {
                             try
                             {
                                 // Try Read From File
                                 encryptedContent = await File.ReadAllTextAsync(file_Insecure, new UTF8Encoding(false));
+                                if (StopChecking) return output;
                             }
                             catch (Exception) { }
                         }
@@ -289,14 +319,19 @@ public partial class FormMain
                         {
                             // Try Read From Resource
                             encryptedContent = await ResourceTool.GetResourceTextFileAsync(resource_Insecure, Assembly.GetExecutingAssembly());
+                            if (StopChecking) return output;
                         }
                     }
 
                     encryptedDnss = encryptedContent.ReplaceLineEndings().Split(NL, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                     dnss = await BuiltInDecryptAsync(encryptedDnss.ToList());
+                    if (StopChecking) return output;
                     allDNSs.AddRange(dnss);
-                    msg = $"Fetched {dnss.Count} Servers.{NL}";
-                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                    if (!isBackground)
+                    {
+                        msg = $"Fetched {dnss.Count} Servers.{NL}";
+                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                    }
                 }
 
                 // Built-In Subs
@@ -315,12 +350,21 @@ public partial class FormMain
                     for (int n = 0; n < urlsOrFiles.Count; n++)
                     {
                         string urlOrFile = urlsOrFiles[n];
-                        msg = $"Downloading {WebUtility.UrlDecode(urlOrFile)}{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                        if (!isBackground)
+                        {
+                            msg = $"Downloading {WebUtility.UrlDecode(urlOrFile)}{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                        }
+                        
                         dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
+                        if (StopChecking) return output;
                         allSubs.AddRange(dnss);
-                        msg = $"Fetched {dnss.Count} Servers.{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+
+                        if (!isBackground)
+                        {
+                            msg = $"Fetched {dnss.Count} Servers.{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                        }
                     }
 
                     allSubs = allSubs.Distinct().ToList();
@@ -328,40 +372,60 @@ public partial class FormMain
                     {
                         // Save Downloaded Servers To File
                         await allSubs.SaveToFileAsync(SecureDNS.BuiltInServersSubscriptionPath);
+                        if (StopChecking) return output;
                     }
                     else
                     {
-                        msg = $"Download Failed. Reading Backup...{NL}";
-                        this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                        if (!isBackground)
+                        {
+                            msg = $"Download Failed. Reading Backup...{NL}";
+                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                        }
+                        
                         await allSubs.LoadFromFileAsync(SecureDNS.BuiltInServersSubscriptionPath, true, true);
+                        if (StopChecking) return output;
                         if (allSubs.Count > 0)
                         {
-                            msg = $"Fetched {dnss.Count} Servers.{NL}";
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                            if (!isBackground)
+                            {
+                                msg = $"Fetched {dnss.Count} Servers.{NL}";
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.MediumSeaGreen));
+                            }
                         }
                         else
                         {
-                            msg = $"There Is No Backup.{NL}";
-                            this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                            if (!isBackground)
+                            {
+                                msg = $"There Is No Backup.{NL}";
+                                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DarkOrange));
+                            }
                         }
                     }
                 }
-                
-                msg = $"Decoding Stamp Servers...{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
 
+                if (!isBackground)
+                {
+                    msg = $"Decoding Stamp Servers...{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                }
+                
                 allDNSs.AddRange(allSubs);
                 allDNSs = allDNSs.Distinct().ToList();
                 allDNSs = await DnsTools.DecodeStampAsync(allDNSs);
                 allDNSs = allDNSs.Distinct().ToList();
+                if (StopChecking) return output;
 
-                msg = $"Checking For Malicious Servers Based On Your Settings...{NL}";
-                this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
-
+                if (!isBackground)
+                {
+                    msg = $"Checking For Malicious Servers Based On Your Settings...{NL}";
+                    this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
+                }
+                
                 string maliciousContent = string.Empty;
                 try
                 {
                     maliciousContent = await File.ReadAllTextAsync(SecureDNS.BuiltInServersMaliciousPath);
+                    if (StopChecking) return output;
                 }
                 catch (Exception) { }
                 List<string> maliciousTemp = maliciousContent.ReplaceLineEndings().Split(NL, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
@@ -375,8 +439,15 @@ public partial class FormMain
 
                 for (int n = 0; n < allDNSs.Count; n++)
                 {
+                    if (StopChecking) break;
                     string dns = allDNSs[n];
-                    if (malicious.IsContain(dns)) continue;
+
+                    // Ignore Malicious Domains
+                    DnsReader dr = new(dns);
+                    if (malicious.IsContain(dr.Host)) continue;
+                    NetworkTool.URL url = NetworkTool.GetUrlOrDomainDetails(dr.Host, dr.Port);
+                    if (malicious.IsContain(url.BaseHost)) continue;
+
                     ReadDnsResult rdr = new()
                     {
                         DNS = dns,

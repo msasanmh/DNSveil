@@ -16,7 +16,7 @@ public static partial class Program
                 if (string.IsNullOrEmpty(input)) return;
                 if (string.IsNullOrWhiteSpace(input)) return;
                 input = input.Trim();
-
+                
                 // Comment
                 if (input.ToLower().StartsWith("//")) return;
 
@@ -33,6 +33,7 @@ public static partial class Program
                 {
                     WriteRequestsToLog = false;
                     WriteFragmentDetailsToLog = false;
+                    WriteDebugInfoToLog = false;
                     try
                     {
                         Console.Clear();
@@ -142,7 +143,7 @@ public static partial class Program
                     bool allowInsecure = DefaultAllowInsecure;
                     List<string> dnss = new();
                     string cloudflareCleanIP = string.Empty;
-                    string bootstrapIp = DefaultBootstrapIp.ToString();
+                    string bootstrapIp = DefaultBootstrapIp.ToStringNoScopeId();
                     int bootstrapPort = DefaultBootstrapPort;
                     string proxyScheme = string.Empty;
                     string proxyUser = string.Empty;
@@ -166,7 +167,7 @@ public static partial class Program
                             else
                             {
                                 if (isInt)
-                                    await WriteToStdoutAsync($"Port Number Must Be Between {DefaultPortMin} and {DefaultPortMax}", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Port Number Must Be Between {DefaultPortMin} And {DefaultPortMax}", ConsoleColor.Red);
                                 else
                                     await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                             }
@@ -181,10 +182,12 @@ public static partial class Program
 
                             if (workingModeStr.Equals(nameof(AgnosticSettings.WorkingMode.Dns).ToLower()))
                                 workingMode = AgnosticSettings.WorkingMode.Dns;
+                            else if (workingModeStr.Equals(nameof(AgnosticSettings.WorkingMode.Proxy).ToLower()))
+                                workingMode = AgnosticSettings.WorkingMode.Proxy;
                             else if (workingModeStr.Equals(nameof(AgnosticSettings.WorkingMode.DnsAndProxy).ToLower()))
                                 workingMode = AgnosticSettings.WorkingMode.DnsAndProxy;
 
-                            await WriteToStdoutAsync($"Working Mode Set to {workingMode}", ConsoleColor.Green);
+                            await WriteToStdoutAsync($"Working Mode Set To {workingMode}", ConsoleColor.Green);
                             break;
                         }
 
@@ -196,7 +199,7 @@ public static partial class Program
                             if (isInt && n >= DefaultMaxRequestsMin && n <= DefaultMaxRequestsMax)
                             {
                                 maxRequests = n;
-                                await WriteToStdoutAsync($"Maximum Requests Set to {maxRequests}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Maximum Requests Set To {maxRequests}", ConsoleColor.Green);
                                 break;
                             }
                             else
@@ -216,35 +219,35 @@ public static partial class Program
                             if (isInt && n >= DefaultDnsTimeoutSecMin && n <= DefaultDnsTimeoutSecMax)
                             {
                                 dnsTimeoutSec = n;
-                                await WriteToStdoutAsync($"Dns Timeout Set to {dnsTimeoutSec} Seconds", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Dns Timeout Set To {dnsTimeoutSec} Seconds", ConsoleColor.Green);
                                 break;
                             }
                             else
                             {
                                 if (isInt)
-                                    await WriteToStdoutAsync($"Dns Timeout Must Be Between {DefaultDnsTimeoutSecMin} and {DefaultDnsTimeoutSecMax}", ConsoleColor.Red);
+                                    await WriteToStdoutAsync($"Dns Timeout Must Be Between {DefaultDnsTimeoutSecMin} And {DefaultDnsTimeoutSecMax}", ConsoleColor.Red);
                                 else
                                     await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                             }
                         }
 
-                        if (workingMode == AgnosticSettings.WorkingMode.DnsAndProxy)
+                        if (workingMode != AgnosticSettings.WorkingMode.Dns)
                         {
                             // Proxy Timeout Sec
                             while (true)
                             {
-                                object value = await ConsoleTools.ReadValueAsync($"Enter Proxy Timeout in Sec (Default: {DefaultProxyTimeoutSec} Sec)", proxyTimeoutSec, typeof(int));
+                                object value = await ConsoleTools.ReadValueAsync($"Enter Proxy Timeout In Sec (Default: {DefaultProxyTimeoutSec} Sec)", proxyTimeoutSec, typeof(int));
                                 bool isInt = int.TryParse(value.ToString(), out int n);
                                 if (isInt && n >= DefaultProxyTimeoutSecMin && n <= DefaultProxyTimeoutSecMax)
                                 {
                                     proxyTimeoutSec = n;
-                                    await WriteToStdoutAsync($"Proxy Timeout Set to {proxyTimeoutSec} Seconds", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"Proxy Timeout Set To {proxyTimeoutSec} Seconds", ConsoleColor.Green);
                                     break;
                                 }
                                 else
                                 {
                                     if (isInt)
-                                        await WriteToStdoutAsync($"Proxy Timeout Must Be Between {DefaultProxyTimeoutSecMin} and {DefaultProxyTimeoutSecMax}", ConsoleColor.Red);
+                                        await WriteToStdoutAsync($"Proxy Timeout Must Be Between {DefaultProxyTimeoutSecMin} And {DefaultProxyTimeoutSecMax}", ConsoleColor.Red);
                                     else
                                         await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                                 }
@@ -258,7 +261,7 @@ public static partial class Program
                                 if (isFloat && f >= DefaultKillOnCpuUsageMin && f <= DefaultKillOnCpuUsageMax)
                                 {
                                     killOnCpuUsage = f;
-                                    await WriteToStdoutAsync($"Kill On Cpu Usage Set to {killOnCpuUsage}%", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"Kill On Cpu Usage Set To {killOnCpuUsage}%", ConsoleColor.Green);
                                     break;
                                 }
                                 else
@@ -297,14 +300,30 @@ public static partial class Program
                         while (true)
                         {
                             string dnssStr = string.Empty;
-                            object value = await ConsoleTools.ReadValueAsync("Enter DNS Addresses (Comma Separate) (Default: Google, Quad9)", dnssStr, typeof(string));
+                            object value = await ConsoleTools.ReadValueAsync("Enter DNS Addresses (Comma Separate) (Default: Google, Quad9) Or Path Of A File (Each Line One DNS Address)", dnssStr, typeof(string));
                             dnssStr = value.ToString() ?? string.Empty;
                             dnssStr = dnssStr.Trim();
 
                             if (!string.IsNullOrEmpty(dnssStr))
                             {
-                                string[] dnssArray = dnssStr.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                                dnss.AddRange(dnssArray);
+                                string fullPath = Path.GetFullPath(dnssStr);
+                                bool isPath = File.Exists(fullPath);
+                                if (isPath)
+                                {
+                                    dnss.Add(fullPath);
+                                }
+                                else
+                                {
+                                    string[] dnssArray = dnssStr.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                                    for (int i = 0; i < dnssArray.Length; i++)
+                                    {
+                                        string dns = dnssArray[i];
+                                        if (DnsTools.IsDnsProtocolSupported(dns))
+                                        {
+                                            dnss.Add(dns);
+                                        }
+                                    }
+                                }
                             }
 
                             await WriteToStdoutAsync($"DNS Addresses Set. Count: {dnss.Count}", ConsoleColor.Green);
@@ -336,7 +355,7 @@ public static partial class Program
                         while (true)
                         {
                             string getBootstrapIp = string.Empty;
-                            object value = await ConsoleTools.ReadValueAsync($"Enter Bootstrap Ip (Plain DNS) (Default: None)", bootstrapIp, typeof(string));
+                            object value = await ConsoleTools.ReadValueAsync($"Enter Bootstrap IP (Plain DNS) (Default: {bootstrapIp})", bootstrapIp, typeof(string));
                             getBootstrapIp = value.ToString() ?? string.Empty;
                             getBootstrapIp = getBootstrapIp.Trim();
 
@@ -358,13 +377,13 @@ public static partial class Program
                             if (isInt && n >= 1 && n <= 65535)
                             {
                                 bootstrapPort = n;
-                                await WriteToStdoutAsync($"Bootstrap Port Set to {bootstrapPort}", ConsoleColor.Green);
+                                await WriteToStdoutAsync($"Bootstrap Port Set To {bootstrapPort}", ConsoleColor.Green);
                                 break;
                             }
                             else
                             {
                                 if (isInt)
-                                    await WriteToStdoutAsync("Bootstrap Port Must Be Between 1 and 65535", ConsoleColor.Red);
+                                    await WriteToStdoutAsync("Bootstrap Port Must Be Between 1 And 65535", ConsoleColor.Red);
                                 else
                                     await WriteToStdoutAsync("Error Parsing The Int Number!", ConsoleColor.Red);
                             }
@@ -429,7 +448,7 @@ public static partial class Program
                     else // Command Mode
                     {
                         // setting -Port=m -WorkingMode= -MaxRequests= -DnsTimeoutSec= -ProxyTimeoutSec= -KillOnCpuUsage= -BlockPort80=
-                        // -AllowInsecure= -DNSs= -CfCleanIP= -BootstrapIp= -BootstrapPort=
+                        // -AllowInsecure= -DNSs="" -CfCleanIP= -BootstrapIp= -BootstrapPort=
                         // -ProxyScheme= -ProxyUser= -ProxyPass= -OnlyBlockedIPs=
 
                         KeyValues keyValues = new();
@@ -441,7 +460,7 @@ public static partial class Program
                         keyValues.Add(Key.Setting.KillOnCpuUsage, false, false, typeof(float), DefaultKillOnCpuUsageMin, DefaultKillOnCpuUsageMax);
                         keyValues.Add(Key.Setting.BlockPort80, false, false, typeof(bool));
                         keyValues.Add(Key.Setting.AllowInsecure, false, false, typeof(bool));
-                        keyValues.Add(Key.Setting.DNSs, false, false, typeof(string));
+                        keyValues.Add(Key.Setting.DNSs, false, true, typeof(string));
                         keyValues.Add(Key.Setting.CfCleanIP, false, false, typeof(string));
                         keyValues.Add(Key.Setting.BootstrapIp, false, false, typeof(string));
                         keyValues.Add(Key.Setting.BootstrapPort, false, false, typeof(int), 1, 65535);
@@ -458,9 +477,11 @@ public static partial class Program
                             if (kv.Key.Equals(Key.Setting.Port)) port = kv.ValueInt;
                             if (kv.Key.Equals(Key.Setting.WorkingMode))
                             {
-                                if (kv.ValueString.Equals(nameof(AgnosticSettings.WorkingMode.Dns)))
+                                if (kv.ValueString.Equals(nameof(AgnosticSettings.WorkingMode.Dns), StringComparison.OrdinalIgnoreCase))
                                     workingMode = AgnosticSettings.WorkingMode.Dns;
-                                else if (kv.ValueString.Equals(nameof(AgnosticSettings.WorkingMode.DnsAndProxy)))
+                                else if (kv.ValueString.Equals(nameof(AgnosticSettings.WorkingMode.Proxy), StringComparison.OrdinalIgnoreCase))
+                                    workingMode = AgnosticSettings.WorkingMode.Proxy;
+                                else if (kv.ValueString.Equals(nameof(AgnosticSettings.WorkingMode.DnsAndProxy), StringComparison.OrdinalIgnoreCase))
                                     workingMode = AgnosticSettings.WorkingMode.DnsAndProxy;
                             }
                             if (kv.Key.Equals(Key.Setting.MaxRequests)) maxRequests = kv.ValueInt;
@@ -473,8 +494,24 @@ public static partial class Program
                             {
                                 if (!string.IsNullOrEmpty(kv.ValueString))
                                 {
-                                    string[] dnssArray = kv.ValueString.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-                                    dnss.AddRange(dnssArray);
+                                    string fullPath = Path.GetFullPath(kv.ValueString);
+                                    bool isPath = File.Exists(fullPath);
+                                    if (isPath)
+                                    {
+                                        dnss.Add(fullPath);
+                                    }
+                                    else
+                                    {
+                                        string[] dnssArray = kv.ValueString.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                                        for (int i = 0; i < dnssArray.Length; i++)
+                                        {
+                                            string dns = dnssArray[i];
+                                            if (DnsTools.IsDnsProtocolSupported(dns))
+                                            {
+                                                dnss.Add(dns);
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             if (kv.Key.Equals(Key.Setting.CfCleanIP)) cloudflareCleanIP = kv.ValueString;
@@ -518,7 +555,8 @@ public static partial class Program
                 // SSLSetting
                 else if (input.ToLower().StartsWith(Key.SSLSetting.Name.ToLower()))
                 {
-                    bool enable = DefaultSSLEnable;
+                    bool enableSSL = DefaultSSLEnable;
+                    string serverDomainName = IPAddress.Loopback.ToString();
                     string? rootCA_Path = null;
                     string? rootCA_KeyPath = null;
                     string? cert_Path = null;
@@ -533,139 +571,45 @@ public static partial class Program
                         string msgRV = $"Enable SSL Decryption, Enter True/False (Default: {DefaultSSLEnable})";
                         while (true)
                         {
-                            object value = await ConsoleTools.ReadValueAsync(msgRV, enable, typeof(bool));
-                            enable = Convert.ToBoolean(value);
+                            object value = await ConsoleTools.ReadValueAsync(msgRV, enableSSL, typeof(bool));
+                            enableSSL = Convert.ToBoolean(value);
 
-                            await WriteToStdoutAsync($"Enable Set to {enable}", ConsoleColor.Green);
+                            await WriteToStdoutAsync($"Enable Set to {enableSSL}", ConsoleColor.Green);
                             break;
                         }
 
-                        if (enable)
+                        if (enableSSL)
                         {
-                            // RootCA_Path
-                            bool doesUserSetCAPath = false;
+                            // ServerDomainName
                             while (true)
                             {
-                                msgRV = $"Enter The Path Of Root Certificate (Leave Empty To Generate)";
+                                msgRV = "Enter Your Server Domain Name To Distinguish DoH/HTTPS/SNI-Proxy Requests";
+                                msgRV += "\n    Leave Empty If Your \'WorkingMode\' Is \'DNS\'";
+                                msgRV += "\n    Leave Empty If You're Running The Server On A Local PC";
+                                msgRV += "\n    Leave Empty If You're Working Directly With Server IP";
+                                msgRV += "\n    * Your Server Cert Must Match Your IP Or Support SAN With IP, Unless It's A Local IP";
                                 object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
-                                string path = value.ToString() ?? string.Empty;
-                                if (string.IsNullOrEmpty(path))
+                                string serverdn = value.ToString() ?? string.Empty;
+
+                                string msg;
+                                if (string.IsNullOrEmpty(serverdn))
                                 {
-                                    rootCA_Path = null;
-                                    break;
+                                    msg = "Server Domain Name Didn't Set (You Are Working With Your Server IP Or Running On Local)";
                                 }
                                 else
                                 {
-                                    path = Path.GetFullPath(path);
-                                    if (!File.Exists(path))
-                                    {
-                                        string msgNotExist = $"{path}\nFile Not Exist.";
-                                        await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
-                                        continue;
-                                    }
-                                    else
-                                    {
-                                        rootCA_Path = path;
-                                        doesUserSetCAPath = true;
-                                        break;
-                                    }
+                                    serverDomainName = serverdn;
+                                    msg = $"Server Domain Name Set To {serverDomainName}";
                                 }
+
+                                await WriteToStdoutAsync(msg, ConsoleColor.Green);
+                                break;
                             }
 
-                            // RootCA_KeyPath
-                            if (doesUserSetCAPath)
-                            {
-                                while (true)
-                                {
-                                    msgRV = $"Enter The Path Of Root Private Key (Leave Empty If Certificate Contains Private Key)";
-                                    object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
-                                    string path = value.ToString() ?? string.Empty;
-                                    if (string.IsNullOrEmpty(path))
-                                    {
-                                        rootCA_KeyPath = null;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        path = Path.GetFullPath(path);
-                                        if (!File.Exists(path))
-                                        {
-                                            string msgNotExist = $"{path}\nFile Not Exist.";
-                                            await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
-                                            continue;
-                                        }
-                                        else
-                                        {
-                                            rootCA_KeyPath = path;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Cert_Path
-                            bool doesUserSetCertPath = false;
-                            while (true)
-                            {
-                                msgRV = $"Enter The Path Of Certificate (Leave Empty To Generate)";
-                                object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
-                                string path = value.ToString() ?? string.Empty;
-                                if (string.IsNullOrEmpty(path))
-                                {
-                                    cert_Path = null;
-                                    break;
-                                }
-                                else
-                                {
-                                    path = Path.GetFullPath(path);
-                                    if (!File.Exists(path))
-                                    {
-                                        string msgNotExist = $"{path}\nFile Not Exist.";
-                                        await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
-                                        continue;
-                                    }
-                                    else
-                                    {
-                                        cert_Path = path;
-                                        doesUserSetCertPath = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            // Cert_KeyPath
-                            if (doesUserSetCertPath)
-                            {
-                                while (true)
-                                {
-                                    msgRV = $"Enter The Path Of Cert Private Key (Leave Empty If Certificate Contains Private Key)";
-                                    object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
-                                    string path = value.ToString() ?? string.Empty;
-                                    if (string.IsNullOrEmpty(path))
-                                    {
-                                        cert_KeyPath = null;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        path = Path.GetFullPath(path);
-                                        if (!File.Exists(path))
-                                        {
-                                            string msgNotExist = $"{path}\nFile Not Exist.";
-                                            await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
-                                            continue;
-                                        }
-                                        else
-                                        {
-                                            cert_KeyPath = path;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Change SNI To IP
+                            // Change SNI
                             msgRV = $"Change SNI To Bypass DPI, Enter True/False (Default: {DefaultSSLChangeSni})";
+                            msgRV += "\n    Set To True If Only You're Running On A Local PC";
+                            msgRV += "\n    Must Be False If You're Running On A VPS";
                             while (true)
                             {
                                 object value = await ConsoleTools.ReadValueAsync(msgRV, changeSni, typeof(bool));
@@ -678,7 +622,8 @@ public static partial class Program
                             // Default SNI
                             if (changeSni)
                             {
-                                msgRV = $"Set Default SNI, E.G. speedtest.net (Default: Empty)";
+                                msgRV = $"Set Fake SNI, E.G. speedtest.net (Default: Empty)";
+                                msgRV += "\n    * Empty SNI Can't Bypass DPI";
                                 while (true)
                                 {
                                     object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
@@ -694,39 +639,168 @@ public static partial class Program
                                     break;
                                 }
                             }
+                            else
+                            {
+                                // ChangeSNI Is False: Ask For Certs
+                                // RootCA_Path
+                                bool doesUserSetCAPath = false;
+                                while (true)
+                                {
+                                    msgRV = $"Enter The Path Of Root Certificate (Leave Empty If You're Running On A VPS)";
+                                    object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
+                                    string path = value.ToString() ?? string.Empty;
+                                    if (string.IsNullOrEmpty(path))
+                                    {
+                                        rootCA_Path = null;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        path = Path.GetFullPath(path);
+                                        if (!File.Exists(path))
+                                        {
+                                            string msgNotExist = $"{path}\nFile Not Exist.";
+                                            await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            rootCA_Path = path;
+                                            doesUserSetCAPath = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // RootCA_KeyPath
+                                if (doesUserSetCAPath)
+                                {
+                                    while (true)
+                                    {
+                                        msgRV = $"Enter The Path Of Root Private Key (Leave Empty If Root Certificate Contains Private Key Or You're Running On A VPS)";
+                                        object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
+                                        string path = value.ToString() ?? string.Empty;
+                                        if (string.IsNullOrEmpty(path))
+                                        {
+                                            rootCA_KeyPath = null;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            path = Path.GetFullPath(path);
+                                            if (!File.Exists(path))
+                                            {
+                                                string msgNotExist = $"{path}\nFile Not Exist.";
+                                                await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
+                                                continue;
+                                            }
+                                            else
+                                            {
+                                                rootCA_KeyPath = path;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Cert_Path
+                                bool doesUserSetCertPath = false;
+                                while (true)
+                                {
+                                    msgRV = $"Enter The Path Of Certificate (It's Mandatory)";
+                                    object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
+                                    string path = value.ToString() ?? string.Empty;
+                                    if (string.IsNullOrEmpty(path))
+                                    {
+                                        string msgEmpty = $"Can't Be Empty.";
+                                        await WriteToStdoutAsync(msgEmpty, ConsoleColor.Red);
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        path = Path.GetFullPath(path);
+                                        if (!File.Exists(path))
+                                        {
+                                            string msgNotExist = $"{path}\nFile Not Exist.";
+                                            await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            cert_Path = path;
+                                            doesUserSetCertPath = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // Cert_KeyPath
+                                if (doesUserSetCertPath)
+                                {
+                                    while (true)
+                                    {
+                                        msgRV = $"Enter The Path Of Cert Private Key (Leave Empty If Certificate Contains Private Key)";
+                                        object value = await ConsoleTools.ReadValueAsync(msgRV, string.Empty, typeof(string));
+                                        string path = value.ToString() ?? string.Empty;
+                                        if (string.IsNullOrEmpty(path))
+                                        {
+                                            cert_KeyPath = null;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            path = Path.GetFullPath(path);
+                                            if (!File.Exists(path))
+                                            {
+                                                string msgNotExist = $"{path}\nFile Not Exist.";
+                                                await WriteToStdoutAsync(msgNotExist, ConsoleColor.Red);
+                                                continue;
+                                            }
+                                            else
+                                            {
+                                                cert_KeyPath = path;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     else // Command Mode
                     {
-                        // sslsetting -Enable=m -RootCA_Path="" -RootCA_KeyPath="" -Cert_Path="" -Cert_KeyPath="" -ChangeSni= -DefaultSni=
+                        // sslsetting -Enable=m -ServerDomainName= -RootCA_Path="" -RootCA_KeyPath="" -Cert_Path="" -Cert_KeyPath="" -ChangeSni= -DefaultSni=
 
                         KeyValues keyValues = new();
                         keyValues.Add(Key.SSLSetting.Enable, true, false, typeof(bool));
+                        keyValues.Add(Key.SSLSetting.ServerDomainName, false, false, typeof(string));
+                        keyValues.Add(Key.SSLSetting.ChangeSni, false, false, typeof(bool));
+                        keyValues.Add(Key.SSLSetting.DefaultSni, false, false, typeof(string));
                         keyValues.Add(Key.SSLSetting.RootCA_Path, false, true, typeof(string));
                         keyValues.Add(Key.SSLSetting.RootCA_KeyPath, false, true, typeof(string));
                         keyValues.Add(Key.SSLSetting.Cert_Path, false, true, typeof(string));
                         keyValues.Add(Key.SSLSetting.Cert_KeyPath, false, true, typeof(string));
-                        keyValues.Add(Key.SSLSetting.ChangeSni, false, false, typeof(bool));
-                        keyValues.Add(Key.SSLSetting.DefaultSni, false, false, typeof(string));
 
                         bool isListOk = keyValues.TryGetValuesByKeys(input, out List<KeyValue> list);
                         if (!isListOk) return;
                         for (int n = 0; n < list.Count; n++)
                         {
                             KeyValue kv = list[n];
-                            if (kv.Key.Equals(Key.SSLSetting.Enable)) enable = kv.ValueBool;
+                            if (kv.Key.Equals(Key.SSLSetting.Enable)) enableSSL = kv.ValueBool;
+                            if (kv.Key.Equals(Key.SSLSetting.ServerDomainName)) serverDomainName = kv.ValueString;
+                            if (kv.Key.Equals(Key.SSLSetting.ChangeSni)) changeSni = kv.ValueBool;
+                            if (kv.Key.Equals(Key.SSLSetting.DefaultSni)) defaultSni = kv.ValueString;
                             if (kv.Key.Equals(Key.SSLSetting.RootCA_Path)) rootCA_Path = kv.ValueString;
                             if (kv.Key.Equals(Key.SSLSetting.RootCA_KeyPath)) rootCA_KeyPath = kv.ValueString;
                             if (kv.Key.Equals(Key.SSLSetting.Cert_Path)) cert_Path = kv.ValueString;
                             if (kv.Key.Equals(Key.SSLSetting.Cert_KeyPath)) cert_KeyPath = kv.ValueString;
-                            if (kv.Key.Equals(Key.SSLSetting.ChangeSni)) changeSni = kv.ValueBool;
-                            if (kv.Key.Equals(Key.SSLSetting.DefaultSni)) defaultSni = kv.ValueString;
                         }
                     }
 
-                    AgnosticSettingsSSL settingsSSL = new(enable)
+                    AgnosticSettingsSSL settingsSSL = new(enableSSL)
                     {
-                        EnableSSL = enable,
+                        EnableSSL = enableSSL,
+                        ServerDomainName = !string.IsNullOrEmpty(serverDomainName) ? serverDomainName : IPAddress.Loopback.ToString(),
                         RootCA_Path = rootCA_Path,
                         RootCA_KeyPath = rootCA_KeyPath,
                         Cert_Path = cert_Path,
@@ -1000,7 +1074,7 @@ public static partial class Program
                                     object value = await ConsoleTools.ReadValueAsync(msgRV, enable, typeof(bool));
                                     enable = Convert.ToBoolean(value);
 
-                                    await WriteToStdoutAsync($"Enable {Key.Programs.DnsLimit.Name} Set to {enable}", ConsoleColor.Green);
+                                    await WriteToStdoutAsync($"Enable {Key.Programs.DnsLimit.Name} Set To {enable}", ConsoleColor.Green);
                                     break;
                                 }
 
@@ -1012,7 +1086,7 @@ public static partial class Program
                                         object value = await ConsoleTools.ReadValueAsync(msgRV, disablePlain, typeof(bool));
                                         disablePlain = Convert.ToBoolean(value);
 
-                                        await WriteToStdoutAsync($"Disable Plain DNS Set to {disablePlain}", ConsoleColor.Green);
+                                        await WriteToStdoutAsync($"Disable Plain DNS Set To {disablePlain}", ConsoleColor.Green);
                                         break;
                                     }
 
@@ -1352,11 +1426,14 @@ public static partial class Program
                     {
                         if (sf.AgnosticServer != null && sf.Settings != null && !string.IsNullOrEmpty(sf.Name))
                         {
-                            if (sf.AgnosticServer.IsRunning && sf.Settings.Working_Mode == AgnosticSettings.WorkingMode.DnsAndProxy)
+                            if (sf.AgnosticServer.IsRunning)
                             {
-                                sf.AgnosticServer.KillAll();
-                                await WriteToStdoutAsync($"Done. Killed All Requests Of {sf.Name}.", ConsoleColor.Green);
-                                killed = true;
+                                if (sf.Settings.Working_Mode != AgnosticSettings.WorkingMode.Dns)
+                                {
+                                    sf.AgnosticServer.KillAll();
+                                    await WriteToStdoutAsync($"Done. Killed All Requests Of {sf.Name}.", ConsoleColor.Green);
+                                    killed = true;
+                                }
                             }
                         }
                     }
@@ -1367,9 +1444,9 @@ public static partial class Program
                 // Write Requests To Log: True
                 else if (input.ToLower().Equals($"{Key.Common.Requests.ToLower()} true"))
                 {
-                    // WriteRequests True
+                    // Requests True
                     WriteRequestsToLog = true;
-                    await WriteToStdoutAsync($"WriteRequestsToLog: True", ConsoleColor.Green, true, $"{Key.Common.Requests} {WriteRequestsToLog.ToString().CapitalizeFirstLetter()}");
+                    await WriteToStdoutAsync($"Write Requests To Log: True", ConsoleColor.Green, true, $"{Key.Common.Requests} {WriteRequestsToLog.ToString().CapitalizeFirstLetter()}");
 
                     // Save Command To List
                     string baseCmd = Key.Common.Requests;
@@ -1380,9 +1457,9 @@ public static partial class Program
                 // Write Requests To Log: False
                 else if (input.ToLower().Equals($"{Key.Common.Requests.ToLower()} false"))
                 {
-                    // WriteRequests False
+                    // Requests False
                     WriteRequestsToLog = false;
-                    await WriteToStdoutAsync($"WriteRequestsToLog: False", ConsoleColor.Green, true, $"{Key.Common.Requests} {WriteRequestsToLog.ToString().CapitalizeFirstLetter()}");
+                    await WriteToStdoutAsync($"Write Requests To Log: False", ConsoleColor.Green, true, $"{Key.Common.Requests} {WriteRequestsToLog.ToString().CapitalizeFirstLetter()}");
 
                     // Save Command To List
                     string baseCmd = Key.Common.Requests;
@@ -1395,7 +1472,7 @@ public static partial class Program
                 {
                     // ChunkDetails True
                     WriteFragmentDetailsToLog = true;
-                    await WriteToStdoutAsync($"WriteFragmentDetailsToLog: True", ConsoleColor.Green, true, $"{Key.Common.FragmentDetails} {WriteFragmentDetailsToLog.ToString().CapitalizeFirstLetter()}");
+                    await WriteToStdoutAsync($"Write Fragment Details To Log: True", ConsoleColor.Green, true, $"{Key.Common.FragmentDetails} {WriteFragmentDetailsToLog.ToString().CapitalizeFirstLetter()}");
 
                     // Save Command To List
                     string baseCmd = Key.Common.FragmentDetails;
@@ -1408,10 +1485,62 @@ public static partial class Program
                 {
                     // ChunkDetails False
                     WriteFragmentDetailsToLog = false;
-                    await WriteToStdoutAsync($"WriteFragmentDetailsToLog: False", ConsoleColor.Green, true, $"{Key.Common.FragmentDetails} {WriteFragmentDetailsToLog.ToString().CapitalizeFirstLetter()}");
+                    await WriteToStdoutAsync($"Write Fragment Details To Log: False", ConsoleColor.Green, true, $"{Key.Common.FragmentDetails} {WriteFragmentDetailsToLog.ToString().CapitalizeFirstLetter()}");
 
                     // Save Command To List
                     string baseCmd = Key.Common.FragmentDetails;
+                    string cmd = $"{baseCmd} False";
+                    LoadCommands.AddOrUpdateCommand(baseCmd, cmd);
+                }
+
+                // Write DebugInfo To Log: True
+                else if (input.ToLower().Equals($"{Key.Common.DebugInfo.ToLower()} true"))
+                {
+                    // DebugInfo True
+                    WriteDebugInfoToLog = true;
+                    await WriteToStdoutAsync($"Write DebugInfo To Log: True", ConsoleColor.Green, true, $"{Key.Common.DebugInfo} {WriteDebugInfoToLog.ToString().CapitalizeFirstLetter()}");
+
+                    // Save Command To List
+                    string baseCmd = Key.Common.DebugInfo;
+                    string cmd = $"{baseCmd} True";
+                    LoadCommands.AddOrUpdateCommand(baseCmd, cmd);
+                }
+
+                // Write DebugInfo To Log: False
+                else if (input.ToLower().Equals($"{Key.Common.DebugInfo.ToLower()} false"))
+                {
+                    // DebugInfo False
+                    WriteDebugInfoToLog = false;
+                    await WriteToStdoutAsync($"Write DebugInfo To Log: False", ConsoleColor.Green, true, $"{Key.Common.DebugInfo} {WriteDebugInfoToLog.ToString().CapitalizeFirstLetter()}");
+
+                    // Save Command To List
+                    string baseCmd = Key.Common.DebugInfo;
+                    string cmd = $"{baseCmd} False";
+                    LoadCommands.AddOrUpdateCommand(baseCmd, cmd);
+                }
+
+                // Log To File: True
+                else if (input.ToLower().Equals($"{Key.Common.LogToFile.ToLower()} true"))
+                {
+                    // LogToFile True
+                    LogToFile = true;
+                    await WriteToStdoutAsync($"Log To File: True", ConsoleColor.Green, true, $"{Key.Common.LogToFile} {LogToFile.ToString().CapitalizeFirstLetter()}");
+
+                    // Save Command To List
+                    string baseCmd = Key.Common.LogToFile;
+                    string cmd = $"{baseCmd} True";
+                    LoadCommands.AddOrUpdateCommand(baseCmd, cmd);
+                }
+
+                // Log To File: False
+                else if (input.ToLower().Equals($"{Key.Common.LogToFile.ToLower()} false"))
+                {
+                    // LogToFile False
+                    LogToFile = false;
+                    await WriteToStdoutAsync($"Log To File: False", ConsoleColor.Green, true, $"{Key.Common.LogToFile} {LogToFile.ToString().CapitalizeFirstLetter()}");
+
+                    // Save Command To List
+                    string baseCmd = Key.Common.LogToFile;
                     string cmd = $"{baseCmd} False";
                     LoadCommands.AddOrUpdateCommand(baseCmd, cmd);
                 }
@@ -1448,14 +1577,11 @@ public static partial class Program
                                 }
 
                                 // Kill PIDs
-                                if (OperatingSystem.IsWindows())
-                                {
-                                    List<int> pids = await ProcessManager.GetProcessPidsByUsingPortAsync(sf.Settings.ListenerPort);
-                                    foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
-                                    await Task.Delay(5);
-                                    pids = await ProcessManager.GetProcessPidsByUsingPortAsync(sf.Settings.ListenerPort);
-                                    foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
-                                }
+                                List<int> pids = await ProcessManager.GetProcessPidsByUsingPortAsync(sf.Settings.ListenerPort);
+                                foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
+                                await Task.Delay(5);
+                                pids = await ProcessManager.GetProcessPidsByUsingPortAsync(sf.Settings.ListenerPort);
+                                foreach (int pid in pids) await ProcessManager.KillProcessByPidAsync(pid);
 
                                 // Check Port
                                 bool isPortOpen = NetworkTool.IsPortOpen(sf.Settings.ListenerPort);
@@ -1468,6 +1594,8 @@ public static partial class Program
 
                                 sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
                                 sf.AgnosticServer.OnRequestReceived += ProxyServer_OnRequestReceived;
+                                sf.AgnosticServer.OnDebugInfoReceived -= ProxyServer_OnDebugInfoReceived;
+                                sf.AgnosticServer.OnDebugInfoReceived += ProxyServer_OnDebugInfoReceived;
 
                                 if (sf.SettingsSSL != null) await sf.AgnosticServer.EnableSSLAsync(sf.SettingsSSL);
                                 if (sf.Fragment != null) sf.AgnosticServer.EnableFragment(sf.Fragment);
@@ -1485,12 +1613,13 @@ public static partial class Program
                                     await WriteToStdoutAsync($"{sf.Name} Started", ConsoleColor.Green);
                                     confirmed = true;
 
-                                    if (sf.Settings.Working_Mode == AgnosticSettings.WorkingMode.DnsAndProxy)
+                                    if (sf.Settings.Working_Mode != AgnosticSettings.WorkingMode.Dns)
                                         flushNeeded = true;
                                 }
                                 else
                                 {
                                     sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
+                                    sf.AgnosticServer.OnDebugInfoReceived -= ProxyServer_OnDebugInfoReceived;
                                     if (sf.Fragment != null)
                                         sf.Fragment.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
                                     await WriteToStdoutAsync($"Couldn't Start {sf.Name}", ConsoleColor.Red);
@@ -1514,6 +1643,47 @@ public static partial class Program
                     }
                 }
 
+                // Set DNS
+                else if (input.ToLower().Equals(Key.Common.SetDNS.ToLower()))
+                {
+                    await WriteToStdoutAsync($"Setting DNS To System...", ConsoleColor.Gray, true);
+
+                    bool canSet = false;
+                    foreach (ServerProfile sf in ServerProfiles)
+                    {
+                        if (sf.AgnosticServer != null && sf.Settings != null && !string.IsNullOrEmpty(sf.Name))
+                        {
+                            if (sf.AgnosticServer.IsRunning && sf.Settings.ListenerPort == 53)
+                            {
+                                canSet = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!canSet)
+                    {
+                        await WriteToStdoutAsync($"A DNS Server Must Be Running On Port 53.", ConsoleColor.Red, true);
+                        return;
+                    }
+
+                    await NetworkTool.SetDnsToLoopbackAutoAsync();
+                    await WriteToStdoutAsync($"DNS Set To System.", ConsoleColor.Green, true, $"{Key.Common.SetDNS} True");
+
+                    // Save Command To List
+                    string baseCmd = Key.Common.SetDNS;
+                    string cmd = baseCmd;
+                    LoadCommands.AddOrUpdateCommand(baseCmd, cmd);
+                }
+
+                // Unset DNS
+                else if (input.ToLower().Equals(Key.Common.UnsetDNS.ToLower()))
+                {
+                    await WriteToStdoutAsync($"Setting System DNS To DHCP...", ConsoleColor.Gray, true);
+                    await NetworkTool.UnsetDnsAutoAsync();
+                    await WriteToStdoutAsync($"System DNS Set To DHCP.", ConsoleColor.Green, true, $"{Key.Common.UnsetDNS} True");
+                }
+
                 // Stop Server
                 else if (input.ToLower().Equals(Key.Common.Stop.ToLower()))
                 {
@@ -1528,6 +1698,7 @@ public static partial class Program
                                 await WriteToStdoutAsync($"Stopping {sf.Name}...", ConsoleColor.Cyan);
 
                                 sf.AgnosticServer.OnRequestReceived -= ProxyServer_OnRequestReceived;
+                                sf.AgnosticServer.OnDebugInfoReceived -= ProxyServer_OnDebugInfoReceived;
                                 if (sf.Fragment != null)
                                     sf.Fragment.OnChunkDetailsReceived -= FragmentStaticProgram_OnChunkDetailsReceived;
 
@@ -1543,7 +1714,7 @@ public static partial class Program
                     }
                 }
 
-                // Update Server Programs Settings
+                // Update Server Programs Settings - Experimental
                 else if (input.ToLower().Equals(Key.Common.Update.ToLower()))
                 {
                     // Update

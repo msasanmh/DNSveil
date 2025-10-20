@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using System.Net;
+using System.Diagnostics;
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
@@ -45,11 +46,13 @@ public class UdpPlainClient
                 }
                 catch (Exception) { }
 
-                socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
                 socket.Dispose();
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("UdpPlainClient: " + ex.GetInnerExceptions());
+            }
         });
         try { await task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMS), CT).ConfigureAwait(false); } catch (Exception) { }
 

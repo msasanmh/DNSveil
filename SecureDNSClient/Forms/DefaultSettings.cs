@@ -40,7 +40,7 @@ public partial class FormMain : Form
                 CustomComboBoxPDpiSniChunkMode.SelectedIndex = CustomComboBoxPDpiSniChunkMode.Items.Count > 0 ? 0 : -1;
                 CustomNumericUpDownPDpiSniChunks.Value = (decimal)5;
                 CustomNumericUpDownPDpiAntiPatternOffset.Value = (decimal)2;
-                CustomNumericUpDownPDpiFragDelay.Value = (decimal)1;
+                CustomNumericUpDownPDpiFragDelay.Value = (decimal)5;
                 CustomCheckBoxProxyEnableSSL.Checked = false;
                 CustomCheckBoxProxySSLChangeSni.Checked = false;
                 CustomTextBoxProxySSLDefaultSni.Text = "speedtest.net";
@@ -144,9 +144,9 @@ public partial class FormMain : Form
 
                 // Settings Share Basic
                 CustomNumericUpDownSettingProxyPort.Value = (decimal)8080;
-                CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)9000;
+                CustomNumericUpDownSettingProxyHandleRequests.Value = (decimal)90000;
                 CustomCheckBoxSettingProxyBlockPort80.Checked = false;
-                CustomNumericUpDownSettingProxyKillRequestTimeout.Value = (decimal)60;
+                CustomNumericUpDownSettingProxyKillRequestTimeout.Value = (decimal)120;
                 CustomCheckBoxSettingProxyUpstream.Checked = false;
                 CustomCheckBoxSettingProxyUpstreamOnlyBlockedIPs.Checked = true;
                 CustomComboBoxSettingProxyUpstreamMode.SelectedIndex = CustomComboBoxSettingProxyUpstreamMode.Items.Count > 1 ? 0 : -1;

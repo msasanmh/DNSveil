@@ -134,7 +134,7 @@ public partial class WpfToggleSwitch : CheckBox
     private bool IsWorking = false;
     private double PreviousX = 0;
 
-    private async Task HandleSwitchPositionAsync()
+    private async Task HandleSwitchPositionAsync(bool bypassIsWorking = false)
     {
         if (PART_MainBorder == null) return;
         if (PART_Bar == null) return;
@@ -142,11 +142,14 @@ public partial class WpfToggleSwitch : CheckBox
         if (PART_Ellipse == null) return;
         if (PART_ContentLeft == null) return;
         if (PART_Content == null) return;
-        if (IsWorking) return;
+        if (!bypassIsWorking && IsWorking) return;
         IsWorking = true;
         
         try
         {
+            bool hasValue1 = IsChecked.HasValue;
+            bool isChecked1 = IsChecked.HasValue && IsChecked.Value;
+
             double x;
             double barOpacity, leftOpacity, rightOpacity;
             if (IsChecked.HasValue)
@@ -194,8 +197,18 @@ public partial class WpfToggleSwitch : CheckBox
             await Task.Delay(200);
             PreviousX = x;
 
-            // Event
-            CheckedChanged?.Invoke(this, new CheckedChangedEventArgs(IsChecked));
+            bool hasValue2 = IsChecked.HasValue;
+            bool isChecked2 = IsChecked.HasValue && IsChecked.Value;
+
+            if (hasValue1 != hasValue2 ||  isChecked1 != isChecked2)
+            {
+                await HandleSwitchPositionAsync(true);
+            }
+            else
+            {
+                // Event
+                CheckedChanged?.Invoke(this, new CheckedChangedEventArgs(IsChecked));
+            }
         }
         catch (Exception) { }
 

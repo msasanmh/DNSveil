@@ -62,6 +62,7 @@ public partial class MsmhAgnosticServer
     private readonly ConcurrentDictionary<string, (DateTime dt, bool applyFakeSNI, bool applyFragment)> TestRequests = new();
     internal TunnelManager TunnelManager_ = new();
     public Stats Stats { get; private set; } = new();
+    public Endless Endless { get; private set; } = new();
 
     private float CpuUsage { get; set; } = -1;
     private static NetworkTool.InternetState InternetState = NetworkTool.InternetState.Unknown; // Default
@@ -82,7 +83,7 @@ public partial class MsmhAgnosticServer
     public async Task EnableSSLAsync(AgnosticSettingsSSL settingsSSL)
     {
         SettingsSSL_ = settingsSSL;
-        await SettingsSSL_.Build().ConfigureAwait(false);
+        await SettingsSSL_.BuildAsync().ConfigureAwait(false);
     }
 
     public async Task StartAsync(AgnosticSettings settings)
@@ -96,9 +97,6 @@ public partial class MsmhAgnosticServer
             Settings_ = settings;
             await Settings_.InitializeAsync();
 
-            // Set Default DNSs
-            if (Settings_.DNSs.Count == 0) Settings_.DNSs = AgnosticSettings.DefaultDNSs();
-
             Welcome(true, TimeSpan.Zero);
 
             CTS = new();
@@ -107,6 +105,7 @@ public partial class MsmhAgnosticServer
 
             TunnelManager_ = new();
             Stats = new();
+            Endless = new(Settings_, SettingsSSL_);
 
             MaxRequestsTimer();
             KillOnOverloadTimer();
@@ -128,7 +127,7 @@ public partial class MsmhAgnosticServer
             try { await wait.WaitAsync(TimeSpan.FromSeconds(20)); } catch (Exception) { }
 
             stopwatch.Stop();
-            Welcome(false, stopwatch.Elapsed);
+            if (IsRunning) Welcome(false, stopwatch.Elapsed);
         }
         catch (Exception ex)
         {
@@ -251,6 +250,7 @@ public partial class MsmhAgnosticServer
                 DnsCaches.Flush();
                 ProxyRequestsCaches.Clear();
                 TestRequests.Clear();
+                Endless.Clear();
 
                 Goodbye();
             }
@@ -313,19 +313,37 @@ public partial class MsmhAgnosticServer
             UdpSocket_ = new(ipEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             if (ipEndPoint.Address.Equals(IPAddress.IPv6Any))
             {
-                UdpSocket_.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
-                UdpSocket_.DualMode = true;
+                try
+                {
+                    UdpSocket_.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
+                    UdpSocket_.DualMode = true;
+                }
+                catch (Exception ex)
+                {
+                    string msgEventErr = $"ERROR: Accept Connections: UDP Dual Mode: {ex.GetInnerExceptions()}";
+                    Debug.WriteLine(msgEventErr);
+                    OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
+                }
             }
             UdpSocket_.Bind(ipEndPoint);
 
             // TCP
             TcpListener_ = new(ipEndPoint);
-            SocketOptionName socketOptionName = SocketOptionName.ReuseAddress | SocketOptionName.ReuseUnicastPort;
-            TcpListener_.Server.SetSocketOption(SocketOptionLevel.Socket, socketOptionName, true);
+            // SocketOptionName.ReuseUnicastPort Is Not Supported In WSL2 And Many Other Enviroments And Also It's Not Needed.
+            TcpListener_.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             if (ipEndPoint.Address.Equals(IPAddress.IPv6Any))
             {
-                TcpListener_.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
-                TcpListener_.Server.DualMode = true;
+                try
+                {
+                    TcpListener_.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
+                    TcpListener_.Server.DualMode = true;
+                }
+                catch (Exception ex)
+                {
+                    string msgEventErr = $"ERROR: Accept Connections: TCP Dual Mode: {ex.GetInnerExceptions()}";
+                    Debug.WriteLine(msgEventErr);
+                    OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
+                }
             }
             TcpListener_.Start();
 
@@ -460,6 +478,7 @@ public partial class MsmhAgnosticServer
             if (!Cancel)
             {
                 string msgEventErr = $"ERROR: Accept Connections: {ex.GetInnerExceptions()}";
+                msgEventErr += Environment.NewLine + Settings_.ToStringDebug();
                 Debug.WriteLine(msgEventErr);
                 OnRequestReceived?.Invoke(msgEventErr, EventArgs.Empty);
                 Stop();
@@ -486,10 +505,10 @@ public partial class MsmhAgnosticServer
             MaxRequestsQueue.Enqueue(DateTime.UtcNow);
             if (Settings_.MaxRequests >= MaxRequestsDivide)
             {
-                if (MaxRequestsQueue.Count >= Settings_.MaxRequests / MaxRequestsDivide) // Check for 50 ms (1000 / 20)
+                if (MaxRequestsQueue.Count >= Settings_.MaxRequests / MaxRequestsDivide) // Check For 50 ms (1000 / 20)
                 {
                     // Event
-                    string blockEvent = $"Recevied {MaxRequestsQueue.Count * MaxRequestsDivide} Requests Per Second - Request Denied Due To Max Requests of {Settings_.MaxRequests}.";
+                    string blockEvent = $"Recevied {MaxRequestsQueue.Count * MaxRequestsDivide} Requests Per Second - Request Denied Due To Max Requests Of {Settings_.MaxRequests}.";
                     Debug.WriteLine("====================> " + blockEvent);
                     OnRequestReceived?.Invoke(blockEvent, EventArgs.Empty);
                     aRequest.Disconnect();
@@ -510,7 +529,14 @@ public partial class MsmhAgnosticServer
             connectionId = Guid.NewGuid().GetHashCode();
         }
         
-        AgnosticResult aResult = await aRequest.GetResultAsync(SettingsSSL_).ConfigureAwait(false);
+        AgnosticResult aResult = await aRequest.GetResultAsync(Settings_, SettingsSSL_).ConfigureAwait(false);
+
+        //OnDebugInfoReceived?.Invoke($"Detected As {aResult.Protocol}", EventArgs.Empty);
+
+        if (!string.IsNullOrEmpty(aResult.Message))
+        {
+            OnDebugInfoReceived?.Invoke(aResult.Message, EventArgs.Empty);
+        }
         
         if (aResult.Socket == null || aResult.FirstBuffer.Length == 0 || aResult.Protocol == RequestProtocol.Unknown)
         {
@@ -526,22 +552,22 @@ public partial class MsmhAgnosticServer
             aResult.Protocol == RequestProtocol.DoH)
         {
             // ===== Process DNS
-            await DnsTunnel.Process(aResult, RulesProgram, DnsLimitProgram, DnsCaches, Settings_, OnRequestReceived);
+            await DnsTunnel.ProcessAsync(aResult, RulesProgram, DnsLimitProgram, DnsCaches, Settings_, Endless, OnRequestReceived);
             aRequest.Disconnect();
         }
         else
         {
             // ===== Process Proxy
-            if (Settings_.Working_Mode == AgnosticSettings.WorkingMode.DnsAndProxy)
+            if (Settings_.Working_Mode == AgnosticSettings.WorkingMode.Proxy || Settings_.Working_Mode == AgnosticSettings.WorkingMode.DnsAndProxy)
             {
                 // Create Client
-                ProxyClient proxyClient = new(aResult.Socket);
+                ProxyClient proxyClient = new(aResult.Socket, aResult.Ssl_Stream);
 
                 // Create Request
                 CTS_PR = new();
                 ProxyRequest? req = null;
                 if (aResult.Protocol == RequestProtocol.HTTP_S)
-                    req = await ProxyRequest.RequestHTTP_S(aResult.FirstBuffer, CTS_PR.Token).ConfigureAwait(false);
+                    req = await ProxyRequest.RequestHTTP_S(aResult, CTS_PR.Token).ConfigureAwait(false);
                 else if (aResult.Protocol == RequestProtocol.SOCKS4_4A)
                     req = await ProxyRequest.RequestSocks4_4A(proxyClient, aResult.FirstBuffer, CTS_PR.Token).ConfigureAwait(false);
                 else if (aResult.Protocol == RequestProtocol.SOCKS5)
@@ -557,17 +583,30 @@ public partial class MsmhAgnosticServer
                     aRequest.Disconnect();
                     return;
                 }
-                
+                //Debug.WriteLine($"HHHHHHHHHH {req.AddressOrig} " + req.ProxyName);
                 // Create Tunnel
-                ProxyTunnel proxyTunnel = new(connectionId, proxyClient, req, SettingsSSL_);
-                proxyTunnel.Open();
+                ProxyTunnel proxyTunnel = new(connectionId, proxyClient, req, FragmentProgram, SettingsSSL_);
 
+                proxyTunnel.OnRemoteDataReceived += ProxyTunnel_OnRemoteDataReceived;
+                proxyTunnel.OnRemoteDataSent += ProxyTunnel_OnRemoteDataSent;
                 proxyTunnel.OnTunnelDisconnected += ProxyTunnel_OnTunnelDisconnected;
-                proxyTunnel.OnDataReceived += ProxyTunnel_OnDataReceived;
 
+                proxyTunnel.Open();
                 TunnelManager_.Add(proxyTunnel);
             }
         }
+    }
+
+    private void ProxyTunnel_OnRemoteDataReceived(object? sender, ProxyTunnelEventArgs e)
+    {
+        // Client Sent == Remote Received
+        Stats.AddBytes(e.Buffer.Length, ByteType.Received);
+    }
+
+    private void ProxyTunnel_OnRemoteDataSent(object? sender, ProxyTunnelEventArgs e)
+    {
+        // Client Received == Remote Sent
+        Stats.AddBytes(e.Buffer.Length, ByteType.Sent);
     }
 
     private void ProxyTunnel_OnTunnelDisconnected(object? sender, EventArgs e)
@@ -575,7 +614,7 @@ public partial class MsmhAgnosticServer
         try
         {
             if (sender is not ProxyTunnel pt) return;
-
+            
             if (pt.KillOnTimeout.IsRunning)
             {
                 pt.KillOnTimeout.Reset();
@@ -583,8 +622,10 @@ public partial class MsmhAgnosticServer
             }
 
             pt.OnTunnelDisconnected -= ProxyTunnel_OnTunnelDisconnected;
-            pt.OnDataReceived -= ProxyTunnel_OnDataReceived;
-            pt.ClientSSL?.Disconnect();
+            pt.OnRemoteDataReceived -= ProxyTunnel_OnRemoteDataReceived;
+            pt.OnRemoteDataSent -= ProxyTunnel_OnRemoteDataSent;
+
+            pt.Disconnect();
 
             TunnelManager_.Remove(pt);
             Debug.WriteLine($"{pt.Req.Address} Disconnected");
@@ -592,126 +633,6 @@ public partial class MsmhAgnosticServer
         catch (Exception ex)
         {
             Debug.WriteLine("ProxyTunnel_OnTunnelDisconnected: " + ex.Message);
-        }
-    }
-
-    private void ProxyTunnel_OnDataReceived(object? sender, EventArgs e)
-    {
-        try
-        {
-            if (sender is not ProxyTunnel t) return;
-
-            t.Client.OnDataReceived += async (s, e) =>
-            {
-                // Client Received == Remote Sent
-                if (!t.KillOnTimeout.IsRunning) t.KillOnTimeout.Start();
-                t.KillOnTimeout.Restart();
-                if (e.Buffer.Length > 0)
-                {
-                    if (t.Req.ApplyFragment)
-                        await SendAsync(e.Buffer, t);
-                    else
-                        await t.RemoteClient.SendAsync(e.Buffer).ConfigureAwait(false);
-
-                    lock (Stats)
-                    {
-                        Stats.AddBytes(e.Buffer.Length, ByteType.Sent);
-                    }
-                }
-                
-                t.KillOnTimeout.Restart();
-                await t.Client.StartReceiveAsync().ConfigureAwait(false);
-                t.KillOnTimeout.Restart();
-            };
-
-            t.Client.OnDataSent += (s, e) =>
-            {
-                // Client Sent == Remote Received
-                if (!t.KillOnTimeout.IsRunning) t.KillOnTimeout.Start();
-                t.KillOnTimeout.Restart();
-                lock (Stats)
-                {
-                    Stats.AddBytes(e.Buffer.Length, ByteType.Received);
-                }
-            };
-
-            t.RemoteClient.OnDataReceived += async (s, e) =>
-            {
-                t.KillOnTimeout.Restart();
-
-                if (e.Buffer.Length > 0)
-                    await t.Client.SendAsync(e.Buffer).ConfigureAwait(false);
-
-                t.KillOnTimeout.Restart();
-                await t.RemoteClient.StartReceiveAsync().ConfigureAwait(false);
-                t.KillOnTimeout.Restart();
-            };
-            
-            // Handle SSL
-            if (t.ClientSSL != null)
-            {
-                t.ClientSSL.OnClientDataReceived += (s, e) =>
-                {
-                    t.KillOnTimeout.Restart();
-                    
-                    if (e.Buffer.Length > 0)
-                    {
-                        // Can't be implement here. Ex: "The WriteAsync method cannot be called when another write operation is pending"
-                        //await t.ClientSSL.RemoteStream.WriteAsync(e.Buffer).ConfigureAwait(false);
-
-                        lock (Stats)
-                        {
-                            Stats.AddBytes(e.Buffer.Length, ByteType.Sent);
-                        }
-                    }
-                    t.ClientSSL.OnClientDataReceived -= null;
-                };
-                
-                t.ClientSSL.OnRemoteDataReceived += (s, e) =>
-                {
-                    t.KillOnTimeout.Restart();
-
-                    if (e.Buffer.Length > 0)
-                    {
-                        // Can't be implement here. Ex: "The WriteAsync method cannot be called when another write operation is pending"
-                        //await t.ClientSSL.ClientStream.WriteAsync(e.Buffer).ConfigureAwait(false);
-
-                        lock (Stats)
-                        {
-                            Stats.AddBytes(e.Buffer.Length, ByteType.Received);
-                        }
-                    }
-                    t.ClientSSL.OnRemoteDataReceived -= null;
-                };
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("ProxyTunnel_OnDataReceived: " + ex.Message);
-        }
-    }
-
-    private async Task SendAsync(byte[] data, ProxyTunnel t)
-    {
-        try
-        {
-            if (t.RemoteClient.Socket_ != null && t.RemoteClient.Socket_.Connected)
-            {
-                AgnosticProgram.Fragment bp = FragmentProgram;
-                bp.DestHostname = t.Req.Address;
-                bp.DestPort = t.Req.Port;
-                if (bp.FragmentMode == AgnosticProgram.Fragment.Mode.Program)
-                {
-                    AgnosticProgram.Fragment.ProgramMode programMode = new(data, t.RemoteClient.Socket_);
-                    await programMode.SendAsync(bp);
-                }
-                else
-                    await t.RemoteClient.Socket_.SendAsync(data, SocketFlags.None).ConfigureAwait(false);
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("Send: " + ex.Message);
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿using CustomControls;
 using MsmhToolsClass;
+using MsmhToolsClass.MsmhAgnosticServer;
 using MsmhToolsWinFormsClass;
 using MsmhToolsWinFormsClass.Themes;
 using System.Diagnostics;
@@ -167,7 +168,7 @@ public partial class FormDnsLookup : Form
         if (CustomRadioButtonSourceCustom.Checked)
             dns = CustomTextBoxSourceCustom.Text;
 
-        if (!FormMain.IsDnsProtocolSupported(dns))
+        if (!DnsTools.IsDnsProtocolSupported(dns))
         {
             CustomTextBoxResult.Text = "DNS Is Not Supported.";
             return;

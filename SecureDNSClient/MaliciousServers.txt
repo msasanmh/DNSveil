@@ -1,8 +1,7 @@
-// Malicious Servers:
+// Suspected Malicious Servers (Reported By Users):
 7vpn.com
 cretu.xyz
 dnsadguard.co.uk
-dnswarden.com
 farshidhakimy.de
 flm9.net
 fomichev.cloud

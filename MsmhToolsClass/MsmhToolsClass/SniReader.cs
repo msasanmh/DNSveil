@@ -49,6 +49,8 @@ public class SniReader
     public List<SniExtension> SniExtensionList { get; private set; } = new();
     public bool HasSni { get; private set; } = false;
     public List<SNI> SniList { get; private set; } = new();
+    public bool IsAClientHello { get; private set; } = false;
+    public bool IsHandshakeWithoutSNI { get; private set; } = false;
     public byte[] Data { get; private set; } = Array.Empty<byte>();
 
     private const int TLS_HEADER_LEN = 5;
@@ -100,6 +102,7 @@ public class SniReader
                 if (tls_version_major < 3)
                 {
                     ReasonPhrase = $"Received SSL Handshake Cannot Support SNI. Min TLS: {tls_version_minor} Max TLS: {tls_version_major}";
+                    IsHandshakeWithoutSNI = true;
                     return;
                 }
 
@@ -129,6 +132,10 @@ public class SniReader
                 {
                     ReasonPhrase = "Not A Client Hello.";
                     return;
+                }
+                else
+                {
+                    IsAClientHello = true;
                 }
 
                 // Skip Handshake Message Type
@@ -189,6 +196,7 @@ public class SniReader
                 if (pos == dataLength && tls_version_major == 3 && tls_version_minor == 0)
                 {
                     ReasonPhrase = "Received SSL 3.0 Handshake Without Extensions.";
+                    IsHandshakeWithoutSNI = true;
                     return;
                 }
 
@@ -268,7 +276,7 @@ public class SniReader
                 pos += len;
             }
 
-            if (SniList.Any())
+            if (SniList.Any() && !string.IsNullOrWhiteSpace(SniList[0].ServerName))
             {
                 HasSni = true;
                 ReasonPhrase = "Successfully Read SNI.";
@@ -278,6 +286,7 @@ public class SniReader
                 HasSni = false;
                 ReasonPhrase = "A Handshake Without SNI.";
                 SniList.Clear();
+                IsHandshakeWithoutSNI = true;
             }
         }
         catch (Exception ex)

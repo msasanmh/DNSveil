@@ -218,7 +218,6 @@ public partial class FormMain
         }
 
         // Check If Servers Exist 1
-        
         if (!rdrList.Any())
         {
             msg = $"There Is No Server.{NL}";
@@ -383,7 +382,7 @@ public partial class FormMain
                 // All Servers ++
                 numberOfAllServers++;
                 
-                if (IsDnsProtocolSupported(rdr.DNS))
+                if (DnsTools.IsDnsProtocolSupported(rdr.DNS))
                 {
                     // All Supported Servers ++
                     numberOfAllSupportedServers++;

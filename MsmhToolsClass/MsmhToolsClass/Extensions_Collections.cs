@@ -145,6 +145,38 @@ public static class Extensions_Collections
         return result;
     }
 
+    public static void MoveTo<T>(this List<T> list, int fromIndex, int toIndex)
+    {
+        try
+        {
+            if (fromIndex < 0 || fromIndex > list.Count - 1) return;
+            if (toIndex < 0 || toIndex > list.Count - 1) return;
+            if (fromIndex == toIndex) return;
+
+            T t = list[fromIndex];
+
+            list.RemoveAt(fromIndex);
+            list.Insert(toIndex, t);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections MoveTo<T>: " + ex.Message);
+        }
+    }
+
+    public static void MoveTo<T>(this List<T> list, T item, int toIndex)
+    {
+        try
+        {
+            int fromIndex = list.IndexOf(item);
+            list.MoveTo(fromIndex, toIndex);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections MoveTo<T>: " + ex.Message);
+        }
+    }
+
     public static int CountDuplicates<T>(this List<T> list)
     {
         try
@@ -289,11 +321,11 @@ public static class Extensions_Collections
         return listOut;
     }
 
-    public static List<string> SplitToLines(this string s)
+    public static List<string> SplitToLines(this string s, StringSplitOptions stringSplitOptions = StringSplitOptions.None)
     {
         try
         {
-            return s.ReplaceLineEndings().Split(Environment.NewLine).ToList();
+            return s.ReplaceLineEndings().Split(Environment.NewLine, stringSplitOptions).ToList();
         }
         catch (Exception ex)
         {
@@ -307,7 +339,7 @@ public static class Extensions_Collections
     {
         try
         {
-            return list.FindIndex(a => a != null && a.Equals(value));
+            return list.FindIndex(_ => _ != null && _.Equals(value));
             // If the item is not found, it will return -1
         }
         catch (Exception)
@@ -320,7 +352,7 @@ public static class Extensions_Collections
     {
         try
         {
-            list[list.GetIndex(oldValue)] = newValue;
+            list[list.IndexOf(oldValue)] = newValue;
         }
         catch (Exception ex)
         {
@@ -332,7 +364,7 @@ public static class Extensions_Collections
     {
         try
         {
-            list.RemoveAt(list.GetIndex(value));
+            list.RemoveAt(list.IndexOf(value));
         }
         catch (Exception ex)
         {
@@ -363,7 +395,7 @@ public static class Extensions_Collections
         try
         {
             HashSet<TKey> hashSet = new();
-            return source.Where(x => hashSet.Add(keySelector(x))).ToList();
+            return source.Where(_ => hashSet.Add(keySelector(_))).ToList();
         }
         catch (Exception ex)
         {

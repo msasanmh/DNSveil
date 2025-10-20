@@ -74,7 +74,8 @@ public partial class FormMain
                             {
                                 if (dr2.Protocol == DnsEnums.DnsProtocol.AnonymizedDNSCryptRelay ||
                                     dr2.Protocol == DnsEnums.DnsProtocol.UDP ||
-                                    dr2.Protocol == DnsEnums.DnsProtocol.TCP)
+                                    dr2.Protocol == DnsEnums.DnsProtocol.TCP ||
+                                    dr2.Protocol == DnsEnums.DnsProtocol.TcpOverUdp)
                                     isWithRelay = true;
                             }
                         }
@@ -98,7 +99,7 @@ public partial class FormMain
                     NetworkTool.URL urid = NetworkTool.GetUrlOrDomainDetails(dns, 443);
                     if (urid.Path.Length < 2) continue;
                 }
-                if (IsDnsProtocolSupported(dns)) dnss.Add(dns);
+                if (DnsTools.IsDnsProtocolSupported(dns)) dnss.Add(dns);
             }
         }
         catch (Exception ex)

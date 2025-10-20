@@ -63,7 +63,7 @@ public partial class FormMain
                     // Check If DoH Server Is Running With Previous Cert
                     if (IsConnected && IsDoHConnected)
                     {
-                        string msg = "Due to Certificate Changes You Need To Restart DoH Server.";
+                        string msg = "Due To Certificate Changes You Need To Restart DoH Server.";
                         CustomMessageBox.Show(this, msg, "Certificate Changed", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 });

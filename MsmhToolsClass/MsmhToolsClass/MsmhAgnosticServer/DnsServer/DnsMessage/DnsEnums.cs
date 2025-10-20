@@ -7,6 +7,7 @@ public class DnsEnums
         System,
         UDP,
         TCP,
+        TcpOverUdp,
         DnsCrypt,
         DoT,
         DoH,
@@ -24,6 +25,7 @@ public class DnsEnums
         public const string System = "Operating System";
         public const string UDP = "UDP Plain DNS";
         public const string TCP = "TCP Plain DNS";
+        public const string TcpOverUdp = "TCP Over UDP";
         public const string DnsCrypt = "DNSCrypt";
         public const string DoT = "DNS-Over-TLS";
         public const string DoH = "DNS-Over-HTTPS";
@@ -43,6 +45,7 @@ public class DnsEnums
             DnsProtocolName.System => DnsProtocol.System,
             DnsProtocolName.UDP => DnsProtocol.UDP,
             DnsProtocolName.TCP => DnsProtocol.TCP,
+            DnsProtocolName.TcpOverUdp => DnsProtocol.TcpOverUdp,
             DnsProtocolName.DnsCrypt => DnsProtocol.DnsCrypt,
             DnsProtocolName.DoT => DnsProtocol.DoT,
             DnsProtocolName.DoH => DnsProtocol.DoH,

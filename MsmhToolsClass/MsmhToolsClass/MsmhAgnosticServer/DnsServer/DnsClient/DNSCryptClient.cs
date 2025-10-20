@@ -1,6 +1,5 @@
 ﻿using MsmhToolsClass.ExternLibs;
 using MsmhToolsClass.ProxifiedClients;
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -38,6 +37,7 @@ public class DNSCryptClient
     private async Task<bool> InitializeAsync(DnsEnums.DnsProtocol protocol)
     {
         bool result = false;
+
         Task task = Task.Run(async () =>
         {
             try
@@ -77,7 +77,7 @@ public class DNSCryptClient
                         initSocket.ReceiveTimeout = TimeoutMS;
 
                         if (!upStreamProxyApplied) await initSocket.ConnectAsync(ep, CT).ConfigureAwait(false);
-
+                        
                         await initSocket.SendAsync(initializeQueryBuffer, SocketFlags.None, CT).ConfigureAwait(false);
                         
                         byte[] initBuffer = new byte[MsmhAgnosticServer.MaxDataSize];
@@ -112,7 +112,7 @@ public class DNSCryptClient
                                 TextRecord.TXTCertificate.TryWrite(cert, out byte[] certBuffer);
                                 byte[] afterServerSignature = certBuffer[72..];
                                 byte[] providerPublicKey = Convert.FromHexString(Reader.StampReader.PublicKey);
-
+                                
                                 int verify = LibSodium.crypto_sign_verify_detached(serverSignature, afterServerSignature, afterServerSignature.Length, providerPublicKey);
                                 if (verify == 0) isCertValid = true;
                             }
@@ -123,9 +123,9 @@ public class DNSCryptClient
                 }
                 catch (Exception) { }
 
-                initSocket?.Shutdown(SocketShutdown.Both);
-                initSocket?.Close();
+                _ = Task.Run(() => initSocket?.Close());
                 _ = Task.Run(() => initSocket?.Dispose());
+                _ = Task.Run(() => tcpClient?.Close());
                 _ = Task.Run(() => tcpClient?.Dispose());
             }
             catch (Exception) { }
@@ -135,7 +135,7 @@ public class DNSCryptClient
         return result;
     }
 
-    private async Task<(bool IsSuccess, byte[] Result)> FinalizeAsync(IPEndPoint ep, byte[] dnsCryptQuery, byte[] clientNonce, byte[] sharedKeyBuffer, DnsEnums.DnsProtocol protocol)
+    private async Task<(bool IsSuccess, byte[] Result)> FinalizeAsync(IPEndPoint ep, byte[] dnsCryptQuery, byte[] clientNonce, byte[] sharedKeyBuffer)
     {
         bool isSuccess = false;
         byte[] result = Array.Empty<byte>();
@@ -150,22 +150,18 @@ public class DNSCryptClient
 
                 try
                 {
-                    if (protocol == DnsEnums.DnsProtocol.UDP)
-                        socket = new(ep.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-                    else if (protocol == DnsEnums.DnsProtocol.TCP)
-                    {
-                        tcpClient = new(ep.AddressFamily);
-                        socket = tcpClient.Client;
+                    // It Must Be Only TCP
+                    tcpClient = new(ep.AddressFamily);
+                    socket = tcpClient.Client;
 
-                        // Support Upstream Proxy
-                        ProxifiedTcpClient proxifiedTcpClient = new(ProxyScheme, ProxyUser, ProxyPass);
-                        var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(ep);
-                        if (upstream.isSuccess && upstream.proxifiedTcpClient != null)
-                        {
-                            tcpClient = upstream.proxifiedTcpClient;
-                            socket = tcpClient.Client;
-                            upStreamProxyApplied = true;
-                        }
+                    // Support Upstream Proxy
+                    ProxifiedTcpClient proxifiedTcpClient = new(ProxyScheme, ProxyUser, ProxyPass);
+                    var upstream = await proxifiedTcpClient.TryGetConnectedProxifiedTcpClient(ep);
+                    if (upstream.isSuccess && upstream.proxifiedTcpClient != null)
+                    {
+                        tcpClient = upstream.proxifiedTcpClient;
+                        socket = tcpClient.Client;
+                        upStreamProxyApplied = true;
                     }
 
                     if (socket != null)
@@ -175,10 +171,10 @@ public class DNSCryptClient
 
                         if (!upStreamProxyApplied) await socket.ConnectAsync(ep, CT).ConfigureAwait(false);
 
-                        byte[] prefix = new byte[2];
-                        BinaryPrimitives.WriteUInt16BigEndian(prefix, (ushort)dnsCryptQuery.Length);
-                        byte[] queryPacketToSend = prefix.Concat(dnsCryptQuery).ToArray();
-                        
+                        ByteArrayTool.TryConvertUInt16ToBytes((ushort)dnsCryptQuery.Length, out byte[] prefix);
+
+                        byte[] queryPacketToSend = ByteArrayTool.Append(prefix, dnsCryptQuery);
+
                         await socket.SendAsync(queryPacketToSend, SocketFlags.None).ConfigureAwait(false);
                         //Debug.WriteLine("Is Query Sent: True");
 
@@ -191,7 +187,7 @@ public class DNSCryptClient
                         }
                         
                         //Debug.WriteLine("=== Received Prefix Length: " + lengthP);
-                        ushort size = BinaryPrimitives.ReadUInt16BigEndian(prefix);
+                        ByteArrayTool.TryConvertBytesToUInt16(prefix, out ushort size);
 
                         if (size > 0)
                         {
@@ -216,7 +212,7 @@ public class DNSCryptClient
                                 Debug.WriteLine("Invalid DNSCrypt Client Nonce Received.");
 
                             byte[] serverNonce = answerPacket[20..32];
-                            byte[] nonce = clientNonce.Concat(serverNonce).ToArray();
+                            byte[] nonce = ByteArrayTool.Append(clientNonce, serverNonce);
 
                             byte[] encryptedAnswer = answerPacket[32..];
 
@@ -232,9 +228,9 @@ public class DNSCryptClient
                 }
                 catch (Exception) { }
 
-                socket?.Shutdown(SocketShutdown.Both);
-                socket?.Close();
+                _ = Task.Run(() => socket?.Close());
                 _ = Task.Run(() => socket?.Dispose());
+                _ = Task.Run(() => tcpClient?.Close());
                 _ = Task.Run(() => tcpClient?.Dispose());
             }
             catch (Exception) { }
@@ -251,26 +247,25 @@ public class DNSCryptClient
         try
         {
             // Initialize: Try UDP
-            string initializedBy = "UDP";
+            //string initializedBy = "UDP";
             bool isInitialized = await InitializeAsync(DnsEnums.DnsProtocol.UDP);
             if (!isInitialized)
             {
                 // Initialize: Try TCP
                 isInitialized = await InitializeAsync(DnsEnums.DnsProtocol.TCP);
-                initializedBy = "TCP";
+                //initializedBy = "TCP";
             }
-            
+
             //Debug.WriteLine("Is Certificate Valid: " + isInitialized);
             if (isInitialized)
             {
-                Debug.WriteLine($"Initialized By {initializedBy}");
-
+                //Debug.WriteLine($"Initialized By {initializedBy}");
                 byte[] clientNonce = ByteArrayTool.GenerateRandom(12);
                 byte[] clientNoncePad = new byte[12];
-                byte[] paddedClientNonce = clientNonce.Concat(clientNoncePad).ToArray();
+                byte[] paddedClientNonce = ByteArrayTool.Append(clientNonce, clientNoncePad);
 
                 byte[] queryPad = GenerateQueryPad(QueryBuffer.Length);
-                byte[] paddedQuery = QueryBuffer.Concat(queryPad).ToArray();
+                byte[] paddedQuery = ByteArrayTool.Append(QueryBuffer, queryPad);
 
                 byte[] certPublicKey = Convert.FromHexString(Certificate.PublicKey);
 
@@ -308,8 +303,7 @@ public class DNSCryptClient
                                 IPAddress serverIp = Reader.StampReader.IP;
                                 if (NetworkTool.IsIPv4(serverIp)) serverIp = serverIp.MapToIPv6();
 
-                                byte[] serverPort = new byte[2];
-                                BinaryPrimitives.WriteUInt16BigEndian(serverPort, (ushort)Reader.Port);
+                                ByteArrayTool.TryConvertUInt16ToBytes((ushort)Reader.Port, out byte[] serverPort);
 
                                 List<byte> anonDnsCryptQueryList = new();
                                 anonDnsCryptQueryList.AddRange(anonMagic);
@@ -322,14 +316,8 @@ public class DNSCryptClient
                                 ep = new(Reader.DNSCryptRelayIP, Reader.DNSCryptRelayPort);
                             }
 
-                            // Finalize: Try UDP
-                            var finalize = await FinalizeAsync(ep, dnsCryptQuery, clientNonce, sharedKeyBuffer, DnsEnums.DnsProtocol.UDP);
-                            if (!finalize.IsSuccess)
-                            {
-                                // Finalize: Try TCP
-                                finalize = await FinalizeAsync(ep, dnsCryptQuery, clientNonce, sharedKeyBuffer, DnsEnums.DnsProtocol.TCP);
-                            }
-
+                            // Finalize
+                            var finalize = await FinalizeAsync(ep, dnsCryptQuery, clientNonce, sharedKeyBuffer);
                             if (finalize.IsSuccess) result = finalize.Result;
                         }
                     }

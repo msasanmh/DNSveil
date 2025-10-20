@@ -24,6 +24,63 @@ public static class Info
         return FileVersionInfo.GetVersionInfo(assembly.Location);
     }
 
+    public static string? GetAppExecutablePath()
+    {
+        try
+        {
+            string? pathOrName = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(pathOrName))
+            {
+                using Process currentProcess = Process.GetCurrentProcess();
+                pathOrName = currentProcess.ProcessName;
+            }
+            return !string.IsNullOrEmpty(pathOrName) ? Path.GetFullPath(pathOrName) : null;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info GetAppExecutablePath: " + ex.Message);
+            return null;
+        }
+    }
+
+    public static string? GetAppExecutablePathWithPreferredExtension(string preferredExtension)
+    {
+        try
+        {
+            string? fullPath = GetAppExecutablePath();
+            if (!string.IsNullOrEmpty(fullPath))
+            {
+                string? fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fullPath);
+                if (!string.IsNullOrEmpty(fileNameWithoutExtension))
+                {
+                    preferredExtension = preferredExtension.Trim().TrimStart('.');
+                    if (string.IsNullOrWhiteSpace(preferredExtension))
+                        return Path.GetFullPath(fileNameWithoutExtension);
+                    return Path.GetFullPath($"{fileNameWithoutExtension}.{preferredExtension}");
+                }
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info GetAppExecutablePathWithPreferredExtension: " + ex.Message);
+            return null;
+        }
+    }
+
+    public static string? GetRandomPath()
+    {
+        try
+        {
+            return Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info GetRandomPath: " + ex.Message);
+            return null;
+        }
+    }
+
     public static string GetAppGUID()
     {
         try

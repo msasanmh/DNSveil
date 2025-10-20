@@ -11,7 +11,7 @@
                              Title="Manage Servers" MinWidth="1400" MinHeight="700" Icon="/ManageServers/DNSveil.png"
                              Background="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"
                              Foreground="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"
-                             Loaded="Window_Loaded" ContentRendered="Window_ContentRendered"
+                             Loaded="WpfWindow_Loaded" ContentRendered="WpfWindow_ContentRendered"
                              Closing="WpfWindow_Closing">
     <MsmhToolsWpfClass:WpfWindow.Resources>
         <MsmhToolsWpfClass:StringToBrushConverter x:Key="IsOnlineToBrushConverter" String1="Online" String2="Offline" Brush1="MediumSeaGreen" Brush2="IndianRed" BrushOtherStrings="Transparent"/>
@@ -58,8 +58,8 @@
     <DockPanel LastChildFill="True">
         <GroupBox DockPanel.Dock="Left" Header="Groups" MinWidth="200" MaxWidth="400" Width="Auto">
             <DockPanel LastChildFill="True">
-                <DockPanel DockPanel.Dock="Bottom" LastChildFill="True">
-                    <Grid DockPanel.Dock="Top" Margin="0,4,0,4">
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical">
+                    <Grid Margin="0,4,0,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20*"/>
                             <ColumnDefinition Width="20*"/>
@@ -67,7 +67,7 @@
                         <MsmhToolsWpfClass:WpfButton x:Name="NewGroupButton" Grid.Column="0" Margin="0,0,2,0" Content="New Group" PreviewMouseUp="NewGroupButton_PreviewMouseUp"/>
                         <MsmhToolsWpfClass:WpfButton x:Name="ResetBuiltInButton" Grid.Column="1" Margin="2,0,0,0" Content="Reset Built-In" Click="ResetBuiltInButton_Click"/>
                     </Grid>
-                    <Grid DockPanel.Dock="Bottom">
+                    <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20*"/>
                             <ColumnDefinition Width="20*"/>
@@ -82,6 +82,8 @@
                                         </Grid.RowDefinitions>
                                         <StackPanel Grid.Row="0" Orientation="Vertical">
                                             <MsmhToolsWpfClass:WpfButton x:Name="ImportBrowseButton" Margin="0,0,0,10" Content="Browse DVLS Or XML File" Click="ImportBrowseButton_Click"/>
+                                            <CheckBox x:Name="Import_Settings_CheckBox" IsChecked="False" IsEnabled="False" Content="Import Settings" HorizontalAlignment="Left"/>
+                                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,4,0,4" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
                                             <TextBlock Margin="0,0,0,10" Text="Select Groups To Import:"/>
                                             <ListBox x:Name="Import_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                                 <ListBox.ItemTemplate>
@@ -106,7 +108,9 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         <StackPanel Grid.Row="0" Orientation="Vertical">
-                                            <TextBlock Margin="0,0,0,10" Text="Select Groups To Export:"/>
+                                            <CheckBox x:Name="Export_Settings_CheckBox" IsChecked="True" Content="Export Settings" HorizontalAlignment="Left"/>
+                                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,4,0,4" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                                            <TextBlock Margin="0,0,0,4" Text="Select Groups To Export:"/>
                                             <ListBox x:Name="Export_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                                 <ListBox.ItemTemplate>
                                                     <DataTemplate>
@@ -122,7 +126,7 @@
                             <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Groups_Export" Placement="Top"/>
                         </Grid>
                     </Grid>
-                </DockPanel>
+                </StackPanel>
                 <DataGrid x:Name="DGG" DockPanel.Dock="Top" Width="Auto" AutoGenerateColumns="False" PreviewKeyDown="DGG_PreviewKeyDown" PreviewMouseRightButtonDown="DGG_PreviewMouseRightButtonDown"  SelectionChanged="DGG_SelectionChanged">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="Auto" CanUserResize="False" CanUserSort="False" CanUserReorder="False" IsReadOnly="True"/>
@@ -211,6 +215,7 @@
                                     <WrapPanel Orientation="Horizontal" Margin="0">
                                         <CheckBox x:Name="SubscriptionFilter_UDP_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="UDP Plain DNS"/>
                                         <CheckBox x:Name="SubscriptionFilter_TCP_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="TCP Plain DNS"/>
+                                        <CheckBox x:Name="SubscriptionFilter_TcpOverUdp_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="TCP Over Udp"/>
                                         <CheckBox x:Name="SubscriptionFilter_DNSCrypt_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="DNSCrypt"/>
                                         <CheckBox x:Name="SubscriptionFilter_AnonymizedDNSCrypt_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="Anonymized DNSCrypt"/>
                                         <CheckBox x:Name="SubscriptionFilter_DoT_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="DNS-Over-TLS (DoT)"/>
@@ -686,6 +691,7 @@
                                     <WrapPanel Orientation="Horizontal" Margin="0">
                                         <CheckBox x:Name="CustomFilter_UDP_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="UDP Plain DNS"/>
                                         <CheckBox x:Name="CustomFilter_TCP_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="TCP Plain DNS"/>
+                                        <CheckBox x:Name="CustomFilter_TcpOverUdp_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="TCP Over UDP"/>
                                         <CheckBox x:Name="CustomFilter_DNSCrypt_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="DNSCrypt"/>
                                         <CheckBox x:Name="CustomFilter_AnonymizedDNSCrypt_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="Anonymized DNSCrypt"/>
                                         <CheckBox x:Name="CustomFilter_DoT_CheckBox" Margin="5,3,10,5" IsChecked="True" Content="DNS-Over-TLS (DoT)"/>

@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Platforms>AnyCPU;x64;x86</Platforms>
-    <Version>$(VersionPrefix)1.6.8</Version>
+    <Version>$(VersionPrefix)1.7.0</Version>
     <Copyright>MSasanMH</Copyright>
   </PropertyGroup>
 
@@ -190,7 +190,6 @@
 
   <ItemGroup>
     <PackageReference Include="libsodium" Version="1.0.20.1" />
-    <PackageReference Include="MaxMind.GeoIP2" Version="5.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.8" />
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.18" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />

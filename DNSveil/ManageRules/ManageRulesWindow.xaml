@@ -1,0 +1,208 @@
+﻿<MsmhToolsWpfClass:WpfWindow xmlns:MsmhToolsWpfClass="clr-namespace:MsmhToolsWpfClass;assembly=MsmhToolsWpfClass"
+                             x:Class="DNSveil.ManageRules.ManageRulesWindow"
+                             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                             xmlns:local="clr-namespace:DNSveil.ManageRules"
+                             xmlns:themes="clr-namespace:MsmhToolsWpfClass.Themes;assembly=MsmhToolsWpfClass"
+                             mc:Ignorable="d"
+                             DataContext="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                             Title="ManageRulesWindow"  MinWidth="1400" MinHeight="700" Icon="/ManageRules/DNSveil.png"
+                             Background="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"
+                             Foreground="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"
+                             Loaded="WpfWindow_Loaded" ContentRendered="WpfWindow_ContentRendered"
+                             Closing="WpfWindow_Closing">
+
+    <DockPanel LastChildFill="True">
+        <GroupBox DockPanel.Dock="Left" Header="Add Or Modify Rules" MinWidth="400" MaxWidth="600" Width="Auto">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical">
+                    <Grid Margin="0,4,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20*"/>
+                            <ColumnDefinition Width="20*"/>
+                            <ColumnDefinition Width="20*"/>
+                        </Grid.ColumnDefinitions>
+                        <MsmhToolsWpfClass:WpfButton x:Name="AddRuleButton" Grid.Column="0" Content="Add" Click="AddRuleButton_Click"/>
+                        <MsmhToolsWpfClass:WpfButton x:Name="ModifyRuleButton" Grid.Column="1" Margin="4,0,4,0" Content="Modify" Click="ModifyRuleButton_Click"/>
+                        <MsmhToolsWpfClass:WpfButton x:Name="ClearRuleButton" Grid.Column="2" Content="Clear Fields" Click="ClearRuleButton_Click"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20*"/>
+                            <ColumnDefinition Width="20*"/>
+                            <ColumnDefinition Width="20*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <MsmhToolsWpfClass:WpfButton x:Name="ImportReplaceButton" Content="Import &amp; Replace" Click="ImportReplaceButton_Click"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_ImportReplace" Placement="Top"/>
+                        </Grid>
+                        <Grid Grid.Column="1" Margin="4,0,4,0">
+                            <MsmhToolsWpfClass:WpfButton x:Name="ImportMergeButton" Content="Import &amp; Merge" Click="ImportMergeButton_Click"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_ImportMerge" Placement="Top"/>
+                        </Grid>
+                        <Grid Grid.Column="2">
+                            <MsmhToolsWpfClass:WpfButton x:Name="ExportButton" Content="Export" Click="ExportButton_Click"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Export" Placement="Top"/>
+                        </Grid>
+                    </Grid>
+                </StackPanel>
+                <ScrollViewer DockPanel.Dock="Top" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <Grid MsmhToolsWpfClass:MarginSetter.Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Row="0" Grid.Column="0">
+                            <TextBlock Text="Address" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Address" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="Address_TextBox" Grid.Row="0" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left" TextChanged="Rule_TextBox_TextChanged"/>
+
+                        <Grid Grid.Row="1" Grid.Column="0">
+                            <TextBlock Text="Block" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Block" Placement="Top"/>
+                        </Grid>
+                        <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Block_ToggleSwitch" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" CheckedChanged="Rule_ToggleSwitch_CheckedChanged"/>
+
+                        <Grid Grid.Row="2" Grid.Column="0">
+                            <TextBlock x:Name="BlockPorts_TextBlock" Text="Block Ports" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_BlockPorts" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="BlockPorts_TextBox" Grid.Row="2" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left"/>
+
+                        <Grid Grid.Row="3" Grid.Column="0">
+                            <TextBlock x:Name="FakeDNS_TextBlock" Text="Fake DNS IP" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_FakeDNS" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="FakeDNS_TextBox" Grid.Row="3" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left" TextChanged="Rule_TextBox_TextChanged"/>
+
+                        <Separator Grid.Row="4" Grid.Column="0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,10,0,10" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                        <Separator Grid.Row="4" Grid.Column="1" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,10,0,10" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+
+                        <Grid Grid.Row="5" Grid.Column="0">
+                            <TextBlock x:Name="DnsAddresses_TextBlock" Text="DNS Addresses" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_DNSs" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="DNSs_TextBox" Grid.Row="5" Grid.Column="1" MinWidth="250" MaxWidth="250" MinHeight="60" MaxHeight="100" TextWrapping="Wrap" AcceptsReturn="True" HorizontalAlignment="Left"/>
+
+                        <Grid Grid.Row="6" Grid.Column="0">
+                            <TextBlock x:Name="DnsDomain_TextBlock" Text="DNS Domain" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_DnsDomain" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="DnsDomain_TextBox" Grid.Row="6" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left"/>
+
+                        <Grid Grid.Row="7" Grid.Column="0">
+                            <TextBlock x:Name="DnsProxyScheme_TextBlock" Text="DNS Proxy Scheme" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_DnsProxyScheme" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="DnsProxyScheme_TextBox" Grid.Row="7" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left" TextChanged="Rule_TextBox_TextChanged"/>
+
+                        <Grid Grid.Row="8" Grid.Column="0">
+                            <TextBlock x:Name="DnsProxyUser_TextBlock" Text="DNS Proxy User" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_DnsProxyUser" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="DnsProxyUser_TextBox" Grid.Row="8" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left"/>
+
+                        <Grid Grid.Row="9" Grid.Column="0">
+                            <TextBlock x:Name="DnsProxyPass_TextBlock" Text="DNS Proxy Pass" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_DnsProxyPass" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="DnsProxyPass_TextBox" Grid.Row="9" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left"/>
+
+                        <Separator Grid.Row="10" Grid.Column="0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,10,0,10" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                        <Separator Grid.Row="10" Grid.Column="1" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,10,0,10" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+
+                        <Grid Grid.Row="11" Grid.Column="0">
+                            <TextBlock x:Name="Direct_TextBlock" Text="Direct" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Direct" Placement="Top"/>
+                        </Grid>
+                        <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Direct_ToggleSwitch" Grid.Row="11" Grid.Column="1" HorizontalAlignment="Left" CheckedChanged="Rule_ToggleSwitch_CheckedChanged"/>
+
+                        <Grid Grid.Row="12" Grid.Column="0">
+                            <TextBlock x:Name="SNI_TextBlock" Text="Fake SNI" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_SNI" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="SNI_TextBox" Grid.Row="12" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left"/>
+
+                        <Separator Grid.Row="13" Grid.Column="0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,10,0,10" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                        <Separator Grid.Row="13" Grid.Column="1" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,10,0,10" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                        
+                        <Grid Grid.Row="14" Grid.Column="0">
+                            <TextBlock x:Name="ProxyScheme_TextBlock" Text="Proxy Scheme" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_ProxyScheme" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="ProxyScheme_TextBox" Grid.Row="14" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left" TextChanged="Rule_TextBox_TextChanged"/>
+
+                        <Grid Grid.Row="15" Grid.Column="0">
+                            <TextBlock x:Name="ProxyUser_TextBlock" Text="Proxy User" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_ProxyUser" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="ProxyUser_TextBox" Grid.Row="15" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left"/>
+
+                        <Grid Grid.Row="16" Grid.Column="0">
+                            <TextBlock x:Name="ProxyPass_TextBlock" Text="Proxy Pass" Margin="0,0,20,0"/>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_ProxyPass" Placement="Top"/>
+                        </Grid>
+                        <TextBox x:Name="ProxyPass_TextBox" Grid.Row="16" Grid.Column="1" MinWidth="250" MaxWidth="250" HorizontalAlignment="Left"/>
+
+                    </Grid>
+                </ScrollViewer>
+            </DockPanel>
+        </GroupBox>
+        <GroupBox x:Name="VariablesAndRules_GroupBox" DockPanel.Dock="Right" Header="Variables &amp; Rules" Width="Auto">
+            <DockPanel>
+                <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Variables" DockPanel.Dock="Top" Header="Variables" IsOpen="True">
+                    <StackPanel Orientation="Vertical">
+                        <Grid MsmhToolsWpfClass:MarginSetter.Margin="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:"/>
+                            <TextBox x:Name="Variable_Name_TextBox" Grid.Row="0" Grid.Column="1" MaxLength="100"/>
+                            <MsmhToolsWpfClass:WpfButton x:Name="VariAdd_Button" Grid.Row="0" Grid.Column="2" MinWidth="120" Content="Add" Click="VariAdd_Button_Click"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Value:"/>
+                            <TextBox x:Name="Variable_Value_TextBox" Grid.Row="1" Grid.Column="1" MaxLength="300"/>
+                            <MsmhToolsWpfClass:WpfButton x:Name="VariModify_Button" Grid.Row="1" Grid.Column="2" MinWidth="120" Content="Modify" Click="VariModify_Button_Click"/>
+
+                        </Grid>
+                        <DataGrid x:Name="DGV" Margin="0,2,0,0" MaxHeight="200" AutoGenerateColumns="False" SelectionMode="Single" SelectionChanged="DGV_SelectionChanged" PreviewMouseRightButtonDown="DGV_PreviewMouseRightButtonDown"/>
+                    </StackPanel>
+                </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Rules" Header="Rules" IsOpen="True" DisableFly="True">
+                    <DataGrid x:Name="DGR" AutoGenerateColumns="False" SelectionMode="Extended" SelectionChanged="DGR_SelectionChanged" PreviewMouseRightButtonDown="DGR_PreviewMouseRightButtonDown" PreviewKeyDown="DGR_PreviewKeyDown"/>
+                </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+            </DockPanel>
+        </GroupBox>
+    </DockPanel>
+    
+</MsmhToolsWpfClass:WpfWindow>

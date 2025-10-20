@@ -24,7 +24,7 @@ public partial class AgnosticProgram
             public string ProxyPass { get; set; } = string.Empty;
         }
 
-        public async Task<RulesResult> GetAsync(string client, string host, int port, AgnosticSettings settings)
+        public async Task<RulesResult> GetAsync(string client, string host, int port, AgnosticSettings settings, Endless endless, bool resolveDomain, bool useServerDns)
         {
             RulesResult rr = new();
             if (string.IsNullOrEmpty(host)) return rr;
@@ -33,33 +33,34 @@ public partial class AgnosticProgram
             {
                 rr.Dns = host;
 
-                for (int n = 0; n < MainRules_List.Count; n++)
+                for (int n = 0; n < RuleList.Count; n++)
                 {
-                    MainRules mr = MainRules_List[n];
+                    Rule rule = RuleList[n];
 
                     // Check If Match
-                    bool isClientMatch = !string.IsNullOrEmpty(mr.Client) && (mr.Client.Equals(Rules_Init.KEYS.AllClients) || client.Equals(mr.Client) || client.EndsWith(mr.Client));
+                    bool isClientMatch = !string.IsNullOrEmpty(rule.Client) && (rule.Client.Equals(Rules_Init.KEYS.AllClients) || client.Equals(rule.Client) || client.EndsWith(rule.Client));
                     if (!isClientMatch) continue;
 
                     bool isWildcard = false;
                     string hostNoWww = string.Empty, ruleHostNoWww = string.Empty;
-                    if (mr.AddressType == AddressType.Domain)
+                    AddressType addressType = rule.AddressType;
+                    if (addressType == AddressType.Domain)
                     {
-                        bool isDomainMatch = Rules_Init.IsDomainMatch(host, mr.Address, out isWildcard, out hostNoWww, out ruleHostNoWww);
+                        bool isDomainMatch = Rules_Init.IsDomainMatch(host, rule.Address, out isWildcard, out hostNoWww, out ruleHostNoWww);
                         if (!isDomainMatch) continue;
                     }
-                    else if (mr.AddressType == AddressType.IP)
+                    else if (addressType == AddressType.IP)
                     {
                         bool isHostIP = NetworkTool.IsIP(host, out _);
                         if (!isHostIP) continue;
-                        bool isIpMatch = host.Equals(mr.Address);
+                        bool isIpMatch = host.Equals(rule.Address);
                         if (!isIpMatch) continue;
                     }
-                    else if (mr.AddressType == AddressType.CIDR)
+                    else if (addressType == AddressType.CIDR)
                     {
                         bool isHostIP = NetworkTool.IsIP(host, out _);
                         if (!isHostIP) continue;
-                        bool isCidrMatch = NetworkTool.IsIpInRange(host, mr.Address);
+                        bool isCidrMatch = NetworkTool.IsIpInRange(host, rule.Address);
                         if (!isCidrMatch) continue;
                     }
                     else continue;
@@ -68,11 +69,11 @@ public partial class AgnosticProgram
                     rr.IsMatch = true;
 
                     // Is Black List
-                    rr.IsBlackList = mr.IsBlock;
+                    rr.IsBlackList = rule.IsBlock;
                     if (rr.IsBlackList) break;
 
                     // Is Port Block
-                    List<int> blockedPorts = mr.BlockPort.ToList();
+                    List<int> blockedPorts = rule.BlockPort.ToList();
                     for (int i = 0; i < blockedPorts.Count; i++)
                     {
                         int blockedPort = blockedPorts[i];
@@ -85,27 +86,28 @@ public partial class AgnosticProgram
                     if (rr.IsPortBlock) break;
 
                     // Direct: Don't Apply DPI Bypass (Fragment & Change SNI) & Upstream
-                    rr.IsDirect = mr.IsDirect;
+                    rr.IsDirect = rule.IsDirect;
                     
                     // DNS
-                    if (!string.IsNullOrEmpty(mr.FakeDns))
+                    if (NetworkTool.IsIP(rule.FakeDnsIP, out _))
                     {
                         // Fake DNS (Domain => IP, IP => IP)
-                        rr.Dns = mr.FakeDns;
+                        rr.Dns = rule.FakeDnsIP;
                     }
                     else
                     {
-                        if (mr.AddressType == AddressType.Domain)
+                        if (addressType == AddressType.Domain)
                         {
                             // Get Dns Servers And Upstream Proxy
-                            List<string> dnss = mr.Dnss.Any() ? mr.Dnss : settings.DNSs;
-                            rr.Dnss = dnss;
+                            rr.Dnss = rule.Dnss.Any() ? rule.Dnss : settings.DNSs;
+                            List<string> dnss = new(rr.Dnss); // Creating A New List Is Necessary Because Of dnss.Clear();
+
                             string? dnsProxyScheme = null, dnsProxyUser = null, dnsProxyPass = null;
-                            if (!string.IsNullOrEmpty(mr.DnsProxyScheme))
+                            if (!string.IsNullOrEmpty(rule.DnsProxyScheme))
                             {
-                                dnsProxyScheme = mr.DnsProxyScheme;
-                                dnsProxyUser = mr.DnsProxyUser;
-                                dnsProxyPass = mr.DnsProxyPass;
+                                dnsProxyScheme = rule.DnsProxyScheme;
+                                dnsProxyUser = rule.DnsProxyUser;
+                                dnsProxyPass = rule.DnsProxyPass;
                             }
                             else
                             {
@@ -113,17 +115,37 @@ public partial class AgnosticProgram
                                 dnsProxyUser = settings.UpstreamProxyUser;
                                 dnsProxyPass = settings.UpstreamProxyPass;
                             }
+                            
+                            if (useServerDns) // By This Way We Cache Custom DNS Server Response And Make Proxy Faster.
+                            {
+                                // DNS Custom Servers Will Be Applied On The DNS-Server Side. (useServerDns Is False)
+                                dnss.Clear();
+                                dnss.Add(settings.ServerUdpDnsAddress);
+                                
+                                // DNS Upstream Proxy Will Be Applied On The DNS-Server Side. (Except UDP)
+                                dnsProxyScheme = null;
+                                dnsProxyUser = null;
+                                dnsProxyPass = null;
+                            }
+
+                            // Avoid Endless Loop
+                            if (endless.IsUpstreamEqualToServerAddress(dnsProxyScheme))
+                            {
+                                dnsProxyScheme = null;
+                                dnsProxyUser = null;
+                                dnsProxyPass = null;
+                            }
 
                             // Get IP By Custom DNS
                             if (dnss.Any() && !NetworkTool.IsIP(host, out _))
                             {
                                 // Get Custom DNS Domain
                                 rr.DnsCustomDomain = host;
-                                if (!string.IsNullOrEmpty(mr.DnsDomain))
+                                if (!string.IsNullOrEmpty(rule.DnsDomain))
                                 {
-                                    if (!mr.DnsDomain.StartsWith("*."))
+                                    if (!rule.DnsDomain.StartsWith("*."))
                                     {
-                                        rr.DnsCustomDomain = mr.DnsDomain;
+                                        rr.DnsCustomDomain = rule.DnsDomain;
                                     }
                                     else
                                     {
@@ -132,22 +154,25 @@ public partial class AgnosticProgram
                                         {
                                             if (hostNoWww.EndsWith(ruleHostNoWww[1..])) // Just In Case
                                             {
-                                                rr.DnsCustomDomain = hostNoWww.Replace(ruleHostNoWww[1..], mr.DnsDomain[1..]);
+                                                rr.DnsCustomDomain = hostNoWww.Replace(ruleHostNoWww[1..], rule.DnsDomain[1..]);
                                             }
                                         }
                                     }
                                 }
-
-                                IPAddress ipAddr = IPAddress.None;
-                                ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, false, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
-                                if (ipAddr.Equals(IPAddress.None) || ipAddr.Equals(IPAddress.IPv6None))
+                                
+                                if (resolveDomain) // We Don't Need To Get A/AAAA Record For Other DNS Record Types. (TXT, CNAME, etc)
                                 {
-                                    ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, true, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
-                                }
+                                    IPAddress ipAddr = IPAddress.None;
+                                    ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, false, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
+                                    if (ipAddr.Equals(IPAddress.None) || ipAddr.Equals(IPAddress.IPv6None))
+                                    {
+                                        ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, true, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
+                                    }
 
-                                if (!ipAddr.Equals(IPAddress.None) && !ipAddr.Equals(IPAddress.IPv6None))
-                                {
-                                    rr.Dns = ipAddr.ToString();
+                                    if (!ipAddr.Equals(IPAddress.None) && !ipAddr.Equals(IPAddress.IPv6None))
+                                    {
+                                        rr.Dns = ipAddr.ToStringNoScopeId();
+                                    }
                                 }
                             }
                         }
@@ -161,7 +186,7 @@ public partial class AgnosticProgram
                         rr.Dns = settings.CloudflareCleanIP;
 
                     // SNI
-                    if (mr.AddressType == AddressType.Domain)
+                    if (addressType == AddressType.Domain)
                     {
                         if (rr.IsDirect)
                         {
@@ -169,7 +194,7 @@ public partial class AgnosticProgram
                         }
                         else
                         {
-                            rr.Sni = mr.Sni;
+                            rr.Sni = rule.Sni;
                             if (!string.IsNullOrEmpty(rr.Sni) && rr.Sni.StartsWith("*."))
                             {
                                 // Support: xxxx.example.com -> xxxx.domain.com
@@ -186,20 +211,20 @@ public partial class AgnosticProgram
                     }
                     
                     // Upstream Proxy
-                    if (!string.IsNullOrEmpty(mr.ProxyScheme))
+                    if (!string.IsNullOrEmpty(rule.ProxyScheme))
                     {
                         if (!rr.IsDirect) // If Not Direct
                         {
-                            mr.ProxyScheme = mr.ProxyScheme.ToLower().Trim();
-                            if (mr.ProxyScheme.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                                mr.ProxyScheme.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-                                mr.ProxyScheme.StartsWith("socks5://", StringComparison.OrdinalIgnoreCase))
+                            rule.ProxyScheme = rule.ProxyScheme.ToLower().Trim();
+                            if (rule.ProxyScheme.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                                rule.ProxyScheme.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+                                rule.ProxyScheme.StartsWith("socks5://", StringComparison.OrdinalIgnoreCase))
                             {
                                 rr.ApplyUpStreamProxy = true;
-                                rr.ProxyScheme = mr.ProxyScheme;
-                                rr.ApplyUpStreamProxyToBlockedIPs = mr.ProxyIfBlock;
-                                rr.ProxyUser = mr.ProxyUser;
-                                rr.ProxyPass = mr.ProxyPass;
+                                rr.ProxyScheme = rule.ProxyScheme;
+                                rr.ApplyUpStreamProxyToBlockedIPs = rule.ProxyIfBlock;
+                                rr.ProxyUser = rule.ProxyUser;
+                                rr.ProxyPass = rule.ProxyPass;
                             }
                         }
                     }
