@@ -44,6 +44,86 @@ public partial class AgnosticProgram
             public bool ProxyIfBlock { get; set; } = false; // &ifblock:1
             public string ProxyUser { get; set; } = string.Empty; // &user:
             public string ProxyPass { get; set; } = string.Empty; // &pass:
+            public List<string> ToTextRule(List<Tuple<string, string>>? variables)
+            {
+                List<string> textRules = new();
+
+                try
+                {
+                    // Empty Variables
+                    variables ??= new();
+
+                    bool addDefaults = BlockPort.Count > 0 || Dnss.Count > 0 ||
+                                       !string.IsNullOrWhiteSpace(DnsDomain) ||
+                                       !string.IsNullOrWhiteSpace(DnsProxyScheme) ||
+                                       !string.IsNullOrWhiteSpace(Sni) ||
+                                       !string.IsNullOrWhiteSpace(ProxyScheme);
+                    if (addDefaults)
+                    {
+                        // blockport:80,53;
+                        if (BlockPort.Count > 0)
+                        {
+                            string text = $"{Rules_Init.KEYS.BlockPort}{Rules_Init.Vari_ValuesToNames(BlockPort.ToString(','), variables)};";
+                            textRules.Add(text);
+                        }
+                        // dns:;
+                        if (Dnss.Count > 0)
+                        {
+                            string text = $"{Rules_Init.KEYS.Dns}{Rules_Init.Vari_ValuesToNames(Dnss.ToString(','), variables)};";
+                            textRules.Add(text);
+                        }
+                        // dnsdomain:;
+                        if (!string.IsNullOrEmpty(DnsDomain))
+                        {
+                            string text = $"{Rules_Init.KEYS.DnsDomain}{Rules_Init.Vari_ValuesToNames(DnsDomain, variables)};";
+                            textRules.Add(text);
+                        }
+                        // dnsproxy:;
+                        if (!string.IsNullOrEmpty(DnsProxyScheme))
+                        {
+                            string text = $"{Rules_Init.KEYS.DnsProxy}{Rules_Init.Vari_ValuesToNames(DnsProxyScheme, variables)}";
+                            // &user:
+                            if (!string.IsNullOrWhiteSpace(DnsProxyUser))
+                                text += $"{Rules_Init.SUB_KEYS.User}{Rules_Init.Vari_ValuesToNames(DnsProxyUser, variables)}";
+                            // &pass:
+                            if (!string.IsNullOrEmpty(DnsProxyPass))
+                                text += $"{Rules_Init.SUB_KEYS.Pass}{Rules_Init.Vari_ValuesToNames(DnsProxyPass, variables)}";
+                            // Add ;
+                            text += ";";
+                            textRules.Add(text);
+                        }
+                        // sni:;
+                        if (!string.IsNullOrWhiteSpace(Sni))
+                        {
+                            string text = $"{Rules_Init.KEYS.Sni}{Rules_Init.Vari_ValuesToNames(Sni, variables)};";
+                            textRules.Add(text);
+                        }
+                        // proxy:;
+                        if (!string.IsNullOrEmpty(ProxyScheme))
+                        {
+                            string text = $"{Rules_Init.KEYS.Proxy}{Rules_Init.Vari_ValuesToNames(ProxyScheme, variables)}";
+                            // &user:
+                            if (!string.IsNullOrWhiteSpace(ProxyUser))
+                                text += $"{Rules_Init.SUB_KEYS.User}{Rules_Init.Vari_ValuesToNames(ProxyUser, variables)}";
+                            // &pass:
+                            if (!string.IsNullOrEmpty(ProxyPass))
+                                text += $"{Rules_Init.SUB_KEYS.Pass}{Rules_Init.Vari_ValuesToNames(ProxyPass, variables)}";
+                            // &ifblock:1
+                            if (ProxyIfBlock)
+                                text += $"{Rules_Init.SUB_KEYS.IfBlock}1";
+                            // Add ;
+                            text += ";";
+                            textRules.Add(text);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Rules Defaults ToTextRule: " + ex.Message);
+                }
+
+                return textRules;
+            }
         }
 
         public class Rule
@@ -67,9 +147,120 @@ public partial class AgnosticProgram
             public bool ProxyIfBlock { get; set; } = false;
             public string ProxyUser { get; set; } = string.Empty;
             public string ProxyPass { get; set; } = string.Empty;
+            public string ToTextRule(List<Tuple<string, string>>? variables, Defaults? defaults)
+            {
+                string text = string.Empty;
+
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(Address)) return text;
+
+                    // Empty Variables
+                    variables ??= new();
+
+                    // Client
+                    if (!string.IsNullOrWhiteSpace(Client) && !Client.Equals(Rules_Init.KEYS.AllClients))
+                        text += $"{Client}|";
+                    // Address
+                    text += $"{Address}|";
+                    // Is Block
+                    if (IsBlock)
+                    {
+                        text += "-;";
+                        return text;
+                    }
+                    // Fake DNS
+                    bool isIP = NetworkTool.IsIP(FakeDnsIP, out _);
+                    if (isIP) text += $"{Rules_Init.Vari_ValuesToNames(FakeDnsIP, variables)};";
+                    // Is Direct
+                    if (IsDirect) text += "--;";
+                    // Block Ports
+                    if (defaults != null)
+                    {
+                        foreach (int blockPort in defaults.BlockPort)
+                        {
+                            if (BlockPort.IsContain(blockPort)) BlockPort.Remove(blockPort);
+                        }
+                    }
+                    if (BlockPort.Count > 0) text += $"{Rules_Init.KEYS.BlockPort}{Rules_Init.Vari_ValuesToNames(BlockPort.ToString(','), variables)};";
+                    // DNSs
+                    if (defaults != null)
+                    {
+                        foreach (string dns in defaults.Dnss)
+                        {
+                            if (Dnss.IsContain(dns)) Dnss.Remove(dns);
+                        }
+                    }
+                    if (Dnss.Count > 0) text += $"{Rules_Init.KEYS.Dns}{Rules_Init.Vari_ValuesToNames(Dnss.ToString(','), variables)};";
+                    // DNS Domain
+                    if (defaults != null)
+                    {
+                        if (defaults.DnsDomain.Equals(DnsDomain))
+                            DnsDomain = string.Empty;
+                    }
+                    if (!string.IsNullOrWhiteSpace(DnsDomain)) text += $"{Rules_Init.KEYS.DnsDomain}{Rules_Init.Vari_ValuesToNames(DnsDomain, variables)};";
+                    // DNS Proxy
+                    if (defaults != null)
+                    {
+                        if (defaults.DnsProxyScheme.Equals(DnsProxyScheme))
+                            DnsProxyScheme = string.Empty;
+                    }
+                    if (!string.IsNullOrWhiteSpace(DnsProxyScheme))
+                    {
+                        // Scheme
+                        text += $"{Rules_Init.KEYS.DnsProxy}{Rules_Init.Vari_ValuesToNames(DnsProxyScheme, variables)}";
+                        // &user:
+                        if (!string.IsNullOrWhiteSpace(DnsProxyUser))
+                            text += $"{Rules_Init.SUB_KEYS.User}{Rules_Init.Vari_ValuesToNames(DnsProxyUser, variables)}";
+                        // &pass:
+                        if (!string.IsNullOrEmpty(DnsProxyPass))
+                            text += $"{Rules_Init.SUB_KEYS.Pass}{Rules_Init.Vari_ValuesToNames(DnsProxyPass, variables)}";
+                        // Add ;
+                        text += ";";
+                    }
+                    // SNI
+                    if (defaults != null)
+                    {
+                        if (defaults.Sni.Equals(Sni))
+                            Sni = string.Empty;
+                    }
+                    if (!string.IsNullOrWhiteSpace(Sni)) text += $"{Rules_Init.KEYS.Sni}{Rules_Init.Vari_ValuesToNames(Sni, variables)};";
+                    // Proxy
+                    if (defaults != null)
+                    {
+                        if (defaults.ProxyScheme.Equals(ProxyScheme))
+                            ProxyScheme = string.Empty;
+                    }
+                    if (!string.IsNullOrWhiteSpace(ProxyScheme))
+                    {
+                        // Scheme
+                        text += $"{Rules_Init.KEYS.Proxy}{Rules_Init.Vari_ValuesToNames(ProxyScheme, variables)}";
+                        // &user:
+                        if (!string.IsNullOrWhiteSpace(ProxyUser))
+                            text += $"{Rules_Init.SUB_KEYS.User}{Rules_Init.Vari_ValuesToNames(ProxyUser, variables)}";
+                        // &pass:
+                        if (!string.IsNullOrEmpty(ProxyPass))
+                            text += $"{Rules_Init.SUB_KEYS.Pass}{Rules_Init.Vari_ValuesToNames(ProxyPass, variables)}";
+                        // &ifblock:1
+                        if (ProxyIfBlock) text += $"{Rules_Init.SUB_KEYS.IfBlock}1";
+                        // Add ;
+                        text += ";";
+                    }
+
+                    // Add +;
+                    if (!string.IsNullOrWhiteSpace(text) && !text.EndsWith(';')) text += "+;";
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Rules Rule ToTextRule: {Address}{Environment.NewLine}{ex.Message}");
+                }
+
+                return text;
+            }
             public string ToString(bool includeAddress)
             {
                 string result = string.Empty;
+
                 try
                 {
                     string nl = Environment.NewLine;
@@ -132,6 +323,7 @@ public partial class AgnosticProgram
                     result = result.TrimEnd(nl);
                 }
                 catch (Exception) { }
+
                 return result;
             }
             public string Report => ToString(false);
@@ -651,6 +843,65 @@ public partial class AgnosticProgram
                     // Add Defaults
                     if (defaults != null)
                     {
+                        List<string> default_TextRules = defaults.ToTextRule(variables);
+                        if (default_TextRules.Count > 0)
+                        {
+                            textRules.Add("// Defaults");
+                            textRules.AddRange(default_TextRules);
+                            textRules.Add(string.Empty);
+                        }
+                    }
+
+                    // Add Rules
+                    if (ruleList.Count > 0) textRules.Add("// Rules");
+                    for (int n = 0; n < ruleList.Count; n++)
+                    {
+                        Rule rule = ruleList[n];
+                        string textRule = rule.ToTextRule(variables, defaults);
+                        if (string.IsNullOrWhiteSpace(textRule)) continue;
+                        textRules.Add(textRule);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("AgnosticProgram Rules ConvertToTextRulesAsync: " + ex.Message);
+                }
+            });
+
+            return textRules;
+        }
+
+        public static async Task<List<string>> ConvertToTextRulesAsync_BAC(List<Tuple<string, string>> variables, Defaults? defaults, List<Rule> ruleList)
+        {
+            List<string> textRules = new();
+
+            await Task.Run(() =>
+            {
+                try
+                {
+                    // Add Comment
+                    textRules.Add("// Generated Automatically By DNSveil");
+                    textRules.Add(string.Empty);
+
+                    // Add Variables
+                    if (variables.Count > 0)
+                    {
+                        textRules.Add("// Variables");
+                        for (int n = 0; n < variables.Count; n++)
+                        {
+                            Tuple<string, string> variable = variables[n];
+                            if (!string.IsNullOrWhiteSpace(variable.Item1) && !string.IsNullOrWhiteSpace(variable.Item2))
+                            {
+                                string text = $"{variable.Item1} = {variable.Item2};";
+                                textRules.Add(text);
+                            }
+                        }
+                        textRules.Add(string.Empty);
+                    }
+
+                    // Add Defaults
+                    if (defaults != null)
+                    {
                         bool addDefaults = defaults.BlockPort.Count > 0 || defaults.Dnss.Count > 0 ||
                         !string.IsNullOrWhiteSpace(defaults.DnsDomain) ||
                         !string.IsNullOrWhiteSpace(defaults.DnsProxyScheme) ||
@@ -719,7 +970,7 @@ public partial class AgnosticProgram
                         }
                     }
                     
-                    // Add Main Rules
+                    // Add Rules
                     if (ruleList.Count > 0) textRules.Add("// Rules");
                     for (int n = 0; n < ruleList.Count; n++)
                     {

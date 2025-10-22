@@ -28,6 +28,14 @@ public class DnsTunnel
                 return;
             }
 
+            // Avoid Endless Loop
+            if (endless.IsUpstreamEqualToServerAddress($"{settings.BootstrapIpAddress}:{settings.BootstrapPort}"))
+            {
+                msgReqEvent += "Request Denied - Bootstrap Is Set To The Server Address";
+                onRequestReceived?.Invoke(msgReqEvent, EventArgs.Empty);
+                return;
+            }
+
             // Apply DnsLimit Program
             if (dnsLimitProgram.EnableDnsLimit)
             {
@@ -178,16 +186,31 @@ public class DnsTunnel
                     if (!usedFakeOrCustom && settings.DNSs.Count > 0)
                     {
                         string? proxyScheme = settings.UpstreamProxyScheme, proxyUser = settings.UpstreamProxyUser, proxyPass = settings.UpstreamProxyPass;
+                        IPAddress bootstrap = settings.BootstrapIpAddress;
 
                         // Avoid Endless Loop
                         if (endless.IsUpstreamEqualToServerAddress(proxyScheme))
                         {
-                            proxyScheme = null;
-                            proxyUser = null;
-                            proxyPass = null;
+                            if (settings.DNSs.IsContainPartial(addressQ)) // Allow DNS To Use Its Own Proxy Fragment
+                            {
+                                proxyScheme = null;
+                                proxyUser = null;
+                                proxyPass = null;
+                            }
+                            else
+                            {
+                                // Can Stuck In An Endless Loop If
+                                // Upstream Is Equal To Server Address
+                                // And
+                                // A DNS In The List Doesn't Have A FakeDnsIP
+                                // Because Of DnsClient Upstream And Bootstrap TCP Upstream.
+                                // I Refuse To Detect It And Set ProxyScheme To NULL For The Sake Of Performance.
+                                // I Set Bootstrap To IPAddress.Any To Avoid Bootstrap TCP Upstream.
+                                bootstrap = IPAddress.Any;
+                            }
                         }
 
-                        byte[] response = await DnsClient.QueryAsync(dnsRequest.Buffer, dnsRequest.Protocol, settings.DNSs, settings.AllowInsecure, settings.BootstrapIpAddress, settings.BootstrapPort, settings.DnsTimeoutSec * 1000, proxyScheme, proxyUser, proxyPass).ConfigureAwait(false);
+                        byte[] response = await DnsClient.QueryAsync(dnsRequest.Buffer, dnsRequest.Protocol, settings.DNSs, settings.AllowInsecure, bootstrap, settings.BootstrapPort, settings.DnsTimeoutSec * 1000, rulesProgram.RuleList, proxyScheme, proxyUser, proxyPass).ConfigureAwait(false);
                         dmR = DnsMessage.Read(response, dnsRequest.Protocol);
                         if (dmR.IsSuccess)
                         {
@@ -293,6 +316,7 @@ public class DnsTunnel
         {
             Debug.WriteLine("DnsTunnel ProcessAsync: " + ex.Message);
         }
+
     }
 
     private static bool IsCfIP(DnsMessage dmR)

@@ -387,7 +387,7 @@ public class HttpRequest
                         SslProtocols = protocols,
                         AllowAutoRedirect = hr.AllowAutoRedirect
                     };
-
+                    
                     // Ignore Cert Check
                     if (hr.AllowInsecure)
                     {
@@ -423,7 +423,7 @@ public class HttpRequest
                             {
                                 NoDelay = true // Turn Off Nagle's Algorithm
                             };
-
+                            
                             await socket.ConnectAsync(hr.AddressIP, context.DnsEndPoint.Port, ct);
                             return new NetworkStream(socket, ownsSocket: true);
                         }

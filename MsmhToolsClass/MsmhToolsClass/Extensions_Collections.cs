@@ -272,12 +272,26 @@ public static class Extensions_Collections
         return result;
     }
 
-    public static bool IsContain<T>(this List<T> list, T t)
+    public static bool IsContain<T>(this List<T> list, T t) where T : notnull
     {
         try
         {
             for (int n = 0; n < list.Count; n++)
-                if (t != null && t.Equals(list[n])) return true;
+                if (t.Equals(list[n])) return true;
+        }
+        catch (Exception) { }
+        return false;
+    }
+
+    public static bool IsContainPartial(this List<string> list, string partialText, StringComparison stringComparison = StringComparison.InvariantCulture)
+    {
+        try
+        {
+            for (int n = 0; n < list.Count; n++)
+            {
+                string item = list[n];
+                if (item.Contains(partialText, stringComparison)) return true;
+            }
         }
         catch (Exception) { }
         return false;

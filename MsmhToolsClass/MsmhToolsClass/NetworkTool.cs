@@ -2250,11 +2250,11 @@ public static class NetworkTool
         Unknown
     }
 
-    public static async Task<InternetState> GetInternetStateAsync(IPAddress? ip, string? nonBlockedForeignDomain = "google.com", int timeoutMS = 6000)
+    public static async Task<InternetState> GetInternetStateAsync(IPAddress? dnsIP, string? nonBlockedForeignDomain = "google.com", int timeoutMS = 6000)
     {
         try
         {
-            ip ??= CultureInfo.InstalledUICulture switch
+            dnsIP ??= CultureInfo.InstalledUICulture switch
             {
                 { Name: string n } when n.ToLower().StartsWith("fa") => IPAddress.Parse("8.8.8.8"), // Iran
                 { Name: string n } when n.ToLower().StartsWith("ru") => IPAddress.Parse("77.88.8.7"), // Russia
@@ -2271,18 +2271,18 @@ public static class NetworkTool
 
             async Task byPingAsync()
             {
-                byPing = await IsInternetAliveByPingAsync(ip, timeoutMS);
+                byPing = await IsInternetAliveByPingAsync(dnsIP, timeoutMS);
             }
 
             async Task byDnsIPv4Async()
             {
-                IPAddress domainIPv4 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{ip}", false, timeoutSec, false, IPAddress.None, 0);
+                IPAddress domainIPv4 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{dnsIP}", false, timeoutSec, false, IPAddress.Any, 0);
                 byDnsIPv4 = domainIPv4 != IPAddress.None && domainIPv4 != IPAddress.IPv6None;
             }
 
             async Task byDnsIPv6Async()
             {
-                IPAddress domainIPv6 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{ip}", false, timeoutSec, true, IPAddress.None, 0);
+                IPAddress domainIPv6 = await GetIP.GetIpFromDnsAddressAsync(nonBlockedForeignDomain, $"udp://{dnsIP}", false, timeoutSec, true, IPAddress.Any, 0);
                 byDnsIPv6 = domainIPv6 != IPAddress.None && domainIPv6 != IPAddress.IPv6None;
             }
             
@@ -2293,7 +2293,7 @@ public static class NetworkTool
             if (byPing && !byDnsIP) return InternetState.PingOnly;
             if (!byPing && byDnsIP) return InternetState.DnsOnly;
             
-            bool isAliveByNic = await IsInternetAliveByNicAsync(ip, timeoutMS);
+            bool isAliveByNic = await IsInternetAliveByNicAsync(dnsIP, timeoutMS);
             return isAliveByNic ? InternetState.Unstable : InternetState.Offline;
         }
         catch (Exception)

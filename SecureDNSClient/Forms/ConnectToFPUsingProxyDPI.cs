@@ -58,9 +58,6 @@ public partial class FormMain
 
         // Set Rules Content
         string rulesContent = $"{dohHost}|{dohCleanIP};";
-        rulesContent += $"{NL}{dohCleanIP}|+;";
-        rulesContent += $"{NL}{IPAddress.Loopback}|-;"; // Block Loopback IPv4
-        rulesContent += $"{NL}{IPAddress.IPv6Loopback}|-;"; // Block Loopback IPv6
 
         string host1 = "dns.cloudflare.com";
         string host2 = "cloudflare-dns.com";
@@ -71,10 +68,9 @@ public partial class FormMain
             rulesContent = $"{host1}|{dohCleanIP};";
             rulesContent += $"{NL}{host2}|{dohCleanIP};";
             rulesContent += $"{NL}{host3}|{dohCleanIP};";
-            rulesContent += $"{NL}{dohCleanIP}|+;";
-            rulesContent += $"{NL}{IPAddress.Loopback}|-;"; // Block Loopback IPv4
-            rulesContent += $"{NL}{IPAddress.IPv6Loopback}|-;"; // Block Loopback IPv6
         }
+
+        rulesContent += $"{NL}*|DnsProxy:socks5://{IPAddress.Loopback}:{dnsPort};";
 
         // Kill If It's Already Running
         await ProcessManager.KillProcessByPidAsync(PIDDnsServer);
@@ -114,8 +110,7 @@ public partial class FormMain
         // Send DNS Settings
         command = $"Setting -Port={dnsPort} -WorkingMode=DnsAndProxy -MaxRequests=1000000 -DnsTimeoutSec=10 -ProxyTimeoutSec=40 -KillOnCpuUsage=40 -BlockPort80=True";
         command += $" -AllowInsecure={insecure} -DNSs=\"{dohUrl}\" -CfCleanIP={cfCleanIP}";
-        command += $" -BootstrapIp={IPAddress.Loopback} -BootstrapPort={dnsPort}";
-        command += $" -ProxyScheme=socks5://{IPAddress.Loopback}:{dnsPort}";
+        command += $" -BootstrapIp={IPAddress.None} -BootstrapPort=53";
         isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
         if (!isCmdSent) return false;
 
@@ -147,7 +142,7 @@ public partial class FormMain
                 // Send DoH Settings
                 command = $"Setting -Port={dohPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
                 command += $" -AllowInsecure={insecure} -DNSs=\"udp://{IPAddress.Loopback}:{dnsPort}\"";
-                command += $" -BootstrapIp={IPAddress.Loopback} -BootstrapPort={dnsPort}";
+                command += $" -BootstrapIp={IPAddress.Any} -BootstrapPort=53";
                 isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
                 if (!isCmdSent) return false;
 

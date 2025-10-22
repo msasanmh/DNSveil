@@ -128,14 +128,6 @@ public partial class AgnosticProgram
                                 dnsProxyPass = null;
                             }
 
-                            // Avoid Endless Loop
-                            if (endless.IsUpstreamEqualToServerAddress(dnsProxyScheme))
-                            {
-                                dnsProxyScheme = null;
-                                dnsProxyUser = null;
-                                dnsProxyPass = null;
-                            }
-
                             // Get IP By Custom DNS
                             if (dnss.Any() && !NetworkTool.IsIP(host, out _))
                             {
@@ -159,14 +151,37 @@ public partial class AgnosticProgram
                                         }
                                     }
                                 }
-                                
+
+                                IPAddress bootstrap = settings.BootstrapIpAddress;
                                 if (resolveDomain) // We Don't Need To Get A/AAAA Record For Other DNS Record Types. (TXT, CNAME, etc)
                                 {
+                                    // Avoid Endless Loop
+                                    if (endless.IsUpstreamEqualToServerAddress(dnsProxyScheme))
+                                    {
+                                        if (dnss.IsContainPartial(rr.DnsCustomDomain)) // Allow DNS To Use Its Own Proxy Fragment
+                                        {
+                                            dnsProxyScheme = null;
+                                            dnsProxyUser = null;
+                                            dnsProxyPass = null;
+                                        }
+                                        else
+                                        {
+                                            // Can Stuck In An Endless Loop If
+                                            // Upstream Is Equal To Server Address
+                                            // And
+                                            // A DNS In The List Doesn't Have A FakeDnsIP
+                                            // Because Of DnsClient Upstream And Bootstrap TCP Upstream.
+                                            // I Refuse To Detect It And Set ProxyScheme To NULL For The Sake Of Performance.
+                                            // I Set Bootstrap To IPAddress.Any To Avoid Bootstrap TCP Upstream.
+                                            bootstrap = IPAddress.Any;
+                                        }
+                                    }
+
                                     IPAddress ipAddr = IPAddress.None;
-                                    ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, false, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
+                                    ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, false, bootstrap, settings.BootstrapPort, RuleList, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
                                     if (ipAddr.Equals(IPAddress.None) || ipAddr.Equals(IPAddress.IPv6None))
                                     {
-                                        ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, true, settings.BootstrapIpAddress, settings.BootstrapPort, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
+                                        ipAddr = await GetIP.GetIpFromDnsAddressAsync(rr.DnsCustomDomain, dnss, settings.AllowInsecure, settings.DnsTimeoutSec, true, bootstrap, settings.BootstrapPort, RuleList, dnsProxyScheme, dnsProxyUser, dnsProxyPass);
                                     }
 
                                     if (!ipAddr.Equals(IPAddress.None) && !ipAddr.Equals(IPAddress.IPv6None))
@@ -235,7 +250,7 @@ public partial class AgnosticProgram
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("ProxyRules_GetAsync: " + ex.Message);
+                Debug.WriteLine("Rules_Get GetAsync: " + ex.Message);
             }
 
             return rr;

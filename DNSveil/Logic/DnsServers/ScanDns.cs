@@ -564,7 +564,7 @@ public class ScanDns
                 if (isWriteSuccess)
                 {
                     Stopwatch sw = Stopwatch.StartNew();
-                    byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnsServer, Insecure, bootstrapIP, bootstrapPort, timeoutMS, ct, proxyScheme).ConfigureAwait(false);
+                    byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnsServer, Insecure, bootstrapIP, bootstrapPort, timeoutMS, ct, null, proxyScheme).ConfigureAwait(false);
                     sw.Stop();
                     latency = Convert.ToInt32(sw.ElapsedMilliseconds);
                     if (dmABuffer.Length >= 12) // 12 Header Length
@@ -888,7 +888,7 @@ public class ScanDns
             bool isWriteSuccess = DnsMessage.TryWrite(dmQ, out byte[] dmQBuffer);
             if (isWriteSuccess)
             {
-                byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnsServer, Insecure, bootstrapIP, bootstrapPort, timeoutMS, ct, proxyScheme).ConfigureAwait(false);
+                byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnsServer, Insecure, bootstrapIP, bootstrapPort, timeoutMS, ct, null, proxyScheme).ConfigureAwait(false);
                 DnsMessage dmA = DnsMessage.Read(dmABuffer, DnsEnums.DnsProtocol.UDP);
                 isSuccess = dmA.IsSuccess;
                 if (isSuccess)

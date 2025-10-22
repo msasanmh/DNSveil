@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net;
+using System.Text;
 using MsmhToolsClass;
 using SecureDNSClient.DPIBasic;
 
@@ -49,8 +50,8 @@ public partial class FormMain
         await ProcessManager.KillProcessByPidAsync(PIDGoodbyeDPIBypass);
 
         // Create Blacklist File For GoodbyeDPI
-        File.WriteAllText(SecureDNS.DPIBlacklistFPPath, dohHost);
-
+        await FileDirectory.WriteAllTextAsync(SecureDNS.DPIBlacklistFPPath, dohHost, new UTF8Encoding(false));
+        
         // Get GoodbyeDPI User Mode
         DPIBasicBypassMode mode = GetGoodbyeDpiModeBasic();
 
@@ -121,7 +122,7 @@ public partial class FormMain
         // Send DNS Settings
         command = $"Setting -Port={dnsPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
         command += $" -AllowInsecure={insecure} -DNSs=\"{dohUrl}\" -CfCleanIP={cfCleanIP}";
-        command += $" -BootstrapIp={IPAddress.Loopback} -BootstrapPort={dnsPort}";
+        command += $" -BootstrapIp={IPAddress.None}  -BootstrapPort=53";
         isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
         if (!isCmdSent) return false;
 
@@ -148,7 +149,7 @@ public partial class FormMain
                 // Send DoH Settings
                 command = $"Setting -Port={dohPort} -WorkingMode=Dns -MaxRequests=1000000 -DnsTimeoutSec=10 -KillOnCpuUsage=40";
                 command += $" -AllowInsecure={insecure} -DNSs=\"udp://{IPAddress.Loopback}:{dnsPort}\"";
-                command += $" -BootstrapIp={IPAddress.Loopback} -BootstrapPort={dnsPort}";
+                command += $" -BootstrapIp={IPAddress.None} -BootstrapPort=53";
                 isCmdSent = await DnsConsole.SendCommandAsync(command, consoleDelayMs, consoleTimeoutSec, "Confirmed: Setting");
                 if (!isCmdSent) return false;
 

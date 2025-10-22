@@ -148,7 +148,7 @@ public class DnsClient
         }
     }
 
-    public async static Task<byte[]> QueryAsync(byte[] queryBuffer, DnsEnums.DnsProtocol bufferProtocol, string dnsServer, bool allowInsecure, IPAddress bootstrapIP, int bootstrapPort, int timeoutMS, CancellationToken ct, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    public async static Task<byte[]> QueryAsync(byte[] queryBuffer, DnsEnums.DnsProtocol bufferProtocol, string dnsServer, bool allowInsecure, IPAddress bootstrapIP, int bootstrapPort, int timeoutMS, CancellationToken ct, List<AgnosticProgram.Rules.Rule>? ruleList = null, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
         byte[] result = Array.Empty<byte>();
 
@@ -193,34 +193,34 @@ public class DnsClient
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoT)
             {
-                DoTClient doTClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
+                DoTClient doTClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, ruleList, proxyScheme, proxyUser, proxyPass, ct);
                 result = await doTClient.GetResponseAsync().ConfigureAwait(false);
 
                 if (result.Length == 0 && !string.IsNullOrWhiteSpace(proxyScheme)) // Try Without Upstream
                 {
-                    doTClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, null, null, null, ct);
+                    doTClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, ruleList, null, null, null, ct);
                     result = await doTClient.GetResponseAsync().ConfigureAwait(false);
                 }
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.DoH)
             {
-                DoHClient doHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
+                DoHClient doHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, ruleList, proxyScheme, proxyUser, proxyPass, ct);
                 result = await doHClient.GetResponseAsync().ConfigureAwait(false);
 
                 if (result.Length == 0 && !string.IsNullOrWhiteSpace(proxyScheme)) // Try Without Upstream
                 {
-                    doHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, null, null, null, ct);
+                    doHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, ruleList, null, null, null, ct);
                     result = await doHClient.GetResponseAsync().ConfigureAwait(false);
                 }
             }
             else if (dnsReader.Protocol == DnsEnums.DnsProtocol.ObliviousDoH) // Not Implemented Yet
             {
-                ODoHClient oDoHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, proxyScheme, proxyUser, proxyPass, ct);
+                ODoHClient oDoHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, ruleList, proxyScheme, proxyUser, proxyPass, ct);
                 result = await oDoHClient.GetResponseAsync().ConfigureAwait(false);
 
                 if (result.Length == 0 && !string.IsNullOrWhiteSpace(proxyScheme)) // Try Without Upstream
                 {
-                    oDoHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, null, null, null, ct);
+                    oDoHClient = new(queryBuffer, dnsReader, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, ruleList, null, null, null, ct);
                     result = await oDoHClient.GetResponseAsync().ConfigureAwait(false);
                 }
             }
@@ -249,7 +249,7 @@ public class DnsClient
         }
     }
 
-    public async static Task<byte[]> QueryAsync(byte[] queryBuffer, DnsEnums.DnsProtocol bufferProtocol, List<string> dnsServers, bool allowInsecure, IPAddress bootstrapIP, int bootstrapPort, int timeoutMS, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    public async static Task<byte[]> QueryAsync(byte[] queryBuffer, DnsEnums.DnsProtocol bufferProtocol, List<string> dnsServers, bool allowInsecure, IPAddress bootstrapIP, int bootstrapPort, int timeoutMS, List<AgnosticProgram.Rules.Rule>? ruleList, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
         return await Task.Run(async () =>
         {
@@ -266,7 +266,7 @@ public class DnsClient
                     for (int n = 0; n < dnsServers.Count; n++)
                     {
                         string dns = dnsServers[n];
-                        Task<byte[]> task = QueryAsync(queryBuffer, bufferProtocol, dns, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, cts.Token, proxyScheme, proxyUser, proxyPass);
+                        Task<byte[]> task = QueryAsync(queryBuffer, bufferProtocol, dns, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, cts.Token, ruleList, proxyScheme, proxyUser, proxyPass);
                         tasks.Add(task);
                     }
 
@@ -288,7 +288,7 @@ public class DnsClient
                 }
                 else if (dnsServers.Count == 1)
                 {
-                    return await QueryAsync(queryBuffer, bufferProtocol, dnsServers[0], allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, CancellationToken.None, proxyScheme, proxyUser, proxyPass).ConfigureAwait(false);
+                    return await QueryAsync(queryBuffer, bufferProtocol, dnsServers[0], allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, CancellationToken.None, ruleList, proxyScheme, proxyUser, proxyPass).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -298,6 +298,11 @@ public class DnsClient
 
             return result;
         }).ConfigureAwait(false);
+    }
+
+    public async static Task<byte[]> QueryAsync(byte[] queryBuffer, DnsEnums.DnsProtocol bufferProtocol, List<string> dnsServers, bool allowInsecure, IPAddress bootstrapIP, int bootstrapPort, int timeoutMS, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    {
+        return await QueryAsync(queryBuffer, bufferProtocol, dnsServers, allowInsecure, bootstrapIP, bootstrapPort, timeoutMS, null, proxyScheme, proxyUser, proxyPass).ConfigureAwait(false);
     }
 
     public async static Task<byte[]> QueryAsync(byte[] queryBuffer, DnsEnums.DnsProtocol bufferProtocol, AgnosticSettings ds)

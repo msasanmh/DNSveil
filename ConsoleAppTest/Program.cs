@@ -11,6 +11,8 @@ internal class Program
 {
     static async Task Main(string[] args)
     {
+        // This Page Has Nothing To Do With The Project, I Just Test Some Stuff Here.
+
         //// Test HTTP Proxy
         //string website = "https://google.com";
         //string proxy = "http://216.205.52.246:80";
@@ -128,8 +130,8 @@ internal class Program
             //"udp://8.8.8.8:53",
             //"udp://1.1.1.1:53",
             //"udp://9.9.9.9:53",
-            "https://every1dns.com/dns-query",
-            //"https://dns.cloudflare.com/dns-query",
+            //"https://every1dns.com/dns-query",
+            "https://dns.cloudflare.com/dns-query",
             //"https://dns.google/dns-query",
             //"https://45.90.29.204:443/dns-query",
             //"udp://208.67.222.222:5353",
@@ -145,11 +147,11 @@ internal class Program
             MaxRequests = 1000000,
             KillOnCpuUsage = 40,
             DNSs = dnsServers1,
-            BootstrapIpAddress = IPAddress.Parse("8.8.8.8"),
+            BootstrapIpAddress = IPAddress.Any, // IPAddress.Parse("8.8.8.8")
             BootstrapPort = 53,
             AllowInsecure = false,
             BlockPort80 = false,
-            //UpstreamProxyScheme = $"socks5://127.0.0.1:8080", // http://fodev.org:8118
+            //UpstreamProxyScheme = $"socks5://127.0.0.1:443", // http://fodev.org:8118
             ApplyUpstreamOnlyToBlockedIps = false
         };
 
@@ -163,9 +165,24 @@ internal class Program
             {
                 new AgnosticProgram.Rules.Rule()
                 {
-                    Address = "msn.com",
-                    IsBlock = true,
+                    Address = "dns.cloudflare.com",
+                    FakeDnsIP = "104.16.132.229", // 104.16.132.229 - 146.112.61.106
+                    //Dnss = new()
+                    //{
+                    //    "https://dns.cloudflare.com/dns-query"
+                    //},
+                    //DnsProxyScheme = "socks5://127.0.0.1:443"
                 },
+                //new AgnosticProgram.Rules.Rule()
+                //{
+                //    Address = IPAddress.Loopback.ToString(),
+                //    IsBlock = true,
+                //},
+                //new AgnosticProgram.Rules.Rule()
+                //{
+                //    Address = IPAddress.IPv6Loopback.ToStringNoScopeId(),
+                //    IsBlock = true,
+                //},
                 new AgnosticProgram.Rules.Rule()
                 {
                     Address = "*",
@@ -173,11 +190,11 @@ internal class Program
                     //{
                     //    "https://dns.cloudflare.com/dns-query"
                     //},
-                    DnsProxyScheme = "socks5://127.0.0.1:8080"
+                    DnsProxyScheme = "socks5://127.0.0.1:443"
                 },
             }
         };
-        //server1.EnableRules(rules);
+        server1.EnableRules(rules);
         
         AgnosticSettingsSSL settingsSSL = new(true)
         {

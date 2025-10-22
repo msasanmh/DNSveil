@@ -12,12 +12,13 @@ public class ODoHClient
     private IPAddress BootstrapIP { get; set; }
     private int BootstrapPort { get; set; }
     private int TimeoutMS { get; set; } = 5;
+    private List<AgnosticProgram.Rules.Rule>? RuleList { get; set; }
     private string? ProxyScheme { get; set; }
     private string? ProxyUser { get; set; }
     private string? ProxyPass { get; set; }
     private CancellationToken CT { get; set; }
 
-    public ODoHClient(byte[] queryBuffer, DnsReader reader, bool allowInsecure, IPAddress bootstrapIP, int bootstrapPort, int timeoutMS, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
+    public ODoHClient(byte[] queryBuffer, DnsReader reader, bool allowInsecure, IPAddress bootstrapIP, int bootstrapPort, int timeoutMS, List<AgnosticProgram.Rules.Rule>? ruleList, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
     {
         QueryBuffer = queryBuffer;
         Reader = reader;
@@ -25,6 +26,7 @@ public class ODoHClient
         BootstrapIP = bootstrapIP;
         BootstrapPort = bootstrapPort;
         TimeoutMS = timeoutMS;
+        RuleList = ruleList;
         ProxyScheme = proxyScheme;
         ProxyUser = proxyUser;
         ProxyPass = proxyPass;
@@ -49,7 +51,7 @@ public class ODoHClient
                     if (relayReader.IsDnsCryptStamp) relayServerIP = relayReader.IP.ToString();
                     else
                     {
-                        relayServerIP = await Bootstrap.GetDnsIpAsync(relayReader.Host, BootstrapIP, BootstrapPort, 3, ProxyScheme, ProxyUser, ProxyPass);
+                        relayServerIP = await Bootstrap.GetDnsIpAsync(relayReader.Host, BootstrapIP, BootstrapPort, 3, RuleList, ProxyScheme, ProxyUser, ProxyPass);
                     }
 
                     string scheme = relayReader.Scheme;

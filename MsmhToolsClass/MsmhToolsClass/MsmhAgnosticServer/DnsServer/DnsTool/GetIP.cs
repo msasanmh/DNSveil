@@ -8,37 +8,6 @@ namespace MsmhToolsClass.MsmhAgnosticServer;
 public static class GetIP
 {
     /// <summary>
-    /// Get First IP in Answer Section
-    /// </summary>
-    /// <param name="host">Host</param>
-    /// <param name="getIPv6">Look for IPv6</param>
-    /// <returns>Returns IPAddress.None/IPAddress.IPv6None If Fail</returns>
-    public static IPAddress GetIpFromSystem(string host, bool getIPv6 = false, bool alsoUsePing = true)
-    {
-        List<IPAddress> ips = GetIpsFromSystem(host, getIPv6);
-        if (ips.Count != 0) return ips[0];
-        else
-        {
-            if (alsoUsePing)
-            {
-                try
-                {
-                    using Ping ping = new();
-                    PingReply reply = ping.Send(host, 3000);
-                    IPAddress ip = reply.Address;
-                    bool isIpv6 = NetworkTool.IsIPv6(ip);
-
-                    if (getIPv6 && isIpv6 && !IPAddress.IsLoopback(ip)) return ip;
-                    if (!getIPv6 && !isIpv6 && !IPAddress.IsLoopback(ip)) return ip;
-                }
-                catch (Exception) { }
-            }
-        }
-
-        return getIPv6 ? IPAddress.IPv6None : IPAddress.None;
-    }
-
-    /// <summary>
     /// Get a List of IPs
     /// </summary>
     /// <param name="host">Host</param>
@@ -81,10 +50,48 @@ public static class GetIP
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            Debug.WriteLine("GetIP GetIpsFromSystem: " + ex.Message);
         }
 
         return ips;
+    }
+
+    /// <summary>
+    /// Get First IP in Answer Section
+    /// </summary>
+    /// <param name="host">Host</param>
+    /// <param name="getIPv6">Look for IPv6</param>
+    /// <returns>Returns IPAddress.None/IPAddress.IPv6None If Fail</returns>
+    public static IPAddress GetIpFromSystem(string host, bool getIPv6 = false, bool alsoUsePing = true)
+    {
+        try
+        {
+            List<IPAddress> ips = GetIpsFromSystem(host, getIPv6);
+            if (ips.Count != 0) return ips[0];
+            else
+            {
+                if (alsoUsePing)
+                {
+                    try
+                    {
+                        using Ping ping = new();
+                        PingReply reply = ping.Send(host, 3000);
+                        IPAddress ip = reply.Address;
+                        bool isIpv6 = NetworkTool.IsIPv6(ip);
+
+                        if (getIPv6 && isIpv6 && !IPAddress.IsLoopback(ip)) return ip;
+                        if (!getIPv6 && !isIpv6 && !IPAddress.IsLoopback(ip)) return ip;
+                    }
+                    catch (Exception) { }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("GetIP GetIpFromSystem: " + ex.Message);
+        }
+
+        return getIPv6 ? IPAddress.IPv6None : IPAddress.None;
     }
 
     /// <summary>
@@ -98,34 +105,43 @@ public static class GetIP
     public static async Task<List<IPAddress>> GetIPsFromDnsAddressAsync(string host, List<string> dnss, bool allowInsecure, int timeoutSec, bool getIPv6, IPAddress bootstrapIP, int bootstrapPort, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
         List<IPAddress> ips = new();
-        DnsEnums.RRType rrType = getIPv6 ? DnsEnums.RRType.AAAA : DnsEnums.RRType.A;
-        DnsMessage dmQ = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.UDP, host, rrType, DnsEnums.CLASS.IN);
-        bool isWriteSuccess = DnsMessage.TryWrite(dmQ, out byte[] dmQBuffer);
-        if (isWriteSuccess)
-        {
-            byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnss, allowInsecure, bootstrapIP, bootstrapPort, timeoutSec * 1000, proxyScheme, proxyUser, proxyPass);
-            DnsMessage dmA = DnsMessage.Read(dmABuffer, DnsEnums.DnsProtocol.UDP);
 
-            if (dmA.IsSuccess && dmA.Header.AnswersCount > 0)
+        try
+        {
+            DnsEnums.RRType rrType = getIPv6 ? DnsEnums.RRType.AAAA : DnsEnums.RRType.A;
+            DnsMessage dmQ = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.UDP, host, rrType, DnsEnums.CLASS.IN);
+            bool isWriteSuccess = DnsMessage.TryWrite(dmQ, out byte[] dmQBuffer);
+            if (isWriteSuccess)
             {
-                foreach (IResourceRecord irr in dmA.Answers.AnswerRecords)
+                byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnss, allowInsecure, bootstrapIP, bootstrapPort, timeoutSec * 1000, proxyScheme, proxyUser, proxyPass);
+                DnsMessage dmA = DnsMessage.Read(dmABuffer, DnsEnums.DnsProtocol.UDP);
+
+                if (dmA.IsSuccess && dmA.Header.AnswersCount > 0)
                 {
-                    if (getIPv6)
+                    foreach (IResourceRecord irr in dmA.Answers.AnswerRecords)
                     {
-                        if (irr is not AaaaRecord aaaaRecord) continue;
-                        bool isLoopbackIP = IPAddress.IsLoopback(aaaaRecord.IP);
-                        if (!isLoopbackIP) ips.Add(aaaaRecord.IP);
-                    }
-                    else
-                    {
-                        if (irr is not ARecord aRecord) continue;
-                        bool isLocalIP = NetworkTool.IsLocalIP(aRecord.IP);
-                        bool isLoopbackIP = IPAddress.IsLoopback(aRecord.IP);
-                        if (!isLocalIP && !isLoopbackIP) ips.Add(aRecord.IP);
+                        if (getIPv6)
+                        {
+                            if (irr is not AaaaRecord aaaaRecord) continue;
+                            bool isLoopbackIP = IPAddress.IsLoopback(aaaaRecord.IP);
+                            if (!isLoopbackIP) ips.Add(aaaaRecord.IP);
+                        }
+                        else
+                        {
+                            if (irr is not ARecord aRecord) continue;
+                            bool isLocalIP = NetworkTool.IsLocalIP(aRecord.IP);
+                            bool isLoopbackIP = IPAddress.IsLoopback(aRecord.IP);
+                            if (!isLocalIP && !isLoopbackIP) ips.Add(aRecord.IP);
+                        }
                     }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("GetIP GetIPsFromDnsAddressAsync: " + ex.Message);
+        }
+
         return ips;
     }
 
@@ -172,37 +188,58 @@ public static class GetIP
     /// <param name="timeoutSec">Timeout (Sec)</param>
     /// <param name="proxyScheme">Use Proxy to Get IP</param>
     /// <returns>Returns IPAddress.None/IPAddress.IPv6None If Fail</returns>
-    public static async Task<IPAddress> GetIpFromDnsAddressAsync(string host, List<string> dnss, bool allowInsecure, int timeoutSec, bool getIPv6, IPAddress bootstrapIP, int bootstrapPort, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    public static async Task<IPAddress> GetIpFromDnsAddressAsync(string host, List<string> dnss, bool allowInsecure, int timeoutSec, bool getIPv6, IPAddress bootstrapIP, int bootstrapPort, List<AgnosticProgram.Rules.Rule>? ruleList, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
-        DnsEnums.RRType rrType = getIPv6 ? DnsEnums.RRType.AAAA : DnsEnums.RRType.A;
-        DnsMessage dmQ = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.UDP, host, rrType, DnsEnums.CLASS.IN);
-        bool isWriteSuccess = DnsMessage.TryWrite(dmQ, out byte[] dmQBuffer);
-        if (isWriteSuccess)
+        try
         {
-            byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnss, allowInsecure, bootstrapIP, bootstrapPort, timeoutSec * 1000, proxyScheme, proxyUser, proxyPass);
-            DnsMessage dmA = DnsMessage.Read(dmABuffer, DnsEnums.DnsProtocol.UDP);
-            
-            if (dmA.IsSuccess && dmA.Header.AnswersCount > 0)
+            DnsEnums.RRType rrType = getIPv6 ? DnsEnums.RRType.AAAA : DnsEnums.RRType.A;
+            DnsMessage dmQ = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.UDP, host, rrType, DnsEnums.CLASS.IN);
+            bool isWriteSuccess = DnsMessage.TryWrite(dmQ, out byte[] dmQBuffer);
+            if (isWriteSuccess)
             {
-                foreach (IResourceRecord irr in dmA.Answers.AnswerRecords)
+                byte[] dmABuffer = await DnsClient.QueryAsync(dmQBuffer, DnsEnums.DnsProtocol.UDP, dnss, allowInsecure, bootstrapIP, bootstrapPort, timeoutSec * 1000, ruleList, proxyScheme, proxyUser, proxyPass);
+                DnsMessage dmA = DnsMessage.Read(dmABuffer, DnsEnums.DnsProtocol.UDP);
+
+                if (dmA.IsSuccess && dmA.Header.AnswersCount > 0)
                 {
-                    if (getIPv6)
+                    foreach (IResourceRecord irr in dmA.Answers.AnswerRecords)
                     {
-                        if (irr is not AaaaRecord aaaaRecord) continue;
-                        bool isLoopbackIP = IPAddress.IsLoopback(aaaaRecord.IP);
-                        if (!isLoopbackIP) return aaaaRecord.IP;
-                    }
-                    else
-                    {
-                        if (irr is not ARecord aRecord) continue;
-                        bool isLocalIP = NetworkTool.IsLocalIP(aRecord.IP);
-                        bool isLoopbackIP = IPAddress.IsLoopback(aRecord.IP);
-                        if (!isLocalIP && !isLoopbackIP) return aRecord.IP;
+                        if (getIPv6)
+                        {
+                            if (irr is not AaaaRecord aaaaRecord) continue;
+                            bool isLoopbackIP = IPAddress.IsLoopback(aaaaRecord.IP);
+                            if (!isLoopbackIP) return aaaaRecord.IP;
+                        }
+                        else
+                        {
+                            if (irr is not ARecord aRecord) continue;
+                            bool isLocalIP = NetworkTool.IsLocalIP(aRecord.IP);
+                            bool isLoopbackIP = IPAddress.IsLoopback(aRecord.IP);
+                            if (!isLocalIP && !isLoopbackIP) return aRecord.IP;
+                        }
                     }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("GetIP GetIpFromDnsAddressAsync: " + ex.Message);
+        }
+
         return getIPv6 ? IPAddress.IPv6None : IPAddress.None;
+    }
+
+    /// <summary>
+    /// Get First IP in Answer Section (Using Wire Format)
+    /// </summary>
+    /// <param name="host">Host</param>
+    /// <param name="dnss">A List Of DNS Servers</param>
+    /// <param name="timeoutSec">Timeout (Sec)</param>
+    /// <param name="proxyScheme">Use Proxy to Get IP</param>
+    /// <returns>Returns IPAddress.None/IPAddress.IPv6None If Fail</returns>
+    public static async Task<IPAddress> GetIpFromDnsAddressAsync(string host, List<string> dnss, bool allowInsecure, int timeoutSec, bool getIPv6, IPAddress bootstrapIP, int bootstrapPort, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    {
+        return await GetIpFromDnsAddressAsync(host, dnss, allowInsecure, timeoutSec, getIPv6, bootstrapIP, bootstrapPort, null, proxyScheme, proxyUser, proxyPass);
     }
 
     /// <summary>
