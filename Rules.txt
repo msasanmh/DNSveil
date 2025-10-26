@@ -1,0 +1,161 @@
+// -------------------------------------------------------------
+// DnsRules.txt — DNSveil / SDC rule file
+// Created: 2025-10-20
+// Notes: Edit SmartDns variables to your preferred DoH/DoT/DNSCrypt endpoints.
+//        Wildcards (*) supported. Lines ending with ';' are rules.
+// -------------------------------------------------------------
+
+// ---------------------------
+// Variables (set your own DoH/DoT/DNSCrypt endpoints)
+// ---------------------------
+SmartDns1 = https://dns1.example.com/dns-query;
+SmartDns2 = https://dns2.example.com/dns-query;
+SmartDns3 = https://dns3.example.com/dns-query;
+LocalDNS = udp://127.0.0.1:53;
+
+// ---------------------------
+// Defaults
+// ---------------------------
+// blockport: specify ports to block by default (comma separated)
+blockport:53,80,443;
+
+// Default action for everything else: use system/default behaviour (+ = apply defaults)
+*|+;
+
+// ---------------------------
+// Privacy / Ad / Tracker blocks
+// (blocks domains and subdomains used for ads, analytics, trackers)
+// Edit to remove/add lists you trust or need.
+// ---------------------------
+doubleclick.net|-;
+googleadservices.com|-;
+adservice.google.com|-;
+ads.youtube.com|-;
+googlesyndication.com|-;
+pagead2.googlesyndication.com|-;
+amazon-adsystem.com|-;
+adnxs.com|-;
+adsafeprotected.com|-;
+rubiconproject.com|-;
+scorecardresearch.com|-;
+analytics.google.com|-;
+google-analytics.com|-;
+facebook.com|-;            // block Facebook entire domain (remove if you need FB)
+*.facebook.com|-;
+connect.facebook.net|-;
+pixel.facebook.com|-;
+track.adform.net|-;
+*.tracking.example|-;      // placeholder: add private tracking hosts
+
+// ---------------------------
+// System / Developer / CDN exemptions
+// Don't apply DPI/proxy/fake SNI for these, let system handle them directly
+// Use the '--' rule to skip DPI bypass and proxies
+google.com|--;
+*.google.com|--;
+github.com|--;
+*.github.com|--;
+githubusercontent.com|--;
+*.githubusercontent.com|--;
+stackexchange.com|--;
+*.stackoverflow.com|--;
+*.sstatic.net|--;
+php.net|--;
+openai.com|--;
+*.openai.com|--;
+
+// ---------------------------
+// YouTube / Google video handling
+// Use google DNS domain mapping to preserve playback, and set SNI where needed
+// Adjust based on network behavior; SNI fake helps DPI bypass on googlevideo hosts
+youtube.com|dnsdomain:google.com;sni:google.com;
+ytimg.com|dnsdomain:google.com;
+*.ytimg.com|dnsdomain:google.com;
+ggpht.com|dnsdomain:google.com;
+*.ggpht.com|dnsdomain:*.googleusercontent.com;
+*.googlevideo.com|dnsdomain:*.c.docs.google.com;sni:google.com;
+
+// ---------------------------
+// Force specific DoH/DoT per high-value domains
+// Example: send traffic for selected domains to SmartDns1 / SmartDns2
+// ---------------------------
+developers.google.com|--;dns:SmartDns1,SmartDns2,SmartDns3;
+*.googleusercontent.com|--;dns:SmartDns1,SmartDns2,SmartDns3;
+developer.android.com|--;dns:SmartDns1,SmartDns2,SmartDns3;
+spotify.com|--;dns:SmartDns1,SmartDns2,SmartDns3;
+*.spotify.com|--;dns:SmartDns1,SmartDns2,SmartDns3;
+
+// ---------------------------
+// Fake DNS (map domain to a local IP or block by redirecting to 127.0.0.1)
+// Useful for blocking telemetry or unwanted hosts.
+// ---------------------------
+telemetry.example.com|127.0.0.1;
+diagnostics.example.net|127.0.0.1;
+
+// ---------------------------
+// Proxy / Upstream proxy per-domain
+// Route traffic for selected domains through a SOCKS5 or HTTP proxy.
+// Example: route a domain via local SOCKS5 running on 127.0.0.1:1080
+// Format: domain|proxy:socks5://127.0.0.1:1080;
+// Add user/password if required: &user:UserName&pass:PassWord
+// ---------------------------
+example-blocked-site.com|proxy:socks5://127.0.0.1:1080;
+*.blocked-video-site.com|proxy:http://127.0.0.1:3128;
+
+// ---------------------------
+// Anonymized DNSCrypt examples (stamp + relay)
+// (Only required if you use DNSCrypt relays)
+// Example pattern (stamp + relay) is supported by DNSveil per README.
+// ---------------------------
+sdns://...sdns... sdns://relay-stamp-or-ip:port
+
+// ---------------------------
+// DNS Domain translation
+// Use dnsdomain to get IP from one domain and use it for another
+// Useful if upstream blocks direct domain but allows other domain
+// ---------------------------
+youtube-nocdn.example|dnsdomain:google.com;
+
+// ---------------------------
+// Example: Set a custom/fake SNI for a domain (helps DPI bypass)
+// ---------------------------
+*.googlevideo.com|sni:google.com;
+*.example-streaming.com|sni:cdn.example.com;
+
+// ---------------------------
+// Example: Block entire TLDs or country zones (use with caution)
+// ---------------------------
+.cn|-;
+.ru|-;
+
+// ---------------------------
+// Local network & LAN exemptions
+// Allow local LAN and DNS to operate directly
+// ---------------------------
+192.168.0.0/16|--;
+10.0.0.0/8|--;
+172.16.0.0/12|--;
+127.0.0.0/8|--;
+::1/128|--;
+
+// ---------------------------
+// Export / Advanced scanner hints
+// You can export servers based on conditions from the advanced DNS scanner
+// e.g., export servers that pass IPv6 test or avoid Google Safe Search
+// ---------------------------
+
+// ---------------------------
+// Custom: Use Local DNS for development/test domains
+// ---------------------------
+dev.local|dns:LocalDNS;
+*.staging.local|dns:LocalDNS;
+
+// ---------------------------
+// End of file — additional tips:
+// - To block a domain and all subdomains use: example.com|-;  and  *.example.com|-;
+// - Place the most specific rules above more generic ones (rules are matched in order).
+// - Test changes with the Advanced DNS Scanner and DNS Lookup tools in DNSveil.
+// - If using "SSL Decryption" or fake SNI, you may need to install the generated root CA
+//   and restart browsers for changes to take effect.
+// - Keep copies of original rules and incrementally change to avoid accidental lockout.
+// ---------------------------v
