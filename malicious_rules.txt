@@ -1,0 +1,3 @@
+
+# Aggregated malicious_rules.txt � generated on 2025-10-21T02:02:15Z
+# from https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts

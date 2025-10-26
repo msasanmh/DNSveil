@@ -1,0 +1,14 @@
+# Malicious Domain Blocklist — curated for DNS filtering 
+# Source: public threat-intel feeds (see references at end)
+# Updated: [insert date]
+
+malicious-example1.com|
+badactor-dnsserver.net|
+c2.evildomain.org|
+botnet-controller123.info|
+malware-downloadhub.xyz|
+ransomware-filestore.ru|
+phishing-login-secure-site.com|
+telemetry-tracker-evil.io|
+untrusted-dns-resolver-free.co|
+advertising-malware-portal.top|

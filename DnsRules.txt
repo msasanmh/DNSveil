@@ -1,0 +1,203 @@
+// -------------------------------------------------------------
+// DnsRules_populated.txt — DNSveil / SDC rule file (curated sources)
+// Created: 2025-10-20
+// Notes: These are pointers to trusted public sources used by white-hat researchers.
+//        I could not fetch/verify the exact raw contents here — fetch + convert
+//        the remote files before importing (see scripts at end).
+// -------------------------------------------------------------
+
+// ---------------------------
+// Variables (trusted DoH / DoT / DNS providers)
+// ---------------------------
+SmartDns1 = https://cloudflare-dns.com/dns-query;      // Cloudflare DoH (1.1.1.1)
+SmartDns2 = https://dns.google/dns-query;             // Google DoH (8.8.8.8)
+SmartDns3 = https://dns.quad9.net/dns-query;          // Quad9 DoH (protects against malicious domains)
+SmartDns4 = https://dns.adguard.com/dns-query;        // AdGuard DoH (ad-blocking option)
+SmartDns5 = https://doh.cleanbrowsing.org/doh/family-filter; // CleanBrowsing (family / malware filters)
+LocalDNS = udp://127.0.0.1:53;
+
+// ---------------------------
+// Defaults
+// ---------------------------
+blockport:53,80,443;
+*|+;
+
+// ---------------------------
+// Trusted remote blocklist sources (white-hat / researcher-referenced)
+// ---------------------------
+// NOTE: These links point to the project pages or raw file endpoints used by many researchers.
+//       Verify the exact raw path and integrity (HTTPS, checksums, signatures) before automating.
+//
+// Aggregated hosts / combined lists
+# Steven Black — community-curated aggregated hosts (ad/tracker/malware)
+# raw hosts (example):
+# https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+# project page:
+https://github.com/StevenBlack/hosts
+
+# Abuse.ch — URLhaus (malicious URL / host distribution)
+# Hostfile download:
+https://urlhaus.abuse.ch/downloads/hostfile/
+# project page:
+https://urlhaus.abuse.ch/
+
+# OISD — comprehensive host/blocklist project popular with researchers
+# project page & downloads (check official download links):
+https://oisd.nl/
+https://github.com/oisd
+
+# AdAway — widely used hosts file for Android / research
+https://adaway.org/hosts.txt
+https://github.com/AdAway/adaway.github.io
+
+# EasyList / EasyPrivacy — widely-used ad and tracker filters (maintained by community)
+# project page / GitHub:
+https://easylist.to/
+https://github.com/easylist/easylist
+
+# AdGuard filter lists (DNS filters / SDNS filters)
+https://github.com/AdguardTeam/AdGuardSDNSFilters
+https://github.com/AdguardTeam/AdGuardHome
+
+# PhishTank — community-curated phishing feed (requires API/consent for raw dumps)
+https://www.phishtank.com/developer_info.php
+
+# Spamhaus DROP / PBL (IP blocklists, useful for CIDR blocking)
+https://www.spamhaus.org/drop/
+
+# Emerging Threats / Proofpoint ET Open — IDS / malware indicators (feeds)
+https://rules.emergingthreats.net/
+https://github.com/emergingthreats
+
+# MalwareBazaar / MalwareDomains / other indicator aggregators (use with care)
+https://bazaar.abuse.ch/
+# Project pages for additional curated lists:
+https://github.com/mitchellkrogza/Ultimate.Hosts.Blacklist
+https://github.com/StevenBlack/hosts
+
+// ---------------------------
+// How to reference these in your workflow
+// ---------------------------
+// Preferred approach:
+// 1) Maintain a local file `urls.txt` listing one remote source URL per line (use the raw endpoints where available).
+// 2) Use the aggregation script (bash / PowerShell) to fetch, normalize and convert to `domain|-;` lines.
+// 3) Deduplicate, verify, then import the single `malicious_rules.txt` into DNSveil.
+//
+// Example urls.txt (place raw URLs here — replace any that require API keys with their raw-export endpoints):
+# raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+# https://urlhaus.abuse.ch/downloads/hostfile/
+# https://adaway.org/hosts.txt
+# https://filters.adtidy.org/extension/chromium/filters/11.txt (example Adblock filter)
+# https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilters/master/Filters/filter.txt
+
+// ---------------------------
+// Example protective rules (keep/adjust)
+// ---------------------------
+# Provider exemptions (no DPI bypass for core providers)
+google.com|--;
+*.google.com|--;
+github.com|--;
+*.github.com|--;
+githubusercontent.com|--;
+*.githubusercontent.com|--;
+stackexchange.com|--;
+*.stackoverflow.com|--;
+openai.com|--;
+*.openai.com|--;
+
+# YouTube / Google Video handling
+youtube.com|dnsdomain:google.com;sni:google.com;
+ytimg.com|dnsdomain:google.com;
+*.googlevideo.com|dnsdomain:*.c.docs.google.com;sni:google.com;
+
+# Local exemptions
+192.168.0.0/16|--;
+10.0.0.0/8|--;
+172.16.0.0/12|--;
+127.0.0.0/8|--;
+::1/128|--;
+
+// ---------------------------
+// Placeholder for aggregated rules (generated after fetching remote lists)
+// ---------------------------
+// After running the fetch/convert script you will replace this block with the converted lines,
+// e.g.:
+//
+// adserver.example|-;
+// tracking.example|-;
+// maliciousdomain.example|-;
+//
+// (Automatically generated -> import-ready: every rule line ends with ';')
+// ---------------------------
+
+// ---------------------------
+// Where to find DNSCrypt stamps & public resolver lists
+// ---------------------------
+// DNSCrypt public servers & stamps (canonical list maintained by community)
+https://dnscrypt.info/public-servers/
+https://github.com/DNSCrypt/dnscrypt-resolvers
+
+// ---------------------------
+// DOH / DOT endpoints (human readable references — insert as variables above)
+// Cloudflare DoH:    https://cloudflare-dns.com/dns-query
+// Google DoH:        https://dns.google/dns-query
+// Quad9 DoH:         https://dns.quad9.net/dns-query
+// AdGuard DoH:       https://dns.adguard.com/dns-query
+// CleanBrowsing DoH: https://doh.cleanbrowsing.org/doh/family-filter
+// NextDNS (per-config): https://dns.nextdns.io/<CONFIG_ID>  (replace <CONFIG_ID>)
+// ---------------------------
+
+// ---------------------------
+// Automated fetch + convert examples (use locally; validate outputs)
+// ---------------------------
+
+# Bash (recommended on Linux/macOS):
+#  1) create urls.txt with raw endpoints (one per line)
+#  2) run:
+#    out="malicious_rules.txt"
+#    : > "$out"
+#    while read -r url; do
+#      echo "# from $url" >> "$out"
+#      curl -fsSL "$url" | sed 's/\r//g' | awk '
+#        /^[[:space:]]*#/ {next}
+#        NF==0 {next}
+#        {
+#          # hosts style (e.g., "0.0.0.0 domain") -> take last field, otherwise first
+#          host = ($1 ~ /^[0-9]/) ? $NF : $1
+#          # basic sanity filters
+#          if (host ~ /[:\/]/) next
+#          print host "|-;"
+#        }' >> "$out"
+#    done < urls.txt
+#    # dedupe
+#    awk '!seen[$0]++' "$out" > "${out}.uniq" && mv "${out}.uniq" "$out"
+#    echo "Generated $out"
+
+# PowerShell (Windows):
+#  $urls = Get-Content .\urls.txt
+#  $out = "malicious_rules.txt"
+#  "" | Out-File $out -Encoding utf8
+#  foreach ($u in $urls) {
+#    try { $text = Invoke-RestMethod -Uri $u -UseBasicParsing -ErrorAction Stop } catch { Write-Warning "fail $u"; continue }
+#    Add-Content -Path $out -Value "# from $u"
+#    $text -split "`n" | ForEach-Object {
+#      $l = $_.Trim()
+#      if ($l -eq "" -or $l.StartsWith("#")) { continue }
+#      $p = -split $l
+#      $host = if ($p.Count -ge 2) { $p[-1] } else { $p[0] }
+#      if ($host -match "[:/]" -or $host -match "^\d+(\.\d+){3}$") { continue }
+#      "$host|-;" | Out-File -Append -Encoding utf8 $out
+#    }
+#  }
+#  Get-Content $out | Select-Object -Unique | Set-Content $out -Encoding utf8
+#  Write-Output "Generated $out"
+
+// ---------------------------
+// Final notes & cautions
+// ---------------------------
+// - Always vet remote sources before automated inclusion; prefer HTTPS raw endpoints and pinned commits.
+// - Test the aggregated set in a controlled environment (small subset) before deploying network-wide.
+// - Keep backups and use ordering: place the most specific rules above general ones.
+// - Consider adding integrity checks (hashes / signed lists) for fully automated ingestion.
+//
+// End of DnsRules_populated.txt
