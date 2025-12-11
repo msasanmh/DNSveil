@@ -1,5 +1,5 @@
 // -------------------------------------------------------------
-// DnsRules.txt — DNSveil / SDC rule file
+// DnsRules.txt â€” DNSveil / SDC rule file
 // Created: 2025-10-20
 // Notes: Edit SmartDns variables to your preferred DoH/DoT/DNSCrypt endpoints.
 //        Wildcards (*) supported. Lines ending with ';' are rules.
@@ -151,7 +151,7 @@ dev.local|dns:LocalDNS;
 *.staging.local|dns:LocalDNS;
 
 // ---------------------------
-// End of file — additional tips:
+// End of file â€” additional tips:
 // - To block a domain and all subdomains use: example.com|-;  and  *.example.com|-;
 // - Place the most specific rules above more generic ones (rules are matched in order).
 // - Test changes with the Advanced DNS Scanner and DNS Lookup tools in DNSveil.
