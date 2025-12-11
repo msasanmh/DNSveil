@@ -1,16 +1,25 @@
-# urls.txt — one raw endpoint per line (trusted community/researcher sources)
-# Replace or remove any lines that require API keys or you don't trust.
+# urls.txt â€” raw blocklist endpoints for automated ingestion
 
+# Main aggregated hosts/blocklists
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/ultimate.txt
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/pro.txt
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/normal.txt
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/light.txt
+
+# Secondary / supplemental threat-blocklists
+https://raw.githubusercontent.com/PeterDaveHello/threat-hostlist/master/threat-hostlist.txt
+https://raw.githubusercontent.com/ph00lt0/blocklist/master/blocklist.txt
+
+# Smaller, focused hostlists (ads / trackers / malware / phishing)
 https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
-https://adaway.org/hosts.txt
+https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/malware-only/hosts
+https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn/hosts
+
+# Malware / phishing / abuse trackers
 https://urlhaus.abuse.ch/downloads/hostfile/
+https://raw.githubusercontent.com/mitchellkrogza/BadHosts/master/hosts
+https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt
+
+# Others / alternate blocklist sources
 https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilters/master/Filters/filter.txt
-https://raw.githubusercontent.com/Adguardteam/AdGuardHome/master/filters/filter.txt
-https://raw.githubusercontent.com/mitchellkrogza/Ultimate.Hosts.Blacklist/master/hosts
-https://raw.githubusercontent.com/StevenBlack/hosts/master/data/hosts-blocklists.txt
-https://rules.emergingthreats.net/blockrules/compromised-ips.txt
-https://www.spamhaus.org/drop/drop.txt
-https://bazaar.abuse.ch/export/csv/  # MalwareBazaar — CSV export (post-process needed)
-# Optional / utility lists:
-https://dnscrypt.info/public-servers/          # list of public DNSCrypt servers (human page)
-https://github.com/DNSCrypt/dnscrypt-resolvers # repo reference for stamps
+https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/filters/filter.txts
