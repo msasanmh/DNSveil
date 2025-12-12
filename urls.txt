@@ -1,25 +1,30 @@
-# urls.txt — raw blocklist endpoints for automated ingestion
+# Hagezi DNS Blocklists
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/multi.txt
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/ultimate.txt
 
-# Main aggregated hosts/blocklists
-https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/ultimate.txt
-https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/pro.txt
-https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/normal.txt
-https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/light.txt
-
-# Secondary / supplemental threat-blocklists
-https://raw.githubusercontent.com/PeterDaveHello/threat-hostlist/master/threat-hostlist.txt
-https://raw.githubusercontent.com/ph00lt0/blocklist/master/blocklist.txt
-
-# Smaller, focused hostlists (ads / trackers / malware / phishing)
+# Universal Hostlists
 https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
-https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/malware-only/hosts
-https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/porn/hosts
+https://adaway.org/hosts.txt
 
-# Malware / phishing / abuse trackers
+# Abuse.ch Feeds
 https://urlhaus.abuse.ch/downloads/hostfile/
-https://raw.githubusercontent.com/mitchellkrogza/BadHosts/master/hosts
+https://threatfox.abuse.ch/downloads/hostfile/
+
+# OpenPhish
+https://raw.githubusercontent.com/openphish/public_feed/master/feed.txt
+
+# Phishing Active Domains
 https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt
 
-# Others / alternate blocklist sources
-https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilters/master/Filters/filter.txt
-https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/filters/filter.txts
+# AdGuard SDNSFilter
+https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+
+# Spamhaus DROP/EDROP
+https://www.spamhaus.org/drop/drop.txt
+https://www.spamhaus.org/drop/edrop.txt
+
+# Emerging Threats – community extracted
+https://hosts.tweedge.net/malicious.txt
+https://hosts.tweedge.net/suspicious.txt
+https://hosts.tweedge.net/informational.txt
