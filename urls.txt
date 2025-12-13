@@ -1,0 +1,30 @@
+# Hagezi DNS Blocklists
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/multi.txt
+https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/ultimate.txt
+
+# Universal Hostlists
+https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+https://adaway.org/hosts.txt
+
+# Abuse.ch Feeds
+https://urlhaus.abuse.ch/downloads/hostfile/
+https://threatfox.abuse.ch/downloads/hostfile/
+
+# OpenPhish
+https://raw.githubusercontent.com/openphish/public_feed/master/feed.txt
+
+# Phishing Active Domains
+https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt
+
+# AdGuard SDNSFilter
+https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+
+# Spamhaus DROP/EDROP
+https://www.spamhaus.org/drop/drop.txt
+https://www.spamhaus.org/drop/edrop.txt
+
+# Emerging Threats – community extracted
+https://hosts.tweedge.net/malicious.txt
+https://hosts.tweedge.net/suspicious.txt
+https://hosts.tweedge.net/informational.txt
