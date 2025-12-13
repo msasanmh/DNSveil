@@ -1,116 +1,124 @@
 #!/usr/bin/env bash
-# build_rules.sh — robust blocklist aggregator for DNSveil
-# Produces:
-#   - raw_domains.txt  (one domain per line, deduped)
-#   - malicious_rules.txt (DNSveil format: domain|-;)
-#   - failed_fetches.txt (sources that failed or were skipped)
-#
-# Usage: put urls.txt in the same folder, then run ./build_rules.sh
-# Requires: bash 4+, curl, gunzip (optional)
-# Use "dos2unix build_rules.sh" if needed.
+# DNSveil build_rules.sh — async + memoized blocklist builder
+# Requires: bash 4+, curl, sha1sum, sed, awk, grep, sort
 
 set -euo pipefail
 IFS=$'\n\t'
 
+### CONFIG
 urls_file="urls.txt"
 out_rules="malicious_rules.txt"
 out_raw="raw_domains.txt"
-tmpdir="$(mktemp -d)"
 failed_log="failed_fetches.txt"
+
+cache_root="$HOME/.cache/dnsveil"
+cache_data="$cache_root/data"
+cache_meta="$cache_root/meta"
+
 max_parallel=8
-trap 'rm -rf "$tmpdir"' EXIT
+user_agent="dnsveil-builder/1.1"
+
+mkdir -p "$cache_data" "$cache_meta"
 
 : > "$out_rules"
 : > "$out_raw"
 : > "$failed_log"
 
-# sanitize a line: remove BOM, inline comment, surrounding whitespace
+trap 'wait' EXIT
+
+### HELPERS
+
 sanitize_line() {
   local s="$1"
-  s="${s//$'\xef\xbb\xbf'/}"      # remove BOM
-  s="${s%%#*}"                    # drop inline comment
-  s="$(printf '%s' "$s" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-  printf '%s' "$s"
+  s="${s//$'\xef\xbb\xbf'/}"
+  s="${s%%#*}"
+  printf '%s' "$s" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 }
 
-# convert github.com blob URLs to raw.githubusercontent.com
 github_to_raw() {
-  local url="$1"
-  if [[ "$url" =~ https://github.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*) ]]; then
-    printf 'https://raw.githubusercontent.com/%s/%s/%s/%s' \
-      "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}"
-  else
-    printf '%s' "$url"
-  fi
+  [[ "$1" =~ https://github.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*) ]] \
+    && printf 'https://raw.githubusercontent.com/%s/%s/%s/%s' \
+       "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}" \
+    || printf '%s' "$1"
 }
 
-# fetch + normalize one URL
+cache_key() {
+  printf '%s' "$1" | sha1sum | awk '{print $1}'
+}
+
+### FETCH (memoized, revalidated)
+
 fetch_one() {
   local url="$1"
-  local dest="$2"
-  local tmpf="$tmpdir/$(printf '%s' "$url" | sha1sum | awk '{print $1}').dat"
+  local key meta_file data_file tmp
 
-  # attempt download
-  if ! curl -sS --fail --location --max-time 60 -A "blocklist-fetcher/1.0" "$url" -o "$tmpf"; then
-    if [[ "$url" == *"github.com/"* && "$url" == *"/blob/"* ]]; then
-      local rawurl
-      rawurl="$(github_to_raw "$url")"
-      if [ "$rawurl" != "$url" ] && curl -sS --fail --location --max-time 60 -A "blocklist-fetcher/1.0" "$rawurl" -o "$tmpf"; then
-        url="$rawurl"
-      else
-        printf '%s\n' "$url" >> "$failed_log"
-        echo "Warning: failed to fetch $url" >&2
-        return 1
-      fi
-    else
-      printf '%s\n' "$url" >> "$failed_log"
-      echo "Warning: failed to fetch $url" >&2
-      return 1
-    fi
-  fi
+  key="$(cache_key "$url")"
+  meta_file="$cache_meta/$key.headers"
+  data_file="$cache_data/$key.body"
+  tmp="$(mktemp)"
 
-  # Skip HTML pages
-  if head -c512 "$tmpf" | tr -d '\r\n' | grep -qiE '<(html|!doctype|head|body)'; then
-    printf 'HTML page (skipped): %s\n' "$url" >> "$failed_log"
-    echo "Warning: $url returned HTML and was skipped" >&2
+  local curl_args=(
+    -sS --fail --location
+    -A "$user_agent"
+    --max-time 60
+    -D "$tmp"
+  )
+
+  [[ -f "$meta_file" ]] && {
+    grep -qi '^etag:' "$meta_file" && \
+      curl_args+=( -H "$(grep -i '^etag:' "$meta_file")" )
+    grep -qi '^last-modified:' "$meta_file" && \
+      curl_args+=( -H "$(grep -i '^last-modified:' "$meta_file")" )
+  }
+
+  if ! curl "${curl_args[@]}" "$url" -o "$data_file.new"; then
+    printf '%s\n' "$url" >> "$failed_log"
+    rm -f "$tmp" "$data_file.new"
     return 1
   fi
 
-  # Decompress if gzip
-  if head -c2 "$tmpf" | od -An -t x1 | grep -q '1f 8b'; then
-    if command -v gunzip >/dev/null 2>&1; then
-      gunzip -c "$tmpf" > "${tmpf}.txt" || { printf '%s\n' "$url" >> "$failed_log"; return 1; }
-      mv "${tmpf}.txt" "$tmpf"
-    fi
+  if grep -q '^HTTP/.* 304' "$tmp"; then
+    rm -f "$data_file.new" "$tmp"
+    cat "$data_file"
+    return 0
   fi
 
-  # Normalize and append to destination
-  sed -e 's/\r//g' \
-      -e 's/^[[:space:]]*#.*$//' \
-      -e 's/^[[:space:]]*//; s/[[:space:]]*$//' \
-      -e 's/^\(0\.0\.0\.0\|127\.0\.0\.1\|::1\)[[:space:]]\+//I' \
-      "$tmpf" \
-    | sed -E 's#https?://##I; s#/.*$##' \
-    | sed -E 's/^[[:space:]]*//; s/[[:space:]]*$//' \
-    >> "$dest"
+  mv "$data_file.new" "$data_file"
+  grep -Ei '^(etag:|last-modified:)' "$tmp" > "$meta_file" || true
+  rm -f "$tmp"
 
-  return 0
+  cat "$data_file"
 }
 
-# Read urls.txt and fetch each in parallel
+### NORMALIZATION PIPELINE
+
+normalize_stream() {
+  sed -e 's/\r//g' \
+      -e 's/^[[:space:]]*#.*$//' \
+      -e 's/^[[:space:]]*//' \
+      -e 's/[[:space:]]*$//' \
+      -e 's/^\(0\.0\.0\.0\|127\.0\.0\.1\|::1\)[[:space:]]\+//I' \
+  | sed -E 's#https?://##I; s#/.*$##'
+}
+
+### MAIN
+
 urls=()
 while IFS= read -r line || [ -n "$line" ]; do
   line="$(sanitize_line "$line")"
   [[ -z "$line" ]] && continue
-  [[ "$line" == *"github.com/"* && "$line" == *"/blob/"* ]] && line="$(github_to_raw "$line")"
+  [[ "$line" == *"/blob/"* ]] && line="$(github_to_raw "$line")"
   urls+=("$line")
 done < "$urls_file"
 
-# Launch parallel fetches with background jobs
 for url in "${urls[@]}"; do
   (
     echo "Fetching: $url"
-    fetch_one "$url" "$out_raw" || echo "Failed: $url" >&2
+    if fetch_one "$url" | normalize_stream >> "$out_raw"; then
+      :
+    else
+      echo "Failed: $url" >&2
+    fi
   ) &
   while (( $(jobs -rp | wc -l) >= max_parallel )); do
     wait -n
@@ -118,18 +126,16 @@ for url in "${urls[@]}"; do
 done
 wait
 
-# Extract hostnames, normalize, dedupe
+### DOMAIN EXTRACTION + DEDUPE
+
 grep -Eo '([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}' "$out_raw" \
   | tr '[:upper:]' '[:lower:]' \
-  | sed -E 's/^\.+//; s/\.+$//' \
-  | awk 'length($0)>=4' \
-  | sort -u > "${tmpdir}/domains_sorted.txt"
+  | sed 's/^\.+//;s/\.+$//' \
+  | awk 'length>=4' \
+  | sort -u > "$out_raw.clean"
 
-# Write final DNSveil rules
-awk '{print $0"|-;"}' "${tmpdir}/domains_sorted.txt" > "$out_rules"
-cp "${tmpdir}/domains_sorted.txt" "$out_raw"
+mv "$out_raw.clean" "$out_raw"
+awk '{print $0"|-;"}' "$out_raw" > "$out_rules"
 
-echo "Generated $out_rules with $(wc -l < "$out_rules") rule lines."
-if [ -s "$failed_log" ]; then
-  echo "Some sources failed or were skipped. See $failed_log"
-fi
+echo "Rules built: $(wc -l < "$out_rules")"
+[[ -s "$failed_log" ]] && echo "Some sources failed — see $failed_log"
