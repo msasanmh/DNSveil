@@ -6,7 +6,8 @@
 #   - failed_fetches.txt (sources that failed or were skipped)
 #
 # Usage: put urls.txt in the same folder, then run ./build_rules.sh
-# Use "dos2unix build_rules.sh" to convert CRLF to Linux line endings.
+# Requires: bash 4+, curl, gunzip (optional)
+# Use "dos2unix build_rules.sh" if needed.
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -16,6 +17,7 @@ out_rules="malicious_rules.txt"
 out_raw="raw_domains.txt"
 tmpdir="$(mktemp -d)"
 failed_log="failed_fetches.txt"
+max_parallel=8
 trap 'rm -rf "$tmpdir"' EXIT
 
 : > "$out_rules"
@@ -35,7 +37,8 @@ sanitize_line() {
 github_to_raw() {
   local url="$1"
   if [[ "$url" =~ https://github.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*) ]]; then
-    printf 'https://raw.githubusercontent.com/%s/%s/%s/%s' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}"
+    printf 'https://raw.githubusercontent.com/%s/%s/%s/%s' \
+      "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}"
   else
     printf '%s' "$url"
   fi
@@ -49,18 +52,11 @@ fetch_one() {
 
   # attempt download
   if ! curl -sS --fail --location --max-time 60 -A "blocklist-fetcher/1.0" "$url" -o "$tmpf"; then
-    # if github page returned HTML (or 404/403), try converting probable github blob to raw URL
     if [[ "$url" == *"github.com/"* && "$url" == *"/blob/"* ]]; then
       local rawurl
       rawurl="$(github_to_raw "$url")"
-      if [ "$rawurl" != "$url" ]; then
-        if curl -sS --fail --location --max-time 60 -A "blocklist-fetcher/1.0" "$rawurl" -o "$tmpf"; then
-          url="$rawurl"
-        else
-          printf '%s\n' "$url" >> "$failed_log"
-          echo "Warning: failed to fetch $url (tried converted raw URL too)" >&2
-          return 1
-        fi
+      if [ "$rawurl" != "$url" ] && curl -sS --fail --location --max-time 60 -A "blocklist-fetcher/1.0" "$rawurl" -o "$tmpf"; then
+        url="$rawurl"
       else
         printf '%s\n' "$url" >> "$failed_log"
         echo "Warning: failed to fetch $url" >&2
@@ -73,33 +69,14 @@ fetch_one() {
     fi
   fi
 
-  # If content looks like HTML, skip (we want raw text)
+  # Skip HTML pages
   if head -c512 "$tmpf" | tr -d '\r\n' | grep -qiE '<(html|!doctype|head|body)'; then
-    # special-case GitHub repo page — try converting to raw (if not already tried)
-    if [[ "$url" == *"github.com/"* && "$url" == *"/blob/"* ]]; then
-      local rawurl
-      rawurl="$(github_to_raw "$url")"
-      if [ "$rawurl" != "$url" ]; then
-        if curl -sS --fail --location --max-time 60 -A "blocklist-fetcher/1.0" "$rawurl" -o "$tmpf"; then
-          url="$rawurl"
-        else
-          printf 'HTML page (skipped): %s\n' "$url" >> "$failed_log"
-          echo "Warning: $url returned HTML and was skipped" >&2
-          return 1
-        fi
-      else
-        printf 'HTML page (skipped): %s\n' "$url" >> "$failed_log"
-        echo "Warning: $url returned HTML and was skipped" >&2
-        return 1
-      fi
-    else
-      printf 'HTML page (skipped): %s\n' "$url" >> "$failed_log"
-      echo "Warning: $url returned HTML and was skipped" >&2
-      return 1
-    fi
+    printf 'HTML page (skipped): %s\n' "$url" >> "$failed_log"
+    echo "Warning: $url returned HTML and was skipped" >&2
+    return 1
   fi
 
-  # If gzip, decompress transparently
+  # Decompress if gzip
   if head -c2 "$tmpf" | od -An -t x1 | grep -q '1f 8b'; then
     if command -v gunzip >/dev/null 2>&1; then
       gunzip -c "$tmpf" > "${tmpf}.txt" || { printf '%s\n' "$url" >> "$failed_log"; return 1; }
@@ -107,7 +84,7 @@ fetch_one() {
     fi
   fi
 
-  # Normalize: remove CR, strip comments, remove common hosts IP prefixes, drop paths and URL schemes
+  # Normalize and append to destination
   sed -e 's/\r//g' \
       -e 's/^[[:space:]]*#.*$//' \
       -e 's/^[[:space:]]*//; s/[[:space:]]*$//' \
@@ -120,18 +97,26 @@ fetch_one() {
   return 0
 }
 
-# Read urls.txt and fetch each (sequential, robust)
-while IFS= read -r raw || [ -n "$raw" ]; do
-  line="$(sanitize_line "$raw")"
+# Read urls.txt and fetch each in parallel
+urls=()
+while IFS= read -r line || [ -n "$line" ]; do
+  line="$(sanitize_line "$line")"
   [[ -z "$line" ]] && continue
-  # If the line is a GitHub "blob" webpage, convert proactively
-  if [[ "$line" == *"github.com/"* && "$line" == *"/blob/"* ]]; then
-    line="$(github_to_raw "$line")"
-  fi
-
-  echo "Fetching: $line"
-  fetch_one "$line" "$out_raw" || echo "Failed: $line" >&2
+  [[ "$line" == *"github.com/"* && "$line" == *"/blob/"* ]] && line="$(github_to_raw "$line")"
+  urls+=("$line")
 done < "$urls_file"
+
+# Launch parallel fetches with background jobs
+for url in "${urls[@]}"; do
+  (
+    echo "Fetching: $url"
+    fetch_one "$url" "$out_raw" || echo "Failed: $url" >&2
+  ) &
+  while (( $(jobs -rp | wc -l) >= max_parallel )); do
+    wait -n
+  done
+done
+wait
 
 # Extract hostnames, normalize, dedupe
 grep -Eo '([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}' "$out_raw" \
