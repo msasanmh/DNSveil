@@ -72,7 +72,7 @@ function Fetch-One([string]$url, [string]$outRaw) {
 }
 
 if (-not (Test-Path $urlsFile)) { Write-Error "urls.txt not found in $scriptDir"; exit 1 }
-$urls = Get-Content $urlsFile | ForEach-Object { Sanitize-Url $_ } | Where-Object { $_ -ne $null }
+$urls = @(Get-Content $urlsFile | ForEach-Object { Sanitize-Url $_ } | Where-Object { $_ -ne $null })
 
 if ($urls.Count -eq 0) { Write-Error "No URLs found in urls.txt"; exit 1 }
 
@@ -92,7 +92,7 @@ Get-Content $outRaw |
 
 Get-Content (Join-Path $tmpDir 'domains_sorted.txt') | Set-Content -Path $outRaw
 
-Write-Host "Generated $outRules with $((Get-Content $outRules).Count) rule lines."
-if ((Get-Content $failedLog).Count -gt 0) { Write-Host "See $failedLog for failed/skipped sources." }
+Write-Host "Generated $outRules with $(@(Get-Content $outRules).Count) rule lines."
+if (@(Get-Content $failedLog).Count -gt 0) { Write-Host "See $failedLog for failed/skipped sources." }
 
 Pop-Location

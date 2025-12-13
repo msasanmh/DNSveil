@@ -6,6 +6,7 @@
 #   - failed_fetches.txt (sources that failed or were skipped)
 #
 # Usage: put urls.txt in the same folder, then run ./build_rules.sh
+# Use "dos2unix build_rules.sh" to convert CRLF to Linux line endings.
 
 set -euo pipefail
 IFS=$'\n\t'
