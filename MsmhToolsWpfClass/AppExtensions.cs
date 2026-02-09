@@ -98,8 +98,8 @@ public static class AppExtensions
             window.DispatchIt(() =>
             {
                 result = string.IsNullOrEmpty(window.Name)
-                       ? Application.Current.Windows.OfType<T>().Any(x => x.GetHashCode().Equals(window.GetHashCode()))
-                       : Application.Current.Windows.OfType<T>().Any(x => x.Name.Equals(window.Name));
+                       ? Application.Current.Windows.OfType<T>().Any(_ => _.GetHashCode().Equals(window.GetHashCode()))
+                       : Application.Current.Windows.OfType<T>().Any(_ => _.Name.Equals(window.Name));
             });
         }
         catch (Exception ex)
@@ -400,7 +400,7 @@ public static class AppExtensions
         catch (Exception) { }
     }
 
-    public static void LastColumnFill(this DataGrid dataGrid)
+    public static void FillLastColumn(this DataGrid dataGrid)
     {
         try
         {
@@ -413,7 +413,39 @@ public static class AppExtensions
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("AppExtensions SetLastColumnFillSpaces: " + ex.Message);
+            Debug.WriteLine("AppExtensions FillLastColumn: " + ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Set Column To Fill Space.
+    /// </summary>
+    /// <returns>Returns Calculated DataGridLength For The Selected Column.</returns>
+    public static DataGridLength FillCustomColumn(this DataGrid dataGrid, int columnNumber, int minWithOfTheColumn)
+    {
+        try
+        {
+            if (dataGrid.Columns.Count > 1)
+            {
+                double others = 0;
+                for (int n = 0; n < dataGrid.Columns.Count; n++)
+                {
+                    DataGridColumn column = dataGrid.Columns[n];
+                    if (n != columnNumber) others += column.ActualWidth;
+                }
+
+                dataGrid.Columns[columnNumber].MinWidth = minWithOfTheColumn;
+                dataGrid.Columns[columnNumber].MaxWidth = double.MaxValue;
+                double width = dataGrid.ActualWidth - others - SystemParameters.VerticalScrollBarWidth;
+                dataGrid.Columns[columnNumber].Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                return dataGrid.Columns[columnNumber].Width;
+            }
+            return DataGridLength.Auto;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("AppExtensions FillCustomColumn: " + ex.Message);
+            return DataGridLength.Auto;
         }
     }
 
@@ -513,7 +545,8 @@ public static class AppExtensions
                                     dataGrid.DispatchIt(() =>
                                     {
                                         dataGrid.SelectedIndex = fromIndex;
-                                        dataGrid.ScrollIntoView(dataGrid.Items[dataGrid.SelectedIndex]);
+                                        if (dataGrid.SelectedIndex >= 0)
+                                            dataGrid.ScrollIntoView(dataGrid.Items[dataGrid.SelectedIndex]);
                                     });
 
                                     fromIndex++;
@@ -525,7 +558,8 @@ public static class AppExtensions
                                 dataGrid.DispatchIt(() =>
                                 {
                                     dataGrid.SelectedIndex = toRowIndex;
-                                    dataGrid.ScrollIntoView(dataGrid.Items[dataGrid.SelectedIndex]);
+                                    if (dataGrid.SelectedIndex >= 0)
+                                        dataGrid.ScrollIntoView(dataGrid.Items[dataGrid.SelectedIndex]);
                                 });
                             }
                         }
@@ -540,7 +574,8 @@ public static class AppExtensions
                                     dataGrid.DispatchIt(() =>
                                     {
                                         dataGrid.SelectedIndex = fromIndex;
-                                        dataGrid.ScrollIntoView(dataGrid.Items[dataGrid.SelectedIndex]);
+                                        if (dataGrid.SelectedIndex >= 0)
+                                            dataGrid.ScrollIntoView(dataGrid.Items[dataGrid.SelectedIndex]);
                                     });
 
                                     fromIndex--;
@@ -552,7 +587,8 @@ public static class AppExtensions
                                 dataGrid.DispatchIt(() =>
                                 {
                                     dataGrid.SelectedIndex = toRowIndex;
-                                    dataGrid.ScrollIntoView(dataGrid.Items[dataGrid.SelectedIndex]);
+                                    if (dataGrid.SelectedIndex >= 0)
+                                        dataGrid.ScrollIntoView(dataGrid.Items[dataGrid.SelectedIndex]);
                                 });
                             }
                         }

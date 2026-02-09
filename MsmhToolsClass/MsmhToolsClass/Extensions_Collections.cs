@@ -1,11 +1,181 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MsmhToolsClass;
 
 public static class Extensions_Collections
 {
+    public static void Add<K, V>(this IMemoryCache cache, K key, V factory) where K : notnull
+    {
+        try
+        {
+            _ = cache.GetOrCreate(key, _ => factory);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache Add: " + ex.GetInnerExceptions());
+        }
+    }
+
+    public static void Add<K, V>(this IMemoryCache cache, K key, V factory, TimeSpan absoluteExpirationRelativeToNow) where K : notnull
+    {
+        try
+        {
+            _ = cache.GetOrCreate(key, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = absoluteExpirationRelativeToNow;
+                return factory;
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache Add: " + ex.GetInnerExceptions());
+        }
+    }
+
+    public static bool TryAdd<K, V>(this IMemoryCache cache, K key, V factory) where K : notnull
+    {
+        try
+        {
+            V? existing = cache.GetOrCreate(key, _ => factory);
+            return ReferenceEquals(existing, factory);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache TryAdd: " + ex.GetInnerExceptions());
+            return false;
+        }
+    }
+
+    public static bool TryAdd<K, V>(this IMemoryCache cache, K key, V factory, TimeSpan absoluteExpirationRelativeToNow) where K : notnull
+    {
+        try
+        {
+            V? existing = cache.GetOrCreate(key, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = absoluteExpirationRelativeToNow;
+                return factory;
+            });
+
+            return ReferenceEquals(existing, factory);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache TryAdd: " + ex.GetInnerExceptions());
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// It's Not Atomic
+    /// </summary>
+    public static void Update<K, V>(this IMemoryCache cache, K key, V factory) where K : notnull
+    {
+        try
+        {
+            bool exist = cache.TryGetValue(key, out _);
+            if (exist) _ = cache.Set(key, factory); // Set Is Equal To AddOrUpdate But It's Not Atomic
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache Update: " + ex.GetInnerExceptions());
+        }
+    }
+
+    /// <summary>
+    /// It's Not Atomic
+    /// </summary>
+    public static void Update<K, V>(this IMemoryCache cache, K key, V factory, TimeSpan absoluteExpirationRelativeToNow) where K : notnull
+    {
+        try
+        {
+            bool exist = cache.TryGetValue(key, out _);
+            if (exist) _ = cache.Set(key, factory, absoluteExpirationRelativeToNow);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache Update: " + ex.GetInnerExceptions());
+        }
+    }
+
+    /// <summary>
+    /// It's Not Atomic
+    /// </summary>
+    public static bool TryUpdate<K, V>(this IMemoryCache cache, K key, V factory) where K : notnull
+    {
+        try
+        {
+            bool exist = cache.TryGetValue(key, out _);
+            if (exist) _ = cache.Set(key, factory);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache TryUpdate: " + ex.GetInnerExceptions());
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// It's Not Atomic
+    /// </summary>
+    public static bool TryUpdate<K, V>(this IMemoryCache cache, K key, V factory, TimeSpan absoluteExpirationRelativeToNow) where K : notnull
+    {
+        try
+        {
+            bool exist = cache.TryGetValue(key, out _);
+            if (exist) _ = cache.Set(key, factory, absoluteExpirationRelativeToNow);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache TryUpdate: " + ex.GetInnerExceptions());
+            return false;
+        }
+    }
+
+    public static bool TryRemove<K>(this IMemoryCache cache, K key) where K : notnull
+    {
+        try
+        {
+            bool exist = cache.TryGetValue(key, out _);
+            if (exist)
+            {
+                cache.Remove(key);
+                return true;
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache TryRemove: " + ex.GetInnerExceptions());
+            return false;
+        }
+    }
+
+    public static bool TryRemove<K, V>(this IMemoryCache cache, K key, out V? value) where K : notnull
+    {
+        try
+        {
+            bool exist = cache.TryGetValue(key, out value);
+            if (exist)
+            {
+                cache.Remove(key);
+                return true;
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IMemoryCache TryRemove: " + ex.GetInnerExceptions());
+            value = default;
+            return false;
+        }
+    }
+
     public static bool TryUpdate<K, V>(this ConcurrentDictionary<K, V> ccDic, K key, V newValue) where K : notnull
     {
         try
@@ -18,7 +188,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections TryUpdate: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections ConcurrentDictionary TryUpdate: " + ex.Message);
             return false;
         }
     }
@@ -32,7 +202,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections AddOrUpdate: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections ConcurrentDictionary AddOrUpdate: " + ex.Message);
             return default;
         }
     }
@@ -48,10 +218,83 @@ public static class Extensions_Collections
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Extensions_Collections ToConcurrentDictionary: " + ex.Message);
+                Debug.WriteLine("Extensions_Collections List ToConcurrentDictionary: " + ex.Message);
             }
         }
         return keyValuePairs;
+    }
+
+    public static ConcurrentDictionary<uint, T> ToConcurrentDictionary<T>(this ObservableCollection<T> list) where T : notnull
+    {
+        ConcurrentDictionary<uint, T> keyValuePairs = new();
+        for (int n = 0; n < list.Count; n++)
+        {
+            try
+            {
+                keyValuePairs.TryAdd(Convert.ToUInt32(n), list[n]);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Extensions_Collections ObservableCollection ToConcurrentDictionary: " + ex.Message);
+            }
+        }
+        return keyValuePairs;
+    }
+
+    public static Dictionary<uint, T> ToDictionary<T>(this List<T> list) where T : notnull
+    {
+        Dictionary<uint, T> keyValuePairs = new();
+        for (int n = 0; n < list.Count; n++)
+        {
+            try
+            {
+                keyValuePairs.TryAdd(Convert.ToUInt32(n), list[n]);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Extensions_Collections List ToDictionary: " + ex.Message);
+            }
+        }
+        return keyValuePairs;
+    }
+
+    public static SortedDictionary<TKey, TValue> ToSortedDictionary<TKey, TValue>(this Dictionary<TKey, TValue> dictionary) where TKey : notnull
+    {
+        try
+        {
+            return new SortedDictionary<TKey, TValue>(dictionary);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections Dictionary ToSortedDictionary: " + ex.Message);
+            return new SortedDictionary<TKey, TValue>();
+        }
+    }
+
+    public static Dictionary<TKey, TValue> SortByKey<TKey, TValue>(this Dictionary<TKey, TValue> dictionary) where TKey : notnull
+    {
+        try
+        {
+            return dictionary.OrderBy(_ => _.Key).ToDictionary(_ => _.Key, _ => _.Value);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections Dictionary SortByKey: " + ex.Message);
+            return new Dictionary<TKey, TValue>();
+        }
+    }
+
+    public static Dictionary<TKey, TValue> SortByValue<TKey, TValue>(this Dictionary<TKey, TValue> dictionary) where TKey : notnull
+    {
+        try
+        {
+            return dictionary.OrderBy(_ => _.Value).ToDictionary(_ => _.Key, _ => _.Value);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections Dictionary SortByValue: " + ex.Message);
+            return new Dictionary<TKey, TValue>();
+        }
     }
 
     /// <summary>
@@ -145,6 +388,67 @@ public static class Extensions_Collections
         return result;
     }
 
+    public static List<TOutput> ConvertAll<TInput,TOutput>(this List<TInput> list, Converter<TInput, TOutput> converter)
+    {
+        List<TOutput> outputList = new();
+
+        try
+        {
+            for (int n = 0; n < list.Count; n++)
+            {
+                TInput input = list[n];
+                if (input == null) continue;
+                try
+                {
+                    TOutput output = converter(input);
+                    outputList.Add(output);
+                }
+                catch (Exception) { }
+            }
+        }
+        catch (Exception) { }
+
+        return outputList;
+    }
+
+    public static List<int> ToIntList(this IEnumerable<string> list)
+    {
+        List<int> result = new();
+
+        try
+        {
+            foreach (string item in list)
+            {
+                string str = item.Trim();
+                if (string.IsNullOrEmpty(str)) continue;
+                bool isSuccess = int.TryParse(str, out int resultVal);
+                if (isSuccess) result.Add(resultVal);
+            }
+        }
+        catch (Exception) { }
+
+        return result;
+    }
+
+    public static List<int> ToIntList(this List<string> list)
+    {
+        List<int> result = new();
+
+        try
+        {
+            for (int n = 0; n < list.Count; n++)
+            {
+                string str = list[n].Trim();
+                if (string.IsNullOrEmpty(str)) continue;
+                bool isSuccess = int.TryParse(str, out int resultVal);
+                if (isSuccess) result.Add(resultVal);
+            }
+        }
+        catch (Exception) { }
+
+        return result;
+    }
+
     public static void MoveTo<T>(this List<T> list, int fromIndex, int toIndex)
     {
         try
@@ -160,7 +464,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections MoveTo<T>: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List MoveTo<T>: " + ex.Message);
         }
     }
 
@@ -173,7 +477,36 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections MoveTo<T>: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List MoveTo<T>: " + ex.Message);
+        }
+    }
+
+    public static void MoveTo<T>(this ObservableCollection<T> list, int fromIndex, int toIndex)
+    {
+        try
+        {
+            if (fromIndex < 0 || fromIndex > list.Count - 1) return;
+            if (toIndex < 0 || toIndex > list.Count - 1) return;
+            if (fromIndex == toIndex) return;
+
+            list.Move(fromIndex, toIndex);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections ObservableCollection MoveTo<T>: " + ex.Message);
+        }
+    }
+
+    public static void MoveTo<T>(this ObservableCollection<T> list, T item, int toIndex)
+    {
+        try
+        {
+            int fromIndex = list.IndexOf(item);
+            list.MoveTo(fromIndex, toIndex);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections ObservableCollection MoveTo<T>: " + ex.Message);
         }
     }
 
@@ -192,7 +525,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections CountDuplicates<T>: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List CountDuplicates<T>: " + ex.Message);
             return 0;
         }
     }
@@ -229,7 +562,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections CountDuplicates<T>(out _): " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List CountDuplicates<T>(out _): " + ex.Message);
             return 0;
         }
     }
@@ -244,7 +577,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections ToString<T> Char: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List ToString<T> Char: " + ex.Message);
         }
 
         return result;
@@ -266,7 +599,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections ToString<T> String: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List ToString<T> String: " + ex.Message);
         }
 
         return result;
@@ -310,7 +643,26 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections SplitToLists: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List SplitToLists: " + ex.Message);
+        }
+
+        return listOut;
+    }
+
+    public static List<ObservableCollection<T>> SplitToLists<T>(this ObservableCollection<T> list, int nSize)
+    {
+        List<ObservableCollection<T>> listOut = new();
+
+        try
+        {
+            for (int n = 0; n < list.Count; n += nSize)
+            {
+                listOut.Add(list.GetRange(n, Math.Min(nSize, list.Count - n)));
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections ObservableCollection SplitToLists: " + ex.Message);
         }
 
         return listOut;
@@ -329,7 +681,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections MergeLists: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List<List<T>> MergeLists: " + ex.Message);
         }
 
         return listOut;
@@ -347,6 +699,21 @@ public static class Extensions_Collections
         }
 
         return new List<string>();
+    }
+
+    public static T? GetRandomValue<T>(this List<T> list)
+    {
+        try
+        {
+            if (list.Count > 0)
+            {
+                Random random = new();
+                int index = random.Next(0, list.Count - 1);
+                return list[index];
+            }
+        }
+        catch (Exception) { }
+        return default;
     }
 
     public static int GetIndex<T>(this List<T> list, T value)
@@ -370,7 +737,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections ChangeValue<T>: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List ChangeValue<T>: " + ex.Message);
         }
     }
 
@@ -382,7 +749,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections RemoveValue<T>: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List RemoveValue<T>: " + ex.Message);
         }
     }
 
@@ -395,7 +762,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections RemoveDuplicates: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List RemoveDuplicates: " + ex.Message);
             return list;
         }
     }
@@ -413,7 +780,25 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections DistinctByProperties: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List DistinctByProperties: " + ex.Message);
+            return source;
+        }
+    }
+
+    /// <summary>
+    /// Distinct By More Than One Property
+    /// </summary>
+    /// <param name="keySelector">e.g. DistinctByProperties(x => new { x.A, x.B });</param>
+    public static ObservableCollection<TSource> DistinctByProperties<TSource, TKey>(this ObservableCollection<TSource> source, Func<TSource, TKey> keySelector)
+    {
+        try
+        {
+            HashSet<TKey> hashSet = new();
+            return source.Where(_ => hashSet.Add(keySelector(_))).ToObservableCollection();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections ObservableCollection DistinctByProperties: " + ex.Message);
             return source;
         }
     }
@@ -443,7 +828,7 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Extensions_Collections SaveToFileAsync: {ex.Message}");
+            Debug.WriteLine($"Extensions_Collections List SaveToFileAsync: {ex.Message}");
         }
     }
 
@@ -474,7 +859,48 @@ public static class Extensions_Collections
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions_Collections LoadFromFileAsync: " + ex.Message);
+            Debug.WriteLine("Extensions_Collections List LoadFromFileAsync: " + ex.Message);
+        }
+    }
+
+    public static void AddRange<T>(this ObservableCollection<T> list, IEnumerable<T> collection)
+    {
+        try
+        {
+            foreach (T item in collection)
+            {
+                if (item != null) list.Add(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections ObservableCollection AddRange<T>: " + ex.Message);
+        }
+    }
+
+    public static ObservableCollection<T> GetRange<T>(this ObservableCollection<T> list, int index, int count)
+    {
+        try
+        {
+            return list.Skip(index).Take(count).ToObservableCollection();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections ObservableCollection GetRange<T>: " + ex.Message);
+            return new ObservableCollection<T>();
+        }
+    }
+
+    public static ObservableCollection<T> ToObservableCollection<T>(this IEnumerable<T> enumerable)
+    {
+        try
+        {
+            return new ObservableCollection<T>(enumerable);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions_Collections IEnumerable ToObservableCollection<T>: " + ex.Message);
+            return new ObservableCollection<T>();
         }
     }
 

@@ -2,6 +2,9 @@
 using System.Data;
 using System.Xml.Linq;
 using System.Diagnostics;
+using System.Text;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 
 namespace MsmhToolsClass;
 
@@ -73,6 +76,68 @@ public static class XmlTool
         }
 
         return result;
+    }
+
+    public static string Serialize(object obj, List<Type> knownTypes)
+    {
+        try
+        {
+            if (obj == null) return string.Empty;
+            obj.SetEmptyValuesToNull();
+
+            using StringWriter stringWriter = new();
+            using XmlTextWriter xmlTextWriter = new(stringWriter)
+            {
+                Formatting = Formatting.Indented
+            };
+
+            // XmlSerializer Doesn't Support Dictionary
+            DataContractSerializer dataContractSerializer = new(obj.GetType(), knownTypes);
+            dataContractSerializer.WriteObject(xmlTextWriter, obj);
+
+            return stringWriter.ToString();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("XmlTool Serialize: " + ex.GetInnerExceptions());
+            return string.Empty;
+        }
+    }
+
+    public static T? Deserialize<T>(string xml, List<Type> knownTypes)
+    {
+        try
+        {
+            using StringReader stringReader = new(xml);
+            using XmlTextReader xmlTextReader = new(stringReader);
+
+            // XmlSerializer Doesn't Support Dictionary
+            DataContractSerializer dataContractSerializer = new(typeof(T), knownTypes);
+            object? deserializedXml = dataContractSerializer.ReadObject(xmlTextReader);
+            if (deserializedXml == null) return default;
+
+            return (T)deserializedXml;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("XmlTool Deserialize: " + ex.Message);
+            return default;
+        }
+    }
+
+    public static string ConvertFromJson(string json)
+    {
+        try
+        {
+            using XmlDictionaryReader tt = JsonReaderWriterFactory.CreateJsonReader(Encoding.UTF8.GetBytes(json), XmlDictionaryReaderQuotas.Max);
+            XDocument xDoc = XDocument.Load(tt);
+            return xDoc.ToXmlString();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("XmlTool ConvertFromJson: " + ex.GetInnerExceptions());
+            return string.Empty;
+        }
     }
 
     public struct XmlAttributeCondition
@@ -211,7 +276,7 @@ public static class XmlTool
         List<XElement> result_XElements = new();
         if (xDoc.Root == null) Debug.WriteLine("XmlTool GetElements: XDocument.Root Is NULL.");
         if (xDoc.Root == null || paths.Count == 0) return result_XElements;
-        
+
         try
         {
             static bool checkAttributeCondition(List<XmlAttributeCondition> attributeConditions, XElement child)
@@ -506,7 +571,7 @@ public static class XmlTool
         if (xDoc.Root == null) Debug.WriteLine("XmlTool UpdateElementsPosition: XDocument.Root Is NULL.");
         if (xDoc.Root == null || paths.Count == 0) return xDoc;
         if (fromIndexes.Count == 0) return xDoc;
-        
+
         try
         {
             fromIndexes = fromIndexes.Distinct().ToList();
@@ -525,7 +590,7 @@ public static class XmlTool
 
             Debug.WriteLine($"F {firstDiff}, L {lastDiff}, T {toIndex}");
             bool moveUp = firstDiff < lastDiff || (firstDiff == lastDiff && firstFromIndex > toIndex);
-            
+
             List<XElement> fromElements = GetElements(xDoc, paths);
             if (!moveUp) fromElements.Reverse();
 
@@ -664,5 +729,23 @@ public static class XmlTool
         }
         else Console.WriteLine("XML File Not Exist.");
     }
+
+    public static readonly List<Type> KnownTypes_XrayConfig = new()
+    {
+        typeof(V2RayConfigTool.Inbounds.DokoDemoDoorSettingsIn),
+        typeof(V2RayConfigTool.Inbounds.HttpSettingsIn),
+        typeof(V2RayConfigTool.Inbounds.MixedSettingsIn),
+        typeof(V2RayConfigTool.Inbounds.SocksSettingsIn),
+        typeof(V2RayConfigTool.Outbounds.BlackholeSettings),
+        typeof(V2RayConfigTool.Outbounds.DnsSettings),
+        typeof(V2RayConfigTool.Outbounds.FreedomSettings),
+        typeof(V2RayConfigTool.Outbounds.HttpSettings),
+        typeof(V2RayConfigTool.Outbounds.ShadowsocksSettings),
+        typeof(V2RayConfigTool.Outbounds.SocksSettings),
+        typeof(V2RayConfigTool.Outbounds.TrojanSettings),
+        typeof(V2RayConfigTool.Outbounds.VlessSettings),
+        typeof(V2RayConfigTool.Outbounds.VmessSettings),
+        typeof(V2RayConfigTool.Outbounds.WireguardSettings),
+    };
 
 }

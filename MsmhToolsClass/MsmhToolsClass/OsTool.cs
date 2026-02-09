@@ -17,7 +17,7 @@ public class OsTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("IsAdministrator: " + ex.Message);
+            Debug.WriteLine("OsTool IsAdministrator: " + ex.Message);
             return false;
         }
     }
@@ -59,7 +59,7 @@ public class OsTool
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("IsLightTheme: " + ex.Message);
+            Debug.WriteLine("OsTool IsLightTheme: " + ex.Message);
         }
 
         return result;
@@ -85,12 +85,12 @@ public class OsTool
                     await Task.Delay(1); // Needs time to calculate // 1ms is enough for Up Time
                     return TimeSpan.FromSeconds(performanceCounter.NextValue());
                 }
-                return TimeSpan.MaxValue;
+                return TimeSpan.MinValue;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"LastRebootTime: {ex.Message}");
-                return TimeSpan.MaxValue;
+                Debug.WriteLine("OsTool LastRebootTimeAsync: " + ex.Message);
+                return TimeSpan.MinValue;
             }
         });
     }

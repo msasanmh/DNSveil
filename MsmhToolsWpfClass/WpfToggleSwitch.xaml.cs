@@ -160,17 +160,35 @@ public partial class WpfToggleSwitch : CheckBox
                     double b = PART_MainBorder.BorderThickness.Left + PART_MainBorder.BorderThickness.Right;
                     double cm = PART_Canvas.Margin.Left + PART_Canvas.Margin.Right;
                     x = PART_MainBorder.ActualWidth - b - cm - PART_Ellipse.ActualWidth;
-                    barOpacity = 0.7;
-                    leftOpacity = 0.5;
-                    rightOpacity = 1;
+                    if ((HasContentLeft && !HasContent) || (!HasContentLeft && HasContent))
+                    {
+                        barOpacity = 0.7;
+                        leftOpacity = 1;
+                        rightOpacity = 1;
+                    }
+                    else
+                    {
+                        barOpacity = 0.7;
+                        leftOpacity = 0.5;
+                        rightOpacity = 1;
+                    }
                 }
                 else
                 {
                     // Left
                     x = 0;
-                    barOpacity = 0.3;
-                    leftOpacity = 1;
-                    rightOpacity = 0.5;
+                    if ((HasContentLeft && !HasContent) || (!HasContentLeft && HasContent))
+                    {
+                        barOpacity = 0.3;
+                        leftOpacity = 0.5;
+                        rightOpacity = 0.5;
+                    }
+                    else
+                    {
+                        barOpacity = 0.3;
+                        leftOpacity = 1;
+                        rightOpacity = 0.5;
+                    }
                 }
             }
             else
@@ -184,7 +202,7 @@ public partial class WpfToggleSwitch : CheckBox
                 rightOpacity = 0.5;
             }
 
-            if (HasContentLeft) barOpacity = 0.4;
+            if (HasContentLeft && HasContent) barOpacity = 0.4;
 
             DoubleAnimation animX = new(PreviousX, x, new Duration(TimeSpan.FromMilliseconds(200))); // Toggle Anim
             PART_Ellipse.BeginAnimation(Canvas.LeftProperty, animX);

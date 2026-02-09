@@ -1,10 +1,10 @@
 ﻿using MsmhToolsClass;
 using MsmhToolsClass.MsmhAgnosticServer;
 using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net;
-using System.Xml.Linq;
-using static DNSveil.Logic.DnsServers.EnumsAndStructs;
+using static DNSveil.Logic.DnsServers.DnsModel;
 
 namespace DNSveil.Logic.DnsServers;
 
@@ -85,9 +85,8 @@ public class ScanDns
         public int ParallelLatencyMS { get; set; }
     }
 
-    public async Task<(List<XElement> DnsItemElementsList, ParallelResult ParallelResult)> CheckDNSCryptInParallelAsync(string domain, List<DnsItem> targetListAsDnsItem, List<string> relayList, int parallelSize, FilterByProperties filterByProperties, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, bool useExternal, CancellationToken ct, string? proxyScheme = null)
+    public async Task<(ObservableCollection<DnsItem> Items, ParallelResult ParallelResult)> CheckDNSCryptInParallelAsync(GroupSettings gs, ObservableCollection<DnsItem> items, List<string> relayList, FilterByProperties filterByProperties, string? proxyScheme, bool useExternal, CancellationToken ct)
     {
-        List<XElement> dnsItemElementsList = new();
         ParallelResult pr = new();
         
         try
@@ -95,39 +94,55 @@ public class ScanDns
             // Parallel Latency
             Stopwatch sw_Parallel = Stopwatch.StartNew();
 
+            int gsTimeoutMS = Convert.ToInt32(gs.ScanTimeoutSec * 1000);
+
             // Parallel Options
             ParallelOptions parallelOptions = new() { CancellationToken = ct };
 
             // Convert List To Concurrent
-            Task parallel = Parallel.ForEachAsync(targetListAsDnsItem, parallelOptions, async (target, pCT) =>
+            ConcurrentDictionary<uint, DnsItem> itemConcurrentDict = items.ToConcurrentDictionary();
+            Task parallel = Parallel.ForEachAsync(itemConcurrentDict, parallelOptions, async (itemKV, pCT) =>
             {
                 if (pCT.IsCancellationRequested) return;
-                var scanResult = await CheckDNSCryptAsync(domain, target, relayList, parallelSize, timeoutMS, bootstrapIP, bootstrapPort, useExternal, pCT, proxyScheme).ConfigureAwait(false);
+                DnsItem item = itemKV.Value;
+
+                if (pCT.IsCancellationRequested) return;
+                var scanResult = await ScanDNSCryptAsync(gs.LookupDomain, item, relayList, gs.ScanParallelSize, gsTimeoutMS, gs.BootstrapIP, gs.BootstrapPort, proxyScheme, useExternal, pCT).ConfigureAwait(false);
                 if (pCT.IsCancellationRequested) return;
 
-                scanResult.DnsItem.Enabled = DnsServersManager.IsDnsItemEnabledByOptions(scanResult.DnsItem, filterByProperties);
-                if (scanResult.DnsItem.Status == DnsStatus.Online)
+                // Clone To Copy Unique ID
+                item = scanResult.DnsItem.Clone_DnsItem(item);
+                
+                if (item.Status == DnsStatus.Online)
                 {
-                    pr.OnlineServers++;
-                    if (scanResult.DnsItem.Enabled) pr.SelectedServers++;
-                    pr.SumLatencyMS += scanResult.DnsItem.Latency;
+                    item.IsSelected = DnsServersManager.IsDnsItemEnabledByOptions(item, filterByProperties);
 
-                    if (string.IsNullOrWhiteSpace(scanResult.DnsItem.Description))
-                        scanResult.DnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
+                    pr.OnlineServers++;
+                    if (item.IsSelected) pr.SelectedServers++;
+                    pr.SumLatencyMS += item.Latency;
+
+                    // Save DateTime To Description
+                    if (string.IsNullOrWhiteSpace(item.Description))
+                        item.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
                     else
                     {
-                        bool isDateTime = DateTime.TryParse(scanResult.DnsItem.Description, out _);
-                        if (isDateTime) scanResult.DnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
+                        bool isDateTime = DateTime.TryParse(item.Description, out _);
+                        if (isDateTime) item.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
                     }
                 }
-
-                if (!string.IsNullOrEmpty(scanResult.DnsItem.DNS_URL))
+                else
                 {
-                    XElement dnsItemElementNew = DnsServersManager.Create_DnsItem_Element(scanResult.DnsItem);
-                    dnsItemElementsList.Add(dnsItemElementNew);
+                    item.IsSelected = false;
                 }
+
+                bool added = itemConcurrentDict.TryUpdate(itemKV.Key, item);
+                if (!added) itemConcurrentDict.TryUpdate(itemKV.Key, item);
             });
             try { await parallel.WaitAsync(ct).ConfigureAwait(false); } catch (Exception) { }
+
+            // Convert Back To ObservableCollection
+            items = itemConcurrentDict.Select(_ => _.Value).ToObservableCollection();
+            itemConcurrentDict.Clear();
 
             // Set Average Latency
             pr.AverageLatencyMS = pr.OnlineServers > 0 ? pr.SumLatencyMS / pr.OnlineServers : 0;
@@ -140,14 +155,14 @@ public class ScanDns
             Debug.WriteLine("ScanDns CheckDNSCryptInParallelAsync: " + ex.Message);
         }
 
-        return (dnsItemElementsList, pr);
+        return (items, pr);
     }
 
-    public async Task<(DnsItem DnsItem, DnsMessage DnsMessage)> CheckDNSCryptAsync(string domain, DnsItem targetAsDnsItem, List<string> relayList, int parallelSize, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, bool useExternal, CancellationToken ct, string? proxyScheme = null)
+    public async Task<(DnsItem DnsItem, DnsMessage DnsMessage)> ScanDNSCryptAsync(string domain, DnsItem targetItem, List<string> relayList, int parallelSize, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, string? proxyScheme, bool useExternal, CancellationToken ct)
     {
         return await Task.Run(async () =>
         {
-            (DnsItem DnsItem, DnsMessage DnsMessage) resultOut = new(new(), new());
+            (DnsItem DnsItem, DnsMessage DnsMessage) resultOut = new(targetItem, new());
             
             try
             {
@@ -170,8 +185,8 @@ public class ScanDns
                     {
                         int randomInt2 = random2.Next(0, relays.Count - 1);
                         string relay = relays[randomInt2];
-                        string anonymizedDNSCrypt = $"{targetAsDnsItem.DNS_URL} {relay}";
-                        Task<(DnsItem DnsItem, DnsMessage DnsMessage)> task = CheckDnsAsync(domain, anonymizedDNSCrypt, timeoutMS, bootstrapIP, bootstrapPort, useExternal, cts.Token, proxyScheme);
+                        string anonymizedDNSCrypt = $"{targetItem.DNS_URL} {relay}";
+                        Task<(DnsItem DnsItem, DnsMessage DnsMessage)> task = ScanDnsAsync(domain, anonymizedDNSCrypt, timeoutMS, bootstrapIP, bootstrapPort, proxyScheme, useExternal, cts.Token);
                         tasks.Add(task);
                         maxRelaysToCheck--;
                         if (maxRelaysToCheck <= 0) break;
@@ -180,8 +195,8 @@ public class ScanDns
                     // Add Working Relay
                     if (!string.IsNullOrEmpty(TEMP_AnonDNSCrypt_Relay))
                     {
-                        string anonymizedDNSCrypt = $"{targetAsDnsItem.DNS_URL} {TEMP_AnonDNSCrypt_Relay}";
-                        Task<(DnsItem DnsItem, DnsMessage DnsMessage)> task = CheckDnsAsync(domain, anonymizedDNSCrypt, timeoutMS, bootstrapIP, bootstrapPort, useExternal, cts.Token, proxyScheme);
+                        string anonymizedDNSCrypt = $"{targetItem.DNS_URL} {TEMP_AnonDNSCrypt_Relay}";
+                        Task<(DnsItem DnsItem, DnsMessage DnsMessage)> task = ScanDnsAsync(domain, anonymizedDNSCrypt, timeoutMS, bootstrapIP, bootstrapPort, proxyScheme, useExternal, cts.Token);
                         tasks.Add(task);
                         maxRelaysToCheck = 0;
                     }
@@ -195,7 +210,7 @@ public class ScanDns
                         if (taskResult == null) break;
                         (DnsItem DnsItem, DnsMessage DnsMessage) result = await taskResult.ConfigureAwait(false);
                         resultOut = result;
-                        if (result.DnsItem.Status == DnsStatus.Online) break;
+                        if (resultOut.DnsItem.Status == DnsStatus.Online) break;
                         tasks.Remove(taskResult);
                     }
                     tasks.Clear();
@@ -224,19 +239,18 @@ public class ScanDns
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("ScanDns CheckDNSCryptAsync: " + ex.Message);
+                Debug.WriteLine("ScanDns ScanDNSCryptAsync: " + ex.Message);
             }
-            
+
             // Clone To Copy Unique ID
-            DnsItem currentDnsItem = resultOut.DnsItem;
+            targetItem = resultOut.DnsItem.Clone_DnsItem(targetItem);
             DnsMessage currentDnsMessage = resultOut.DnsMessage;
-            DnsItem cloneDnsItem = Clone_DnsItem(targetAsDnsItem, currentDnsItem);
             
-            return (cloneDnsItem, currentDnsMessage);
+            return (targetItem, currentDnsMessage);
         }).ConfigureAwait(false);
     }
 
-    public async Task<(List<XElement> DnsItemElementsList, ParallelResult ParallelResult)> CheckDnsInParallelAsync(string domain, List<XElement> dnsItemElementsList, FilterByProperties filterByProperties, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, bool useExternal, CancellationToken ct, string? proxyScheme = null)
+    public async Task<(ObservableCollection<DnsItem> Items, ParallelResult ParallelResult)> ScanDnsInParallelAsync(GroupSettings gs, ObservableCollection<DnsItem> items, FilterByProtocols? filterByProtocols, FilterByProperties filterByProperties, string? proxyScheme, bool useExternal, CancellationToken ct)
     {
         ParallelResult pr = new();
 
@@ -245,176 +259,71 @@ public class ScanDns
             // Parallel Latency
             Stopwatch sw_Parallel = Stopwatch.StartNew();
 
-            // Parallel Options
-            ParallelOptions parallelOptions = new() { CancellationToken = ct };
-
-            // Convert List To Concurrent
-            ConcurrentDictionary<uint, XElement> dnsItemElementsConcurrentList = dnsItemElementsList.ToConcurrentDictionary();
-            Task parallel = Parallel.ForEachAsync(dnsItemElementsConcurrentList, parallelOptions, async (dnsItemElement, pCT) =>
-            {
-                if (pCT.IsCancellationRequested) return;
-                DnsItem dnsItem = DnsServersManager.Create_DnsItem(dnsItemElement.Value);
-
-                if (pCT.IsCancellationRequested) return;
-                var scanResult = await CheckDnsAsync(domain, dnsItem.DNS_URL, timeoutMS, bootstrapIP, bootstrapPort, useExternal, pCT, proxyScheme).ConfigureAwait(false);
-                if (pCT.IsCancellationRequested) return;
-
-                dnsItem = Clone_DnsItem(dnsItem, scanResult.DnsItem);
-                dnsItem.Enabled = DnsServersManager.IsDnsItemEnabledByOptions(dnsItem, filterByProperties);
-                if (dnsItem.Status == DnsStatus.Online)
-                {
-                    pr.OnlineServers++;
-                    if (dnsItem.Enabled) pr.SelectedServers++;
-                    pr.SumLatencyMS += dnsItem.Latency;
-
-                    if (string.IsNullOrWhiteSpace(dnsItem.Description))
-                        dnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
-                    else
-                    {
-                        bool isDateTime = DateTime.TryParse(dnsItem.Description, out _);
-                        if (isDateTime) dnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
-                    }
-                }
-
-                XElement dnsItemElementNew = DnsServersManager.Create_DnsItem_Element(dnsItem);
-                dnsItemElementsConcurrentList.TryUpdate(dnsItemElement.Key, dnsItemElementNew);
-            });
-            try { await parallel.WaitAsync(ct).ConfigureAwait(false); } catch (Exception) { }
-
-            // Convert Back To List
-            dnsItemElementsList = dnsItemElementsConcurrentList.Select(x => x.Value).ToList();
-
-            // Set Average Latency
-            pr.AverageLatencyMS = pr.OnlineServers > 0 ? pr.SumLatencyMS / pr.OnlineServers : 0;
-
-            sw_Parallel.Stop();
-            pr.ParallelLatencyMS = Convert.ToInt32(sw_Parallel.ElapsedMilliseconds);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("ScanDns CheckDnsInParallelAsync: " + ex.Message);
-        }
-
-        return (dnsItemElementsList, pr);
-    }
-
-    public async Task<(List<DnsItem> DnsItemList, ParallelResult ParallelResult)> CheckDnsInParallelAsync(string domain, List<DnsItem> dnsItemList, FilterByProperties filterByProperties, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, bool useExternal, CancellationToken ct, string? proxyScheme = null)
-    {
-        ParallelResult pr = new();
-
-        try
-        {
-            // Parallel Latency
-            Stopwatch sw_Parallel = Stopwatch.StartNew();
+            int gsTimeoutMS = Convert.ToInt32(gs.ScanTimeoutSec * 1000);
 
             // Parallel Options
             ParallelOptions parallelOptions = new() { CancellationToken = ct };
 
             // Convert List To Concurrent
-            ConcurrentDictionary<uint, DnsItem> dnsItemConcurrentList = dnsItemList.ToConcurrentDictionary();
-            Task parallel = Parallel.ForEachAsync(dnsItemConcurrentList, parallelOptions, async (dnsItemKV, pCT) =>
+            ConcurrentDictionary<uint, DnsItem> itemConcurrentDict = items.ToConcurrentDictionary();
+            Task parallel = Parallel.ForEachAsync(itemConcurrentDict, parallelOptions, async (itemKV, pCT) =>
             {
                 if (pCT.IsCancellationRequested) return;
-                DnsItem dnsItem = dnsItemKV.Value;
+                DnsItem item = itemKV.Value;
 
-                if (pCT.IsCancellationRequested) return;
-                var scanResult = await CheckDnsAsync(domain, dnsItem.DNS_URL, timeoutMS, bootstrapIP, bootstrapPort, useExternal, pCT, proxyScheme).ConfigureAwait(false);
-                if (pCT.IsCancellationRequested) return;
+                if (filterByProtocols != null)
+                    item.IsSelected = DnsServersManager.IsDnsItemEnabledByProtocols(item, filterByProtocols);
+                else
+                    item.IsSelected = true;
 
-                dnsItem = Clone_DnsItem(dnsItem, scanResult.DnsItem);
-                dnsItem.Enabled = DnsServersManager.IsDnsItemEnabledByOptions(dnsItem, filterByProperties);
-                if (dnsItem.Status == DnsStatus.Online)
-                {
-                    pr.OnlineServers++;
-                    if (dnsItem.Enabled) pr.SelectedServers++;
-                    pr.SumLatencyMS += dnsItem.Latency;
-
-                    if (string.IsNullOrWhiteSpace(dnsItem.Description))
-                        dnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
-                    else
-                    {
-                        bool isDateTime = DateTime.TryParse(dnsItem.Description, out _);
-                        if (isDateTime) dnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
-                    }
-                }
-
-                dnsItemConcurrentList.TryUpdate(dnsItemKV.Key, dnsItem);
-            });
-            try { await parallel.WaitAsync(ct).ConfigureAwait(false); } catch (Exception) { }
-
-            // Convert Back To List
-            dnsItemList = dnsItemConcurrentList.Select(x => x.Value).ToList();
-
-            // Set Average Latency
-            pr.AverageLatencyMS = pr.OnlineServers > 0 ? pr.SumLatencyMS / pr.OnlineServers : 0;
-
-            sw_Parallel.Stop();
-            pr.ParallelLatencyMS = Convert.ToInt32(sw_Parallel.ElapsedMilliseconds);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("ScanDns CheckDnsInParallelAsync: " + ex.Message);
-        }
-
-        return (dnsItemList, pr);
-    }
-
-    public async Task<(List<XElement> DnsItemElementsList, ParallelResult ParallelResult)> CheckDnsInParallelAsync(string domain, List<XElement> dnsItemElementsList, FilterByProtocols filterByProtocols, FilterByProperties filterByProperties, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, bool useExternal, CancellationToken ct, string? proxyScheme = null)
-    {
-        ParallelResult pr = new();
-
-        try
-        {
-            // Parallel Latency
-            Stopwatch sw_Parallel = Stopwatch.StartNew();
-
-            // Parallel Options
-            ParallelOptions parallelOptions = new() { CancellationToken = ct };
-
-            // Convert List To Concurrent
-            ConcurrentDictionary<uint, XElement> dnsItemElementsConcurrentList = dnsItemElementsList.ToConcurrentDictionary();
-            Task parallel = Parallel.ForEachAsync(dnsItemElementsConcurrentList, parallelOptions, async (dnsItemElement, pCT) =>
-            {
-                if (pCT.IsCancellationRequested) return;
-                DnsItem dnsItem = DnsServersManager.Create_DnsItem(dnsItemElement.Value);
-                dnsItem.Enabled = DnsServersManager.IsDnsItemEnabledByProtocols(dnsItem, filterByProtocols);
-
-                if (dnsItem.Enabled) // Protocol Selection Is Match
+                if (item.IsSelected) // Protocol Selection Is Match
                 {
                     if (pCT.IsCancellationRequested) return;
-                    var scanResult = await CheckDnsAsync(domain, dnsItem.DNS_URL, timeoutMS, bootstrapIP, bootstrapPort, useExternal, pCT, proxyScheme).ConfigureAwait(false);
+                    var scanResult = await ScanDnsAsync(gs.LookupDomain, item.DNS_URL, gsTimeoutMS, gs.BootstrapIP, gs.BootstrapPort, proxyScheme, useExternal, pCT).ConfigureAwait(false);
                     if (pCT.IsCancellationRequested) return;
 
-                    dnsItem = Clone_DnsItem(dnsItem, scanResult.DnsItem);
-                    dnsItem.Enabled = DnsServersManager.IsDnsItemEnabledByOptions(dnsItem, filterByProtocols, filterByProperties);
-                    if (dnsItem.Status == DnsStatus.Online)
+                    // Clone To Copy Unique ID
+                    item = scanResult.DnsItem.Clone_DnsItem(item);
+
+                    if (item.Status == DnsStatus.Online)
                     {
+                        if (filterByProtocols != null)
+                            item.IsSelected = DnsServersManager.IsDnsItemEnabledByOptions(item, filterByProtocols, filterByProperties);
+                        else
+                            item.IsSelected = DnsServersManager.IsDnsItemEnabledByOptions(item, filterByProperties);
+
                         pr.OnlineServers++;
-                        if (dnsItem.Enabled) pr.SelectedServers++;
-                        pr.SumLatencyMS += dnsItem.Latency;
+                        if (item.IsSelected) pr.SelectedServers++;
+                        pr.SumLatencyMS += item.Latency;
 
-                        if (string.IsNullOrWhiteSpace(dnsItem.Description))
-                            dnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
+                        // Save DateTime To Description
+                        if (string.IsNullOrWhiteSpace(item.Description))
+                            item.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
                         else
                         {
-                            bool isDateTime = DateTime.TryParse(dnsItem.Description, out _);
-                            if (isDateTime) dnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
+                            bool isDateTime = DateTime.TryParse(item.Description, out _);
+                            if (isDateTime) item.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
                         }
+                    }
+                    else
+                    {
+                        item.IsSelected = false;
                     }
                 }
                 else
                 {
-                    dnsItem.Status = DnsStatus.Skipped;
-                    dnsItem.Enabled = false;
+                    item.Status = DnsStatus.Skipped;
+                    item.IsSelected = false;
                 }
 
-                XElement dnsItemElementNew = DnsServersManager.Create_DnsItem_Element(dnsItem);
-                dnsItemElementsConcurrentList.TryUpdate(dnsItemElement.Key, dnsItemElementNew);
+                bool added = itemConcurrentDict.TryUpdate(itemKV.Key, item);
+                if (!added) itemConcurrentDict.TryUpdate(itemKV.Key, item);
             });
             try { await parallel.WaitAsync(ct).ConfigureAwait(false); } catch (Exception) { }
 
-            // Convert Back To List
-            dnsItemElementsList = dnsItemElementsConcurrentList.Select(x => x.Value).ToList();
+            // Convert Back To ObservableCollection
+            items = itemConcurrentDict.Select(_ => _.Value).ToObservableCollection();
+            itemConcurrentDict.Clear();
 
             // Set Average Latency
             pr.AverageLatencyMS = pr.OnlineServers > 0 ? pr.SumLatencyMS / pr.OnlineServers : 0;
@@ -424,80 +333,10 @@ public class ScanDns
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ScanDns CheckDnsInParallelAsync: " + ex.Message);
+            Debug.WriteLine("ScanDns ScanDnsInParallelAsync: " + ex.Message);
         }
 
-        return (dnsItemElementsList, pr);
-    }
-
-    public async Task<(List<DnsItem> DnsItemList, ParallelResult ParallelResult)> CheckDnsInParallelAsync(string domain, List<DnsItem> dnsItemList, FilterByProtocols filterByProtocols, FilterByProperties filterByProperties, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, bool useExternal, CancellationToken ct, string? proxyScheme = null)
-    {
-        ParallelResult pr = new();
-
-        try
-        {
-            // Parallel Latency
-            Stopwatch sw_Parallel = Stopwatch.StartNew();
-
-            // Parallel Options
-            ParallelOptions parallelOptions = new() { CancellationToken = ct };
-
-            // Convert List To Concurrent
-            ConcurrentDictionary<uint, DnsItem> dnsItemConcurrentList = dnsItemList.ToConcurrentDictionary();
-            Task parallel = Parallel.ForEachAsync(dnsItemConcurrentList, parallelOptions, async (dnsItemKV, pCT) =>
-            {
-                if (pCT.IsCancellationRequested) return;
-                DnsItem dnsItem = dnsItemKV.Value;
-                dnsItem.Enabled = DnsServersManager.IsDnsItemEnabledByProtocols(dnsItem, filterByProtocols);
-
-                if (dnsItem.Enabled) // Protocol Selection Is Match
-                {
-                    if (pCT.IsCancellationRequested) return;
-                    var scanResult = await CheckDnsAsync(domain, dnsItem.DNS_URL, timeoutMS, bootstrapIP, bootstrapPort, useExternal, pCT, proxyScheme).ConfigureAwait(false);
-                    if (pCT.IsCancellationRequested) return;
-
-                    dnsItem = Clone_DnsItem(dnsItem, scanResult.DnsItem);
-                    dnsItem.Enabled = DnsServersManager.IsDnsItemEnabledByOptions(dnsItem, filterByProtocols, filterByProperties);
-                    if (dnsItem.Status == DnsStatus.Online)
-                    {
-                        pr.OnlineServers++;
-                        if (dnsItem.Enabled) pr.SelectedServers++;
-                        pr.SumLatencyMS += dnsItem.Latency;
-
-                        if (string.IsNullOrWhiteSpace(dnsItem.Description))
-                            dnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
-                        else
-                        {
-                            bool isDateTime = DateTime.TryParse(dnsItem.Description, out _);
-                            if (isDateTime) dnsItem.Description = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}";
-                        }
-                    }
-                }
-                else
-                {
-                    dnsItem.Status = DnsStatus.Skipped;
-                    dnsItem.Enabled = false;
-                }
-
-                dnsItemConcurrentList.TryUpdate(dnsItemKV.Key, dnsItem);
-            });
-            try { await parallel.WaitAsync(ct).ConfigureAwait(false); } catch (Exception) { }
-
-            // Convert Back To List
-            dnsItemList = dnsItemConcurrentList.Select(x => x.Value).ToList();
-
-            // Set Average Latency
-            pr.AverageLatencyMS = pr.OnlineServers > 0 ? pr.SumLatencyMS / pr.OnlineServers : 0;
-
-            sw_Parallel.Stop();
-            pr.ParallelLatencyMS = Convert.ToInt32(sw_Parallel.ElapsedMilliseconds);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine("ScanDns CheckDnsInParallelAsync: " + ex.Message);
-        }
-
-        return (dnsItemList, pr);
+        return (items, pr);
     }
 
     /// <summary>
@@ -510,21 +349,19 @@ public class ScanDns
     /// <param name="bootstrapPort">Bootstrap Port</param>
     /// <param name="useExternal">Scan DNS By External SDCLookup (External Returns Empty DnsMessage)</param>
     /// <returns></returns>
-    public async Task<(DnsItem DnsItem, DnsMessage DnsMessage)> CheckDnsAsync(string domain, string dnsServer, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, bool useExternal, CancellationToken ct, string? proxyScheme = null)
+    public async Task<(DnsItem DnsItem, DnsMessage DnsMessage)> ScanDnsAsync(string domain, string dnsServer, int timeoutMS, IPAddress bootstrapIP, int bootstrapPort, string? proxyScheme, bool useExternal, CancellationToken ct)
     {
-        DnsItem dnsItemOut = new();
+        DnsItem dnsItemOut = new(dnsServer);
         DnsMessage dnsMessageOut = new();
 
         try
         {
+            // Read
+            if (dnsItemOut.Protocol == DnsEnums.DnsProtocol.Unknown) return (dnsItemOut, dnsMessageOut);
+
             // Var
             DnsStatus status = DnsStatus.Unknown;
             int latency = -1;
-
-            // Read
-            DnsReader dnsReader = new(dnsServer);
-            dnsItemOut.Protocol = dnsReader.ProtocolName;
-            if (dnsReader.Protocol == DnsEnums.DnsProtocol.Unknown) return (dnsItemOut, dnsMessageOut);
 
             // Scan
             if (useExternal)
@@ -532,7 +369,7 @@ public class ScanDns
                 bool isDnsOnline = false;
                 string args = $"-Domain={domain} -DNSs=\"{dnsServer}\" -TimeoutMS={timeoutMS} -Insecure={Insecure} -BootstrapIP={bootstrapIP} -BootstrapPort={bootstrapPort} -DoubleCheck=True";
                 if (!string.IsNullOrEmpty(proxyScheme)) args += $" -ProxyScheme={proxyScheme}";
-                var p = await ProcessManager.ExecuteAsync(Pathes.SDCLookup, null, args, true, true, Pathes.BinaryDirPath);
+                var p = await ProcessManager.ExecuteAsync(Pathes.DNSveilLookup, null, args, true, true, Pathes.BinaryDir, ProcessPriorityClass.Normal, timeoutMS * 1000);
                 if (p.IsSeccess)
                 {
                     string dnsLookupResult = p.Output;
@@ -558,7 +395,7 @@ public class ScanDns
             else
             {
                 bool hasLocalIp = false;
-                int aRecordCount = 0;
+                int recordCount = 0;
                 DnsMessage dmQ = DnsMessage.CreateQuery(DnsEnums.DnsProtocol.UDP, domain, DnsEnums.RRType.A, DnsEnums.CLASS.IN);
                 bool isWriteSuccess = DnsMessage.TryWrite(dmQ, out byte[] dmQBuffer);
                 if (isWriteSuccess)
@@ -578,15 +415,24 @@ public class ScanDns
                                 for (int n = 0; n < dnsMessageOut.Answers.AnswerRecords.Count; n++)
                                 {
                                     IResourceRecord irr = dnsMessageOut.Answers.AnswerRecords[n];
-                                    if (irr is not ARecord aRecord) continue;
-                                    if (NetworkTool.IsLocalIP(aRecord.IP)) hasLocalIp = true;
-                                    aRecordCount++;
+
+                                    if (irr is ARecord aRecord)
+                                    {
+                                        if (NetworkTool.IsLocalIP(aRecord.IP)) hasLocalIp = true;
+                                        recordCount++;
+                                    }
+
+                                    if (irr is AaaaRecord aaaaRecord)
+                                    {
+                                        if (NetworkTool.IsLocalIP(aaaaRecord.IP)) hasLocalIp = true;
+                                        recordCount++;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                status = !hasLocalIp && aRecordCount > 0 ? DnsStatus.Online : DnsStatus.Offline;
+                status = !hasLocalIp && recordCount > 0 ? DnsStatus.Online : DnsStatus.Offline;
             }
 
             // Filters
@@ -603,21 +449,16 @@ public class ScanDns
                 isAdultBlocked = IsAdultBlocked;
             }
 
-            dnsItemOut = new()
-            {
-                DNS_URL = dnsServer,
-                Protocol = dnsReader.ProtocolName,
-                Status = status,
-                Latency = status == DnsStatus.Online ? latency : -1,
-                IsGoogleSafeSearchEnabled = isGoogleSafeSearchEnabled,
-                IsBingSafeSearchEnabled = isBingSafeSearchEnabled,
-                IsYoutubeRestricted = isYoutubeRestricted,
-                IsAdultBlocked = isAdultBlocked
-            };
+            dnsItemOut.Status = status;
+            dnsItemOut.Latency = status == DnsStatus.Online ? latency : -1;
+            dnsItemOut.IsGoogleSafeSearchEnabled = isGoogleSafeSearchEnabled;
+            dnsItemOut.IsBingSafeSearchEnabled = isBingSafeSearchEnabled;
+            dnsItemOut.IsYoutubeRestricted = isYoutubeRestricted;
+            dnsItemOut.IsAdultBlocked = isAdultBlocked;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("ScanDns CheckDnsAsync: " + ex.Message);
+            Debug.WriteLine("ScanDns ScanDnsAsync: " + ex.Message);
         }
         
         return (dnsItemOut, dnsMessageOut);

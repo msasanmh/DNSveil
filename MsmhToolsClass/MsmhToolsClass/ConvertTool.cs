@@ -46,7 +46,7 @@ public class ConvertTool
 
     public static string ConvertByteToHumanRead(double bytes)
     {
-        bytes = Math.Round(bytes, 2);
+        try { bytes = Math.Round(bytes, 2); } catch (Exception) { }
         string result = $"{bytes} {SizeUnits.Byte}";
         double calc = bytes;
         if (calc > 1000) calc = ConvertSize(calc, SizeUnits.Byte, SizeUnits.KB, out result);

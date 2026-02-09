@@ -188,7 +188,7 @@ public partial class ManageRulesWindow : WpfWindow
             };
             dg.Columns.Add(c_Value);
 
-            dg.LastColumnFill();
+            dg.FillLastColumn();
             await Task.Delay(50);
         }
         catch (Exception ex)

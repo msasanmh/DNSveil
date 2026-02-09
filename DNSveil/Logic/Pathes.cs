@@ -24,6 +24,9 @@ public class Pathes
     // Certificates Directory In User Data Directory
     private const string CertificateDirName = "Certificate";
 
+    // Temp Directory In User Data Directory
+    private const string TempDirName = "Temp";
+
     // App Name Without Extension
     private static readonly string AppNameNoExtension = GetFileNameWithoutExtension(Environment.ProcessPath);
 
@@ -63,19 +66,26 @@ public class Pathes
                 {
                     string msgErr = $"System AppData Folder Is Not Reachable.{Environment.NewLine}";
                     FileDirectory.AppendTextLine(ErrorLog, msgErr, new UTF8Encoding(false));
-                    Environment.Exit(0);
+                    Info.Exit();
                     return string.Empty;
                 }
             }
         }
     }
 
+    // Directories
+    public static readonly string BinaryDir = GetFullPath(CurrentPath, BinariesDirName);
+    public static readonly string AssetDir = GetFullPath(UserDataDir, AssetDirName);
+    public static readonly string CertificateDir = GetFullPath(UserDataDir, CertificateDirName);
+    public static readonly string TempDir = GetFullPath(UserDataDir, TempDirName);
+
     // Binaries Path
-    public static readonly string BinaryDirPath = GetFullPath(CurrentPath, BinariesDirName);
-    public static readonly string DnsLookup = GetFullPath(CurrentPath, BinariesDirName, "dnslookup.exe");
-    public static readonly string RandomPath = GetRandomPath();
-    public static readonly string SDCLookup = GetFullPath(CurrentPath, BinariesDirName, "SDCLookup.exe");
-    public static readonly string AgnosticServer = GetFullPath(CurrentPath, BinariesDirName, "SDCAgnosticServer.exe");
+    public static string RandomPath => GetRandomPathWithPreferredExtension("tmp");
+    public static string RandomJsonPath => GetRandomPathWithPreferredExtension("json");
+    public static readonly string DnsLookup = GetFullPath(BinaryDir, "dnslookup.exe");
+    public static readonly string DNSveilLookup = GetFullPath(BinaryDir, "DNSveilLookup.exe");
+    public static readonly string AgnosticServer = GetFullPath(BinaryDir, "MsmhAgnosticServer.exe");
+    public static readonly string Xray = GetFullPath(BinaryDir, "xray.exe");
 
     // Settings Path
     public static readonly string FirstRun = GetFullPath(UserDataDir, "FirstRun.txt");
@@ -84,8 +94,11 @@ public class Pathes
     public static readonly string SettingsXmlIpScanner = GetFullPath(UserDataDir, "IpScannerSettings.xml");
     public static readonly string SettingsXmlDnsScanner = GetFullPath(UserDataDir, "DnsScannerSettings.xml");
     public static readonly string UserId = GetFullPath(UserDataDir, "uid.txt");
-    public static readonly string DnsServers_BuiltIn = GetFullPath(UserDataDir, "DnsServers_BuiltIn.xml");
-    public static readonly string DnsServers_User = GetFullPath(UserDataDir, "DnsServers_User.xml");
+    public static readonly string DnsServers_BuiltIn = GetFullPath(UserDataDir, "DnsServers_BuiltIn.json");
+    public static readonly string DnsServers_User = GetFullPath(UserDataDir, "DnsServers_User.json");
+    public static readonly string UpstreamServers_BuiltIn = GetFullPath(UserDataDir, "UpstreamServers_BuiltIn.json");
+    public static readonly string UpstreamServers_User = GetFullPath(UserDataDir, "UpstreamServers_User.json");
+    public static readonly string XrayConfig = GetFullPath(TempDir, "XrayConfig.json");
     public static readonly string NicName = GetFullPath(UserDataDir, "NicName.txt");
     public static readonly string LogWindow = GetFullPath(UserDataDir, "LogWindow.txt");
     public static readonly string CloseStatus = GetFullPath(UserDataDir, "CloseStatus.txt");
@@ -97,7 +110,6 @@ public class Pathes
     public static readonly string ProxyRules = GetFullPath(UserDataDir, "ProxyRules.txt");
     public static readonly string Rules_Assets_DNS = GetFullPath(UserDataDir, "Rules_Assets_DNS.tmp");
     public static readonly string Rules_Assets_Proxy = GetFullPath(UserDataDir, "Rules_Assets_Proxy.tmp");
-    public static readonly string AssetDir = GetFullPath(UserDataDir, AssetDirName);
     public static readonly string Asset_Local_CIDRs = GetFullPath(AssetDir, "Local_CIDRs.txt");
     public static readonly string Asset_Cloudflare_CIDRs = GetFullPath(AssetDir, "Cloudflare_CIDRs.txt");
     public static readonly string Asset_IR_Domains = GetFullPath(AssetDir, "IR_Domains.txt");
@@ -105,7 +117,6 @@ public class Pathes
     public static readonly string Asset_IR_ADS_Domains = GetFullPath(AssetDir, "IR_ADS_Domains.txt");
 
     // Certificates Path
-    public static readonly string CertificateDir = GetFullPath(UserDataDir, CertificateDirName);
     public static readonly string IssuerKey = GetFullPath(CertificateDir, "rootCA.key");
     public static readonly string IssuerCert = GetFullPath(CertificateDir, "rootCA.crt");
     public static readonly string LocalKey = GetFullPath(CertificateDir, "localhost.key");
@@ -132,6 +143,8 @@ public class Pathes
     public static readonly string FirewallRule_DNSveilAgnosticServerOut = $"{AppName} AgnosticServer OUT";
     public static readonly string FirewallRule_DNSveilDnsLookupIn = $"{AppName} DnsLookup IN";
     public static readonly string FirewallRule_DNSveilDnsLookupOut = $"{AppName} DnsLookup OUT";
+    public static readonly string FirewallRule_XrayIn = $"{AppName} Xray IN";
+    public static readonly string FirewallRule_XrayOut = $"{AppName} Xray OUT";
 
     private static string GetFileNameWithoutExtension(string? path)
     {
@@ -141,7 +154,7 @@ public class Pathes
             {
                 string msgErr = $"GetFileNameWithoutExtension:{Environment.NewLine}Path Is NULL{Environment.NewLine}";
                 FileDirectory.AppendTextLine(ErrorLog, msgErr, new UTF8Encoding(false));
-                Environment.Exit(0);
+                Info.Exit();
                 return string.Empty;
             }
             return Path.GetFileNameWithoutExtension(path);
@@ -150,7 +163,7 @@ public class Pathes
         {
             string msgErr = $"GetFileNameWithoutExtension:{Environment.NewLine}{ex.Message}{Environment.NewLine}";
             FileDirectory.AppendTextLine(ErrorLog, msgErr, new UTF8Encoding(false));
-            Environment.Exit(0);
+            Info.Exit();
             return string.Empty;
         }
     }
@@ -163,7 +176,7 @@ public class Pathes
             {
                 string msgErr = $"GetFullPath1:{Environment.NewLine}Path Is NULL{Environment.NewLine}";
                 FileDirectory.AppendTextLine(ErrorLog, msgErr, new UTF8Encoding(false));
-                Environment.Exit(0);
+                Info.Exit();
                 return string.Empty;
             }
             return Path.GetFullPath(path);
@@ -172,7 +185,7 @@ public class Pathes
         {
             string msgErr = $"GetFullPath1:{Environment.NewLine}{ex.Message}{Environment.NewLine}";
             FileDirectory.AppendTextLine(ErrorLog, msgErr, new UTF8Encoding(false));
-            Environment.Exit(0);
+            Info.Exit();
             return string.Empty;
         }
     }
@@ -187,7 +200,7 @@ public class Pathes
         {
             string msgErr = $"GetFullPath2:{Environment.NewLine}{ex.Message}{Environment.NewLine}";
             FileDirectory.AppendTextLine(ErrorLog, msgErr, new UTF8Encoding(false));
-            Environment.Exit(0);
+            Info.Exit();
             return string.Empty;
         }
     }
@@ -202,22 +215,25 @@ public class Pathes
         {
             string msgErr = $"GetFullPath3:{Environment.NewLine}{ex.Message}{Environment.NewLine}";
             FileDirectory.AppendTextLine(ErrorLog, msgErr, new UTF8Encoding(false));
-            Environment.Exit(0);
+            Info.Exit();
             return string.Empty;
         }
     }
 
-    private static string GetRandomPath()
+    private static string GetRandomPathWithPreferredExtension(string preferredExtension)
     {
         try
         {
-            return GetFullPath(Path.GetTempPath(), Path.GetRandomFileName());
+            preferredExtension = preferredExtension.Trim().TrimStart('.');
+            string uniqueId = Guid.NewGuid().ToString();
+            if (!string.IsNullOrEmpty(preferredExtension)) uniqueId += $".{preferredExtension}";
+            return GetFullPath(Path.GetTempPath(), uniqueId);
         }
         catch (Exception ex)
         {
             string msgErr = $"GetRandomPath:{Environment.NewLine}{ex.Message}{Environment.NewLine}";
             FileDirectory.AppendTextLine(ErrorLog, msgErr, new UTF8Encoding(false));
-            Environment.Exit(0);
+            Info.Exit();
             return string.Empty;
         }
     }

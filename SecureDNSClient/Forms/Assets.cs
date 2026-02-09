@@ -53,7 +53,7 @@ public partial class FormMain
             bool go = ir_Domains || ir_CIDRs || ir_ADS;
             if (go)
             {
-                List<string> releaseURLs = await WebAPI.Github_Latest_Release_Async("msasanmh", "Iran-clash-rules", timeoutMs);
+                List<string> releaseURLs = await WebAPI.Github_Latest_Release_Async("msasanmh", "Iran-clash-rules", timeoutMs, CancellationToken.None);
                 foreach (string releaseURL in releaseURLs)
                 {
                     // IR_Domains
@@ -97,7 +97,7 @@ public partial class FormMain
                 if (ir_Domains && !ir_Domains_Done)
                 {
                     string mirror = "https://raw.githubusercontent.com/msasanmh/SecureDNSClient/refs/heads/main/Assets/IR_Domains.txt";
-                    byte[] bytes = await WebAPI.DownloadFileAsync(mirror, timeoutMs).ConfigureAwait(false);
+                    byte[] bytes = await WebAPI.DownloadFileAsync(mirror, timeoutMs, CancellationToken.None).ConfigureAwait(false);
                     if (bytes.Length > 0)
                     {
                         await File.WriteAllBytesAsync(SecureDNS.Asset_IR_Domains, bytes);
@@ -109,7 +109,7 @@ public partial class FormMain
                 if (ir_CIDRs && !ir_CIDRs_Done)
                 {
                     string mirror = "https://raw.githubusercontent.com/msasanmh/SecureDNSClient/refs/heads/main/Assets/IR_CIDRs.txt";
-                    byte[] bytes = await WebAPI.DownloadFileAsync(mirror, timeoutMs).ConfigureAwait(false);
+                    byte[] bytes = await WebAPI.DownloadFileAsync(mirror, timeoutMs, CancellationToken.None).ConfigureAwait(false);
                     if (bytes.Length > 0)
                     {
                         await File.WriteAllBytesAsync(SecureDNS.Asset_IR_CIDRs, bytes);
@@ -121,7 +121,7 @@ public partial class FormMain
                 if (ir_ADS &&  !ir_ADS_Done)
                 {
                     string mirror = "https://raw.githubusercontent.com/msasanmh/SecureDNSClient/refs/heads/main/Assets/IR_ADS_Domains.txt";
-                    byte[] bytes = await WebAPI.DownloadFileAsync(mirror, timeoutMs).ConfigureAwait(false);
+                    byte[] bytes = await WebAPI.DownloadFileAsync(mirror, timeoutMs, CancellationToken.None).ConfigureAwait(false);
                     if (bytes.Length > 0)
                     {
                         await File.WriteAllBytesAsync(SecureDNS.Asset_IR_ADS_Domains, bytes);
@@ -144,7 +144,7 @@ public partial class FormMain
 
         try
         {
-            byte[] bytes = await WebAPI.DownloadFileAsync(url, timeoutMs).ConfigureAwait(false);
+            byte[] bytes = await WebAPI.DownloadFileAsync(url, timeoutMs, CancellationToken.None).ConfigureAwait(false);
             if (bytes.Length > 0)
             {
                 string text = Encoding.UTF8.GetString(bytes);
@@ -180,7 +180,7 @@ public partial class FormMain
 
         try
         {
-            byte[] bytes = await WebAPI.DownloadFileAsync(url, timeoutMs).ConfigureAwait(false);
+            byte[] bytes = await WebAPI.DownloadFileAsync(url, timeoutMs, CancellationToken.None).ConfigureAwait(false);
             if (bytes.Length > 0)
             {
                 string text = Encoding.UTF8.GetString(bytes);

@@ -9,8 +9,10 @@ public class EncodingTool
     private const int MaxByteArraySize_SingleDimension = 2147483591;
     private const int MaxByteArraySize_OtherTypes = 2146435071;
 
-    public static string GetSHA1(string text)
+    public static bool TryGetSHA1(string text, out string output)
     {
+        output = string.Empty;
+
         try
         {
             byte[] buffer = Encoding.UTF8.GetBytes(text);
@@ -18,22 +20,26 @@ public class EncodingTool
             
             int bufferSize = 20;
             Span<byte> hashBuffer = new(new byte[bufferSize]);
-            bool success = hash.TryComputeHash(buffer, hashBuffer, out int bytesWritten);
-            if (success)
+            bool isSuccess = hash.TryComputeHash(buffer, hashBuffer, out int bytesWritten);
+            if (isSuccess)
             {
                 hashBuffer = hashBuffer[..bytesWritten];
-                return Convert.ToHexString(hashBuffer);
+                output = Convert.ToHexString(hashBuffer);
+                return true;
             }
-            return string.Empty;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return string.Empty;
+            Debug.WriteLine("EncodingTool TryGetSHA1: " + ex.Message);
         }
+
+        return false;
     }
 
-    public static string GetSHA256(string text)
+    public static bool TryGetSHA256(string text, out string output)
     {
+        output = string.Empty;
+
         try
         {
             byte[] buffer = Encoding.UTF8.GetBytes(text);
@@ -41,22 +47,26 @@ public class EncodingTool
 
             int bufferSize = 32;
             Span<byte> hashBuffer = new(new byte[bufferSize]);
-            bool success = hash.TryComputeHash(buffer, hashBuffer, out int bytesWritten);
-            if (success)
+            bool isSuccess = hash.TryComputeHash(buffer, hashBuffer, out int bytesWritten);
+            if (isSuccess)
             {
                 hashBuffer = hashBuffer[..bytesWritten];
-                return Convert.ToHexString(hashBuffer);
+                output = Convert.ToHexString(hashBuffer);
+                return true;
             }
-            return string.Empty;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return string.Empty;
+            Debug.WriteLine("EncodingTool TryGetSHA256: " + ex.Message);
         }
+
+        return false;
     }
 
-    public static string GetSHA384(string text)
+    public static bool TryGetSHA384(string text, out string output)
     {
+        output = string.Empty;
+
         try
         {
             byte[] buffer = Encoding.UTF8.GetBytes(text);
@@ -64,22 +74,26 @@ public class EncodingTool
 
             int bufferSize = 48;
             Span<byte> hashBuffer = new(new byte[bufferSize]);
-            bool success = hash.TryComputeHash(buffer, hashBuffer, out int bytesWritten);
-            if (success)
+            bool isSuccess = hash.TryComputeHash(buffer, hashBuffer, out int bytesWritten);
+            if (isSuccess)
             {
                 hashBuffer = hashBuffer[..bytesWritten];
-                return Convert.ToHexString(hashBuffer);
+                output = Convert.ToHexString(hashBuffer);
+                return true;
             }
-            return string.Empty;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return string.Empty;
+            Debug.WriteLine("EncodingTool TryGetSHA384: " + ex.Message);
         }
+
+        return false;
     }
 
-    public static string GetSHA512(string text)
+    public static bool TryGetSHA512(string text, out string output)
     {
+        output = string.Empty;
+
         try
         {
             byte[] buffer = Encoding.UTF8.GetBytes(text);
@@ -87,21 +101,23 @@ public class EncodingTool
             
             int bufferSize = 64;
             Span<byte> hashBuffer = new(new byte[bufferSize]);
-            bool success = hash.TryComputeHash(buffer, hashBuffer, out int bytesWritten);
-            if (success)
+            bool isSuccess = hash.TryComputeHash(buffer, hashBuffer, out int bytesWritten);
+            if (isSuccess)
             {
                 hashBuffer = hashBuffer[..bytesWritten];
-                return Convert.ToHexString(hashBuffer);
+                output = Convert.ToHexString(hashBuffer);
+                return true;
             }
-            return string.Empty;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return string.Empty;
+            Debug.WriteLine("EncodingTool TryGetSHA512: " + ex.Message);
         }
+
+        return false;
     }
 
-    public static int GetBufferSize_FromBase64String(string? encodedString)
+    private static int GetBufferSize_FromBase64String(string? encodedString)
     {
         if (string.IsNullOrEmpty(encodedString)) return 0;
         // The Formula Ensures The Buffer Is Not Too Large Or Too Small.
@@ -110,7 +126,7 @@ public class EncodingTool
         return bufferSize;
     }
 
-    public static int GetBufferSize_ToBase64String(byte[] buffer)
+    private static int GetBufferSize_ToBase64String(byte[] buffer)
     {
         // The Formula Ensures The Buffer Is Not Too Large Or Too Small.
         int bufferSize = ((buffer.Length * 4) / 3) + 4; // +4 To Ensure Space For Padding.
@@ -133,41 +149,73 @@ public class EncodingTool
         }
     }
 
-    public static string Base64Encode(string plainText)
+    public static bool TryEncodeBase64(string plainText, out string encodedString)
     {
+        encodedString = string.Empty;
+
         try
         {
             byte[] buffer = Encoding.UTF8.GetBytes(plainText);
             int bufferSize = GetBufferSize_ToBase64String(buffer);
             char[] base64Buffer = new char[bufferSize];
-            bool success = Convert.TryToBase64Chars(buffer, base64Buffer, out int charsWritten);
-            if (success) return new(base64Buffer, 0, charsWritten);
-            return string.Empty;
+            bool isSuccess = Convert.TryToBase64Chars(buffer, base64Buffer, out int charsWritten);
+            if (isSuccess)
+            {
+                encodedString = new(base64Buffer, 0, charsWritten);
+                return true;
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return string.Empty;
+            Debug.WriteLine("EncodingTool TryEncodeBase64: " + ex.Message);
         }
+
+        return false;
     }
 
-    public static string Base64Decode(string encodedString)
+    public static bool TryDecodeBase64(string base64, out byte[] output)
     {
+        output = Array.Empty<byte>();
+
         try
         {
-            int bufferSize = GetBufferSize_FromBase64String(encodedString);
+            int bufferSize = GetBufferSize_FromBase64String(base64);
             Span<byte> buffer = new(new byte[bufferSize]);
-            bool success = Convert.TryFromBase64String(encodedString, buffer, out int bytesWritten);
-            if (success)
+            bool isSuccess = Convert.TryFromBase64String(base64, buffer, out int bytesWritten);
+            if (isSuccess)
             {
-                buffer = buffer[..bytesWritten];
-                return Encoding.UTF8.GetString(buffer);
+                output = buffer[..bytesWritten].ToArray();
+                return true;
             }
-            return string.Empty;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return string.Empty;
+            Debug.WriteLine("EncodingTool TryDecodeBase64: " + ex.Message);
+            Debug.WriteLine("EncodingTool TryDecodeBase64 Base64: " + base64);
         }
+
+        return false;
+    }
+
+    public static bool TryDecodeBase64(string base64, out string output)
+    {
+        output = string.Empty;
+
+        try
+        {
+            bool isSuccess = TryDecodeBase64(base64, out byte[] buffer);
+            if (isSuccess)
+            {
+                output = Encoding.UTF8.GetString(buffer);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("EncodingTool TryDecodeBase64 (out string): " + ex.Message);
+        }
+
+        return false;
     }
 
     public static string Base64ToBase64Url(string base64)
@@ -176,8 +224,9 @@ public class EncodingTool
         {
             return base64.Replace("=", "").Replace("/", "_").Replace("+", "-");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Debug.WriteLine("EncodingTool Base64ToBase64Url: " + ex.Message);
             return string.Empty;
         }
     }
@@ -187,56 +236,110 @@ public class EncodingTool
         try
         {
             base64Url = base64Url.ReplaceLineEndings();
+            base64Url = base64Url.Replace("\\n", Environment.NewLine);
             base64Url = base64Url.Replace(Environment.NewLine, "");
             base64Url = base64Url.Replace("_", "/").Replace("-", "+").Replace(" ", "");
             base64Url = base64Url.PadRight(base64Url.Length + (4 - base64Url.Length % 4) % 4, '=');
             return base64Url;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Debug.WriteLine("EncodingTool Base64UrlToBase64: " + ex.Message);
             return string.Empty;
         }
     }
 
-    public static string Base64UrlEncode(byte[] buffer)
+    public static bool TryEncodeBase64Url(byte[] buffer, out string output)
     {
+        output = string.Empty;
+
         try
         {
             int bufferSize = GetBufferSize_ToBase64String(buffer);
             char[] base64Buffer = new char[bufferSize];
-            bool success = Convert.TryToBase64Chars(buffer, base64Buffer, out int charsWritten);
-            if (success)
+            bool isSuccess = Convert.TryToBase64Chars(buffer, base64Buffer, out int charsWritten);
+            if (isSuccess)
             {
                 string base64 = new(base64Buffer, 0, charsWritten);
-                return Base64ToBase64Url(base64);
+                output = Base64ToBase64Url(base64);
+                return true;
             }
-            return string.Empty;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return string.Empty;
+            Debug.WriteLine("EncodingTool TryEncodeBase64Url: " + ex.Message);
         }
+
+        return false;
     }
 
-    public static byte[] Base64UrlDecode(string base64Url)
+    public static bool TryEncodeBase64Url(string base64Url, out string output)
     {
+        output = string.Empty;
+
+        try
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(base64Url);
+            bool isSuccess = TryEncodeBase64Url(buffer, out string encodedString);
+            if (isSuccess)
+            {
+                output = encodedString;
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("EncodingTool TryEncodeBase64Url (in string): " + ex.Message);
+        }
+
+        return false;
+    }
+
+    public static bool TryDecodeBase64Url(string base64Url, out byte[] output)
+    {
+        output = Array.Empty<byte>();
         string base64 = Base64UrlToBase64(base64Url);
 
         try
         {
             int bufferSize = GetBufferSize_FromBase64String(base64);
             Span<byte> buffer = new(new byte[bufferSize]);
-            bool success = Convert.TryFromBase64String(base64, buffer, out int bytesWritten);
-            if (success) return buffer[..bytesWritten].ToArray();
-            return Array.Empty<byte>();
+            bool isSuccess = Convert.TryFromBase64String(base64, buffer, out int bytesWritten);
+            if (isSuccess)
+            {
+                output = buffer[..bytesWritten].ToArray();
+                return true;
+            }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("UrlDecode: " + ex.Message);
-            Debug.WriteLine("UrlDecode Base64Url: " + base64Url);
-            Debug.WriteLine("UrlDecode Base64: " + base64);
-            return Array.Empty<byte>();
+            Debug.WriteLine("EncodingTool TryDecodeBase64Url: " + ex.Message);
+            Debug.WriteLine("EncodingTool TryDecodeBase64Url Base64Url: " + base64Url);
+            Debug.WriteLine("EncodingTool TryDecodeBase64Url Base64: " + base64);
         }
+
+        return false;
+    }
+
+    public static bool TryDecodeBase64Url(string base64Url, out string output)
+    {
+        output = string.Empty;
+
+        try
+        {
+            bool isSuccess = TryDecodeBase64Url(base64Url, out byte[] buffer);
+            if (isSuccess)
+            {
+                output = Encoding.UTF8.GetString(buffer);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("EncodingTool TryDecodeBase64Url (out string): " + ex.Message);
+        }
+
+        return false;
     }
 
 }

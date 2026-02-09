@@ -22,7 +22,7 @@ public static class DnsTools
         }
     }
 
-    public static async Task<List<string>> GetServersFromLinkAsync(string urlOrFile, int timeoutMs)
+    public static async Task<List<string>> GetServersFromLinkAsync(string urlOrFile, int timeoutMs, CancellationToken ct)
     {
         List<string> dnss = new();
 
@@ -31,9 +31,9 @@ public static class DnsTools
             byte[] bytes = Array.Empty<byte>();
 
             if (File.Exists(urlOrFile))
-                bytes = await File.ReadAllBytesAsync(urlOrFile);
+                bytes = await File.ReadAllBytesAsync(urlOrFile, ct);
             else
-                bytes = await WebAPI.DownloadFileAsync(urlOrFile, timeoutMs).ConfigureAwait(false);
+                bytes = await WebAPI.DownloadFileAsync(urlOrFile, timeoutMs, ct).ConfigureAwait(false);
 
             if (bytes.Length > 0)
             {

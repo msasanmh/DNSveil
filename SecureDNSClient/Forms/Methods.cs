@@ -865,7 +865,7 @@ public partial class FormMain
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msgDPI, Color.LightGray));
 
                         StopWatchCheckDPIWorks.Restart();
-                        HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, false, false, proxyScheme, null, null, CheckDpiBypassCTS.Token);
+                        HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, true, false, false, proxyScheme, null, null, CheckDpiBypassCTS.Token);
                         StopWatchCheckDPIWorks.Stop();
                         Debug.WriteLine(hsc);
                         if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)
@@ -879,7 +879,7 @@ public partial class FormMain
                         Debug.WriteLine("No Proxy");
 
                         StopWatchCheckDPIWorks.Restart();
-                        HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, false, false, null, null, null, CheckDpiBypassCTS.Token);
+                        HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, timeoutSec * 1000, true, false, false, null, null, null, CheckDpiBypassCTS.Token);
                         StopWatchCheckDPIWorks.Stop();
 
                         if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.Forbidden)

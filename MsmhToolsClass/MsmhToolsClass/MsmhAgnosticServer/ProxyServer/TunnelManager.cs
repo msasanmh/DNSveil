@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+﻿using Microsoft.Extensions.Caching.Memory;
 using System.Diagnostics;
 
 #nullable enable
@@ -6,7 +6,7 @@ namespace MsmhToolsClass.MsmhAgnosticServer;
 
 internal class TunnelManager
 {
-    private readonly ConcurrentDictionary<int, Lazy<ProxyTunnel>> Tunnels = new();
+    private readonly MemoryCache Tunnels = new(new MemoryCacheOptions());
 
     /// <summary>
     /// Construct the Tunnel Manager.
@@ -17,7 +17,7 @@ internal class TunnelManager
     {
         try
         {
-            Tunnels.TryAdd(pt.ConnectionId, new Lazy<ProxyTunnel>(() => pt, LazyThreadSafetyMode.ExecutionAndPublication));
+            Tunnels.Add(pt.ConnectionId, new Lazy<ProxyTunnel>(() => pt, LazyThreadSafetyMode.ExecutionAndPublication));
         }
         catch (Exception ex)
         {
@@ -35,7 +35,7 @@ internal class TunnelManager
             {
                 ProxyTunnel curr = lpt.Value;
                 curr.Disconnect();
-                Tunnels.TryRemove(connectionId, out _);
+                Tunnels.TryRemove(connectionId);
             }
         }
         catch (Exception ex)
@@ -44,22 +44,18 @@ internal class TunnelManager
         }
     }
 
-    internal Dictionary<int, Lazy<ProxyTunnel>> GetTunnels()
-    {
-        Dictionary<int, Lazy<ProxyTunnel>> tempDic = new(Tunnels);
-        return tempDic;
-    }
-
     internal void KillAllRequests()
     {
         try
         {
-            var dic = GetTunnels();
-            Debug.WriteLine(dic.Count);
-            foreach (var item in dic)
+            foreach (object key in Tunnels.Keys)
             {
-                Debug.WriteLine(item.Key);
-                Remove(item.Value.Value);
+                bool exist = Tunnels.TryGetValue(key, out Lazy<ProxyTunnel>? lpt);
+                if (exist && lpt != null)
+                {
+                    Debug.WriteLine(key);
+                    Remove(lpt.Value);
+                }
             }
         }
         catch (Exception ex)
@@ -74,7 +70,7 @@ internal class TunnelManager
         {
             try
             {
-                return Tunnels.ToList().Count;
+                return Tunnels.Count;
             }
             catch (Exception)
             {

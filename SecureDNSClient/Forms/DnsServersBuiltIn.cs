@@ -107,7 +107,7 @@ public partial class FormMain
                 if (!skipDownload)
                 {
                     // Try URL
-                    byte[] bytes = await WebAPI.DownloadFileAsync(url, 20000).ConfigureAwait(false);
+                    byte[] bytes = await WebAPI.DownloadFileAsync(url, 20000, CancellationToken.None).ConfigureAwait(false);
                     if (bytes.Length > 0)
                     {
                         try
@@ -164,7 +164,7 @@ public partial class FormMain
             for (int n = 0; n < urlsOrFiles.Count; n++)
             {
                 string urlOrFile = urlsOrFiles[n];
-                List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
+                List<string> dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000, CancellationToken.None);
                 allDNSs.AddRange(dnss);
             }
             allDNSs = allDNSs.Distinct().ToList();
@@ -219,7 +219,7 @@ public partial class FormMain
                     this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
                 }
                 
-                byte[] bytes = await WebAPI.DownloadFileAsync(url_Secure, 20000).ConfigureAwait(false);
+                byte[] bytes = await WebAPI.DownloadFileAsync(url_Secure, 20000, CancellationToken.None).ConfigureAwait(false);
                 if (StopChecking) return output;
                 if (bytes.Length > 0)
                 {
@@ -281,7 +281,7 @@ public partial class FormMain
                         this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
                     }
                     
-                    bytes = await WebAPI.DownloadFileAsync(url_Insecure, 20000).ConfigureAwait(false);
+                    bytes = await WebAPI.DownloadFileAsync(url_Insecure, 20000, CancellationToken.None).ConfigureAwait(false);
                     if (StopChecking) return output;
                     if (bytes.Length > 0)
                     {
@@ -356,7 +356,7 @@ public partial class FormMain
                             this.InvokeIt(() => CustomRichTextBoxLog.AppendText(msg, Color.DodgerBlue));
                         }
                         
-                        dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000);
+                        dnss = await DnsTools.GetServersFromLinkAsync(urlOrFile, 20000, CancellationToken.None);
                         if (StopChecking) return output;
                         allSubs.AddRange(dnss);
 

@@ -24,6 +24,34 @@ public static class Info
         return FileVersionInfo.GetVersionInfo(assembly.Location);
     }
 
+    public static async void Exit()
+    {
+        try
+        {
+            Environment.Exit(0);
+            await ProcessManager.KillProcessByPidAsync(Environment.ProcessId, true);
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("Info Exit: " + e.GetInnerExceptions());
+            await ProcessManager.KillProcessByPidAsync(Environment.ProcessId, true);
+        }
+    }
+
+    public static async Task ExitAsync()
+    {
+        try
+        {
+            Environment.Exit(0);
+            await ProcessManager.KillProcessByPidAsync(Environment.ProcessId, true);
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("Info ExitAsync: " + e.GetInnerExceptions());
+            await ProcessManager.KillProcessByPidAsync(Environment.ProcessId, true);
+        }
+    }
+
     public static string? GetAppExecutablePath()
     {
         try
@@ -54,7 +82,7 @@ public static class Info
                 if (!string.IsNullOrEmpty(fileNameWithoutExtension))
                 {
                     preferredExtension = preferredExtension.Trim().TrimStart('.');
-                    if (string.IsNullOrWhiteSpace(preferredExtension))
+                    if (string.IsNullOrEmpty(preferredExtension))
                         return Path.GetFullPath(fileNameWithoutExtension);
                     return Path.GetFullPath($"{fileNameWithoutExtension}.{preferredExtension}");
                 }
@@ -72,11 +100,29 @@ public static class Info
     {
         try
         {
-            return Path.GetFullPath(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            string uniqueId = Guid.NewGuid().ToString();
+            return Path.GetFullPath(Path.Combine(Path.GetTempPath(), $"{uniqueId}.tmp"));
+            // Path.GetRandomFileName() I Don't Like It!
         }
         catch (Exception ex)
         {
             Debug.WriteLine("Info GetRandomPath: " + ex.Message);
+            return null;
+        }
+    }
+
+    public static string? GetRandomPathWithPreferredExtension(string preferredExtension)
+    {
+        try
+        {
+            preferredExtension = preferredExtension.Trim().TrimStart('.');
+            string uniqueId = Guid.NewGuid().ToString();
+            if (!string.IsNullOrEmpty(preferredExtension)) uniqueId += $".{preferredExtension}";
+            return Path.GetFullPath(Path.Combine(Path.GetTempPath(), uniqueId));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Info GetRandomPathWithPreferredExtension: " + ex.Message);
             return null;
         }
     }
@@ -107,7 +153,9 @@ public static class Info
             string idInt2 = $"{BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0)}";
             if (idInt2.StartsWith('-')) idInt2 = idInt2.TrimStart('-');
             string result = idPrincipal + idDateTime + idInt1 + idInt2;
-            return getEncodedId ? EncodingTool.GetSHA512(result).ToLower() : result;
+            if (!getEncodedId) return result;
+            bool isShaSuccess = EncodingTool.TryGetSHA512(result, out string sha512);
+            return isShaSuccess ? sha512 : result;
         }
         catch (Exception ex)
         {

@@ -1,0 +1,418 @@
+﻿<MsmhToolsWpfClass:WpfWindow  xmlns:MsmhToolsWpfClass="clr-namespace:MsmhToolsWpfClass;assembly=MsmhToolsWpfClass"
+                              x:Class="DNSveil.ManageUpstream.ManageUpstreamWindow"
+                              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                              xmlns:local="clr-namespace:DNSveil.ManageUpstream"
+                              xmlns:themes="clr-namespace:MsmhToolsWpfClass.Themes;assembly=MsmhToolsWpfClass"
+                              mc:Ignorable="d"
+                              DataContext="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                              Title="Manage Upstream Servers" MinWidth="1400" MinHeight="700" Icon="/DNSveil.png"
+                              Background="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"
+                              Foreground="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"
+                              Loaded="WpfWindow_Loaded" ContentRendered="WpfWindow_ContentRendered"
+                              Closing="WpfWindow_Closing">
+    <MsmhToolsWpfClass:WpfWindow.Resources>
+        <MsmhToolsWpfClass:StringToBrushConverter x:Key="StatusToBrushConverter" String1="OK" String2="Unknown" Brush1="MediumSeaGreen" Brush2="Transparent" BrushOtherStrings="IndianRed" ExactMatch="False"/>
+        <Style x:Key="DataGridTextColumnStatus_Style" TargetType="{x:Type DataGridCell}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="4"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Background">
+                <Setter.Value>
+                    <Binding Path="Content.Text" RelativeSource="{RelativeSource Mode=Self}" Converter="{StaticResource StatusToBrushConverter}"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BorderBrush">
+                <Setter.Value>
+                    <Binding Path="Content.Text" RelativeSource="{RelativeSource Mode=Self}" Converter="{StaticResource StatusToBrushConverter}"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </MsmhToolsWpfClass:WpfWindow.Resources>
+    <DockPanel LastChildFill="True">
+        <GroupBox DockPanel.Dock="Left" Header="Groups" MinWidth="200" MaxWidth="400" Width="Auto">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical">
+                    <Grid Margin="0,4,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20*"/>
+                            <ColumnDefinition Width="20*"/>
+                        </Grid.ColumnDefinitions>
+                        <MsmhToolsWpfClass:WpfButton x:Name="NewGroupButton" Grid.Column="0" Margin="0,0,2,0" Content="New Group" PreviewMouseUp="NewGroupButton_PreviewMouseUp"/>
+                        <MsmhToolsWpfClass:WpfButton x:Name="ResetBuiltInButton" Grid.Column="1" Margin="2,0,0,0" Content="Reset Built-In" Click="ResetBuiltInButton_Click"/>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20*"/>
+                            <ColumnDefinition Width="20*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0" Margin="0,0,2,0">
+                            <Border x:Name="Import_Border" Style="{DynamicResource BorderStyle}">
+                                <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="Import_FlyoutOverlay" Margin="4" StaysOpen="True" Placement="Top" Header="Import" VerticalAlignment="Center" FlyoutChanged="Import_FlyoutOverlay_FlyoutChanged">
+                                    <Grid Margin="2">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0" Orientation="Vertical">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="ImportBrowseButton" Margin="0,0,0,10" Content="Browse DVLU File" Click="ImportBrowseButton_Click"/>
+                                            <CheckBox x:Name="Import_Settings_CheckBox" IsChecked="False" IsEnabled="False" Content="Import Settings" HorizontalAlignment="Left" Visibility="Collapsed"/>
+                                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,4,0,4" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}" Visibility="Collapsed"/>
+                                            <TextBlock Margin="0,0,0,10" Text="Select Groups To Import:"/>
+                                            <ListBox x:Name="Import_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox x:Name="Import_CheckBox" IsChecked="{Binding IsSelected}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Import_CheckBox_CheckedUnchecked" Unchecked="Import_CheckBox_CheckedUnchecked"/>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </StackPanel>
+                                        <MsmhToolsWpfClass:WpfButton x:Name="ImportButton" Grid.Row="1" Content="Import" Click="ImportButton_Click"/>
+                                    </Grid>
+                                </MsmhToolsWpfClass:WpfFlyoutPopup>
+                            </Border>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Groups_Import" Placement="Top"/>
+                        </Grid>
+                        <Grid Grid.Column="1" Margin="2,0,0,0">
+                            <Border x:Name="Export_Border" Style="{DynamicResource BorderStyle}">
+                                <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="Export_FlyoutOverlay" Margin="4" StaysOpen="True" Placement="Top" Header="Export" VerticalAlignment="Center" FlyoutChanged="Export_FlyoutOverlay_FlyoutChanged">
+                                    <Grid Margin="2">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0" Orientation="Vertical">
+                                            <CheckBox x:Name="Export_Settings_CheckBox" IsChecked="True" Content="Export Settings" HorizontalAlignment="Left" Visibility="Collapsed"/>
+                                            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,4,0,4" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}" Visibility="Collapsed"/>
+                                            <TextBlock Margin="0,0,0,4" Text="Select Groups To Export:"/>
+                                            <ListBox x:Name="Export_ListBox" ItemContainerStyle="{DynamicResource ListBoxItem_DisableSelection_Style}" Margin="0,0,0,10" MinWidth="300" MinHeight="200" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox x:Name="Export_CheckBox" IsChecked="{Binding IsSelected}" Content="{Binding Name}" Width="{Binding ActualWidth, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}, Converter={x:Static MsmhToolsWpfClass:SubtractConverter.Instance}, ConverterParameter=20}" Checked="Export_CheckBox_CheckedUnchecked" Unchecked="Export_CheckBox_CheckedUnchecked"/>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </StackPanel>
+                                        <MsmhToolsWpfClass:WpfButton x:Name="ExportButton" Grid.Row="1" Content="Export" Click="ExportButton_Click"/>
+                                    </Grid>
+                                </MsmhToolsWpfClass:WpfFlyoutPopup>
+                            </Border>
+                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Groups_Export" Placement="Top"/>
+                        </Grid>
+                    </Grid>
+                </StackPanel>
+                <DataGrid x:Name="DGG" DockPanel.Dock="Top" Width="Auto" AutoGenerateColumns="False" PreviewKeyDown="DGG_PreviewKeyDown" PreviewMouseRightButtonDown="DGG_PreviewMouseRightButtonDown" SelectionChanged="DGG_SelectionChanged">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=TwoWay, NotifyOnSourceUpdated=True}" Width="Auto" CanUserResize="False" CanUserSort="False" CanUserReorder="False" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Mode" Binding="{Binding Mode}" Width="Auto" CanUserResize="False" CanUserSort="False" CanUserReorder="False" IsReadOnly="True"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </GroupBox>
+        <GroupBox x:Name="ServersTitleGroupBox" DockPanel.Dock="Right" Header="Group: None" Width="Auto">
+            <TabControl x:Name="ServersTabControl">
+                <TabItem Header="None">
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock x:Name="NoGroupText_TextBlock" Text="Select A Group." FontSize="48"/>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Subscription">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Margin="5,0,5,0" Orientation="Horizontal">
+                            <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="Subscription_Settings_WpfFlyoutPopup" Margin="0,0,10,0" Header="Group Settings" FlyoutChanged="Subscription_Settings_WpfFlyoutPopup_FlyoutChanged">
+                                <Grid MsmhToolsWpfClass:MarginSetter.Margin="5">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Enable Group:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Subscription_EnableGroup_ToggleSwitch" Grid.Row="0" Grid.Column="1"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="A URL To Test:"/>
+                                    <TextBox x:Name="Subscription_Settings_LookupDomain_TextBox" Grid.Row="1" Grid.Column="1" MaxLength="150" MinWidth="300" Text="https://captive.apple.com/hotspot-detect.html" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Scan Timeout (Sec):"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_TimeoutSec_NumericUpDown" Grid.Row="2" Grid.Column="1" MinWidth="60" Minimum="0.5" Value="10" Maximum="15" Step="0.1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Scan Parallel Size:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_ParallelSize_NumericUpDown" Grid.Row="3" Grid.Column="1" MinWidth="60" Minimum="1" Value="10" Maximum="20" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Bootstrap IP Address:"/>
+                                    <TextBox x:Name="Subscription_Settings_BootstrapIP_TextBox"  Grid.Row="4" Grid.Column="1" MaxLength="100" MinWidth="300" Text="8.8.8.8" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Bootstrap Port:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Subscription_Settings_BootstrapPort_NumericUpDown" Grid.Row="5" Grid.Column="1" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Add Fragment:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Subscription_Settings_AddFragment_ToggleSwitch" Grid.Row="6" Grid.Column="1" IsChecked="True" HorizontalAlignment="Left" CheckedChanged="Subscription_Settings_AddFragment_ToggleSwitch_CheckedChanged"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="    Fragment Size:"/>
+                                    <TextBox x:Name="Subscription_Settings_FragmentSize_TextBox" Grid.Row="7" Grid.Column="1" MaxLength="50" MinWidth="300" Text="2-4" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="0" Text="    Fragment Delay:"/>
+                                    <TextBox x:Name="Subscription_Settings_FragmentDelay_TextBox" Grid.Row="8" Grid.Column="1" MaxLength="50" MinWidth="300" Text="3-5" HorizontalAlignment="Left"/>
+
+                                    <StackPanel Grid.Row="9" Grid.Column="0" Orientation="Horizontal">
+                                        <TextBlock Text="Get Region Info:" Margin="0,0,6,0"/>
+                                        <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Subscription_RegionInfo" Placement="Top" StaysOpen="True"/>
+                                    </StackPanel>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Subscription_Settings_GetRegionInfo_ToggleSwitch" Grid.Row="9" Grid.Column="1" IsChecked="True" HorizontalAlignment="Left"/>
+
+                                    <StackPanel Grid.Row="10" Grid.Column="0" Orientation="Horizontal">
+                                        <TextBlock Text="Test Speed:" Margin="0,0,6,0"/>
+                                        <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Subscription_SpeedTest" Placement="Top" StaysOpen="True"/>
+                                    </StackPanel>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Subscription_Settings_SpeedTest_ToggleSwitch" Grid.Row="10" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+
+                                    <TextBlock Grid.Row="11" Grid.Column="0" Text="Don't Use Servers&#x0A;Without Security:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Subscription_Settings_DontUseWithoutSecurity_ToggleSwitch" Grid.Row="11" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="12" Grid.Column="0" Text="Allow Insecure:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Subscription_Settings_AllowInsecure_ToggleSwitch" Grid.Row="12" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="Subscription_Settings_Save_Button" Grid.Row="13" Grid.Column="1" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="Subscription_Settings_Save_Button_Click"/>
+                                </Grid>
+                            </MsmhToolsWpfClass:WpfFlyoutPopup>
+                        </StackPanel>
+                        <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Subscription_Source" DockPanel.Dock="Top" Header="Subscription Source" FlyoutChanged="Flyout_Subscription_Source_FlyoutChanged">
+                            <StackPanel x:Name="SubscriptionSourceStackPanel" Orientation="Vertical">
+                                <StackPanel Orientation="Horizontal" Margin="5,0,5,2">
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="SubscriptionSourceToggleSwitch" Margin="0,0,10,0" IsChecked="False" ContentLeft="By URLs (Each Line One URL)" Content="By Files (Browse)" HorizontalAlignment="Left" CheckedChanged="SubscriptionSourceToggleSwitch_CheckedChanged"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionSourceToggleSwitchBrowseButton" Margin="0,0,10,0" Content="Browse" Click="SubscriptionSourceToggleSwitchBrowseButton_Click"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical">
+                                    <TextBox x:Name="SubscriptionSourceTextBox" Margin="0,0,0,5" MinHeight="50" MaxHeight="150" TextWrapping="Wrap" AcceptsReturn="True"/>
+                                    <StackPanel Orientation="Horizontal" Margin="5,2,5,5" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionSaveSourceButton" Margin="0,0,10,0" MinWidth="120" Content="Save" Click="SubscriptionSaveSourceButton_Click"/>
+                                        <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionFetchSourceButton" Margin="0,0,10,0" MinWidth="120" Content="Fetch Servers" Click="SubscriptionFetchSourceButton_Click"/>
+                                        <TextBlock x:Name="SubscriptionSource_Info_TextBlock" Text="Total Servers: 0"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                        <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Subscription_Options" DockPanel.Dock="Top" Header="Subscription Options" FlyoutChanged="Flyout_Subscription_Options_FlyoutChanged">
+                            <DockPanel>
+                                <GroupBox DockPanel.Dock="Top" Header="Auto Update">
+                                    <StackPanel Orientation="Horizontal" Margin="5,0,5,2">
+                                        <TextBlock Margin="0,0,10,0" Text="Update Source Every Hour:"/>
+                                        <MsmhToolsWpfClass:WpfNumericUpDown x:Name="SubscriptionUpdateSourceNumericUpDown" Margin="0,0,10,0" MinWidth="50" Minimum="0" Maximum="168"/>
+                                        <TextBlock x:Name="SubscriptionUpdateSourceTextBlock" Text="Last Source Update:"/>
+                                        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0,10,0" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                                        <Grid Margin="0,0,0,0">
+                                            <MsmhToolsWpfClass:WpfToggleSwitch x:Name="SubscriptionAutoScanSelectToggleSwitch" Margin="0,0,20,0" IsChecked="True" ContentLeft="Auto Scan And Select:" HorizontalAlignment="Left" CheckedChanged="SubscriptionAutoScanSelectToggleSwitch_CheckedChanged"/>
+                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Subscription_AutoScanSelect" Placement="Top"/>
+                                        </Grid>
+                                        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0,10,0" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                                        <TextBlock x:Name="SubscriptionScanServersTextBlock" Margin="0,0,10,0" Text="Scan Servers Every Hour:"/>
+                                        <MsmhToolsWpfClass:WpfNumericUpDown x:Name="SubscriptionScanServersNumericUpDown" Margin="0,0,10,0" MinWidth="50" Minimum="0" Maximum="168"/>
+                                        <TextBlock x:Name="SubscriptionLastScanServersTextBlock" Text="Last Servers Scan:"/>
+                                    </StackPanel>
+                                </GroupBox>
+                                <TextBlock x:Name="SubscriptionFilter_Info_TextBlock" DockPanel.Dock="Top" Margin="5,2,5,3" HorizontalAlignment="Center" Text="Total Servers: 0"/>
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5,0,5,5" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionSaveOptionsButton" Margin="0,0,10,0" MinWidth="120" Content="Save/Update" Click="SubscriptionSaveOptionsButton_Click"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionExportAsTextButton" Margin="0" MinWidth="120" Content="Export As Text" Click="SubscriptionExportAsTextButton_Click"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                        <Grid DockPanel.Dock="Top">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Subscription_UpstreamServers" Grid.Row="0" Header="Upstream Servers" DisableFly="True">
+                                <DataGrid x:Name="DGS_Subscription" Grid.Row="0" AutoGenerateColumns="False" CanUserResizeColumns="True" SelectionMode="Extended" PreviewMouseRightButtonDown="DGS_Subscription_PreviewMouseRightButtonDown" SizeChanged="DGS_Subscription_SizeChanged" PreviewKeyDown="DGS_Subscription_PreviewKeyDown" SelectionChanged="DGS_Subscription_SelectionChanged"/>
+                            </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Subscription_Scan" Grid.Row="1" Header="Scan Servers">
+                                <StackPanel Orientation="Vertical" Margin="5,0,5,5">
+                                    <TextBlock x:Name="SubscriptionScanInfoTextBlock" Text="Click Scan To Start." Margin="0,0,0,2"/>
+                                    <TextBlock x:Name="SubscriptionScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
+                                    <ProgressBar x:Name="SubscriptionScanProgressBar" Margin="0,0,0,10"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Grid Margin="0,0,10,0">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionScanButton" MinWidth="120" Content="Scan" Click="SubscriptionScanButton_Click"/>
+                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Subscription_ScanButton" Placement="Top"/>
+                                        </Grid>
+                                        <MsmhToolsWpfClass:WpfButton x:Name="SubscriptionSortButton" MinWidth="120" Content="Sort" Click="SubscriptionSortButton_Click"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                        </Grid>
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="Custom">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Margin="5,0,5,0" Orientation="Horizontal">
+                            <MsmhToolsWpfClass:WpfFlyoutPopup x:Name="Custom_Settings_WpfFlyoutPopup" Margin="0,0,10,0" Header="Group Settings" FlyoutChanged="Custom_Settings_WpfFlyoutPopup_FlyoutChanged">
+                                <Grid MsmhToolsWpfClass:MarginSetter.Margin="5">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Enable Group:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Custom_EnableGroup_ToggleSwitch" Grid.Row="0" Grid.Column="1"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="A URL To Test:"/>
+                                    <TextBox x:Name="Custom_Settings_LookupDomain_TextBox" Grid.Row="1" Grid.Column="1" MaxLength="150" MinWidth="300" Text="https://captive.apple.com/hotspot-detect.html" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Scan Timeout (Sec):"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_TimeoutSec_NumericUpDown" Grid.Row="2" Grid.Column="1" MinWidth="60" Minimum="0.5" Value="10" Maximum="15" Step="0.1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Scan Parallel Size:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_ParallelSize_NumericUpDown" Grid.Row="3" Grid.Column="1" MinWidth="60" Minimum="1" Value="10" Maximum="20" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Bootstrap IP Address:"/>
+                                    <TextBox x:Name="Custom_Settings_BootstrapIP_TextBox"  Grid.Row="4" Grid.Column="1" MaxLength="100" MinWidth="300" Text="8.8.8.8" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Bootstrap Port:"/>
+                                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="Custom_Settings_BootstrapPort_NumericUpDown" Grid.Row="5" Grid.Column="1" MinWidth="60" Minimum="1" Value="53" Maximum="65535" Step="1" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Add Fragment:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Custom_Settings_AddFragment_ToggleSwitch" Grid.Row="6" Grid.Column="1" IsChecked="True" HorizontalAlignment="Left" CheckedChanged="Custom_Settings_AddFragment_ToggleSwitch_CheckedChanged"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="    Fragment Size:"/>
+                                    <TextBox x:Name="Custom_Settings_FragmentSize_TextBox" Grid.Row="7" Grid.Column="1" MaxLength="50" MinWidth="300" Text="2-4" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="0" Text="    Fragment Delay:"/>
+                                    <TextBox x:Name="Custom_Settings_FragmentDelay_TextBox" Grid.Row="8" Grid.Column="1" MaxLength="50" MinWidth="300" Text="3-5" HorizontalAlignment="Left"/>
+
+                                    <StackPanel Grid.Row="9" Grid.Column="0" Orientation="Horizontal">
+                                        <TextBlock Text="Get Region Info:" Margin="0,0,6,0"/>
+                                        <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Custom_RegionInfo" Placement="Top" StaysOpen="True"/>
+                                    </StackPanel>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Custom_Settings_GetRegionInfo_ToggleSwitch" Grid.Row="9" Grid.Column="1" IsChecked="True" HorizontalAlignment="Left"/>
+
+                                    <StackPanel Grid.Row="10" Grid.Column="0" Orientation="Horizontal">
+                                        <TextBlock Text="Test Speed:" Margin="0,0,6,0"/>
+                                        <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Custom_SpeedTest" Placement="Top" StaysOpen="True"/>
+                                    </StackPanel>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Custom_Settings_SpeedTest_ToggleSwitch" Grid.Row="10" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+
+                                    <TextBlock Grid.Row="11" Grid.Column="0" Text="Don't Use Servers&#x0A;Without Security:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Custom_Settings_DontUseWithoutSecurity_ToggleSwitch" Grid.Row="11" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="12" Grid.Column="0" Text="Allow Insecure:"/>
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="Custom_Settings_AllowInsecure_ToggleSwitch" Grid.Row="12" Grid.Column="1" IsChecked="False" HorizontalAlignment="Left"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="Custom_Settings_Save_Button" Grid.Row="13" Grid.Column="1" MinWidth="120" Content="Save" HorizontalAlignment="Right" Click="Custom_Settings_Save_Button_Click"/>
+                                </Grid>
+                            </MsmhToolsWpfClass:WpfFlyoutPopup>
+                        </StackPanel>
+                        <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Custom_Source" DockPanel.Dock="Top" Header="Custom Source" FlyoutChanged="Flyout_Custom_Source_FlyoutChanged">
+                            <StackPanel x:Name="CustomSourceStackPanel" Orientation="Vertical">
+                                <StackPanel Orientation="Horizontal" Margin="5,0,5,0">
+                                    <MsmhToolsWpfClass:WpfToggleSwitch x:Name="CustomSourceToggleSwitch" Margin="0,5,10,5" IsThreeState="True" IsChecked="{x:Null}" ContentLeft="Add By URLs (Each Line One URL)" Content="Add By Files (Browse)" HorizontalAlignment="Left" CheckedChanged="CustomSourceToggleSwitch_CheckedChanged"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="CustomSourceToggleSwitchBrowseButton" Margin="0,0,10,0" Content="Browse" Click="CustomSourceToggleSwitchBrowseButton_Click"/>
+                                </StackPanel>
+                                <GroupBox x:Name="CustomSourceByUrlGroupBox" Header="Add By URLs &amp; Files">
+                                    <Grid Margin="3,0,3,3">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBox x:Name="CustomSourceTextBox" Grid.Row="0" Margin="0,0,0,6" MinHeight="50" MaxHeight="150" TextWrapping="Wrap" AcceptsReturn="True"/>
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="CustomFetchSourceButton" Margin="0,0,10,0" MinWidth="120" Content="Fetch Servers" Click="CustomFetchSourceButton_Click"/>
+                                            <TextBlock x:Name="CustomSource_Info_TextBlock" Text="Total Servers: 0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </GroupBox>
+                                <GroupBox x:Name="CustomSourceByManualGroupBox" Header="Add Or Modify Manually">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid Grid.Column="0" Margin="3,0,3,3">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,0,5" Text="Remarks:"/>
+                                            <TextBox x:Name="CustomByManual_Remarks_TextBox" Grid.Row="0" Grid.Column="1" Margin="5,0,5,5" MaxLength="500" MinHeight="25" MaxHeight="150" TextWrapping="Wrap" AcceptsReturn="False"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="URL Or JSON:"/>
+                                            <TextBox x:Name="CustomByManual_UrlOrJson_TextBox" Grid.Row="1" Grid.Column="1" Margin="5,0,5,0" MinHeight="50" MaxHeight="200" TextWrapping="NoWrap" AcceptsReturn="True" AcceptsTab="True"/>
+                                        </Grid>
+                                        <StackPanel Grid.Column="1" Orientation="Vertical">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="CustomByManualAddButton" Margin="0,0,0,5" MinWidth="120" Content="Add" Click="CustomByManualAddButton_Click"/>
+                                            <MsmhToolsWpfClass:WpfButton x:Name="CustomByManualModifyButton" Margin="0,0,0,5" MinWidth="120" Content="Modify" Click="CustomByManualModifyButton_Click"/>
+                                            <MsmhToolsWpfClass:WpfButton x:Name="CustomByManualClearFieldsButton" Margin="0,0,0,5" MinWidth="120" Content="Clear Fields" Click="CustomByManualClearFieldsButton_Click"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
+                        </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                        <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Custom_Options" DockPanel.Dock="Top" Header="Custom Options" FlyoutChanged="Flyout_Custom_Options_FlyoutChanged">
+                            <DockPanel>
+                                <GroupBox DockPanel.Dock="Top" Header="Auto Update">
+                                    <StackPanel Orientation="Horizontal" Margin="5,0,5,2">
+                                        <Grid Margin="0,0,0,0">
+                                            <MsmhToolsWpfClass:WpfToggleSwitch x:Name="CustomAutoScanSelectToggleSwitch" Margin="0,0,20,0" IsChecked="True" ContentLeft="Auto Scan And Select:" HorizontalAlignment="Left" CheckedChanged="CustomAutoScanSelectToggleSwitch_CheckedChanged"/>
+                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Custom_AutoScanSelect" Placement="Top"/>
+                                        </Grid>
+                                        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0,10,0" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                                        <TextBlock x:Name="CustomScanServersTextBlock" Margin="0,0,10,0" Text="Scan Servers Every Hour:"/>
+                                        <MsmhToolsWpfClass:WpfNumericUpDown x:Name="CustomScanServersNumericUpDown" Margin="0,0,10,0" MinWidth="50" Minimum="0" Maximum="168"/>
+                                        <TextBlock x:Name="CustomLastScanServersTextBlock" Text="Last Servers Scan:"/>
+                                    </StackPanel>
+                                </GroupBox>
+                                <TextBlock x:Name="CustomFilter_Info_TextBlock" DockPanel.Dock="Top" Margin="5,2,5,3" HorizontalAlignment="Center" Text="Total Servers: 0"/>
+                                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5,0,5,5" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <MsmhToolsWpfClass:WpfButton x:Name="CustomSaveOptionsButton" Margin="0,0,10,0" MinWidth="120" Content="Save/Update" Click="CustomSaveOptionsButton_Click"/>
+                                    <MsmhToolsWpfClass:WpfButton x:Name="CustomExportAsTextButton" Margin="0" MinWidth="120" Content="Export As Text" Click="CustomExportAsTextButton_Click"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                        <Grid DockPanel.Dock="Top">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Custom_UpstreamServers" Grid.Row="0" Header="Upstream Servers" DisableFly="True">
+                                <DataGrid x:Name="DGS_Custom" AutoGenerateColumns="False" CanUserResizeColumns="True" SelectionMode="Extended" PreviewMouseRightButtonDown="DGS_Custom_PreviewMouseRightButtonDown" SizeChanged="DGS_Custom_SizeChanged" PreviewKeyDown="DGS_Custom_PreviewKeyDown" SelectionChanged="DGS_Custom_SelectionChanged"/>
+                            </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                            <MsmhToolsWpfClass:WpfFlyoutGroupBox x:Name="Flyout_Custom_Scan" Grid.Row="1" Header="Scan Servers">
+                                <StackPanel Orientation="Vertical" Margin="5,0,5,5">
+                                    <TextBlock x:Name="CustomScanInfoTextBlock" Text="Click Scan To Start." Margin="0,0,0,2"/>
+                                    <TextBlock x:Name="CustomScanProgressBarTextBlock" Text="0%" Margin="0,0,0,2" HorizontalAlignment="Center"/>
+                                    <ProgressBar x:Name="CustomScanProgressBar" Margin="0,0,0,10"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Grid Margin="0,0,10,0">
+                                            <MsmhToolsWpfClass:WpfButton x:Name="CustomScanButton" MinWidth="120" Content="Scan" Click="CustomScanButton_Click"/>
+                                            <MsmhToolsWpfClass:WpfHelpFly x:Name="Help_Custom_ScanButton" Placement="Top"/>
+                                        </Grid>
+                                        <MsmhToolsWpfClass:WpfButton x:Name="CustomSortButton" MinWidth="120" Content="Sort" Click="CustomSortButton_Click"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </MsmhToolsWpfClass:WpfFlyoutGroupBox>
+                        </Grid>
+                    </DockPanel>
+                </TabItem>
+            </TabControl>
+        </GroupBox>
+    </DockPanel>
+</MsmhToolsWpfClass:WpfWindow>

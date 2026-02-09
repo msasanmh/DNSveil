@@ -1,0 +1,64 @@
+﻿<MsmhToolsWpfClass:WpfWindow xmlns:MsmhToolsWpfClass="clr-namespace:MsmhToolsWpfClass;assembly=MsmhToolsWpfClass"
+                             x:Class="DNSveil.ManageDns.MaliciousWindow"
+                             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                             xmlns:local="clr-namespace:DNSveil.ManageDns"
+                             xmlns:themes="clr-namespace:MsmhToolsWpfClass.Themes;assembly=MsmhToolsWpfClass"
+                             mc:Ignorable="d"
+                             DataContext="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                             Title="Malicious Domains Window" MinWidth="600" MinHeight="350" Icon="/DNSveil.png"
+                             SizeToContent="Width"
+                             Background="{DynamicResource {x:Static themes:AppTheme.BackgroundBrush}}"
+                             Foreground="{DynamicResource {x:Static themes:AppTheme.ForegroundBrush}}"
+                             Loaded="WpfWindow_Loaded" ContentRendered="WpfWindow_ContentRendered"
+                             Closing="WpfWindow_Closing">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <GroupBox Grid.Row="0" Header="Get Malicious Domains From URLs (Each Line One URL)">
+            <StackPanel Orientation="Vertical">
+                <TextBox x:Name="Source_TextBox" Margin="0,0,0,5" MinHeight="50" MaxHeight="150" TextWrapping="Wrap" AcceptsReturn="True"/>
+                <StackPanel Orientation="Horizontal">
+                    <MsmhToolsWpfClass:WpfButton x:Name="FetchSource_Button" Margin="0,0,10,0" MinWidth="120" Content="Fetch Domains" Click="FetchSource_Button_Click"/>
+                    <TextBlock x:Name="Source_Info_TextBlock" Margin="0,0,10,0" Text="Total Domains: 0"/>
+                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0,10,0" Background="{DynamicResource {x:Static themes:AppTheme.DodgerBlueBrushTransparent}}"/>
+                    <TextBlock Margin="0,0,10,0" Text="Update Source Every Hour:"/>
+                    <MsmhToolsWpfClass:WpfNumericUpDown x:Name="UpdateSource_NumericUpDown" Margin="0,0,10,0" MinWidth="50" Minimum="0" Maximum="168"/>
+                    <TextBlock x:Name="UpdateSource_TextBlock" Text="Last Update:"/>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+        <GroupBox Grid.Row="1" Header="Malicious Domains (Each Line One Domain)">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <GroupBox Grid.Column="0" Header="Server Domains">
+                    <TextBox x:Name="ServerDomains_TextBox" BorderThickness="0" MinHeight="50" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" IsTabStop="False"/>
+                </GroupBox>
+                <GroupBox Grid.Column="1" Header="User Domains">
+                    <TextBox x:Name="UserDomains_TextBox" BorderThickness="0" MinHeight="50" TextWrapping="Wrap" AcceptsReturn="True"/>
+                </GroupBox>
+                <GroupBox Grid.Column="2" Header="User Exception Domains">
+                    <TextBox x:Name="UserExceptionDomains_TextBox" BorderThickness="0" MinHeight="50" TextWrapping="Wrap" AcceptsReturn="True"/>
+                </GroupBox>
+            </Grid>
+        </GroupBox>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <MsmhToolsWpfClass:WpfButton x:Name="SaveClose_Button" Grid.Column="1" Margin="10" MinWidth="120" Content="Save &amp; Close" Click="SaveClose_Button_Click"/>
+        </Grid>
+    </Grid>
+    
+</MsmhToolsWpfClass:WpfWindow>

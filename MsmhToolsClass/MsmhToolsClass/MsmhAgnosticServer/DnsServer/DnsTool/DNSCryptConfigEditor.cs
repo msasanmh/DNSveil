@@ -227,7 +227,7 @@ public class DNSCryptConfigEditor
     {
         try
         {
-            if (!FileDirectory.IsFileLocked(ConfigPath))
+            if (!await FileDirectory.IsFileLockedAsync(ConfigPath))
             {
                 File.WriteAllText(ConfigPath, string.Empty);
                 for (int n = 0; n < ConfigList.Count; n++)

@@ -214,8 +214,8 @@ public class AgnosticRequest
                                         if (split.Length >= 2)
                                         {
                                             string base64UrlQuery = split[1];
-                                            byte[] base64QueryBuffer = EncodingTool.Base64UrlDecode(base64UrlQuery);
-                                            if (base64QueryBuffer.Length > 0)
+                                            bool isSuccess = EncodingTool.TryDecodeBase64Url(base64UrlQuery, out byte[] base64QueryBuffer);
+                                            if (isSuccess && base64QueryBuffer.Length > 0)
                                             {
                                                 ar.Ssl_Kind = SslKind.SSL;
                                                 ar.Socket = Tcp_Client.Client;

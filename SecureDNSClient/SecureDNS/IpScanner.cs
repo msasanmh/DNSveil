@@ -149,7 +149,7 @@ public class IpScanner
 
                             Stopwatch realDelay = new();
                             realDelay.Start();
-                            HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, ipOut, Timeout, false, false);
+                            HttpStatusCode hsc = await NetworkTool.GetHttpStatusCodeAsync(url, ipOut, Timeout, true, false, false);
                             realDelay.Stop();
 
                             Debug.WriteLine("HttpStatusCode: " + hsc);

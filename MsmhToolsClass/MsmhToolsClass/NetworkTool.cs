@@ -82,7 +82,12 @@ public static class NetworkTool
             result = false;
         }
 
-        socket?.Dispose();
+        try
+        {
+            socket?.Shutdown(SocketShutdown.Both);
+            socket?.Dispose();
+        }
+        catch (Exception) { }
         return result;
     }
 
@@ -101,7 +106,12 @@ public static class NetworkTool
             result = false;
         }
 
-        socket?.Dispose();
+        try
+        {
+            socket?.Shutdown(SocketShutdown.Both);
+            socket?.Dispose();
+        }
+        catch (Exception) { }
         return result;
     }
 
@@ -291,6 +301,9 @@ public static class NetworkTool
                 url.Scheme = scheme;
                 url.SchemeName = scheme[..(indexOfScheme - separator_Scheme.Length)];
             }
+
+            // Trim
+            urlOrDomain = urlOrDomain.TrimStart('@'); // Invalid ID
 
             // Has Domain
             bool hasDomain = true;
@@ -620,11 +633,11 @@ public static class NetworkTool
 
                 if (string.IsNullOrEmpty(keyStr)) continue;
                 if (string.IsNullOrEmpty(valStr)) continue;
-
+                
                 string key = Uri.UnescapeDataString(keyStr);
                 if (keysToLower) key = key.ToLower();
                 string val = Uri.UnescapeDataString(valStr);
-
+                
                 // Add If Not Already Exist
                 if (nvc[key] is null) nvc.Add(key, val);
             }
@@ -673,6 +686,28 @@ public static class NetworkTool
         catch (Exception ex)
         {
             Debug.WriteLine("NetworkTool IsDomainNameValid: " + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Only Domain. e.g. example.com - IPv4 - IPv6
+    /// </summary>
+    public static bool IsDomainOrIP(string domainOrIP)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(domainOrIP)) return false;
+            if (IsIP(domainOrIP, out _)) return true;
+            if (domainOrIP.StartsWith("http:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (domainOrIP.StartsWith("https:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (domainOrIP.Contains('/', StringComparison.OrdinalIgnoreCase)) return false;
+            if (!domainOrIP.Contains('.', StringComparison.OrdinalIgnoreCase)) return false;
+            return Uri.CheckHostName(domainOrIP) != UriHostNameType.Unknown;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("NetworkTool IsDomainOrIP: " + ex.Message);
             return false;
         }
     }
@@ -1366,7 +1401,6 @@ public static class NetworkTool
                     try
                     {
                         socket.Shutdown(SocketShutdown.Both);
-                        socket.Close();
                         socket.Dispose();
                     }
                     catch (Exception) { }
@@ -1376,6 +1410,27 @@ public static class NetworkTool
                 return port;
             }
         });
+    }
+
+    public static async Task<List<int>> GetFreePortsAsync(int numberOfFreePorts)
+    {
+        List<int> freePorts = new();
+
+        try
+        {
+            Dictionary<int, int> dict = new();
+            while (true)
+            {
+                int freePort = await GetAFreePortAsync();
+                dict.TryAdd(freePort, freePort);
+                if (dict.Count == numberOfFreePorts) break;
+            }
+            freePorts.AddRange(dict.Values);
+            dict.Clear();
+        }
+        catch (Exception) { }
+
+        return freePorts;
     }
 
     public class NICResult
@@ -2302,15 +2357,15 @@ public static class NetworkTool
         }
     }
 
-    public static async Task<HttpStatusCode> GetHttpStatusCodeAsync(string urlOrDomain, string? ipStr, int timeoutMs, bool useSystemProxy, bool isAgnosticProxyTest = false, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
+    public static async Task<HttpRequestResponse> GetHttpRequestResponseAsync(string urlOrDomain, string? ipStr, int timeoutMS, bool allowInsecure, bool useSystemProxy, bool isAgnosticProxyTest = false, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
     {
-        HttpStatusCode result = HttpStatusCode.RequestTimeout;
+        HttpRequestResponse result = new();
         if (string.IsNullOrWhiteSpace(urlOrDomain)) return result;
 
         try
         {
             URL urid = GetUrlOrDomainDetails(urlOrDomain.Trim(), 443);
-            if (urid.Uri ==  null) return result;
+            if (urid.Uri == null) return result;
 
             if (useSystemProxy)
             {
@@ -2328,8 +2383,8 @@ public static class NetworkTool
                 CT = ct,
                 URI = urid.Uri,
                 Method = HttpMethod.Get,
-                TimeoutMS = timeoutMs,
-                AllowInsecure = true, // Ignore Cert Check To Make It Faster
+                TimeoutMS = timeoutMS,
+                AllowInsecure = allowInsecure, // Ignore Cert Check To Make It Faster
                 AllowAutoRedirect = true,
                 ProxyScheme = proxyScheme,
                 ProxyUser = proxyUser,
@@ -2341,14 +2396,20 @@ public static class NetworkTool
 
             HttpRequestResponse hrr = await HttpRequest.SendAsync(hr).ConfigureAwait(false);
 
-            result = hrr.StatusCode;
+            result = hrr;
         }
         catch (Exception) { }
 
         return result;
     }
 
-    public static async Task<string> GetHeadersAsync(string urlOrDomain, string? ipStr, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    public static async Task<HttpStatusCode> GetHttpStatusCodeAsync(string urlOrDomain, string? ipStr, int timeoutMS, bool allowInsecure, bool useSystemProxy, bool isAgnosticProxyTest = false, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null, CancellationToken ct = default)
+    {
+        HttpRequestResponse hrr = await GetHttpRequestResponseAsync(urlOrDomain, ipStr, timeoutMS, allowInsecure, useSystemProxy, isAgnosticProxyTest, proxyScheme, proxyUser, proxyPass, ct).ConfigureAwait(false);
+        return hrr.StatusCode;
+    }
+
+    public static async Task<string> GetHeadersAsync(string urlOrDomain, string? ipStr, int timeoutMS, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
         string result = string.Empty;
         if (string.IsNullOrWhiteSpace(urlOrDomain)) return result;
@@ -2378,7 +2439,7 @@ public static class NetworkTool
                         URI = urid.Uri,
                         Method = HttpMethod.Get,
                         UserAgent = "Other",
-                        TimeoutMS = timeoutMs,
+                        TimeoutMS = timeoutMS,
                         AllowInsecure = true, // Ignore Cert Check To Make It Faster
                         AllowAutoRedirect = true,
                         ProxyScheme = proxyScheme,
@@ -2418,7 +2479,7 @@ public static class NetworkTool
                 if (!firstTrySuccess && !urlOrDomain.Contains("://www."))
                 {
                     urlOrDomain = $"{urid.Scheme}www.{urid.Host}:{urid.Port}{urid.Path}{urid.Query}{urid.Fragment}";
-                    result = await GetHeadersAsync(urlOrDomain, ipStr, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
+                    result = await GetHeadersAsync(urlOrDomain, ipStr, timeoutMS, useSystemProxy, proxyScheme, proxyUser, proxyPass);
                 }
             }
             catch (Exception) { }
@@ -2432,13 +2493,13 @@ public static class NetworkTool
     /// IsWebsiteOnlineAsync
     /// </summary>
     /// <param name="url">URL or Domain to check</param>
-    /// <param name="timeoutMs">Timeout (Ms)</param>
+    /// <param name="timeoutMS">Timeout (Ms)</param>
     /// <param name="useSystemProxy">Use System Proxy (will override proxyScheme, proxyUser and proxyPass)</param>
     /// <param name="proxyScheme">Only the 'http', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</param>
     /// <returns></returns>
-    public static async Task<bool> IsWebsiteOnlineAsync(string urlOrDomain, string? ip, int timeoutMs, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
+    public static async Task<bool> IsWebsiteOnlineAsync(string urlOrDomain, string? ip, int timeoutMS, bool useSystemProxy, string? proxyScheme = null, string? proxyUser = null, string? proxyPass = null)
     {
-        string headers = await GetHeadersAsync(urlOrDomain, ip, timeoutMs, useSystemProxy, proxyScheme, proxyUser, proxyPass);
+        string headers = await GetHeadersAsync(urlOrDomain, ip, timeoutMS, useSystemProxy, proxyScheme, proxyUser, proxyPass);
         return !string.IsNullOrEmpty(headers);
     }
 
@@ -2522,8 +2583,8 @@ public static class NetworkTool
         if (isProxySet)
         {
             if (!string.IsNullOrEmpty(httpProxy)) result = $"http://{httpProxy}";
-            else if (!string.IsNullOrEmpty(httpsProxy)) result = $"https://{httpsProxy}";
             else if (!string.IsNullOrEmpty(socksProxy)) result = $"socks5://{socksProxy}";
+            else if (!string.IsNullOrEmpty(httpsProxy)) result = $"https://{httpsProxy}"; // HttpClient Doesn't Support HTTPS Proxy!
         }
         return result;
     }

@@ -211,19 +211,24 @@ public class StringToBrushConverter : IValueConverter
     public SolidColorBrush Brush1 { get; set; } = Brushes.MediumSeaGreen;
     public SolidColorBrush Brush2 { get; set; } = Brushes.IndianRed;
     public SolidColorBrush BrushOtherStrings { get; set; } = Brushes.Transparent;
+    public bool ExactMatch { get; set; } = true;
     public StringToBrushConverter() { }
-    public StringToBrushConverter(string string1, string string2, SolidColorBrush brush1, SolidColorBrush brush2, SolidColorBrush brushOtherStrings)
+    public StringToBrushConverter(string string1, string string2, SolidColorBrush brush1, SolidColorBrush brush2, SolidColorBrush brushOtherStrings, bool exactMatch)
     {
         String1 = string1;
         String2 = string2;
         Brush1 = brush1;
         Brush2 = brush2;
         BrushOtherStrings = brushOtherStrings;
+        ExactMatch = exactMatch;
     }
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is not string str) return BrushOtherStrings;
-        return str.Equals(String1, StringComparison.OrdinalIgnoreCase) ? Brush1 : (str.Equals(String2, StringComparison.OrdinalIgnoreCase) ? Brush2 : BrushOtherStrings);
+        if (ExactMatch)
+            return str.Equals(String1, StringComparison.OrdinalIgnoreCase) ? Brush1 : (str.Equals(String2, StringComparison.OrdinalIgnoreCase) ? Brush2 : BrushOtherStrings);
+        else
+            return str.Contains(String1, StringComparison.OrdinalIgnoreCase) ? Brush1 : (str.Contains(String2, StringComparison.OrdinalIgnoreCase) ? Brush2 : BrushOtherStrings);
     }
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {

@@ -1,5 +1,5 @@
-﻿using System.Collections.Concurrent;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
@@ -38,33 +38,26 @@ public class ProxyRequestsCache
         public IsDestBlocked IsDestBlocked = new();
     }
 
-    private readonly ConcurrentDictionary<string, (DateTime dt, ProxyRequestsCacheResult prcr)> Caches = new();
+    private readonly MemoryCache Caches = new(new MemoryCacheOptions());
 
     public ProxyRequestsCacheResult? Get(string key, ProxyRequest req)
     {
         try
         {
-            bool isCached = Caches.TryGetValue(key, out (DateTime dt, ProxyRequestsCacheResult prcr) cachedReq);
-            if (isCached)
+            bool isCached = Caches.TryGetValue(key, out Lazy<ProxyRequestsCacheResult>? cachedReq);
+            if (isCached && cachedReq != null)
             {
-                DateTime now = DateTime.UtcNow;
-                TimeSpan ts = now - cachedReq.dt;
-                if (ts >= TimeSpan.FromHours(1)) // Cache Time
+                ProxyRequestsCacheResult prcr = cachedReq.Value;
+
+                if (req.ApplyChangeSNI == prcr.OrigValues.ApplyChangeSNI &&
+                    req.ApplyFragment == prcr.OrigValues.ApplyFragment &&
+                    req.IsDestBlocked == prcr.OrigValues.IsDestBlocked)
                 {
-                    Caches.TryRemove(key, out _);
+                    return prcr;
                 }
                 else
                 {
-                    if (req.ApplyChangeSNI == cachedReq.prcr.OrigValues.ApplyChangeSNI &&
-                        req.ApplyFragment == cachedReq.prcr.OrigValues.ApplyFragment &&
-                        req.IsDestBlocked == cachedReq.prcr.OrigValues.IsDestBlocked)
-                    {
-                        return cachedReq.prcr;
-                    }
-                    else
-                    {
-                        Caches.TryRemove(key, out _);
-                    }
+                    Caches.TryRemove(key);
                 }
             }
         }
@@ -80,7 +73,8 @@ public class ProxyRequestsCache
     {
         try
         {
-            Caches.TryAdd(key, (DateTime.UtcNow, prcr));
+            // Cache For 1 Hour
+            Caches.Add(key, new Lazy<ProxyRequestsCacheResult>(() => prcr, LazyThreadSafetyMode.ExecutionAndPublication), TimeSpan.FromHours(1));
         }
         catch (Exception ex)
         {

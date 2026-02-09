@@ -5,7 +5,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-// MSMH Agnostic Server - CopyRight GPLv3 MSasanMH (msasanmh@gmail.com) 2023 - 2025
+// MSMH Agnostic Server - CopyRight GPLv3 MSasanMH (msasanmh@gmail.com) 2023 - 2026
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
@@ -59,7 +59,7 @@ public partial class MsmhAgnosticServer
     private readonly CaptivePortal CaptivePortals = new();
     private readonly DnsCache DnsCaches = new();
     private readonly ProxyRequestsCache ProxyRequestsCaches = new();
-    private readonly ConcurrentDictionary<string, (DateTime dt, bool applyFakeSNI, bool applyFragment)> TestRequests = new();
+    private readonly TestRequestsCache TestRequests = new();
     internal TunnelManager TunnelManager_ = new();
     public Stats Stats { get; private set; } = new();
     public Endless Endless { get; private set; } = new();
@@ -221,6 +221,7 @@ public partial class MsmhAgnosticServer
         {
             CTS_PR?.Cancel();
             ProxyRequestsCaches.Clear();
+            TestRequests.Clear();
             TunnelManager_?.KillAllRequests();
         }
         catch (Exception ex)

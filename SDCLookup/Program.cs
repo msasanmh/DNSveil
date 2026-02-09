@@ -126,17 +126,14 @@ internal static partial class Program
 
                                     if (irr is ARecord aRecord)
                                     {
-                                        if (NetworkTool.IsLocalIP(aRecord.IP) ||
-                                            IPAddress.IsLoopback(aRecord.IP)) hasLocalIp = true;
-                                        else recordCount++;
+                                        if (NetworkTool.IsLocalIP(aRecord.IP)) hasLocalIp = true;
+                                        recordCount++;
                                     }
 
                                     if (irr is AaaaRecord aaaaRecord)
                                     {
-                                        if (IPAddress.IsLoopback(aaaaRecord.IP) || 
-                                            aaaaRecord.IP.IsIPv6LinkLocal ||
-                                            aaaaRecord.IP.IsIPv6SiteLocal) hasLocalIp = true;
-                                        else recordCount++;
+                                        if (NetworkTool.IsLocalIP(aaaaRecord.IP)) hasLocalIp = true;
+                                        recordCount++;
                                     }
                                 }
                             }

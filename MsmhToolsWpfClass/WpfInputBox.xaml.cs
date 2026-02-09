@@ -20,6 +20,7 @@ public partial class WpfInputBox : Window
         //DefaultStyleKeyProperty.OverrideMetadata(typeof(WpfInputBox), new FrameworkPropertyMetadata(typeof(WpfInputBox)));
         Opacity = 0;
         PART_InputTextBox.Text = input;
+        PART_InputTextBox.CaretIndex = input.Length;
         Title = title;
         Description = description;
         Multiline = multiline;

@@ -5,10 +5,13 @@
     <Compile Update="ManageRules\ManageRulesWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="ManageServers\MaliciousWindow.xaml.cs">
+    <Compile Update="ManageDns\MaliciousWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="ManageServers\ManageServersWindow.xaml.cs">
+    <Compile Update="ManageDns\ManageDnsWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="ManageUpstream\ManageUpstreamWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="PageTest.xaml.cs">
@@ -25,7 +28,7 @@
     <Page Update="MainWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Update="ManageServers\ManageServersWindow.xaml">
+    <Page Update="ManageDns\ManageDnsWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="PageTest.xaml">

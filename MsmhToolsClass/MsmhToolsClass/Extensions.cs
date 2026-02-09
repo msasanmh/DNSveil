@@ -15,6 +15,8 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using System.Collections;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace MsmhToolsClass;
 
@@ -23,6 +25,7 @@ public static class Methods
     [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
     internal extern static int SetWindowTheme(IntPtr controlHandle, string appName, string? idList);
 }
+
 public static class Extensions
 {
     /// <summary>
@@ -44,39 +47,68 @@ public static class Extensions
     public static string GetInnerExceptions(this Exception ex)
     {
         string result = string.Empty;
-        result += ex.Message;
-        if (ex.InnerException != null)
+        try
         {
-            result += Environment.NewLine + ex.InnerException.Message;
-            if (ex.InnerException.InnerException != null)
+            string remove = ", see inner exception";
+            result += ex.Message;
+            try { result = result.Replace(remove, string.Empty, StringComparison.OrdinalIgnoreCase).Trim(); } catch (Exception) { }
+
+            Exception? exception = ex.InnerException;
+            while (true)
             {
-                result += Environment.NewLine + ex.InnerException.InnerException.Message;
-                if (ex.InnerException.InnerException.InnerException != null)
-                {
-                    result += Environment.NewLine + ex.InnerException.InnerException.InnerException.Message;
-                    if (ex.InnerException.InnerException.InnerException.InnerException != null)
-                        result += Environment.NewLine + ex.InnerException.InnerException.InnerException.InnerException.Message;
-                }
+                if (exception == null) break;
+                result += Environment.NewLine + exception.Message;
+                exception = exception.InnerException;
             }
         }
+        catch (Exception) { }
         return result;
     }
 
-    public static T? Clone<T>(this T t)
+    public static T? Clone<T>(this T obj)
     {
         try
         {
             JsonSerializerOptions jsonSerializerOptions = new()
             {
                 WriteIndented = true,
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement
             };
-            string json = JsonSerializer.Serialize(t, jsonSerializerOptions);
-            return JsonSerializer.Deserialize<T>(json);
+            string json = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+            return JsonSerializer.Deserialize<T>(json, jsonSerializerOptions);
         }
         catch (Exception ex)
         {
             Debug.WriteLine("Extensions Clone: " + ex.Message);
+            return default;
+        }
+    }
+
+    public static async Task<T?> CloneAsync<T>(this T obj)
+    {
+        try
+        {
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement
+            };
+            using MemoryStream memoryStream1 = new();
+            await JsonSerializer.SerializeAsync(memoryStream1, obj, jsonSerializerOptions);
+            memoryStream1.Position = 0;
+            using StreamReader streamReader = new(memoryStream1, new UTF8Encoding(false));
+            string json = await streamReader.ReadToEndAsync();
+
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+            using MemoryStream memoryStream2 = new(jsonBytes);
+            memoryStream2.Position = 0;
+            return await JsonSerializer.DeserializeAsync<T>(memoryStream2, jsonSerializerOptions, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions CloneAsync: " + ex.Message);
             return default;
         }
     }
@@ -162,7 +194,7 @@ public static class Extensions
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions ToInt: " + ex.Message);
+            Debug.WriteLine("Extensions SetEmptyValuesToNull: " + ex.Message);
             return -1;
         }
     }
@@ -194,6 +226,49 @@ public static class Extensions
             Debug.WriteLine("Extensions ToInt: " + ex.Message);
         }
         return result;
+    }
+
+    /// <summary>
+    /// If Name Exist In The Collection It gets Renamed Like Example (1), Example (2)
+    /// </summary>
+    public static string Rename(this string name, List<string> names)
+    {
+        try
+        {
+            int countName = 1;
+            string newName = name;
+            while (names.IsContain(newName))
+            {
+                bool hasNumber = false;
+                if (newName.EndsWith(')'))
+                {
+                    int firstIndex = newName.LastIndexOf('(');
+                    if (firstIndex != -1)
+                    {
+                        int lastIndex = newName.LastIndexOf(')');
+                        if (lastIndex != -1)
+                        {
+                            string numberStr = newName.Substring(firstIndex + 1, newName.Length - lastIndex);
+                            bool isInt = int.TryParse(numberStr, out int number);
+                            if (isInt)
+                            {
+                                hasNumber = true;
+                                newName = newName.Replace($" ({number})", "");
+                                newName = string.Format("{0} ({1})", newName, number + 1);
+                            }
+                        }
+                    }
+                }
+
+                if (!hasNumber) newName = string.Format("{0} ({1})", newName, countName++);
+            }
+            return newName;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions Rename: " + ex.Message);
+            return name;
+        }
     }
 
     public static string RemoveEmptyLines(this string s)
@@ -307,7 +382,45 @@ public static class Extensions
         catch (Exception) { }
         return result;
     }
-    
+
+    public static string TrimMiddle(this string source, char value)
+    {
+        string result = source;
+        try
+        {
+            string find = $"{value}{value}";
+            while (true)
+            {
+                if (result.Contains(find))
+                {
+                    result = result.Replace(find, value.ToString());
+                }
+                else break;
+            }
+        }
+        catch (Exception) { }
+        return result;
+    }
+
+    public static string TrimMiddle(this string source, string value)
+    {
+        string result = source;
+        try
+        {
+            string find = $"{value}{value}";
+            while (true)
+            {
+                if (result.Contains(find))
+                {
+                    result = result.Replace(find, value);
+                }
+                else break;
+            }
+        }
+        catch (Exception) { }
+        return result;
+    }
+
     public static string TrimEnd(this string source, string value)
     {
         string result = source;
@@ -391,7 +504,6 @@ public static class Extensions
             };
             XmlReader xmlReader = XmlReader.Create(path, readerSettings);
             xDoc = await XDocument.LoadAsync(xmlReader, LoadOptions.None, CancellationToken.None);
-            xmlReader.Close();
             xmlReader.Dispose();
             isSuccess = true;
         }
@@ -430,7 +542,6 @@ public static class Extensions
             await xDocument.SaveAsync(xmlWriter, CancellationToken.None);
 
             // Dispose
-            xmlWriter.Close();
             await xmlWriter.FlushAsync();
             await xmlWriter.DisposeAsync();
             return true;
@@ -441,22 +552,291 @@ public static class Extensions
             return false;
         }
     }
-    
+
+    public static string ToXmlString(this XDocument xDocument)
+    {
+        try
+        {
+            // Beautify XDocument
+            xDocument = XDocument.Parse(xDocument.ToString(), LoadOptions.None);
+            return xDocument.ToString();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToXmlString: " + ex.Message);
+            return string.Empty;
+        }
+    }
+
     public static XmlDocument ToXmlDocument(this XDocument xDocument)
     {
         XmlDocument xmlDocument = new();
-        using XmlReader xmlReader = xDocument.CreateReader();
-        xmlDocument.Load(xmlReader);
+
+        try
+        {
+            using XmlReader xmlReader = xDocument.CreateReader();
+            xmlDocument.Load(xmlReader);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToXmlDocument: " + ex.Message);
+        }
+
         return xmlDocument;
     }
     
     public static XDocument ToXDocument(this XmlDocument xmlDocument)
     {
-        using XmlNodeReader nodeReader = new(xmlDocument);
-        nodeReader.MoveToContent();
-        return XDocument.Load(nodeReader);
+        XDocument xDocument = new();
+
+        try
+        {
+            using XmlNodeReader nodeReader = new(xmlDocument);
+            nodeReader.MoveToContent();
+            xDocument = XDocument.Load(nodeReader, LoadOptions.None);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToXDocument: " + ex.Message);
+        }
+
+        return xDocument;
     }
-    
+
+    public static async Task<XDocument> ToXDocumentAsync(this XmlDocument xmlDocument)
+    {
+        XDocument xDocument = new();
+
+        try
+        {
+            using XmlNodeReader nodeReader = new(xmlDocument);
+            nodeReader.MoveToContent();
+            xDocument = await XDocument.LoadAsync(nodeReader, LoadOptions.None, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToXDocumentAsync: " + ex.Message);
+        }
+
+        return xDocument;
+    }
+
+    public static async Task<bool> SaveAsync(this JsonDocument jsonDocument, string jsonFilePath)
+    {
+        try
+        {
+            // Create Writer And Beautify JsonDocument
+            MemoryStream memoryStream = new();
+            Utf8JsonWriter jsonWriter = new(memoryStream, new JsonWriterOptions { Indented = true });
+
+            // Write JsonDocument To The Writer
+            jsonDocument.WriteTo(jsonWriter);
+            await jsonWriter.FlushAsync();
+            memoryStream.Position = 0;
+            await memoryStream.FlushAsync();
+
+            // Save To File
+            FileStream fileStream = new(jsonFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+            await fileStream.WriteAsync(memoryStream.ToArray());
+
+            // Dispose
+            await fileStream.FlushAsync();
+            await fileStream.DisposeAsync();
+            await jsonWriter.DisposeAsync();
+            await memoryStream.DisposeAsync();
+
+            // Return
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions SaveAsync: " + ex.Message);
+            return false;
+        }
+    }
+
+    public static async Task<bool> SaveAsync(this JsonNode jsonNode, string jsonFilePath)
+    {
+        try
+        {
+            // Create Writer And Beautify JsonNode
+            MemoryStream memoryStream = new();
+            Utf8JsonWriter jsonWriter = new(memoryStream, new JsonWriterOptions { Indented = true });
+
+            // Write JsonNode To The Writer
+            jsonNode.WriteTo(jsonWriter);
+            await jsonWriter.FlushAsync();
+            memoryStream.Position = 0;
+            await memoryStream.FlushAsync();
+
+            // Save To File
+            FileStream fileStream = new(jsonFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+            await fileStream.WriteAsync(memoryStream.ToArray());
+
+            // Dispose
+            await fileStream.FlushAsync();
+            await fileStream.DisposeAsync();
+            await jsonWriter.DisposeAsync();
+            await memoryStream.DisposeAsync();
+
+            // Return
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions SaveAsync: " + ex.Message);
+            return false;
+        }
+    }
+
+    public static async Task<string> ToJsonStringAsync(this JsonDocument jsonDocument)
+    {
+        try
+        {
+            // Create Writer And Beautify JsonDocument
+            MemoryStream memoryStream = new();
+            Utf8JsonWriter jsonWriter = new(memoryStream, new JsonWriterOptions { Indented = true });
+
+            // Write JsonDocument To The Writer
+            jsonDocument.WriteTo(jsonWriter);
+            await jsonWriter.FlushAsync();
+            memoryStream.Position = 0;
+            await memoryStream.FlushAsync();
+
+            // Get String
+            string jsonStr = Encoding.UTF8.GetString(memoryStream.ToArray());
+            
+            // Dispose
+            await jsonWriter.DisposeAsync();
+            await memoryStream.DisposeAsync();
+
+            // Return
+            return jsonStr;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToJsonStringAsync: " + ex.Message);
+            return string.Empty;
+        }
+    }
+
+    public static async Task<string> ToJsonStringAsync(this JsonNode jsonNode)
+    {
+        try
+        {
+            // Create Writer And Beautify JsonNode
+            MemoryStream memoryStream = new();
+            Utf8JsonWriter jsonWriter = new(memoryStream, new JsonWriterOptions { Indented = true });
+
+            // Write JsonNode To The Writer
+            jsonNode.WriteTo(jsonWriter);
+            await jsonWriter.FlushAsync();
+            memoryStream.Position = 0;
+            await memoryStream.FlushAsync();
+
+            // Get String
+            string jsonStr = Encoding.UTF8.GetString(memoryStream.ToArray());
+
+            // Dispose
+            await jsonWriter.DisposeAsync();
+            await memoryStream.DisposeAsync();
+
+            // Return
+            return jsonStr;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToJsonStringAsync: " + ex.Message);
+            return string.Empty;
+        }
+    }
+
+    public static JsonNode? ToJsonNode(this JsonDocument jsonDocument)
+    {
+        try
+        {
+            return jsonDocument.Deserialize<JsonNode>();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToJsonNode: " + ex.Message);
+            return null;
+        }
+    }
+
+    public static async Task<JsonNode?> ToJsonNodeAsync(this JsonDocument jsonDocument)
+    {
+        try
+        {
+            string? jsonStr = await jsonDocument.ToJsonStringAsync();
+            if (string.IsNullOrEmpty(jsonStr))
+            {
+                Debug.WriteLine("Extensions ToJsonNodeAsync: jsonDocument.ToString() Is NULL.");
+                return null;
+            }
+            return JsonNode.Parse(jsonStr);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToJsonNodeAsync: " + ex.Message);
+            return null;
+        }
+    }
+
+    public static JsonDocument? ToJsonDocument(this JsonNode jsonNode)
+    {
+        try
+        {
+            return jsonNode.Deserialize<JsonDocument>();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToJsonDocument: " + ex.Message);
+            return null;
+        }
+    }
+
+    public static async Task<JsonDocument?> ToJsonDocumentAsync(this JsonNode jsonNode)
+    {
+        try
+        {
+            jsonNode.Deserialize<JsonDocument>();
+
+            // Create Writer And Beautify JsonNode
+            MemoryStream memoryStream = new();
+            Utf8JsonWriter jsonWriter = new(memoryStream, new JsonWriterOptions { Indented = true });
+
+            // Write JsonNode To The Writer
+            jsonNode.WriteTo(jsonWriter);
+            await jsonWriter.FlushAsync();
+            memoryStream.Position = 0;
+            await memoryStream.FlushAsync();
+
+            // Create Options - Comments cannot be stored in a JsonDocument, only the Skip and Disallow comment handling modes are supported.
+            JsonDocumentOptions jsonDocumentOptions = new()
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+                MaxDepth = 0
+            };
+
+            // Convert
+            JsonDocument jsonDocument = await JsonDocument.ParseAsync(memoryStream, jsonDocumentOptions);
+
+            // Dispose
+            await jsonWriter.DisposeAsync();
+            await memoryStream.DisposeAsync();
+
+            // Return
+            return jsonDocument;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("Extensions ToJsonDocumentAsync: " + ex.Message);
+            return null;
+        }
+    }
+
     public static string AssemblyDescription(this Assembly assembly)
     {
         try
@@ -498,60 +878,60 @@ public static class Extensions
         }
     }
     
-    public static string ToXml(this DataSet ds, XmlWriteMode xmlWriteMode)
+    public static async Task<string> ToXmlAsync(this DataSet ds, XmlWriteMode xmlWriteMode)
     {
         try
         {
-            using MemoryStream ms = new();
-            using TextWriter sw = new StreamWriter(ms);
-            ds.WriteXml(sw, xmlWriteMode);
-            return new UTF8Encoding(false).GetString(ms.ToArray());
+            using MemoryStream memoryStream = new();
+            using TextWriter textWriter = new StreamWriter(memoryStream);
+            ds.WriteXml(textWriter, xmlWriteMode);
+            await textWriter.FlushAsync();
+            memoryStream.Position = 0;
+            await memoryStream.FlushAsync();
+            return new UTF8Encoding(false).GetString(memoryStream.ToArray());
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions ToXml: " + ex.Message);
+            Debug.WriteLine("Extensions ToXmlAsync: " + ex.Message);
             return string.Empty;
         }
     }
     
-    public static DataSet ToDataSet(this DataSet ds, string xmlFile, XmlReadMode xmlReadMode)
+    public static async Task<DataSet> ToDataSetAsync(this DataSet ds, string xmlFilePath, XmlReadMode xmlReadMode)
     {
         try
         {
-            ds.ReadXml(xmlFile, xmlReadMode);
+            byte[] buffer = await File.ReadAllBytesAsync(xmlFilePath);
+            using MemoryStream memoryStream = new();
+            await memoryStream.WriteAsync(buffer);
+            memoryStream.Position = 0;
+            await memoryStream.FlushAsync();
+            ds.ReadXml(memoryStream, xmlReadMode);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions ToDataSet: " + ex.Message);
+            Debug.WriteLine("Extensions ToDataSetAsync: " + ex.Message);
         }
 
         return ds;
     }
     
-    public static void WriteToFile(this MemoryStream memoryStream, string dstPath)
+    public static async Task<bool> WriteToFileAsync(this MemoryStream memoryStream, string filePath)
     {
         try
         {
-            using FileStream fs = new(dstPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+            using FileStream fileStream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
             memoryStream.Seek(0, SeekOrigin.Begin);
             memoryStream.Position = 0;
-            memoryStream.WriteTo(fs);
-            fs.Flush();
+            await fileStream.WriteAsync(memoryStream.ToArray());
+            fileStream.Flush();
+            return true;
         }
         catch (Exception ex)
         {
-            Debug.WriteLine("Extensions WriteToFile: " + ex.Message);
+            Debug.WriteLine("Extensions WriteToFileAsync: " + ex.Message);
+            return false;
         }
-    }
-    
-    public static bool IsInteger(this string s)
-    {
-        return int.TryParse(s, out _);
-    }
-    
-    public static bool IsBool(this string s)
-    {
-        return bool.TryParse(s, out _);
     }
     
 }

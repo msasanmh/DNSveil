@@ -26,7 +26,6 @@
 
   <ItemGroup>
     <None Remove="ManageRules\DNSveil.png" />
-    <None Remove="ManageServers\DNSveil.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -42,7 +41,6 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="ManageRules\DNSveil.png" />
-    <Resource Include="ManageServers\DNSveil.png" />
   </ItemGroup>
 
   <ItemGroup>

@@ -75,7 +75,8 @@ public class DNSCryptStampReader
                 stamp = stamp[7..];
 
                 // Get Stamp Binary
-                byte[] stampBinary = EncodingTool.Base64UrlDecode(stamp);
+                bool isSuccess = EncodingTool.TryDecodeBase64Url(stamp, out byte[] stampBinary);
+                if (!isSuccess) return;
 
                 // Get ListenerProtocol
                 if (stampBinary.Length > 0)

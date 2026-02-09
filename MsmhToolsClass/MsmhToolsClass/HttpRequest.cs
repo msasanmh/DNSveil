@@ -461,6 +461,7 @@ public class HttpRequest
                 if (hr.DataToSend.Length > 0 && hr.Method != HttpMethod.Get && hr.Method != HttpMethod.Head)
                 {
                     content = new ReadOnlyMemoryContent(hr.DataToSend);
+                    //content.Headers.ContentLength = hr.DataToSend.Length;
                     if (!string.IsNullOrEmpty(hr.ContentType))
                     {
                         content.Headers.ContentType = new MediaTypeHeaderValue(hr.ContentType);
@@ -487,7 +488,7 @@ public class HttpRequest
                 }
                 else
                 {
-                    // Necessary For Newer DoHes
+                    // Necessary For Newer DoH
                     message.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
                     httpClient.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
                 }
@@ -553,8 +554,9 @@ public class HttpRequest
                 {
                     httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {hr.Authorization.BearerToken}");
                 }
-                
+
                 HttpResponseMessage response = await httpClient.SendAsync(message, hr.CT).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
                 
                 hrr.IsSuccess = response.IsSuccessStatusCode;
                 hrr.ProtocolVersion = $"HTTP/{response.Version}";
@@ -661,7 +663,7 @@ public class HttpRequest
                 }
                 else
                 {
-                    string exceptionMsg = we.Message;
+                    string exceptionMsg = we.GetInnerExceptions();
                     hrr.StatusDescription = exceptionMsg;
                     Debug.WriteLine("HttpRequest SendAsync: " + exceptionMsg);
 
@@ -678,7 +680,7 @@ public class HttpRequest
                 }
                 else
                 {
-                    hrr.StatusDescription = hre.Message;
+                    hrr.StatusDescription = hre.GetInnerExceptions();
                 }
 
                 hrr.IsSuccess = false;

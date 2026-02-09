@@ -1,11 +1,45 @@
-﻿using System.Collections.Concurrent;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MsmhToolsClass.MsmhAgnosticServer;
 
 public class DnsCache
 {
-    private readonly ConcurrentDictionary<string, DnsMessage> Caches = new();
+    private readonly MemoryCache Caches = new(new MemoryCacheOptions());
+    private readonly System.Timers.Timer FlushTimer = new();
+
+    public DnsCache()
+    {
+        try
+        {
+            FlushTimer.Interval = TimeSpan.FromHours(12).TotalMilliseconds;
+            FlushTimer.Elapsed += ClearTimer_Elapsed;
+            FlushTimer.Start();
+        }
+        catch (Exception) { }
+    }
+
+    private void ClearTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        // When Cache Hit Is Less Than 500ms On One Key, TTL Never Runs Out.
+        Flush();
+    }
+
+    public bool TryAdd(DnsMessage dmQ, DnsMessage dmR)
+    {
+        try
+        {
+            bool canCache = CanCache(dmR);
+            //Debug.WriteLine("CAN CACHE: " + canCache);
+            dmR = AddTTL(dmR, out uint maxTTL);
+            if (canCache) return Caches.TryAdd(dmQ.Questions.ToString(), new Lazy<DnsMessage>(() => dmR, LazyThreadSafetyMode.ExecutionAndPublication), TimeSpan.FromSeconds(maxTTL));
+            else return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
     public bool TryGet(DnsMessage dmQ, out DnsMessage dmR)
     {
@@ -14,10 +48,10 @@ public class DnsCache
 
         try
         {
-            success = Caches.TryGetValue(dmQ.Questions.ToString(), out DnsMessage? dmROut);
-            if (success && dmROut != null)
+            success = Caches.TryGetValue(dmQ.Questions.ToString(), out Lazy<DnsMessage>? ldmROut);
+            if (success && ldmROut != null)
             {
-                dmR = CreateFromCache(dmQ, dmROut);
+                dmR = CreateFromCache(dmQ, ldmROut.Value);
             };
         }
         catch (Exception) { }
@@ -29,22 +63,7 @@ public class DnsCache
     {
         try
         {
-            return Caches.TryRemove(dmQ.Questions.ToString(), out _);
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-    }
-
-    public bool TryAdd(DnsMessage dmQ, DnsMessage dmR)
-    {
-        try
-        {
-            bool canCache = CanCache(dmR);
-            //Debug.WriteLine("CAN CACHE: " + canCache);
-            if (canCache) return Caches.TryAdd(dmQ.Questions.ToString(), AddTTL(dmR));
-            else return false;
+            return Caches.TryRemove(dmQ.Questions.ToString());
         }
         catch (Exception)
         {
@@ -58,7 +77,7 @@ public class DnsCache
         {
             try
             {
-                return Caches.ToList().Count;
+                return Caches.Count;
             }
             catch (Exception)
             {
@@ -76,15 +95,18 @@ public class DnsCache
         catch (Exception) { }
     }
 
-    private static DnsMessage AddTTL(DnsMessage dmR)
+    private static DnsMessage AddTTL(DnsMessage dmR, out uint maxTTL)
     {
+        maxTTL = 60;
+
         try
         {
-            // Only For DNS Messages With TTL < 3 (It's A Fix For Smart DNS Servers Which Sends RR Records With TTL 0)
+            uint maxTTLOut = 60;
             uint ttl = 60;
             modifyTTL(dmR.Answers.AnswerRecords);
             modifyTTL(dmR.Authorities.AuthorityRecords);
             modifyTTL(dmR.Additionals.AdditionalRecords);
+            maxTTL = maxTTLOut;
             return dmR;
 
             void modifyTTL(List<IResourceRecord> rrs)
@@ -93,11 +115,15 @@ public class DnsCache
                 {
                     foreach (ResourceRecord rr in rrs.Cast<ResourceRecord>())
                     {
+                        // Only For DNS Messages With TTL < 3 (It's A Fix For Smart DNS Servers Which Sends RR Records With TTL 0)
                         if (rr.TimeToLive < 3)
                         {
                             rr.TimeToLive = ttl;
                             rr.TTLDateTime = DateTime.UtcNow;
                         }
+
+                        // Get MaxTTL
+                        if (rr.TimeToLive > maxTTLOut) maxTTLOut = rr.TimeToLive;
                     }
                 }
                 catch (Exception ex)
@@ -128,30 +154,23 @@ public class DnsCache
             {
                 try
                 {
-                    uint newTTL = 0;
                     foreach (ResourceRecord rr in rrs.Cast<ResourceRecord>())
                     {
                         try
                         {
                             //Debug.WriteLine("-=-==-= " + rr.TTLDateTime);
                             //Debug.WriteLine("-=-==-= " + rr.TimeToLive);
-
-                            if (newTTL != 0)
-                            {
-                                rr.TTLDateTime = DateTime.UtcNow;
-                                rr.TimeToLive = newTTL;
-                            }
-
-                            if (newTTL == 0 && rr.TimeToLive > 0)
+                            
+                            if (rr.TimeToLive > 0)
                             {
                                 double ttlDifferDouble = (DateTime.UtcNow - rr.TTLDateTime).TotalSeconds;
                                 //Debug.WriteLine("----------- " + ttlDifferDouble);
                                 uint ttlDiffer = ttlDifferDouble > 0 ? Convert.ToUInt32(ttlDifferDouble) : 0;
+                                
                                 if (rr.TimeToLive > ttlDiffer)
                                 {
                                     rr.TimeToLive -= ttlDiffer;
                                     rr.TTLDateTime = DateTime.UtcNow;
-                                    //newTTL = rr.TimeToLive; // Sometimes TTLs Are Different
                                 }
                                 else
                                 {

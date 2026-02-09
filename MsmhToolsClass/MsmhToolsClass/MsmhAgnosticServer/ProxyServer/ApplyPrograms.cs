@@ -115,19 +115,6 @@ public partial class MsmhAgnosticServer
 
             // Captive Portal
             bool isCaptivePortal = CaptivePortals.IsCaptivePortal(req.AddressOrig);
-            
-            // Test Requests
-            bool isTestRequestExist = TestRequests.TryGetValue(req.AddressOrig, out (DateTime dt, bool applyFakeSNI, bool applyFragment) testReq);
-            if (isTestRequestExist)
-            {
-                DateTime now = DateTime.UtcNow;
-                TimeSpan ts = now - testReq.dt;
-                if (ts >= TimeSpan.FromMinutes(2))
-                {
-                    TestRequests.TryRemove(req.AddressOrig, out _);
-                    isTestRequestExist = false;
-                }
-            }
 
             // Settings: Block Port 80
             if (Settings_.BlockPort80 && req.Port == 80)
@@ -219,10 +206,15 @@ public partial class MsmhAgnosticServer
             }
 
             // Override For Test
-            if (req.ProxyName == Proxy.Name.Test && isTestRequestExist)
+            if (req.ProxyName == Proxy.Name.Test)
             {
-                req.ApplyFragment = testReq.applyFragment;
-                req.ApplyChangeSNI = testReq.applyFakeSNI;
+                // Test Requests
+                TestRequestsCache.TestRequestsCacheResult? testReq = TestRequests.Get(req.AddressOrig);
+                if (testReq != null)
+                {
+                    req.ApplyFragment = testReq.ApplyFragment;
+                    req.ApplyChangeSNI = testReq.ApplyChangeSNI;
+                }
             }
 
             // Turn ApplyChangeSNI Off If No SNI Is Set
@@ -272,7 +264,7 @@ public partial class MsmhAgnosticServer
                             else
                             {
                                 if (hsc == HttpStatusCode.RequestTimeout)
-                                    hsc = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
+                                    hsc = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, true, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
                                 req.IsDestBlocked = hsc == HttpStatusCode.RequestTimeout || hsc == HttpStatusCode.Forbidden;
                             }
                         }
@@ -303,20 +295,23 @@ public partial class MsmhAgnosticServer
                     }
                     else
                     {
-                        TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, false));
+                        TestRequestsCache.TestRequestsCacheResult trcr = new(req.ApplyChangeSNI, false);
+                        TestRequests.AddOrUpdate(req.AddressOrig, trcr);
 
-                        hsc = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
+                        hsc = await NetworkTool.GetHttpStatusCodeAsync($"https://{req.AddressOrig}:{req.Port}", null, 4000, true, false, true, Settings_.ServerHttpProxyAddress).ConfigureAwait(false);
                         if (hsc == HttpStatusCode.OK || hsc == HttpStatusCode.NotFound || hsc == HttpStatusCode.BadRequest || hsc == HttpStatusCode.Forbidden)
                         {
                             // Fake SNI Is Compatible
                             req.ApplyFragment = false; // No Need To Fragment
-                            TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
+                            trcr = new(req.ApplyChangeSNI, req.ApplyFragment);
+                            TestRequests.AddOrUpdate(req.AddressOrig, trcr);
                         }
                         else
                         {
                             // Fake SNI Is Not Compatible
                             req.ApplyChangeSNI = false; // Turn Off Fake SNI
-                            TestRequests.AddOrUpdate(req.AddressOrig, (DateTime.UtcNow, req.ApplyChangeSNI, req.ApplyFragment));
+                            trcr = new(req.ApplyChangeSNI, req.ApplyFragment);
+                            TestRequests.AddOrUpdate(req.AddressOrig, trcr);
                         }
                     }
                 }

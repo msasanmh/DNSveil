@@ -130,8 +130,8 @@ internal class Program
             //"udp://8.8.8.8:53",
             //"udp://1.1.1.1:53",
             //"udp://9.9.9.9:53",
-            //"https://every1dns.com/dns-query",
-            "https://dns.cloudflare.com/dns-query",
+            "https://every1dns.com/dns-query",
+            //"https://dns.cloudflare.com/dns-query",
             //"https://dns.google/dns-query",
             //"https://45.90.29.204:443/dns-query",
             //"udp://208.67.222.222:5353",
@@ -141,13 +141,13 @@ internal class Program
         AgnosticSettings settings1 = new()
         {
             Working_Mode = AgnosticSettings.WorkingMode.DnsAndProxy,
-            ListenerPort = 443,
+            ListenerPort = 8080,
             DnsTimeoutSec = 10,
             ProxyTimeoutSec = 0,
             MaxRequests = 1000000,
             KillOnCpuUsage = 40,
             DNSs = dnsServers1,
-            BootstrapIpAddress = IPAddress.Any, // IPAddress.Parse("8.8.8.8")
+            BootstrapIpAddress = IPAddress.Parse("8.8.8.8"), // IPAddress.Parse("8.8.8.8")
             BootstrapPort = 53,
             AllowInsecure = false,
             BlockPort80 = false,
@@ -194,14 +194,14 @@ internal class Program
                 },
             }
         };
-        server1.EnableRules(rules);
+        //server1.EnableRules(rules);
         
         AgnosticSettingsSSL settingsSSL = new(true)
         {
             ChangeSni = true,
             DefaultSni = "speedtest.net"
         };
-        //await server1.EnableSSLAsync(settingsSSL);
+        await server1.EnableSSLAsync(settingsSSL);
 
         await server1.StartAsync(settings1);
 

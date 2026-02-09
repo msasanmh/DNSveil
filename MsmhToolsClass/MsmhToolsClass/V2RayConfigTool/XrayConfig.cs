@@ -1,10 +1,14 @@
 ﻿using System.Net;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace MsmhToolsClass.V2RayConfigTool;
 
 public class XrayConfig
 {
+    [JsonIgnore]
+    public bool IsSuccess { get; set; } = false;
+
     /// <summary>
     /// The Name Of This Config.
     /// </summary>
@@ -102,13 +106,13 @@ public class XrayConfig
         /// Access Log File Path. If this option is not specified or is empty, the log will be write to stdout.
         /// </summary>
         [JsonPropertyName("access")]
-        public string Access { get; set; } = string.Empty;
+        public string? Access { get; set; } = null;
 
         /// <summary>
         /// Error Log File Path. If this option is not specified or is empty, the log will be write to stdout.
         /// </summary>
         [JsonPropertyName("error")]
-        public string Error { get; set; } = string.Empty;
+        public string? Error { get; set; } = null;
 
         /// <summary>
         /// // "debug" | "info" | "warning" | "error" | "none"
@@ -271,7 +275,7 @@ public class XrayConfig
             /// DNS server timeout, default 4000 ms
             /// </summary>
             [JsonPropertyName("timeoutMs")]
-            public int TimeoutMs { get; set; } = 4000;
+            public int TimeoutMs { get; set; } = 6000;
 
             /// <summary>
             /// If enabled, expectIPs After filtering the IP, if all IPs do not meet the conditions and are filtered, the IPs are still returned, otherwise it is considered that the query failed
@@ -412,7 +416,7 @@ public class XrayConfig
         /// <summary>
         /// The specific configuration content varies depending on the protocol.
         /// </summary>
-        public object Settings { get; set; } = new();
+        public object? Settings { get; set; }
 
         /// <summary>
         /// The underlying transport mode is the way the current Xray node connects with other nodes.
@@ -422,7 +426,7 @@ public class XrayConfig
         /// <summary>
         /// Traffic detection is mainly used in transparent proxy and other purposes.
         /// </summary>
-        public InboundSniffing Sniffing { get; set; } = new();
+        public InboundSniffing? Sniffing { get; set; } = null;
 
         /// <summary>
         /// When multiple ports are set, the specific settings for port allocation.
@@ -548,7 +552,7 @@ public class XrayConfig
         /// The specific content of the configuration varies depending on the protocol.
         /// </summary>
         [JsonPropertyName("settings")]
-        public object Settings { get; set; } = new();
+        public object? Settings { get; set; }
 
         /// <summary>
         /// The underlying transport is the way the current Xray node and other nodes are docked.
@@ -557,7 +561,7 @@ public class XrayConfig
         public OutboundStreamSettings StreamSettings { get; set; } = new();
 
         /// <summary>
-        /// Outbound agent configuration. When the outbound agent takes effect, this outbound streamSettingsIt will not work.
+        /// Outbound agent configuration. When the outbound agent takes effect, this outbound streamSettings It will not work.
         /// </summary>
         [JsonPropertyName("proxySettings")]
         public OutboundProxySettings? ProxySettings { get; set; } = null;
@@ -594,10 +598,10 @@ public class XrayConfig
         public class OutboundStreamSettings
         {
             /// <summary>
-            /// The type of transmission method used by the connected data stream, the default value is "raw".
+            /// The type of transmission method used by the connected data stream, the default value is "tcp".
             /// </summary>
             [JsonPropertyName("network")]
-            public string Network { get; set; } = Get.Network.Raw;
+            public string Network { get; set; } = Get.Network.Tcp;
 
             /// <summary>
             /// Whether transport layer encryption is enabled.
@@ -609,7 +613,7 @@ public class XrayConfig
             /// The TLS configuration. TLS is provided by Golang, and usually TLS is negotiated as using TLS 1.3 and does not support DTLS.
             /// </summary>
             [JsonPropertyName("tlsSettings")]
-            public StreamTlsSettings TlsSettings { get; set; } = new();
+            public StreamTlsSettings? TlsSettings { get; set; } = null;
 
             /// <summary>
             /// Reality configuration. Reality is Xray’s original black technology. Reality is more secure than TLS and is configured in a manner consistent with TLS.
@@ -618,16 +622,25 @@ public class XrayConfig
             public StreamRealitySettings? RealitySettings { get; set; } = null;
 
             /// <summary>
-            /// The RAW configuration of the current connection is valid only if the connection is using RAW.
+            /// The TCP (RAW) configuration of the current connection is valid only if the connection is using TCP.
             /// </summary>
-            [JsonPropertyName("rawSettings")]
-            public StreamRawSettings? RawSettings { get; set; } = null;
+            [JsonPropertyName("tcpSettings")]
+            public StreamTcpSettings? TcpSettings { get; set; } = null;
+
+            /// <summary>
+            /// h2 Network.
+            /// </summary>
+            [JsonPropertyName("httpSettings")]
+            public StreamHttpSettings? HttpSettings { get; set; } = null;
 
             /// <summary>
             /// The XHTTP configuration of the current connection is valid only if the connection uses XHTTP.
             /// </summary>
             [JsonPropertyName("xhttpSettings")]
             public StreamXHttpSettings? XHttpSettings { get; set; } = null;
+
+            [JsonPropertyName("quicSettings")]
+            public StreamQuicSettings? QuicSettings { get; set; } = null;
 
             /// <summary>
             /// The mKCP configuration of the current connection is valid only if the connection uses mKCP.
@@ -653,9 +666,6 @@ public class XrayConfig
             [JsonPropertyName("httpupgradeSettings")]
             public StreamHttpUpgradeSettings? HttpUpgradeSettings { get; set; } = null;
 
-            [JsonPropertyName("tcpSettings")]
-            public StreamTcpSettings? TcpSettings { get; set; } = null;
-
             /// <summary>
             /// Specific configuration related to transparent agent.
             /// </summary>
@@ -666,14 +676,13 @@ public class XrayConfig
             {
                 public class Network
                 {
-                    public static readonly string Reality = "reality";
-                    public static readonly string Raw = "raw";
+                    public static readonly string Tcp = "tcp"; // raw
+                    public static readonly string H2 = "h2"; // In URL: type=http
                     public static readonly string Xhttp = "xhttp";
                     public static readonly string Kcp = "kcp";
                     public static readonly string Grpc = "grpc";
                     public static readonly string Ws = "ws";
                     public static readonly string HttpUpgrade = "httpupgrade";
-                    public static readonly string Tcp = "tcp";
                 }
 
                 public class Security
@@ -690,7 +699,7 @@ public class XrayConfig
                 /// Specify the domain name of the server-side certificate, which is useful when the connection is established by the IP.
                 /// </summary>
                 [JsonPropertyName("serverName")]
-                public string ServerName { get; set; } = string.Empty;
+                public string? ServerName { get; set; } = null;
 
                 /// <summary>
                 /// Only the client, the SNI used for the school verification certificate, will override the text used for the verification serverName For special purposes such as domain front.
@@ -734,7 +743,7 @@ public class XrayConfig
                 /// CipherSuites is used to configure a list of supported cipher suites, separated between the names of each package.
                 /// </summary>
                 [JsonPropertyName("cipherSuites")]
-                public string CipherSuites { get; set; } = string.Empty;
+                public string? CipherSuites { get; set; } = null;
 
                 /// <summary>
                 /// A list of certificates, each of which represents a certificate (fullchain is recommended).
@@ -777,7 +786,7 @@ public class XrayConfig
                 /// (Pre)-Master-Secret log file path, which can be used to decrypt TLS connections sent by Xray by software such as Wireshark, is not supported for use with utls.
                 /// </summary>
                 [JsonPropertyName("masterKeyLog")]
-                public string MasterKeyLog { get; set; } = string.Empty;
+                public string? MasterKeyLog { get; set; } = null;
 
                 public class Get
                 {
@@ -843,14 +852,14 @@ public class XrayConfig
                     /// Certificate file paths, such as those generated using OpenSSL, are suffixed with .crt.
                     /// </summary>
                     [JsonPropertyName("certificateFile")]
-                    public string CertificateFile { get; set; } = string.Empty;
+                    public string? CertificateFile { get; set; } = null;
 
                     /// <summary>
                     /// Key file paths, such as those generated using OpenSSL, are suffixed with .key.
                     /// Key files that require a password are not currently supported.
                     /// </summary>
                     [JsonPropertyName("keyFile")]
-                    public string KeyFile { get; set; } = string.Empty;
+                    public string? KeyFile { get; set; } = null;
 
                     /// <summary>
                     /// An array of strings, representing the contents of the certificate.
@@ -899,7 +908,7 @@ public class XrayConfig
                 /// Mandatory, formatd with Vless fallbacks.
                 /// </summary>
                 [JsonPropertyName("target")]
-                public string Target { get; set; } = string.Empty;
+                public string? Target { get; set; } = null;
 
                 /// <summary>
                 /// Select, format with Vless fallbacks.
@@ -917,19 +926,19 @@ public class XrayConfig
                 /// Required, Executed ./xray x25519Generated.
                 /// </summary>
                 [JsonPropertyName("privateKey")]
-                public string PrivateKey { get; set; } = string.Empty;
+                public string? PrivateKey { get; set; } = null;
 
                 /// <summary>
                 /// Select, client Xray minimum version, format is x.y.z.
                 /// </summary>
                 [JsonPropertyName("minClientVer")]
-                public string MinClientVer { get; set; } = string.Empty;
+                public string? MinClientVer { get; set; } = null;
 
                 /// <summary>
                 /// Select, client Xray maximum version, format is x.y.z.
                 /// </summary>
                 [JsonPropertyName("maxClientVer")]
-                public string MaxClientVer { get; set; } = string.Empty;
+                public string? MaxClientVer { get; set; } = null;
 
                 /// <summary>
                 /// Select, the maximum allowable time difference, in milliseconds.
@@ -953,42 +962,59 @@ public class XrayConfig
                 /// One of the server names.
                 /// </summary>
                 [JsonPropertyName("serverName")]
-                public string ServerName { get; set; } = string.Empty;
+                public string? ServerName { get; set; } = null;
+
+                /// <summary>
+                /// Whether an insecure connection is allowed (only for the client). The default value is false.
+                /// </summary>
+                [JsonPropertyName("allowInsecure")]
+                public bool AllowInsecure { get; set; } = false;
+
+                /// <summary>
+                /// Deprecated In Xray.
+                /// An array of strings that specifies the ALPN value specified when the TLS handshake is held.
+                /// The default value is ["h2", "http/1.1"]
+                /// </summary>
+                [JsonPropertyName("alpn")]
+                public List<string> Alpn { get; set; } = new();
 
                 /// <summary>
                 /// The public key corresponding to the private key of the server is required.
                 /// </summary>
                 [JsonPropertyName("publicKey")]
-                public string PublicKey { get; set; } = string.Empty;
+                public string? PublicKey { get; set; } = null;
 
                 /// <summary>
                 /// One of the server shortIds.
                 /// </summary>
                 [JsonPropertyName("shortId")]
-                public string ShortId { get; set; } = string.Empty;
+                public string? ShortId { get; set; } = null;
 
                 /// <summary>
                 /// The initial path and parameters of the crawler are recommended for each client differently.
                 /// </summary>
                 [JsonPropertyName("spiderX")]
-                public string SpiderX { get; set; } = string.Empty;
+                public string? SpiderX { get; set; } = null;
+
+                [JsonPropertyName("mldsa65Verify")]
+                public string? Mldsa65Verify { get; set; } = null;
             }
 
-            public class StreamRawSettings
+            public class StreamTcpSettings
             {
-                /// <summary>
-                /// Used only for inbound, indicating whether to receive PROXY protocol.
-                /// </summary>
-                [JsonPropertyName("acceptProxyProtocol")]
-                public bool AcceptProxyProtocol { get; set; } = false;
+                ///// <summary>
+                ///// Used only for inbound, indicating whether to receive PROXY protocol.
+                ///// </summary>
+                //[JsonPropertyName("acceptProxyProtocol")]
+                //public bool AcceptProxyProtocol { get; set; } = false;
 
                 /// <summary>
                 /// Packet header camouflage settings, default value NoneHeaderObject. 
                 /// </summary>
                 [JsonPropertyName("header")]
-                public RawHeader Header { get; set; } = new();
+                public TcpHeader Header { get; set; } = new();
 
-                public class RawHeader
+                public class TcpHeader
                 {
                     /// <summary>
                     /// Camouflage type.
@@ -1000,13 +1026,13 @@ public class XrayConfig
                     /// HTTP Request.
                     /// </summary>
                     [JsonPropertyName("request")]
-                    public HeaderRequest Request { get; set; } = new();
+                    public HeaderRequest? Request { get; set; } = null;
 
                     /// <summary>
                     /// HTTP Response.
                     /// </summary>
                     [JsonPropertyName("response")]
-                    public HeaderResponse Response { get; set; } = new();
+                    public HeaderResponse? Response { get; set; } = null;
 
                     public class Get
                     {
@@ -1139,7 +1165,18 @@ public class XrayConfig
                 }
             }
 
-            // Incomplete Class
+            public class StreamHttpSettings
+            {
+                /// <summary>
+                /// A List of Hosts
+                /// </summary>
+                [JsonPropertyName("Host")]
+                public List<string> Host { get; set; } = new();
+
+                [JsonPropertyName("path")]
+                public string? Path { get; set; } = null;
+            }
+
             // Doc 1: https://xtls.github.io/config/transport.html#streamsettingsobject
             // Doc 2: https://github.com/XTLS/Xray-core/discussions/4113
             // Although XHTTP has many parameters, they are all set to default values. If you just want to use XHTTP, you only need to following steps:
@@ -1149,67 +1186,88 @@ public class XrayConfig
             public class StreamXHttpSettings
             {
                 [JsonPropertyName("host")]
-                public string Host { get; set; } = string.Empty;
+                public string? Host { get; set; } = null;
 
                 [JsonPropertyName("path")]
-                public string Path { get; set; } = string.Empty;
+                public string? Path { get; set; } = null;
 
                 [JsonPropertyName("mode")]
-                public string Mode { get; set; } = string.Empty;
+                public string Mode { get; set; } = Get.Mode.Auto;
 
                 [JsonPropertyName("extra")]
-                public XhttpExtra Extra { get; set; } = new();
+                public JsonDocument? Extra { get; set; } = null;
 
-                public class XhttpExtra
+                public class Get
                 {
-                    [JsonPropertyName("headers")]
-                    public Dictionary<string, string> Headers { get; set; } = new();
-
-                    [JsonPropertyName("xPaddingBytes")]
-                    public string? XPaddingBytes { get; set; } = null;
-
-                    [JsonPropertyName("noGRPCHeader")]
-                    public bool NoGRPCHeader { get; set; } = false;
-
-                    [JsonPropertyName("noSSEHeader")]
-                    public bool NoSSEHeader { get; set; } = false;
-
-                    [JsonPropertyName("scMaxEachPostBytes")]
-                    public int ScMaxEachPostBytes { get; set; } = 1000000;
-
-                    [JsonPropertyName("scMinPostsIntervalMs")]
-                    public int ScMinPostsIntervalMs { get; set; } = 30;
-
-                    [JsonPropertyName("scMaxBufferedPosts")]
-                    public int ScMaxBufferedPosts { get; set; } = 30;
-
-                    [JsonPropertyName("scStreamUpServerSecs")]
-                    public string? ScStreamUpServerSecs { get; set; } = null;
-
-                    [JsonPropertyName("xmux")]
-                    public ExtraXMux Xmux { get; set; } = new();
-
-                    public class ExtraXMux
+                    public class Mode
                     {
-                        [JsonPropertyName("maxConcurrency")]
-                        public string? MaxConcurrency { get; set; } = null;
-
-                        [JsonPropertyName("maxConnections")]
-                        public int MaxConnections { get; set; } = 0;
-
-                        [JsonPropertyName("cMaxReuseTimes")]
-                        public int CMaxReuseTimes { get; set; } = 0;
-
-                        [JsonPropertyName("hMaxRequestTimes")]
-                        public string? HMaxRequestTimes { get; set; } = null;
-
-                        [JsonPropertyName("hMaxReusableSecs")]
-                        public string? HMaxReusableSecs { get; set; } = null;
-
-                        [JsonPropertyName("hKeepAlivePeriod")]
-                        public int HKeepAlivePeriod { get; set; } = 0;
+                        public static readonly string Auto = "auto";
+                        public static readonly string PacketUp = "packet-up";
+                        public static readonly string StreamUp = "stream-up";
+                        public static readonly string StreamOne = "stream-one";
                     }
-                    // ... //
+                }
+            }
+
+            public class StreamQuicSettings
+            {
+                [JsonPropertyName("security")]
+                public string? Security { get; set; } = Get.Security.None;
+
+                [JsonPropertyName("key")]
+                public string? Key { get; set; } = null;
+
+                [JsonPropertyName("header")]
+                public QuicHeader Header { get; set; } = new();
+
+                public class Get
+                {
+                    public class Security
+                    {
+                        public static readonly string None = "none";
+                        public static readonly string Aes128Gcm = "aes-128-gcm";
+                        public static readonly string Chacha20Poly1305 = "chacha20-poly1305";
+                    }
+                }
+
+                public class QuicHeader
+                {
+                    /// <summary>
+                    /// Camouflage type.
+                    /// </summary>
+                    [JsonPropertyName("type")]
+                    public string Type { get; set; } = Get.Type.None;
+
+                    public class Get
+                    {
+                        public class Type
+                        {
+                            /// <summary>
+                            /// Designation not to camouflage.
+                            /// </summary>
+                            public static readonly string None = "none";
+                            /// <summary>
+                            /// Obfuscated as SRTP traffic. It may be recognized as video calls such as Facetime.
+                            /// </summary>
+                            public static readonly string Srtp = "srtp";
+                            /// <summary>
+                            /// Obfuscated as uTP traffic. It may be recognized as Bittorrent traffic.
+                            /// </summary>
+                            public static readonly string Utp = "utp";
+                            /// <summary>
+                            /// Obfuscated to WeChat traffic.
+                            /// </summary>
+                            public static readonly string WechatVideo = "wechat-video";
+                            /// <summary>
+                            /// Obfuscated as DTLS 1.2 packets.
+                            /// </summary>
+                            public static readonly string DTLS = "dtls";
+                            /// <summary>
+                            /// Obfuscated as WireGuard packets. (NOT true WireGuard protocol)
+                            /// </summary>
+                            public static readonly string Wireguard = "wireguard";
+                        }
+                    }
                 }
             }
 
@@ -1389,11 +1447,12 @@ public class XrayConfig
                 /// If the server value is empty, the host value sent by the client is not verified.
                 /// </summary>
                 [JsonPropertyName("host")]
-                public string Host { get; set; } = string.Empty;
+                public string? Host { get; set; } = null;
 
                 /// <summary>
                 /// Only the client, the custom HTTP header, a key-value pair, each key represents the name of an HTTP header, and the corresponding value is the string.
                 /// The default value is empty.
+                /// Deprecated In Xray.
                 /// </summary>
                 [JsonPropertyName("headers")]
                 public Dictionary<string, string> Headers { get; set; } = new();
@@ -1426,7 +1485,7 @@ public class XrayConfig
                 /// If the server value is empty, the host value sent by the client is not verified.
                 /// </summary>
                 [JsonPropertyName("host")]
-                public string Host { get; set; } = string.Empty;
+                public string? Host { get; set; } = null;
 
                 /// <summary>
                 /// Only the client, the custom HTTP header, a key-value pair, each key represents the name of an HTTP header, and the corresponding value is the string.
@@ -1434,44 +1493,6 @@ public class XrayConfig
                 /// </summary>
                 [JsonPropertyName("headers")]
                 public Dictionary<string, string> Headers { get; set; } = new();
-            }
-
-            public class StreamTcpSettings
-            {
-                [JsonPropertyName("header")]
-                public TcpHeader Header { get; set; } = new();
-
-                public class TcpHeader
-                {
-                    [JsonPropertyName("request")]
-                    public TcpRequest Request { get; set; } = new();
-
-                    [JsonPropertyName("type")]
-                    public string Type { get; set; } = Get.Type.None;
-
-                    public class TcpRequest
-                    {
-                        [JsonPropertyName("headers")]
-                        public Dictionary<string, string> Headers { get; set; } = new();
-
-                        [JsonPropertyName("method")]
-                        public string? Method { get; set; } = null;
-
-                        [JsonPropertyName("path")]
-                        public List<string> Path { get; set; } = new();
-
-                        [JsonPropertyName("version")]
-                        public string? Version { get; set; } = null;
-                    }
-
-                    public class Get
-                    {
-                        public class Type
-                        {
-                            public static readonly string None = "none";
-                        }
-                    }
-                }
             }
 
             public class StreamSockopt
@@ -1510,6 +1531,9 @@ public class XrayConfig
                 /// </summary>
                 [JsonPropertyName("domainStrategy")]
                 public string DomainStrategy { get; set; } = Get.DomainStrategy.AsIs;
+
+                [JsonPropertyName("happyEyeballs")]
+                public HappyEyeball HappyEyeballs { get; set; } = new();
 
                 /// <summary>
                 /// The tag of an outbound agent. When the value is not empty, the connection is sent using the specified outbound.
@@ -1555,7 +1579,7 @@ public class XrayConfig
                 /// Specify the binding export network card name and support linux/iOS/MacOS/Windows.
                 /// </summary>
                 [JsonPropertyName("interface")]
-                public string Interface { get; set; } = string.Empty;
+                public string? Interface { get; set; } = null;
 
                 /// <summary>
                 /// Filled true In other words, listen. :: The address only accepts IPv6 connections.
@@ -1639,6 +1663,35 @@ public class XrayConfig
                         public static readonly string TxtAddressOnly = "TxtAddressOnly";
                         public static readonly string TxtPortAndAddress = "TxtPortAndAddress";
                     }
+                }
+
+                public class HappyEyeball
+                {
+                    /// <summary>
+                    /// Delay time between each attempt in millisecond, RFC-8305 recommend 250, default is 0.
+                    /// (if it is 0, happy-eyeballs is disabled)
+                    /// </summary>
+                    [JsonPropertyName("tryDelayMs")]
+                    public int TryDelayMs { get; set; } = 250;
+
+                    /// <summary>
+                    /// Indicate "First Address Family" in RFC-8305, default is false (= prioritizeIPv4)
+                    /// </summary>
+                    [JsonPropertyName("prioritizeIPv6")]
+                    public bool PrioritizeIPv6 { get; set; } = false;
+
+                    /// <summary>
+                    /// Indicate "First Address Family count" in RFC-8305, default is 1.
+                    /// </summary>
+                    [JsonPropertyName("interleave")]
+                    public int Interleave { get; set; } = 2;
+
+                    /// <summary>
+                    /// Maximum concurrent attempt.
+                    /// Default is 4. if it is 0, happy-eyeballs is disabled.
+                    /// </summary>
+                    [JsonPropertyName("maxConcurrentTry")]
+                    public int MaxConcurrentTry { get; set; } = 4;
                 }
 
                 public class CustomSockopt
@@ -1933,7 +1986,7 @@ public class XrayConfig
         public class Balancer
         {
             /// <summary>
-            /// The ID of this load balancer, used for matching RuleObjectIn balancerTag.
+            /// The ID of this load balancer, used for matching RuleObject In balancerTag.
             /// </summary>
             [JsonPropertyName("tag")]
             public string? Tag { get; set; } = null;

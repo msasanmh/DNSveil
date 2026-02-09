@@ -1,6 +1,8 @@
 ﻿using MsmhToolsClass;
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace MsmhToolsClass;
@@ -15,13 +17,14 @@ public class JsonTool
         {
             if (!string.IsNullOrEmpty(content))
             {
-                _ = JsonDocument.Parse(content);
+                JsonDocument jd = JsonDocument.Parse(content);
                 result = true;
+                jd.Dispose();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Debug.WriteLine("JsonTool IsValid: " + ex.Message);
+            //Debug.WriteLine("JsonTool IsValid: " + ex.Message);
         }
 
         return result;
@@ -36,8 +39,9 @@ public class JsonTool
             if (!string.IsNullOrEmpty(jsonFilePath))
             {
                 string content = File.ReadAllText(jsonFilePath);
-                _ = JsonDocument.Parse(content);
+                JsonDocument jd = JsonDocument.Parse(content);
                 result = true;
+                jd.Dispose();
             }
         }
         catch (Exception ex)
@@ -57,8 +61,9 @@ public class JsonTool
             if (!string.IsNullOrEmpty(jsonFilePath))
             {
                 string content = await File.ReadAllTextAsync(jsonFilePath);
-                _ = JsonDocument.Parse(content);
+                JsonDocument jd = JsonDocument.Parse(content);
                 result = true;
+                jd.Dispose();
             }
         }
         catch (Exception ex)
@@ -69,17 +74,120 @@ public class JsonTool
         return result;
     }
 
-    public static string Serialize(object obj)
+    public static async Task<(bool IsLoaded, JsonDocument? JsonDoc)> LoadJsonDocumentAsync(string jsonFilePath)
+    {
+        bool isSuccess = false;
+
+        try
+        {
+            // Check File Exist
+            if (!File.Exists(jsonFilePath))
+            {
+                return (isSuccess, null);
+            }
+
+            // Read From File
+            byte[] jsonBytes = await File.ReadAllBytesAsync(jsonFilePath);
+            if (jsonBytes.Length == 0)
+            {
+                return (isSuccess, null);
+            }
+
+            // Create Stream And Write To It
+            MemoryStream memoryStream = new();
+            await memoryStream.WriteAsync(jsonBytes);
+            memoryStream.Position = 0;
+            await memoryStream.FlushAsync();
+
+            // Create Options - Comments cannot be stored in a JsonDocument, only the Skip and Disallow comment handling modes are supported.
+            JsonDocumentOptions jsonDocumentOptions = new()
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+                MaxDepth = 0
+            };
+
+            // Parse
+            JsonDocument jsonDocument = await JsonDocument.ParseAsync(memoryStream, jsonDocumentOptions);
+            isSuccess = true;
+
+            // Dispose
+            await memoryStream.DisposeAsync();
+
+            // Return
+            return (isSuccess, jsonDocument);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("JsonTool LoadJsonDocumentAsync: " + ex.Message);
+            return (isSuccess, null);
+        }
+    }
+
+    public static async Task<(bool IsLoaded, JsonNode? JsonNode)> LoadJsonNodeAsync(string jsonFilePath)
+    {
+        bool isSuccess = false;
+
+        try
+        {
+            // Check File Exist
+            if (!File.Exists(jsonFilePath))
+            {
+                return (isSuccess, null);
+            }
+
+            // Read From File
+            string jsonStr = await File.ReadAllTextAsync(jsonFilePath);
+            if (string.IsNullOrEmpty(jsonStr))
+            {
+                return (isSuccess, null);
+            }
+
+            // Create Options
+            JsonNodeOptions jsonNodeOptions = new()
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            // Comments cannot be stored in a JsonDocument, only the Skip and Disallow comment handling modes are supported.
+            JsonDocumentOptions jsonDocumentOptions = new()
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+                MaxDepth = 0
+            };
+
+            // Parse
+            JsonNode? jsonNode = JsonNode.Parse(jsonStr, jsonNodeOptions, jsonDocumentOptions);
+            if (jsonNode == null)
+            {
+                return (isSuccess, null);
+            }
+
+            // Return
+            isSuccess = true;
+            return (isSuccess, jsonNode);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("JsonTool LoadJsonNodeAsync: " + ex.Message);
+            return (isSuccess, null);
+        }
+    }
+
+    public static string Serialize(object obj, bool setEmptyValuesToNull)
     {
         try
         {
             if (obj == null) return string.Empty;
-            obj.SetEmptyValuesToNull();
+            if (setEmptyValuesToNull) obj.SetEmptyValuesToNull();
 
             JsonSerializerOptions jsonSerializerOptions = new()
             {
                 WriteIndented = true,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                PropertyNameCaseInsensitive = true,
+                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement
             };
 
             return JsonSerializer.Serialize(obj, jsonSerializerOptions);
@@ -91,23 +199,79 @@ public class JsonTool
         }
     }
 
-    public static T? Deserialize<T>(string json)
+    public static async Task<string> SerializeAsync(object obj, bool setEmptyValuesToNull)
     {
         try
         {
-            JsonDocument jsonDocument = JsonDocument.Parse(json);
+            if (obj == null) return string.Empty;
+            if (setEmptyValuesToNull) obj.SetEmptyValuesToNull();
 
             JsonSerializerOptions jsonSerializerOptions = new()
             {
                 WriteIndented = true,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                PropertyNameCaseInsensitive = true,
+                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement
             };
 
+            using MemoryStream memoryStream = new();
+            await JsonSerializer.SerializeAsync(memoryStream, obj, jsonSerializerOptions);
+            memoryStream.Position = 0;
+
+            using StreamReader streamReader = new(memoryStream, new UTF8Encoding(false));
+            return await streamReader.ReadToEndAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("JsonTool SerializeAsync: " + ex.Message);
+            return string.Empty;
+        }
+    }
+
+    public static T? Deserialize<T>(string json)
+    {
+        try
+        {
+            using JsonDocument jsonDocument = JsonDocument.Parse(json);
+
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                PropertyNameCaseInsensitive = true,
+                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement
+            };
+            
             return JsonSerializer.Deserialize<T>(jsonDocument, jsonSerializerOptions);
         }
         catch (Exception ex)
         {
             Debug.WriteLine("JsonTool Deserialize: " + ex.Message);
+            return default;
+        }
+    }
+
+    public static async Task<T?> DeserializeAsync<T>(string json)
+    {
+        try
+        {
+            byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
+            using MemoryStream memoryStream = new(jsonBytes);
+            memoryStream.Position = 0;
+            
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                PropertyNameCaseInsensitive = true,
+                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement
+            };
+
+            return await JsonSerializer.DeserializeAsync<T>(memoryStream, jsonSerializerOptions, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("JsonTool DeserializeAsync: " + ex.Message);
             return default;
         }
     }

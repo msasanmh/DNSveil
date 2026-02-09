@@ -200,7 +200,8 @@ public class TextTool
             {
                 // For MarkDown
                 html = await RemoveTextAsync(html, '(', ')', replaceTagsWithSpace);
-                html = await RemoveTextAsync(html, '\u0060', '\u0060', replaceTagsWithSpace); // `
+                html = html.Replace('\u0060', ' '); // `
+                //html = await RemoveTextAsync(html, '\u0060', '\u0060', replaceTagsWithSpace); // `
             }
             
             // Split To Lines By Space

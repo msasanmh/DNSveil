@@ -165,9 +165,9 @@ public partial class FormMain
                         // Http Status Code
                         HttpStatusCode hsc = HttpStatusCode.RequestTimeout;
                         if (IsProxyRunning)
-                            hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, 5000, false, false, $"socks5://{IPAddress.Loopback}:{ProxyPort}");
+                            hsc = await NetworkTool.GetHttpStatusCodeAsync(url, null, 5000, true, false, false, $"socks5://{IPAddress.Loopback}:{ProxyPort}");
                         else
-                            hsc = await NetworkTool.GetHttpStatusCodeAsync(url, prr.Dns, 5000, true);
+                            hsc = await NetworkTool.GetHttpStatusCodeAsync(url, prr.Dns, 5000, true, true);
                         
                         this.InvokeIt(() => log.AppendText($"{NL}HTTP Status Code: "));
                         this.InvokeIt(() => log.AppendText($"{hsc}{NL}", Color.DodgerBlue));

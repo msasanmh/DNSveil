@@ -4,6 +4,7 @@ public class DnsEnums
 {
     public enum DnsProtocol
     {
+        Unknown,
         System,
         UDP,
         TCP,
@@ -16,12 +17,12 @@ public class DnsEnums
         ObliviousDoH, // ObliviousDohTarget + ObliviousDohRelay
         AnonymizedDNSCryptRelay, // Relay For DnsCrypt
         ObliviousDohTarget, // A DoH That Supports Relay
-        ObliviousDohRelay, // Relay For ODoH
-        Unknown
+        ObliviousDohRelay // Relay For ODoH
     }
 
     public readonly struct DnsProtocolName
     {
+        public const string Unknown = "Unknown";
         public const string System = "Operating System";
         public const string UDP = "UDP Plain DNS";
         public const string TCP = "TCP Plain DNS";
@@ -35,7 +36,6 @@ public class DnsEnums
         public const string AnonymizedDNSCryptRelay = "Anonymized DNSCrypt Relay";
         public const string ObliviousDohTarget = "Oblivious DoH Target";
         public const string ObliviousDohRelay = "Oblivious DoH Relay";
-        public const string Unknown = "Unknown";
     }
 
     public static DnsProtocol GetDnsProtocolByName(string dnsProtocolName)
@@ -56,6 +56,27 @@ public class DnsEnums
             DnsProtocolName.ObliviousDohTarget => DnsProtocol.ObliviousDohTarget,
             DnsProtocolName.ObliviousDohRelay => DnsProtocol.ObliviousDohRelay,
             _ => DnsProtocol.Unknown
+        };
+    }
+
+    public static string GetDnsProtocolName(DnsProtocol dnsProtocol)
+    {
+        return dnsProtocol switch
+        {
+            DnsProtocol.System => DnsProtocolName.System,
+            DnsProtocol.UDP => DnsProtocolName.UDP,
+            DnsProtocol.TCP => DnsProtocolName.TCP,
+            DnsProtocol.TcpOverUdp => DnsProtocolName.TcpOverUdp,
+            DnsProtocol.DnsCrypt => DnsProtocolName.DnsCrypt,
+            DnsProtocol.DoT => DnsProtocolName.DoT,
+            DnsProtocol.DoH => DnsProtocolName.DoH,
+            DnsProtocol.DoQ => DnsProtocolName.DoQ,
+            DnsProtocol.AnonymizedDNSCrypt => DnsProtocolName.AnonymizedDNSCrypt,
+            DnsProtocol.ObliviousDoH => DnsProtocolName.ObliviousDoH,
+            DnsProtocol.AnonymizedDNSCryptRelay => DnsProtocolName.AnonymizedDNSCryptRelay,
+            DnsProtocol.ObliviousDohTarget => DnsProtocolName.ObliviousDohTarget,
+            DnsProtocol.ObliviousDohRelay => DnsProtocolName.ObliviousDohRelay,
+            _ => DnsProtocolName.Unknown
         };
     }
 
