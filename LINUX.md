@@ -18,18 +18,19 @@ Step-by-step guide to clone, build, run, and install DNSveil on Linux.
 1. [Prerequisites](#1-prerequisites)
 2. [Clone the repository](#2-clone-the-repository)
 3. [Install the .NET 6 SDK](#3-install-the-net-6-sdk)
-4. [Build](#4-build)
-5. [How to run the CLI (read this)](#5-how-to-run-the-cli-read-this)
-6. [CLI commands](#6-cli-commands)
-7. [System DNS management](#7-system-dns-management)
-8. [System-wide install and systemd](#8-system-wide-install-and-systemd)
-9. [Self-contained publish](#9-self-contained-publish)
-10. [DNS / Proxy server (SDCAgnosticServer)](#10-dns--proxy-server-sdcagnosticserver)
-11. [Config and log paths](#11-config-and-log-paths)
-12. [DPI limitations on Linux](#12-dpi-limitations-on-linux)
-13. [Troubleshooting](#13-troubleshooting)
-14. [Architecture (developers)](#14-architecture-developers)
-15. [FAQ](#15-faq)
+4. [Install (recommended)](#install-recommended)
+5. [Build](#4-build)
+6. [How to run the CLI (read this)](#5-how-to-run-the-cli-read-this)
+7. [CLI commands](#6-cli-commands)
+8. [System DNS management](#7-system-dns-management)
+9. [System-wide install and systemd](#8-system-wide-install-and-systemd)
+10. [Self-contained publish](#9-self-contained-publish)
+11. [DNS / Proxy server (SDCAgnosticServer)](#10-dns--proxy-server-sdcagnosticserver)
+12. [Config and log paths](#11-config-and-log-paths)
+13. [DPI limitations on Linux](#12-dpi-limitations-on-linux)
+14. [Troubleshooting](#13-troubleshooting)
+15. [Architecture (developers)](#14-architecture-developers)
+16. [FAQ](#15-faq)
 
 ---
 
@@ -137,6 +138,82 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 ---
 
+## Install (recommended)
+
+One script handles build + permanent `dnsveil` command.
+
+### User install (no root) — default
+
+```bash
+cd /path/to/DNSveil-Linux
+git checkout linux
+
+# .NET 6 must be available (see section 3)
+export PATH="$HOME/.dotnet:$PATH"
+
+./linux/scripts/install.sh
+```
+
+What it does:
+
+1. Builds `DNSveil.Cli` in Release (if needed)
+2. Installs a launcher to `~/.local/bin/dnsveil`
+3. Appends PATH lines to `~/.zshrc` and `~/.bashrc` for:
+   - `~/.local/bin`
+   - `~/.dotnet`
+
+Activate **this** terminal (new terminals are automatic):
+
+```bash
+export PATH="$HOME/.local/bin:$HOME/.dotnet:$PATH"
+dnsveil status
+dnsveil help
+dnsveil proxy status
+```
+
+### System install (root + systemd)
+
+```bash
+export PATH="$HOME/.dotnet:$PATH"
+sudo ./linux/scripts/install.sh --system
+```
+
+This also installs:
+
+- `/usr/local/bin/dnsveil`
+- `/usr/local/bin/dnsveil-server` (if SDCAgnosticServer builds)
+- `/etc/systemd/system/dnsveil.service`
+- Directories under `/etc/dnsveil`, `/var/lib/dnsveil`, `/var/log/dnsveil`
+
+```bash
+dnsveil status
+sudo systemctl enable --now dnsveil   # when dnsveil-server exists
+```
+
+### Install script options
+
+```text
+./linux/scripts/install.sh              # user install (default)
+./linux/scripts/install.sh --user       # same
+sudo ./linux/scripts/install.sh --system
+./linux/scripts/install.sh --skip-build # use existing binaries only
+sudo ./linux/scripts/install.sh --system --prefix /opt/dnsveil
+./linux/scripts/install.sh --help
+```
+
+Compatibility wrapper (same as `--user`):
+
+```bash
+./linux/scripts/install-user.sh
+```
+
+### Reinstall after rebuild or moving the repo
+
+```bash
+./linux/scripts/install.sh
+```
+
+---
 ## 4. Build
 
 From the repository root:
@@ -254,50 +331,6 @@ Service  : Stopped
 ---
 
 
-## 5b. Make `dnsveil` permanent (recommended)
-
-After a Release build, install a launcher into `~/.local/bin` so you can type `dnsveil` in **every new terminal**:
-
-```bash
-export PATH="$HOME/.dotnet:$PATH"
-cd /path/to/DNSveil-Linux
-
-# Build once
-dotnet build DNSveil.Cli -c Release
-
-# Install user launcher (no sudo)
-./linux/scripts/install-user.sh
-
-# Load PATH in this session (or open a new terminal)
-export PATH="$HOME/.local/bin:$HOME/.dotnet:$PATH"
-
-dnsveil status
-dnsveil proxy status
-```
-
-What this does:
-
-- Writes `~/.local/bin/dnsveil` (wrapper that calls `dotnet` + your built DLL)
-- Appends to `~/.zshrc` and `~/.bashrc`:
-  - `export PATH="$HOME/.local/bin:$PATH"`
-  - `export PATH="$HOME/.dotnet:$PATH"`
-
-After that, **new terminals** already have `dnsveil` on `PATH`. You do not need to re-run `export` every time.
-
-If the current terminal still says `command not found`:
-
-```bash
-export PATH="$HOME/.local/bin:$HOME/.dotnet:$PATH"
-# or:
-source ~/.zshrc
-```
-
-To reinstall after moving the repo or rebuilding:
-
-```bash
-./linux/scripts/install-user.sh
-```
-
 ## 6. CLI commands
 
 | Command | Description |
@@ -369,57 +402,29 @@ nmcli device show          # if NetworkManager is active
 
 ## 8. System-wide install and systemd
 
-### Step 1 — Release build
+Prefer the installer:
 
 ```bash
 export PATH="$HOME/.dotnet:$PATH"
-cd /path/to/DNSveil-Linux
-
-dotnet build DNSveil.Cli -c Release
-# Optional:
-dotnet build SDCAgnosticServer -c Release
+sudo ./linux/scripts/install.sh --system
 ```
 
-### Step 2 — Install script
-
-```bash
-sudo ./linux/scripts/install.sh
-```
-
-This script:
-
-- Creates `/etc/dnsveil`, `/var/lib/dnsveil`, `/var/log/dnsveil`
-- Installs the CLI to `/usr/local/bin/dnsveil` when a built binary is found
-- Installs `SDCAgnosticServer` as `/usr/local/bin/dnsveil-server` when built
-- Copies `linux/systemd/dnsveil.service` to `/etc/systemd/system/`
-- Runs `systemctl daemon-reload`
-
-### Step 3 — Enable the service
-
-Only useful when `dnsveil-server` is installed:
+Then:
 
 ```bash
 sudo systemctl enable dnsveil
 sudo systemctl start dnsveil
 sudo systemctl status dnsveil
-```
-
-Common commands:
-
-```bash
-sudo systemctl stop dnsveil
-sudo systemctl restart dnsveil
 journalctl -u dnsveil -f
 ```
 
-Unit file location in the repo: `linux/systemd/dnsveil.service`
+Unit file in the repo: `linux/systemd/dnsveil.service`
 
 - Starts after `network-online.target`
 - `Restart=on-failure`
 - Logs to the journal
 - Writable paths: `/etc/dnsveil`, `/var/lib/dnsveil`, `/var/log/dnsveil`, `/etc/resolv.conf`
 
----
 
 ## 9. Self-contained publish
 
@@ -661,8 +666,9 @@ cd DNSveil-Linux && git checkout linux
 curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 6.0
 export PATH="$HOME/.dotnet:$PATH"
 
-dotnet build DNSveil.Cli -c Release
-dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll status
+./linux/scripts/install.sh
+export PATH="$HOME/.local/bin:$HOME/.dotnet:$PATH"
+dnsveil status
 ```
 
 **Update to the latest `linux` branch**
