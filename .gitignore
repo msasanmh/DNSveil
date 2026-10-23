@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+publish/
+*.dll
+*.pdb
+*.exe
+!NecessaryFiles/**

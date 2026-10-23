@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>DNSveil.Platform.Linux</RootNamespace>
+    <Description>Linux platform implementations for DNSveil</Description>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DNSveil.Platform\DNSveil.Platform.csproj" />
+  </ItemGroup>
+
+</Project>
