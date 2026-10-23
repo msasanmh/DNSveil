@@ -1,52 +1,54 @@
-# راهنمای کامل استفاده از DNSveil روی Linux
+# DNSveil on Linux — Complete Guide
 
-این سند **قدم‌به‌قدم از صفر** توضیح می‌دهد چطور DNSveil را روی Linux کلون، بیلد، نصب و اجرا کنید.
+Step-by-step guide to clone, build, run, and install DNSveil on Linux.
 
-> **توجه:** رابط گرافیکی فعلی (WinForms / WPF) فقط روی Windows کار می‌کند.
-> روی Linux از **CLI** و در صورت نیاز **systemd** استفاده می‌شود.
+> **Important:** The Windows GUI (WinForms / WPF) does **not** run on Linux.
+> On Linux you use the **CLI** (`dnsveil`) and optionally **systemd** + `SDCAgnosticServer`.
 
-- ریپازیتوری: https://github.com/seyed-ali-002/DNSveil-Linux
-- برنچ توسعه Linux: `linux`
-- Upstream اصلی (Windows): https://github.com/msasanmh/DNSveil
-
----
-
-## فهرست مطالب
-
-1. [پیش‌نیازها](#1-پیشنیازها)
-2. [کلون کردن پروژه](#2-کلون-کردن-پروژه)
-3. [نصب .NET 6 SDK](#3-نصب-net-6-sdk)
-4. [بیلد پروژه](#4-بیلد-پروژه)
-5. [اجرای CLI بدون نصب سیستم‌واید](#5-اجرای-cli-بدون-نصب-سیستمواید)
-6. [دستورات CLI](#6-دستورات-cli)
-7. [مدیریت DNS سیستم](#7-مدیریت-dns-سیستم)
-8. [نصب سیستم‌واید و systemd](#8-نصب-سیستمواید-و-systemd)
-9. [Publish (باینری مستقل)](#9-publish-باینری-مستقل)
-10. [سرور DNS / Proxy (SDCAgnosticServer)](#10-سرور-dns--proxy-sdcagnosticserver)
-11. [مسیرهای پیکربندی و لاگ](#11-مسیرهای-پیکربندی-و-لاگ)
-12. [DPI و محدودیت‌های Linux](#12-dpi-و-محدودیتهای-linux)
-13. [عیب‌یابی](#13-عیبیابی)
-14. [معماری فنی (برای توسعه‌دهندگان)](#14-معماری-فنی-برای-توسعهدهندگان)
-15. [سوالات متداول](#15-سوالات-متداول)
+| Item | Value |
+|------|--------|
+| Repository | https://github.com/seyed-ali-002/DNSveil-Linux |
+| Linux branch | `linux` |
+| Upstream (Windows) | https://github.com/msasanmh/DNSveil |
 
 ---
 
-## 1. پیش‌نیازها
+## Table of contents
 
-### سیستم‌عامل
+1. [Prerequisites](#1-prerequisites)
+2. [Clone the repository](#2-clone-the-repository)
+3. [Install the .NET 6 SDK](#3-install-the-net-6-sdk)
+4. [Build](#4-build)
+5. [How to run the CLI (read this)](#5-how-to-run-the-cli-read-this)
+6. [CLI commands](#6-cli-commands)
+7. [System DNS management](#7-system-dns-management)
+8. [System-wide install and systemd](#8-system-wide-install-and-systemd)
+9. [Self-contained publish](#9-self-contained-publish)
+10. [DNS / Proxy server (SDCAgnosticServer)](#10-dns--proxy-server-sdcagnosticserver)
+11. [Config and log paths](#11-config-and-log-paths)
+12. [DPI limitations on Linux](#12-dpi-limitations-on-linux)
+13. [Troubleshooting](#13-troubleshooting)
+14. [Architecture (developers)](#14-architecture-developers)
+15. [FAQ](#15-faq)
 
-- توزیع مبتنی بر Linux با systemd (Ubuntu، Debian، Fedora، Arch و مشابه)
-- دسترسی `sudo` برای تغییر DNS سیستم و نصب سرویس
+---
 
-### بسته‌های پیشنهادی
+## 1. Prerequisites
+
+### OS
+
+- A systemd-based Linux distribution (Ubuntu, Debian, Fedora, Arch, …)
+- `sudo` for changing system DNS and installing the service
+
+### Packages
 
 ```bash
 # Debian / Ubuntu
 sudo apt update
 sudo apt install -y git curl ca-certificates
 
-# اختیاری ولی مفید
-sudo apt install -y systemd resolvconf network-manager nftables
+# Optional but useful
+sudo apt install -y nftables
 ```
 
 ```bash
@@ -59,16 +61,16 @@ sudo dnf install -y git curl ca-certificates
 sudo pacman -S git curl ca-certificates
 ```
 
-### سخت‌افزار
+### Architecture
 
-- معماری `x64` (linux-x64) — رایج‌ترین حالت
-- برای ARM64 در صورت نیاز بعداً با `-r linux-arm64` پابلیش کنید
+- `x64` (`linux-x64`) is the primary target
+- For ARM64 use `-r linux-arm64` when publishing
 
 ---
 
-## 2. کلون کردن پروژه
+## 2. Clone the repository
 
-### با HTTPS
+### HTTPS
 
 ```bash
 git clone https://github.com/seyed-ali-002/DNSveil-Linux.git
@@ -76,7 +78,7 @@ cd DNSveil-Linux
 git checkout linux
 ```
 
-### با SSH (اگر کلید GitHub دارید)
+### SSH
 
 ```bash
 git clone git@github.com:seyed-ali-002/DNSveil-Linux.git
@@ -84,64 +86,67 @@ cd DNSveil-Linux
 git checkout linux
 ```
 
-بررسی وضعیت:
+Verify:
 
 ```bash
 git status
 git branch -vv
-# باید روی branch linux باشید
+# You should be on branch "linux"
 ```
 
 ---
 
-## 3. نصب .NET 6 SDK
+## 3. Install the .NET 6 SDK
 
-DNSveil روی این برنچ با **.NET 6** بیلد می‌شود.
+This branch targets **.NET 6**.
 
-### روش رسمی (بدون وابستگی به پکیج‌منیجر)
+### Official install script (recommended)
 
 ```bash
 curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 6.0
 ```
 
-سپس PATH را برای همین نشست تنظیم کنید:
+Add to `PATH` for the **current terminal session**:
 
 ```bash
 export PATH="$HOME/.dotnet:$PATH"
 ```
 
-برای دائمی کردن (bash):
+Make it permanent (bash):
 
 ```bash
 echo 'export PATH="$HOME/.dotnet:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-بررسی نصب:
+Check:
 
 ```bash
 dotnet --version
-# انتظار: چیزی شبیه 6.0.x
+# Expected: 6.0.x
 ```
 
-### غیرفعال کردن تله‌متری (اختیاری)
+Optional — disable telemetry:
 
 ```bash
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 ```
 
+> **Note:** Installing the SDK under `$HOME/.dotnet` does **not** automatically register a system-wide runtime.
+> Always use `export PATH="$HOME/.dotnet:$PATH"` before `dotnet` commands, or use a [self-contained publish](#9-self-contained-publish).
+
 ---
 
-## 4. بیلد پروژه
+## 4. Build
 
-از ریشهٔ ریپو:
+From the repository root:
 
 ```bash
-cd ~/DNSveil-Linux   # یا مسیری که کلون کرده‌اید
+cd /path/to/DNSveil-Linux
 export PATH="$HOME/.dotnet:$PATH"
 ```
 
-### قدم ۱ — بیلد لایه Platform و CLI
+### Platform + CLI
 
 ```bash
 dotnet build DNSveil.Platform/DNSveil.Platform.csproj -c Release
@@ -149,39 +154,91 @@ dotnet build DNSveil.Platform.Linux/DNSveil.Platform.Linux.csproj -c Release
 dotnet build DNSveil.Cli/DNSveil.Cli.csproj -c Release
 ```
 
-اگر همه چیز درست باشد باید پیام `Build succeeded` ببینید.
+You should see `Build succeeded` for each.
 
-### قدم ۲ — (اختیاری) بیلد سرور DNS/Proxy
+### Optional — DNS/Proxy server
 
 ```bash
 dotnet build SDCAgnosticServer/SDCAgnosticServer.csproj -c Release
 ```
 
-> پروژه‌های GUI (`SecureDNSClient`, `DNSveil`) مخصوص Windows هستند و روی Linux بیلد نمی‌شوند؛ این عمدی است.
+Warnings about NuGet packages (e.g. `doesn't support net6.0`) can be ignored for now; they are not build errors.
 
-### محل خروجی CLI
+### Do not build the GUI projects on Linux
+
+These are Windows-only and will fail on Linux (expected):
+
+- `SecureDNSClient` (WinForms)
+- `DNSveil` (WPF)
+- `MsmhToolsWinFormsClass` / `MsmhToolsWpfClass`
+
+### Build outputs
 
 ```text
-DNSveil.Cli/bin/Release/net6.0/dnsveil.dll
-DNSveil.Cli/bin/Release/net6.0/dnsveil      # apphost در صورت تولید
+DNSveil.Cli/bin/Release/net6.0/dnsveil.dll   ← run with: dotnet .../dnsveil.dll
+DNSveil.Cli/bin/Release/net6.0/dnsveil       ← apphost; needs runtime on PATH
 ```
 
 ---
 
-## 5. اجرای CLI بدون نصب سیستم‌واید
+## 5. How to run the CLI (read this)
 
-برای تست سریع، بدون `sudo install`:
+This is the part that confuses most people.
+
+### Correct ways to run
+
+**Option A — via `dotnet` (simplest after a normal build)**
 
 ```bash
 export PATH="$HOME/.dotnet:$PATH"
-cd ~/DNSveil-Linux
 
 dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll help
 dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll status
 dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll dns list
 ```
 
-نمونه خروجی `status`:
+**Option B — alias**
+
+```bash
+export PATH="$HOME/.dotnet:$PATH"
+alias dnsveil='dotnet /path/to/DNSveil-Linux/DNSveil.Cli/bin/Release/net6.0/dnsveil.dll'
+
+dnsveil status
+dnsveil help
+```
+
+Permanent alias (bash):
+
+```bash
+echo 'export PATH="$HOME/.dotnet:$PATH"' >> ~/.bashrc
+echo "alias dnsveil='dotnet $HOME/DNSveil-Linux/DNSveil.Cli/bin/Release/net6.0/dnsveil.dll'" >> ~/.bashrc
+source ~/.bashrc
+```
+
+(Adjust the path if your clone is elsewhere.)
+
+**Option C — self-contained binary** (no `dotnet` needed at runtime)
+
+See [section 9](#9-self-contained-publish).
+
+### Wrong ways (common mistakes)
+
+| What you run | What happens |
+|--------------|----------------|
+| `./dnsveil.dll` or `dnsveil.dll` | May be picked up by **Mono** → `TypeLoadException` / `AsyncTaskMethodBuilder` errors |
+| `./dnsveil` without `PATH` including `$HOME/.dotnet` | `You must install .NET` / `.NET location: Not found` |
+| Forgetting `export PATH="$HOME/.dotnet:$PATH"` in a new terminal | Same "runtime not found" errors |
+
+**Rule of thumb after a normal `dotnet build`:**
+
+```bash
+export PATH="$HOME/.dotnet:$PATH"
+dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll <command>
+```
+
+Do **not** execute the `.dll` as a bare program.
+
+### Example successful `status` output
 
 ```text
 Platform : Linux
@@ -194,108 +251,107 @@ DNS servers: ...
 Service  : Stopped
 ```
 
-برای راحتی می‌توانید alias بگذارید:
-
-```bash
-alias dnsveil='dotnet ~/DNSveil-Linux/DNSveil.Cli/bin/Release/net6.0/dnsveil.dll'
-dnsveil status
-```
-
 ---
 
-## 6. دستورات CLI
+## 6. CLI commands
 
-| دستور | توضیح |
-|--------|--------|
-| `dnsveil help` | راهنما |
-| `dnsveil version` | نسخه |
-| `dnsveil status` | وضعیت پلتفرم، DNS، سرویس |
-| `dnsveil dns list` | لیست DNS فعلی سیستم |
-| `dnsveil dns set <ip> [ip...]` | تنظیم DNS سیستم (**نیاز به root**) |
-| `dnsveil dns restore` | بازگردانی DNS قبلی (**نیاز به root**) |
-| `dnsveil dns scan` | فعلاً placeholder |
-| `dnsveil config show` | مسیرها و فایل پیکربندی |
-| `dnsveil config set <key> <value>` | ذخیره کلید در `dnsveil.json` |
-| `dnsveil proxy status` | وضعیت پروکسی (اطلاعاتی) |
+| Command | Description |
+|---------|-------------|
+| `dnsveil help` | Show help |
+| `dnsveil version` | Print version |
+| `dnsveil status` | Platform, DNS backend, service status |
+| `dnsveil dns list` | List current system DNS servers |
+| `dnsveil dns set <ip> [ip...]` | Set system DNS (**requires root**) |
+| `dnsveil dns restore` | Restore previous DNS (**requires root**) |
+| `dnsveil dns scan` | Placeholder (not implemented yet) |
+| `dnsveil config show` | Show config paths and file |
+| `dnsveil config set <key> <value>` | Save a key in `dnsveil.json` |
+| `dnsveil proxy status` | Informational proxy status |
 | `dnsveil start` | `systemctl start dnsveil` |
 | `dnsveil stop` | `systemctl stop dnsveil` |
 | `dnsveil restart` | `systemctl restart dnsveil` |
 
-مثال‌ها:
-
-```bash
-dnsveil status
-dnsveil dns list
-sudo dnsveil dns set 1.1.1.1 8.8.8.8
-sudo dnsveil dns restore
-dnsveil config show
-dnsveil config set upstream "https://cloudflare-dns.com/dns-query"
-```
-
----
-
-## 7. مدیریت DNS سیستم
-
-CLI به‌صورت خودکار تشخیص می‌دهد سیستم از کدام backend استفاده می‌کند:
-
-1. **systemd-resolved** (`resolvectl`) — ترجیح اول
-2. **NetworkManager** (`nmcli`)
-3. **/etc/resolv.conf** — fallback
-
-### جریان پیشنهادی برای استفاده محلی
-
-1. یک resolver محلی روی `127.0.0.1` اجرا کنید (مثلاً SDCAgnosticServer).
-2. DNS سیستم را به آن اشاره دهید:
-
-```bash
-sudo dnsveil dns set 127.0.0.1
-```
-
-3. بعد از اتمام کار:
-
-```bash
-sudo dnsveil dns restore
-```
-
-### بررسی دستی
-
-```bash
-resolvectl status          # اگر systemd-resolved فعال است
-cat /etc/resolv.conf
-nmcli device show          # اگر NetworkManager فعال است
-```
-
----
-
-## 8. نصب سیستم‌واید و systemd
-
-### قدم ۱ — بیلد Release
+Examples (with `dotnet` + PATH):
 
 ```bash
 export PATH="$HOME/.dotnet:$PATH"
-cd ~/DNSveil-Linux
+DLL=DNSveil.Cli/bin/Release/net6.0/dnsveil.dll
+
+dotnet "$DLL" status
+dotnet "$DLL" dns list
+sudo env PATH="$PATH" dotnet "$DLL" dns set 1.1.1.1 8.8.8.8
+sudo env PATH="$PATH" dotnet "$DLL" dns restore
+dotnet "$DLL" config show
+dotnet "$DLL" config set upstream "https://cloudflare-dns.com/dns-query"
+```
+
+> When using `sudo`, pass `PATH` explicitly (`sudo env PATH="$PATH" ...`) so root still finds the user-installed `dotnet`.
+
+---
+
+## 7. System DNS management
+
+The CLI detects the DNS backend automatically, in this order:
+
+1. **systemd-resolved** (`resolvectl`) — preferred
+2. **NetworkManager** (`nmcli`)
+3. **/etc/resolv.conf** — fallback
+
+### Suggested flow with a local resolver
+
+1. Run a local DNS server on `127.0.0.1` (e.g. SDCAgnosticServer).
+2. Point system DNS at it:
+
+```bash
+sudo env PATH="$PATH" dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll dns set 127.0.0.1
+```
+
+3. When finished:
+
+```bash
+sudo env PATH="$PATH" dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll dns restore
+```
+
+### Manual checks
+
+```bash
+resolvectl status          # if systemd-resolved is active
+cat /etc/resolv.conf
+nmcli device show          # if NetworkManager is active
+```
+
+---
+
+## 8. System-wide install and systemd
+
+### Step 1 — Release build
+
+```bash
+export PATH="$HOME/.dotnet:$PATH"
+cd /path/to/DNSveil-Linux
+
 dotnet build DNSveil.Cli -c Release
-# اختیاری:
+# Optional:
 dotnet build SDCAgnosticServer -c Release
 ```
 
-### قدم ۲ — اجرای اسکریپت نصب
+### Step 2 — Install script
 
 ```bash
 sudo ./linux/scripts/install.sh
 ```
 
-این اسکریپت:
+This script:
 
-- پوشه‌های `/etc/dnsveil`، `/var/lib/dnsveil`، `/var/log/dnsveil` را می‌سازد
-- باینری CLI را در `/usr/local/bin/dnsveil` کپی می‌کند (در صورت وجود)
-- در صورت وجود، `SDCAgnosticServer` را به‌عنوان `dnsveil-server` نصب می‌کند
-- فایل `linux/systemd/dnsveil.service` را در `/etc/systemd/system/` قرار می‌دهد
-- `systemctl daemon-reload` را اجرا می‌کند
+- Creates `/etc/dnsveil`, `/var/lib/dnsveil`, `/var/log/dnsveil`
+- Installs the CLI to `/usr/local/bin/dnsveil` when a built binary is found
+- Installs `SDCAgnosticServer` as `/usr/local/bin/dnsveil-server` when built
+- Copies `linux/systemd/dnsveil.service` to `/etc/systemd/system/`
+- Runs `systemctl daemon-reload`
 
-### قدم ۳ — فعال‌سازی سرویس
+### Step 3 — Enable the service
 
-فقط وقتی باینری سرور (`dnsveil-server`) نصب شده باشد معنا دارد:
+Only useful when `dnsveil-server` is installed:
 
 ```bash
 sudo systemctl enable dnsveil
@@ -303,41 +359,30 @@ sudo systemctl start dnsveil
 sudo systemctl status dnsveil
 ```
 
-دستورات رایج:
+Common commands:
 
 ```bash
 sudo systemctl stop dnsveil
 sudo systemctl restart dnsveil
-journalctl -u dnsveil -f          # لاگ زنده
+journalctl -u dnsveil -f
 ```
 
-یا از طریق CLI:
+Unit file location in the repo: `linux/systemd/dnsveil.service`
 
-```bash
-sudo dnsveil start
-sudo dnsveil stop
-sudo dnsveil restart
-dnsveil status
-```
-
-### محتویات تقریبی unit
-
-فایل: `linux/systemd/dnsveil.service`
-
-- بعد از `network-online.target` بالا می‌آید
+- Starts after `network-online.target`
 - `Restart=on-failure`
-- لاگ به journald
-- مسیرهای نوشتنی: `/etc/dnsveil`، `/var/lib/dnsveil`، `/var/log/dnsveil`، `/etc/resolv.conf`
+- Logs to the journal
+- Writable paths: `/etc/dnsveil`, `/var/lib/dnsveil`, `/var/log/dnsveil`, `/etc/resolv.conf`
 
 ---
 
-## 9. Publish (باینری مستقل)
+## 9. Self-contained publish
 
-اگر نمی‌خواهید روی ماشین مقصد SDK نصب باشد:
+Use this if you want a binary that runs **without** calling `dotnet` and without relying on a system-wide runtime.
 
 ```bash
 export PATH="$HOME/.dotnet:$PATH"
-cd ~/DNSveil-Linux
+cd /path/to/DNSveil-Linux
 
 mkdir -p publish/cli publish/server
 
@@ -345,14 +390,15 @@ dotnet publish DNSveil.Cli -c Release -r linux-x64 --self-contained true -o ./pu
 dotnet publish SDCAgnosticServer -c Release -r linux-x64 --self-contained true -o ./publish/server
 ```
 
-اجرا:
+Run:
 
 ```bash
 ./publish/cli/dnsveil status
+./publish/cli/dnsveil help
 ./publish/server/SDCAgnosticServer
 ```
 
-نسخه وابسته به runtime (کوچک‌تر؛ نیاز به `dotnet` runtime روی سیستم):
+Framework-dependent publish (smaller; still needs `dotnet` runtime on the machine):
 
 ```bash
 dotnet publish DNSveil.Cli -c Release -r linux-x64 --self-contained false -o ./publish/cli-fx
@@ -360,74 +406,71 @@ dotnet publish DNSveil.Cli -c Release -r linux-x64 --self-contained false -o ./p
 
 ---
 
-## 10. سرور DNS / Proxy (SDCAgnosticServer)
+## 10. DNS / Proxy server (SDCAgnosticServer)
 
-`SDCAgnosticServer` هستهٔ چندپروتکلی است (Plain DNS، DoH، HTTP/HTTPS Proxy، SOCKS4/4A/5) و روی `net6.0` است؛ روی Linux هم بیلد می‌شود.
+`SDCAgnosticServer` is the multi-protocol core (plain DNS, DoH, HTTP/HTTPS proxy, SOCKS4/4A/5). It targets `net6.0` and builds on Linux.
 
 ```bash
+export PATH="$HOME/.dotnet:$PATH"
+
 dotnet build SDCAgnosticServer -c Release
 dotnet SDCAgnosticServer/bin/Release/net6.0/SDCAgnosticServer.dll
 ```
 
-پس از بالا آمدن سرور محلی (مثلاً روی `127.0.0.1:53` یا پورت تنظیم‌شده):
+After the local server is listening (e.g. on `127.0.0.1`):
 
 ```bash
-sudo dnsveil dns set 127.0.0.1
+sudo env PATH="$PATH" dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll dns set 127.0.0.1
 ```
 
-برای پروکسی، مرورگر یا سیستم را روی HTTP/SOCKS همان ماشین تنظیم کنید (جزئیات پورت به تنظیمات سرور بستگی دارد).
+Configure browser or system proxy to the HTTP/SOCKS port exposed by the server (ports depend on server settings).
 
 ---
 
-## 11. مسیرهای پیکربندی و لاگ
+## 11. Config and log paths
 
-| مسیر | نقش |
-|------|-----|
-| `/etc/dnsveil/` | پیکربندی سیستم‌واید |
-| `/var/lib/dnsveil/` | داده و state |
-| `/var/log/dnsveil/` | لاگ فایل |
-| `~/.config/dnsveil/` | fallback کاربر (بدون root) |
-| `~/.local/share/dnsveil/` | data کاربر |
-| `~/.local/state/dnsveil/log` | لاگ کاربر |
+| Path | Role |
+|------|------|
+| `/etc/dnsveil/` | System-wide config |
+| `/var/lib/dnsveil/` | State / data |
+| `/var/log/dnsveil/` | File logs |
+| `~/.config/dnsveil/` | Per-user config fallback |
+| `~/.local/share/dnsveil/` | Per-user data |
+| `~/.local/state/dnsveil/log` | Per-user logs |
 
-فایل نمونهٔ تنظیمات CLI:
+Config file used by the CLI:
 
 ```text
 ~/.config/dnsveil/dnsveil.json
-# یا
+# or
 /etc/dnsveil/dnsveil.json
 ```
 
-مشاهده:
-
 ```bash
-dnsveil config show
+dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll config show
 ```
 
 ---
 
-## 12. DPI و محدودیت‌های Linux
+## 12. DPI limitations on Linux
 
-روی Windows از **GoodbyeDPI + WinDivert** استفاده می‌شود. معادل یک‌به‌یک روی Linux وجود ندارد.
+On Windows, DNSveil uses **GoodbyeDPI + WinDivert**. There is no 1:1 equivalent on Linux.
 
-وضعیت فعلی برنچ `linux`:
+| Approach | Status |
+|----------|--------|
+| Userspace proxy (`SDCAgnosticServer`) | Recommended path today |
+| nftables + NFQUEUE (`LinuxDpiBypass`) | Scaffold for future work |
+| GUI | Windows-only for now |
 
-| روش | وضعیت |
-|-----|--------|
-| Proxy userspace (SDCAgnosticServer) | مسیر پیشنهادی و قابل استفاده |
-| nftables + NFQUEUE (`LinuxDpiBypass`) | scaffold؛ برای تکمیل handler کاربران |
-| GUI | هنوز Windows-only |
-
-نصب ابزار nftables (برای مسیر DPI سطح کرنل):
+Optional tools:
 
 ```bash
-# Debian/Ubuntu
-sudo apt install -y nftables
+sudo apt install -y nftables   # Debian/Ubuntu
 ```
 
 ---
 
-## 13. عیب‌یابی
+## 13. Troubleshooting
 
 ### `dotnet: command not found`
 
@@ -436,47 +479,91 @@ export PATH="$HOME/.dotnet:$PATH"
 dotnet --version
 ```
 
-### بیلد GUI شکست می‌خورد
+If still missing, reinstall the SDK (section 3).
 
-عادی است. فقط این پروژه‌ها را روی Linux بیلد کنید:
+### `You must install .NET` / `.NET location: Not found`
+
+You ran the `dnsveil` apphost without a runtime on `PATH`.
+
+Fix:
+
+```bash
+export PATH="$HOME/.dotnet:$PATH"
+dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll status
+```
+
+Or use a [self-contained publish](#9-self-contained-publish).
+
+### `TypeLoadException` / `AsyncTaskMethodBuilder` when running `dnsveil.dll`
+
+The `.dll` was executed directly (often via **Mono**), not through `dotnet`.
+
+Wrong:
+
+```bash
+./DNSveil.Cli/bin/Release/net6.0/dnsveil.dll
+DNSveil.Cli/bin/Release/net6.0/dnsveil.dll
+```
+
+Right:
+
+```bash
+export PATH="$HOME/.dotnet:$PATH"
+dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll status
+```
+
+### GUI projects fail to build on Linux
+
+Expected. Only build:
 
 - `DNSveil.Platform`
 - `DNSveil.Platform.Linux`
 - `DNSveil.Cli`
-- `SDCAgnosticServer` (اختیاری)
-- `MsmhToolsClass` (در صورت نیاز)
+- `SDCAgnosticServer` (optional)
+- `MsmhToolsClass` (pulled in as a dependency of the server)
 
-### `dnsveil dns set` خطا می‌دهد
+### `dnsveil dns set` fails
 
-- با `sudo` اجرا کنید
-- بررسی کنید backend چیست: `dnsveil status`
-- برای systemd-resolved: `resolvectl status`
-- برای NetworkManager: اتصال فعال داشته باشید
+- Use `sudo` and preserve `PATH`:
 
-### سرویس start نمی‌شود
+```bash
+sudo env PATH="$PATH" dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll dns set 1.1.1.1
+```
+
+- Check backend: `dotnet ... dnsveil.dll status`
+- For systemd-resolved: `resolvectl status`
+- For NetworkManager: ensure an active connection exists
+
+### Service will not start
 
 ```bash
 sudo systemctl status dnsveil
 journalctl -u dnsveil -n 50 --no-pager
-ls -la /usr/local/bin/dnsveil-server   # باید وجود داشته باشد
+ls -la /usr/local/bin/dnsveil-server
 ```
 
-### تغییر DNS اثر ندارد
+The unit expects `/usr/local/bin/dnsveil-server` (from SDCAgnosticServer install).
+
+### DNS change has no effect
 
 ```bash
 resolvectl flush-caches
-# یا
-sudo systemd-resolve --flush-caches   # نسخه‌های قدیمی‌تر
+# or on older systems:
+# sudo systemd-resolve --flush-caches
 ```
 
-مرورگر را یک‌بار کامل ببندید و باز کنید.
+Fully quit and reopen the browser.
+
+### NuGet warnings during SDCAgnosticServer build
+
+Messages like `Package X doesn't support net6.0` are warnings. If the build ends with `Build succeeded` and `0 Error(s)`, you can ignore them for local use.
 
 ---
 
-## 14. معماری فنی (برای توسعه‌دهندگان)
+## 14. Architecture (developers)
 
 ```text
-DNSveil.Platform              # اینترفیس‌های مشترک
+DNSveil.Platform              # Shared interfaces
   └── Abstractions/
         ISystemDnsManager
         IServiceManager
@@ -485,7 +572,7 @@ DNSveil.Platform              # اینترفیس‌های مشترک
         INetworkConfigurator
   └── PlatformFactory.cs
 
-DNSveil.Platform.Linux        # پیاده‌سازی Linux
+DNSveil.Platform.Linux        # Linux implementations
   ├── Dns/LinuxSystemDnsManager.cs
   ├── Service/SystemdServiceManager.cs
   ├── Network/LinuxNetworkConfigurator.cs
@@ -493,12 +580,12 @@ DNSveil.Platform.Linux        # پیاده‌سازی Linux
   ├── Dpi/LinuxPacketInterceptor.cs
   └── LinuxBootstrap.cs
 
-DNSveil.Cli                   # برنامه خط فرمان (AssemblyName: dnsveil)
+DNSveil.Cli                   # CLI (AssemblyName: dnsveil)
 linux/systemd/dnsveil.service
 linux/scripts/install.sh
 ```
 
-ثبت سرویس‌ها در شروع برنامه:
+Register platform services at startup:
 
 ```csharp
 if (OperatingSystem.IsLinux())
@@ -508,30 +595,32 @@ var dns = PlatformFactory.CreateDnsManager();
 var svc = PlatformFactory.CreateServiceManager();
 ```
 
-کد Windows (WinDivert، Registry، WinForms، WPF) دست نخورده باقی مانده است.
+Windows-specific code (WinDivert, Registry, WinForms, WPF) is unchanged.
 
 ---
 
-## 15. سوالات متداول
+## 15. FAQ
 
-**آیا GUI روی Linux دارم؟**  
-خیر. فعلاً فقط CLI و زیرساخت سرویس. GUI در اولویت بعدی است.
+**Is there a Linux GUI?**  
+Not yet. Only CLI and service infrastructure. GUI is a later priority.
 
-**آیا IP من عوض می‌شود؟**  
-خیر. DNSveil VPN نیست؛ DNS امن و در صورت پیکربندی، پروکسی/بای‌پس SNI است.
+**Does DNSveil change my IP?**  
+No. It is not a VPN. It manages secure DNS and, when configured, local proxy / SNI-related bypass paths.
 
-**حداقل دستورات برای شروع سریع چیست؟**
+**Quick start**
 
 ```bash
 git clone https://github.com/seyed-ali-002/DNSveil-Linux.git
 cd DNSveil-Linux && git checkout linux
+
 curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 6.0
 export PATH="$HOME/.dotnet:$PATH"
+
 dotnet build DNSveil.Cli -c Release
 dotnet DNSveil.Cli/bin/Release/net6.0/dnsveil.dll status
 ```
 
-**چطور به آخرین تغییرات برنچ linux برسم؟**
+**Update to the latest `linux` branch**
 
 ```bash
 git fetch origin
@@ -541,10 +630,10 @@ git pull origin linux
 
 ---
 
-## مجوز
+## License
 
-همان مجوز پروژه اصلی DNSveil (فایل `LICENSE` در ریشهٔ ریپو).
+Same as the main DNSveil project — see `LICENSE` in the repository root.
 
 ---
 
-*این راهنما مربوط به برنچ `linux` در ریپازیتوری DNSveil-Linux است.*
+*This guide applies to the `linux` branch of DNSveil-Linux.*
