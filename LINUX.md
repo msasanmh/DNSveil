@@ -253,6 +253,51 @@ Service  : Stopped
 
 ---
 
+
+## 5b. Make `dnsveil` permanent (recommended)
+
+After a Release build, install a launcher into `~/.local/bin` so you can type `dnsveil` in **every new terminal**:
+
+```bash
+export PATH="$HOME/.dotnet:$PATH"
+cd /path/to/DNSveil-Linux
+
+# Build once
+dotnet build DNSveil.Cli -c Release
+
+# Install user launcher (no sudo)
+./linux/scripts/install-user.sh
+
+# Load PATH in this session (or open a new terminal)
+export PATH="$HOME/.local/bin:$HOME/.dotnet:$PATH"
+
+dnsveil status
+dnsveil proxy status
+```
+
+What this does:
+
+- Writes `~/.local/bin/dnsveil` (wrapper that calls `dotnet` + your built DLL)
+- Appends to `~/.zshrc` and `~/.bashrc`:
+  - `export PATH="$HOME/.local/bin:$PATH"`
+  - `export PATH="$HOME/.dotnet:$PATH"`
+
+After that, **new terminals** already have `dnsveil` on `PATH`. You do not need to re-run `export` every time.
+
+If the current terminal still says `command not found`:
+
+```bash
+export PATH="$HOME/.local/bin:$HOME/.dotnet:$PATH"
+# or:
+source ~/.zshrc
+```
+
+To reinstall after moving the repo or rebuilding:
+
+```bash
+./linux/scripts/install-user.sh
+```
+
 ## 6. CLI commands
 
 | Command | Description |
