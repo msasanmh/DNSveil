@@ -5,6 +5,10 @@
 ![GitHub](https://img.shields.io/github/license/msasanmh/DNSveil)
 ![GitHub release (with filter)](https://img.shields.io/github/v/release/msasanmh/DNSveil?link=https%3A%2F%2Fgithub.com%2Fmsasanmh%2FDNSveil%2Freleases%2Flatest)
 
+
+> **Linux:** پشتیبانی Linux در برنچ [`linux`](https://github.com/seyed-ali-002/DNSveil-Linux/tree/linux) است.
+> راهنمای کامل قدم‌به‌قدم: **[LINUX.md](LINUX.md)**
+
 **A Secure DNS Client.** Using: _[Msmh Agnostic Server](https://github.com/msasanmh/MsmhAgnosticServer)_, _[DNSLookup](https://github.com/ameshkov/dnslookup)_ and _[GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI)_. (Windows only)
 
 Client implementation: _DNSCrypt, Anonymized DNSCrypt, DoH, DoT and Plain DNS (UDP & TCP)._<br>
